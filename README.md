@@ -12,8 +12,7 @@
 ## Build the HAKC compiler pass
 1. `cd $ROOT`
 1. `cd ARM-MTE && mkdir build && cd build`
-1. `cmake -DLT_LLVM_INSTALL_DIR=$ROOT/llvm-project/build-12.x/install \
-    -DPMC_LLVM_VERSION=12.0.1 ..`
+1. `cmake -DLT_LLVM_INSTALL_DIR=$ROOT/llvm-project/build-12.x/install -DPMC_LLVM_VERSION=12.0.1 ..`
 1. `cmake --build . -j 8`
 
 ## Build the Kernel
