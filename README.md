@@ -24,7 +24,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 1. `ln -s $ROOT/ARM-MTE/build/HAKC-Compartmentalizer/lib/libHAKC-Compartmentalizer.so scripts/hakc`
 1. `cd linux`
-1. Adjust LOCATION in build-ros2-demo-kernel.sh 
+1. Adjust LOCATION and BUILD_TYPE in build-ros2-demo-kernel.sh 
 1. `../scripts/build-ros2-demo-kernel.sh defconfig`
 1. `../scripts/build-ros2-demo-kernel.sh menuconfig`
 1. HAKC Options:
@@ -39,6 +39,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
       * produce split debuginfo in .dwo files
       * provide gdb scripts for kernel debugging
 1. `export HAKC_ANALYSIS=dag`
+1. `export HAKC_DAG_ANALYSIS_ROOT=$PWD/$BUILD_TYPE/hakc-dag-analysis` 
 1. `../scripts/build-ros2-demo-kernel.sh build`
 
 
