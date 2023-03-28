@@ -23,5 +23,23 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## Build the Kernel
 
 1. `ln -s $ROOT/ARM-MTE/build/HAKC-Compartmentalizer/lib/libHAKC-Compartmentalizer.so scripts/hakc`
-1. `cd linux && make defconfig`
+1. `cd linux`
 1. Adjust LOCATION in build-ros2-demo-kernel.sh 
+1. `../scripts/build-ros2-demo-kernel.sh defconfig`
+1. `../scripts/build-ros2-demo-kernel.sh menuconfig`
+1. HAKC Options:
+  * Kernel Features -> ARMv8.5 architectural features
+    * Memory Tagging Extension Support
+    * Enable PAC and MTE kernel protections
+      * Only: track failed HAKC accesses, sign pointers using the PAC/MTE
+        Compartment context
+  * Device Drivers -> ROS Demo malicious driver
+  * Kernel hacking -> compile-time check and compiler options
+      * compiler the kernel with debug info
+      * produce split debuginfo in .dwo files
+      * provide gdb scripts for kernel debugging
+1. `export HAKC_ANALYSIS=dag`
+1. `../scripts/build-ros2-demo-kernel.sh build`
+
+
+
