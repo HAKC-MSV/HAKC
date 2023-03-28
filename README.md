@@ -44,5 +44,11 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 1. `export HAKC_DAG_ANALYSIS_ROOT=$PWD/$BUILD_TYPE/hakc-dag-analysis` 
 1. `../scripts/build-ros2-demo-kernel.sh build`
 
+## DAG Analysis
+
+1. `cd linux/$BUILD_TYPE`
+1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag.bin -r
+   $HAKC_DAG_ANALYSIS_ROOT -o $PWD/calls-and-types.bin --dag --filter_types
+--filter_mod_files`
 
 
