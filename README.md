@@ -34,6 +34,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
       * Only: track failed HAKC accesses, sign pointers using the PAC/MTE
         Compartment context
   * Device Drivers -> ROS Demo malicious driver
+    * be sure to use the `M` option for module not `Y` or `*` or it won't
+      compile
   * Kernel hacking -> compile-time check and compiler options
       * compiler the kernel with debug info
       * produce split debuginfo in .dwo files
