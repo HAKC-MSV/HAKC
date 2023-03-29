@@ -51,4 +51,28 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    $HAKC_DAG_ANALYSIS_ROOT -o $PWD/calls-and-types.bin --dag --filter_types
 --filter_mod_files`
 
+## Create and apply compartmentalization modifications
+1. Modify paths in scripts/rosdemo-compartments.yml
+1. From the linux/$BUILD_TYPE directory run
+1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag.bin
+   --adjust ../../scripts/rosdemo-compartments.yml`
+1. This creates `dag-adjusted.bin`
+
+## Output compartmentalization policy
+1. From the linux/$BUILD_TYPE directory run
+1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag-adjusted.bin --output_compart $PWD/hakc-compartments.yml
+1. Note: currently the file name for the compartments to apply in the next step is hardcoded, 
+   so please observe this naming convention. 
+
+## Compile kernel with compartments enforced
+1. `export HAKC_DAG_ANALYSIS=compartmentalize
+1. `../scripts/build-ros2-demo-kernel.sh build`
+
+## Run the kernel in QEMU
+1. 
+
+
+
+
+
 

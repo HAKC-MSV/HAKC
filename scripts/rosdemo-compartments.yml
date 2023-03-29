@@ -1,0 +1,4 @@
+kernel:
+  - "/home/na28772/Code/HAKC/linux"
+compartmentalize:
+  - "/home/na28772/Code/HAKC/linux/drivers/rosdemo"
