@@ -1,4 +1,4 @@
 kernel:
-  - "/home/na28772/Code/HAKC/linux"
+  - "/home/de29664/code/MTE-kernel"
 compartmentalize:
-  - "/home/na28772/Code/HAKC/linux/drivers/rosdemo"
+  - "/home/de29664/code/MTE-kernel/drivers/rosdemo"
