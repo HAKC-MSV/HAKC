@@ -12,7 +12,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 1. `git apply ../ARM-MTE/HAKC-Annotator/*.patch`
 1. `cd build-12.x`
 1. `../../scripts/llvm-cmake-configure.sh && ninja && ninja install`
-1. `PATH=$ROOT/llvm-project/build-12.x/install:$PATH`
+1. `PATH=$ROOT/llvm-project/build-12.x/install/bin:$PATH`
 
 ## Build the HAKC compiler pass
 1. `cd $ROOT`
