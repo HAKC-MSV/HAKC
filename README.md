@@ -40,6 +40,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
       * compiler the kernel with debug info
       * produce split debuginfo in .dwo files
       * provide gdb scripts for kernel debugging
+      * enable DWARF4 debug symbols
 1. `export HAKC_ANALYSIS=dag`
 1. `export HAKC_DAG_ANALYSIS_ROOT=$PWD/$BUILD_TYPE/hakc-dag-analysis` 
 1. `../scripts/build-ros2-demo-kernel.sh build`
@@ -60,9 +61,10 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Output compartmentalization policy
 1. From the linux/$BUILD_TYPE directory run
-1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag-adjusted.bin --output_compart $PWD/hakc-compartments.yml
-1. Note: currently the file name for the compartments to apply in the next step is hardcoded, 
-   so please observe this naming convention. 
+1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag-adjusted.bin --output_compart $PWD/hakc-compartments.yml`
+2. `export HAKC_COMPARTMENT_PATH=$PWD/hakc-compartments.yml`
+   * Note: currently the file name for the compartments to apply in the next step is hardcoded, 
+     so please observe this naming convention. 
 
 ## Compile kernel with compartments enforced
 1. `export HAKC_DAG_ANALYSIS=compartmentalize
@@ -70,9 +72,3 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Run the kernel in QEMU
 1. 
-
-
-
-
-
-
