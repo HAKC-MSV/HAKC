@@ -39,7 +39,7 @@ The simplified standalone test case in `field_by_address.c` is as follows:
 
 `bar()` takes a pointer as an argument
 
-Actual behavior as of 2023/09/19 is that a `check_hakc_data_access` call is emitted before the field gets dereferenced. This is ok if and only if `foo()` is called against
+A `check_hakc_data_access` call is emitted before the argument to `foo()` is dereferenced. This is ok if and only if `foo()` is called against
 a signed pointer to begin with. A direct call to `HAKC_ORIG_foo` is not valid for the generated code. However, a situation observed while trying to compartmentalize the FUSE module was that `HAKC_ORIG_foo` was being called and working with data that was not transferred, resulting in that field access failing.
 
 
