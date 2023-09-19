@@ -29,9 +29,23 @@ The `atomic64_inc_return` call caused a HAKC-related address failure (manifestin
 The cause was the address of the struct member being unsigned, going through a `check_hakc_data_access` call in the code inlined from `atomic64_inc_return` in the body
 of `fuse_foo` , resulting in an invalid address that is then dereferenced in a manner similar to `LDR dest, [src, offset of field]`.
 
-foo() is a function that calls a bar()
-bar() is a static inline function (so it follows that it is in the same compilation unit)
-bar() takes a pointer as an argument
+The simplified standalone test case in `field_by_address.c` is as follows:
+
+`foo()` is a function that calls `bar()`
+
+`bar()` is a static inline function (so it follows that it is in the same compilation unit)
+
+`bar()` takes a pointer as an argument
+
+Expected behavior is that when `bar()` is inlined, it should not require a `check_hakc_data_access` call and one should not be generated.
+
+Actual behavior as of 2023/09/19 is that a `check_hakc_data_access` call is emitted before the field gets dereferenced. This is ok if and only if `foo()` is called against
+a signed pointer to begin with.
+
+A situation observed while trying to compartmentalize the FUSE module was that functions were being called without data being `hakc_transfer`-ed first, resulting in that field
+access failing.
+
+
 
 how to reproduce:
 ```mkdir -p build
