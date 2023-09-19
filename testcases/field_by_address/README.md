@@ -28,6 +28,7 @@ The `atomic64_inc_return` call caused a HAKC-related address failure (manifestin
 
 The cause was the address of `fc` being unsigned. It went through a `check_hakc_data_access` call before the code inlined from `atomic64_inc_return` in the body
 of `fuse_foo` , resulting in an invalid address that is then dereferenced in a manner similar to
+
 `LDR dest, [src, offset of field]` .
 
 
