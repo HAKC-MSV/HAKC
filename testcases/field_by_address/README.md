@@ -49,7 +49,8 @@ access failing.
 
 
 
-how to reproduce:
+
+how to reproduce the IR:
 ```mkdir -p build
 env HAKC_ANALYSIS=dag HAKC_DAG_ANALYSIS_ROOT=hakc-dag-analysis \
 clang -fexperimental-new-pass-manager -fpass-plugin=path/to/libHAKC-Compartmentalizer.so \
