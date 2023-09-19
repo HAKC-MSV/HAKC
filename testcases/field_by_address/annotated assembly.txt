@@ -1,0 +1,38 @@
+HAKC_ORIG_foo:                          // @HAKC_ORIG_foo
+        cbz     x0, .Lret
+        stp     x29, x30, [sp, #-16]!           // 16-byte Folded Spill
+        mov     x29, sp
+        mov     w2, #16384
+        mov     w1, #1
+        movk    w2, #1, lsl #16
+        bl      check_hakc_data_access
+        // this will fail if HAKC_ORIG_foo called with an unsigned pointer to "struct data_struct"
+        ldr     w8, [x0]
+        mov     w9, #4
+        bfi     w9, w8, #3, #29
+        str     w9, [x0]
+        ldp     x29, x30, [sp], #16             // 16-byte Folded Reload
+.Lret:
+        ret
+
+HAKC_XFER_foo:                          // @HAKC_XFER_foo
+        stp     x29, x30, [sp, #-32]!           // 16-byte Folded Spill
+        stp     x20, x19, [sp, #16]             // 16-byte Folded Spill
+        mov     x29, sp
+        mov     x19, x0
+        bl      get_hakc_address_color
+        mov     w20, w0
+        mov     w1, #4
+        mov     w2, #1
+        mov     w3, #254
+        mov     x0, x19
+        mov     w4, wzr
+        bl      hakc_transfer_to_clique
+        bl      HAKC_ORIG_foo
+        mov     w2, #4
+        mov     x0, x19
+        mov     w1, w20
+        bl      hakc_color_address
+        ldp     x20, x19, [sp, #16]             // 16-byte Folded Reload
+        ldp     x29, x30, [sp], #32             // 16-byte Folded Reload
+        ret
