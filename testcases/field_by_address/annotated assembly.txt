@@ -1,37 +1,83 @@
+//void *check_hakc_data_access(const void *address,
+//		hakc_compartment_id_t compartment,
+//		const clique_access_tok_t access_tok)
 HAKC_ORIG_foo:                          // @HAKC_ORIG_foo
-        cbz     x0, .Lret
+        cbz     x0, .LHAKC_ORIG_foo_ret
         stp     x29, x30, [sp, #-16]!           // 16-byte Folded Spill
         mov     x29, sp
         mov     w2, #16384
+        // compartment id = 1
         mov     w1, #1
+        // w2 = (1 << 16) | w2
+        // w2 = 16384 | 65536
+        // w2 = 81920
+        // access_tok = 81920
         movk    w2, #1, lsl #16
+        // address = (struct data_struct *)x0
         bl      check_hakc_data_access
         // this will fail if HAKC_ORIG_foo called with an unsigned pointer to "struct data_struct"
+        // I have seen HAKC_ORIG_foo functions call other HAKC_ORIG_bar functions without the intermediate call
+        // call to HAKC_XFER_bar so this isn't a theoretical issue
+        // w8 = *(&data_struct.a)
+        // w8 = *a
         ldr     w8, [x0]
+        // if this was called from HAKC_XFER_foo or otherwise with a signed (struct data_struct *) there is no crash
+        // w9 = 4
         mov     w9, #4
+        // this is a compiler optimization for val = (val * 8) + 4
+        // serves me right for picking that as the C code
+        // w9 = (w8 * 8) + w9
+        // equivalent to
+        // w9 = (w8 << 3) | (w9) 
         bfi     w9, w8, #3, #29
+        // *(&data_struct.a) = w9
+        // if HAKC_ORIG_foo was passed an unsigned (struct data_struct *) we would have already failed before we got to this point
+        // this would suffer the same failure though
         str     w9, [x0]
         ldp     x29, x30, [sp], #16             // 16-byte Folded Reload
-.Lret:
+.LHAKC_ORIG_foo_ret:
         ret
 
 HAKC_XFER_foo:                          // @HAKC_XFER_foo
         stp     x29, x30, [sp, #-32]!           // 16-byte Folded Spill
         stp     x20, x19, [sp, #16]             // 16-byte Folded Spill
         mov     x29, sp
+        // x19 = x0 = unchecked (struct data_struct *)
         mov     x19, x0
+//extern clique_color_t get_hakc_address_color(const void *addr);
+        // x0 = (struct data_struct *) = (const void *)addr
         bl      get_hakc_address_color
+        // x0 = original color of (struct data_struct *)
+        // w20 = w0 = original color of (struct data_struct *)
         mov     w20, w0
+
+//void *hakc_transfer_to_clique(void *data_to_transfer, size_t size,
+//		hakc_compartment_id_t compartment,
+//		clique_color_t color,
+//		bool is_code
+        // w1 = 4 = size
         mov     w1, #4
+        // w2 = 1 = compartment
         mov     w2, #1
+        // w3 = 254 (CRIMSON_CLIQUE) = color
         mov     w3, #254
+        // x0 = x19 = unchecked (struct data_struct *)
         mov     x0, x19
+        // w4 = wzr = 0 = is_code
         mov     w4, wzr
         bl      hakc_transfer_to_clique
+        // x0 = signed((struct data_struct *))
+        // because it is signed, HAKC_ORIG_foo will work as expected
+        // but a direct call to HAKC_ORIG_foo without a signed pointer will fail
         bl      HAKC_ORIG_foo
+//extern void hakc_color_address(const void *addr_to_color, clique_color_t color, size_t size);        
+        // w2 = number of bytes to color = 4
         mov     w2, #4
+        // x0 = x19 = unchecked (struct data_struct *)  
         mov     x0, x19
+        // w1 = w20 = original color of (struct data_struct *)
         mov     w1, w20
+        // restoring the color of the (struct data_struct)
         bl      hakc_color_address
         ldp     x20, x19, [sp, #16]             // 16-byte Folded Reload
         ldp     x29, x30, [sp], #32             // 16-byte Folded Reload
