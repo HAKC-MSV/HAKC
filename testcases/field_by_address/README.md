@@ -1,7 +1,8 @@
 Here is an example of a test case that can show erroneous pass behavior when passing pointers to static inline functions.
 
 This is to replicate a situation seen in the FUSE module as follows:
-```struct fuse_conn {
+```
+struct fuse_conn {
     ...
     atomic64_t khctr;
     ...
