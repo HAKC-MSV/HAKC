@@ -18,49 +18,54 @@ define dso_local void @HAKC_ORIG_foo(%struct.data_struct* %0) #0 section ".hakc.
 7:                                                ; preds = %1
   ; load &data_struct into %8
   %8 = load %struct.data_struct*, %struct.data_struct** %4, align 8, !dbg !20
-  ; if we enter foo(...) from the xfer function, we will actually fail here
-  ; because the pointer to the struct (%0) will be signed from the start, and the IR does...
-  ; %0 -> %4 -> %8
-  ; without any auth checks
   ; &data_struct.a goes into %9
   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %8, i32 0, i32 0, !dbg !22
-  ; if foo(...) was called in a way that the input struct isn't transferred first, we will get here and move on
-  ; storing unsigned &data_struct.a into %3
+  ; storing un-checked &data_struct.a into %3
   store i32* %9, i32** %3, align 8
   call void @llvm.dbg.declare(metadata i32** %3, metadata !23, metadata !DIExpression()) #2, !dbg !28
-  ; loading unsigned &data_struct.a from %3 into %10
+  ; loading un-checked &data_struct.a from %3 into %10
   %10 = load i32*, i32** %3, align 8, !dbg !30
-  ; storing unsigned &data_struct.a into %2 as well
+  ; storing un-checked &data_struct.a into %2 as well
   store i32* %10, i32** %2, align 8
   call void @llvm.dbg.declare(metadata i32** %2, metadata !31, metadata !DIExpression()), !dbg !33
   ; I think this is a side-effect of a nested static inline call
-  ; restoring unsigned &data_struct.a into %11
+  ; restoring un-checked &data_struct.a into %11
   %11 = load i32*, i32** %2, align 8, !dbg !35
   ; (int*)&data_struct.a -> (void*)&data_struct.a in %11, about to do a hakc_check
   %12 = bitcast i32* %11 to i8*, !dbg !36
-  ; passing UNSIGNED (void*)&data_struct.a into check_hakc_data_access
+  ; passing un-checked (void*)&data_struct.a into check_hakc_data_access
   %13 = call i8* @check_hakc_data_access(i8* %12, i32 1, i64 81920), !dbg !36
+  ; if %0 was not a signed/transferred pointer to data_struct then
   ; %13 is now unforunately a signed void pointer to data_struct.a
-  ; SIGNED((void*)&data_struct.a) %13 -> SIGNED((int*)&data_struct.a) %14  
+  ; checked((void*)&data_struct.a) %13 -> checked((int*)&data_struct.a) %14  
   %14 = bitcast i8* %13 to i32*, !dbg !36
   ; going to try to load the value of data_struct.a into %15
+  ; if %0 was not a signed/transferred pointer to data_struct.a then
   ; unfortunately, %14 is a signed pointer, not a valid authenticated pointer
   ; we will crash here
+  ; this corresponds to 
+  ; bl      check_hakc_data_access
+  ; ldr     w8, [x0]
+  ; in the generated aarch64 code
+  ; the LDR will fail if (struct data_struct* a) was an unsigned pointer
   %15 = load i32, i32* %14, align 4, !dbg !36
-  ; if the above had worked, %15 is a
+  ; if the above had worked, %15 is the actual value of a
   ; %16 = a * 8  
   %16 = mul nsw i32 %15, 8, !dbg !37
   ; %17 = 4 + (a * 8)
   %17 = add nsw i32 %16, 4, !dbg !38
-  ; load old copy of unsigned &data_struct.a into %18
+  ; load old copy of un-checked &data_struct.a into %18
   %18 = load i32*, i32** %2, align 8, !dbg !39
   ; bitcast...
-  ; uh-oh, looks like we are going to do another hakc check on an unsigned pointer
+  ; uh-oh, looks like we are going to do another hakc check 
   %19 = bitcast i32* %18 to i8*, !dbg !40
-  ; now we have ANOTHER signed pointer to data_struct.a, not what we want
+  ; %20 is a checked (void*) to &data_struct.a
+  ; if %0 was not a signed/transferred pointer to data_struct then
+  ; %20 will be SIGNED &data_struct.a
   %20 = call i8* @check_hakc_data_access(i8* %19, i32 1, i64 81920), !dbg !40
-  ; signed(void*) -> signed(int*)
+  ; checked(void*) -> checked(int*)
   %21 = bitcast i8* %20 to i32*, !dbg !40
+  ; if %0 was not a signed/transferred pointer to data_struct then
   ; this will crash when we store the latest value of a to signed(&a)
   store i32 %17, i32* %21, align 4, !dbg !40
   ; return
@@ -81,6 +86,7 @@ define dso_local void @HAKC_XFER_foo(%struct.data_struct* %0) #0 section ".hakc.
   %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 4, i32 1, i32 254, i1 false), !dbg !40
   %6 = bitcast i8* %5 to %struct.data_struct*, !dbg !40
   ; if we enter foo from the xfer function, it would get a signed pointer to data_struct
+  ; and the auth checks in that code would behave as expected
   call void @HAKC_ORIG_foo(%struct.data_struct* %6), !dbg !40
   %7 = bitcast %struct.data_struct* %0 to i8*, !dbg !40
   call void @hakc_color_address(i8* %7, i32 %3, i64 4), !dbg !40
