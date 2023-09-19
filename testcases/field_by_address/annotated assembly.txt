@@ -2,6 +2,7 @@
 //		hakc_compartment_id_t compartment,
 //		const clique_access_tok_t access_tok)
 HAKC_ORIG_foo:                          // @HAKC_ORIG_foo
+        // if ((struct data_struct*) == null) return;
         cbz     x0, .LHAKC_ORIG_foo_ret
         stp     x29, x30, [sp, #-16]!           // 16-byte Folded Spill
         mov     x29, sp
