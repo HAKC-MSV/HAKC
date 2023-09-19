@@ -1,7 +1,7 @@
 Here is an example of a test case that can show erroneous pass behavior when passing pointers to static inline functions.
 
 This is to replicate a situation seen in the FUSE module as follows:
-struct fuse_conn {
+```struct fuse_conn {
     ...
     atomic64_t khctr;
     ...
@@ -22,7 +22,7 @@ void fuse_foo(...) {
     atomic64_inc_return(&fc->khctr);
     ...
 }
-
+```
 The `atomic64_inc_return` call caused a HAKC-related address failure (manifesting as an `address between user and kernel` error from the kernel).
 
 The cause was the address of the struct member being unsigned, going through a `check_hakc_data_access` call in the code inlined from `atomic64_inc_return` in the body
