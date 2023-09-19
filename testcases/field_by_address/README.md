@@ -1,6 +1,6 @@
 Here is an example of a test case that can show erroneous pass behavior when passing pointers to static inline functions.
 
-mkdir -p build
+```mkdir -p build
 env HAKC_ANALYSIS=dag HAKC_DAG_ANALYSIS_ROOT=hakc-dag-analysis \
 clang -fexperimental-new-pass-manager -fpass-plugin=path/to/libHAKC-Compartmentalizer.so \
 -g -S -emit-llvm -o build/field_by_address.bc -c field_by_address.c
@@ -10,4 +10,4 @@ python3 path/to/ARM-MTE/scripts/data-access-analysis.py -c ../dag.bin --output_c
 cd ..
 env HAKC_ANALYSIS=compartmentalize HAKC_COMPARTMENT_PATH=hakc-compartments.yml \
 clang -fexperimental-new-pass-manager -fpass-plugin=path/to/libHAKC-Compartmentalizer.so \
--g -S -emit-llvm -o build/field_by_address.bc -c field_by_address.c
+-g -S -emit-llvm -o build/field_by_address.bc -c field_by_address.c```
