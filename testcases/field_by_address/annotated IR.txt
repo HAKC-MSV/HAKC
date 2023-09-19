@@ -1,0 +1,69 @@
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local void @HAKC_ORIG_foo(%struct.data_struct* %0) #0 section ".hakc.CRIMSON_CLIQUE.text" !dbg !7 {
+  ; tmp storage for &data_struct.a
+  %2 = alloca i32*, align 8
+  ; other tmp storage for &data_struct.a
+  %3 = alloca i32*, align 8
+  ; pointer to data_struct
+  %4 = alloca %struct.data_struct*, align 8
+  ; store &data_struct into %4
+  store %struct.data_struct* %0, %struct.data_struct** %4, align 8
+  call void @llvm.dbg.declare(metadata %struct.data_struct** %4, metadata !15, metadata !DIExpression()), !dbg !16
+  ; load &data_struct from %4 into %5
+  %5 = load %struct.data_struct*, %struct.data_struct** %4, align 8, !dbg !17
+  ; if &data_struct is null, return
+  %6 = icmp ne %struct.data_struct* %5, null, !dbg !17
+  br i1 %6, label %7, label %24, !dbg !19
+
+7:                                                ; preds = %1
+  ; load &data_struct into %8
+  %8 = load %struct.data_struct*, %struct.data_struct** %4, align 8, !dbg !20
+  ; &data_struct.a goes into %9
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %8, i32 0, i32 0, !dbg !22
+  ; storing unsigned &data_struct.a into %3
+  store i32* %9, i32** %3, align 8
+  call void @llvm.dbg.declare(metadata i32** %3, metadata !23, metadata !DIExpression()) #2, !dbg !28
+  ; loading unsigned &data_struct.a from %3 into %10
+  %10 = load i32*, i32** %3, align 8, !dbg !30
+  ; storing unsigned &data_struct.a into %2 as well
+  store i32* %10, i32** %2, align 8
+  call void @llvm.dbg.declare(metadata i32** %2, metadata !31, metadata !DIExpression()), !dbg !33
+  ; I think this is a side-effect of a nested static inline call
+  ; restoring unsigned &data_struct.a into %11
+  %11 = load i32*, i32** %2, align 8, !dbg !35
+  ; (int*)&data_struct.a -> (void*)&data_struct.a in %11, about to do a hakc_check
+  %12 = bitcast i32* %11 to i8*, !dbg !36
+  ; passing UNSIGNED (void*)&data_struct.a into check_hakc_data_access
+  %13 = call i8* @check_hakc_data_access(i8* %12, i32 1, i64 81920), !dbg !36
+  ; %13 is now unforunately a signed void pointer to data_struct.a
+  ; SIGNED((void*)&data_struct.a) %13 -> SIGNED((int*)&data_struct.a) %14  
+  %14 = bitcast i8* %13 to i32*, !dbg !36
+  ; going to try to load the value of data_struct.a into %15
+  ; unfortunately, %14 is a signed pointer, not a valid authenticated pointer
+  ; we will crash here
+  %15 = load i32, i32* %14, align 4, !dbg !36
+  ; if the above had worked, %15 is a
+  ; %16 = a * 8  
+  %16 = mul nsw i32 %15, 8, !dbg !37
+  ; %17 = 4 + (a * 8)
+  %17 = add nsw i32 %16, 4, !dbg !38
+  ; load old copy of unsigned &data_struct.a into %18
+  %18 = load i32*, i32** %2, align 8, !dbg !39
+  ; bitcast...
+  ; uh-oh, looks like we are going to do another hakc check on an unsigned pointer
+  %19 = bitcast i32* %18 to i8*, !dbg !40
+  ; now we have ANOTHER signed pointer to data_struct.a, not what we want
+  %20 = call i8* @check_hakc_data_access(i8* %19, i32 1, i64 81920), !dbg !40
+  ; signed(void*) -> signed(int*)
+  %21 = bitcast i8* %20 to i32*, !dbg !40
+  ; this will crash when we store the latest value of a to signed(&a)
+  store i32 %17, i32* %21, align 4, !dbg !40
+  ; return
+  br label %23, !dbg !41
+
+22:                                               ; preds = %1
+  br label %23, !dbg !42
+
+23:                                               ; preds = %22, %7
+  ret void, !dbg !43
+}

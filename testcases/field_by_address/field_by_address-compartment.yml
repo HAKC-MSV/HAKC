@@ -1,0 +1,14 @@
+COMPARTMENTS:
+  - CLIQUES:
+      - ACCESS_TOKEN: 81920
+        COLOR: CRIMSON_CLIQUE
+    ENTRY_TOKEN: 81920
+    ID: 1
+FILES:
+  - GUID: 0
+    PATH: /data/ja18738/examples/staticinline/field_by_address.c
+    SYMBOLS:
+      - CLIQUE: CRIMSON_CLIQUE
+        COMPARTMENT: 1
+        IS_GLOBAL: 'Yes'
+        NAME: foo

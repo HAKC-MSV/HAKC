@@ -1,0 +1,15 @@
+---
+CU: /data/ja18738/examples/staticinline/field_by_address.c
+types:
+symbols:
+  -
+    name: foo
+    directory: /data/ja18738/examples/staticinline
+    file: field_by_address.c
+    line: 18
+    type: ea1ca0aa6e6a75fd1dab087327ad3044
+    is-global: n
+    is-defined: y
+    valid-decl-linkage: y
+    direct-calls:
+    indirect-calls:
