@@ -20,6 +20,12 @@ static inline void do_something_with(int *b) {
         do_something_nested_with(b);
 }
 
+// different bad results depending on how this is called 
+// if the call originates from HAKC_XFER_foo, the struct data_struct * gets transferred
+//   and so it is signed coming in, and the code that gets the offset of 'a' in the struct will fail
+//   because of no auth check (from inspection of generated IR)
+// if a direct call to HAKC_ORIG_foo is made, the struct * is not signed and the function will fail
+//   later on when trying to access 'a' by address because of an auth check it doesn't need
 void foo(struct data_struct *a) {
         // if a is non-null
         if(a) {
