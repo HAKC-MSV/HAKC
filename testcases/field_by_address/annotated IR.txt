@@ -28,7 +28,6 @@ define dso_local void @HAKC_ORIG_foo(%struct.data_struct* %0) #0 section ".hakc.
   ; storing un-checked &data_struct.a into %2 as well
   store i32* %10, i32** %2, align 8
   call void @llvm.dbg.declare(metadata i32** %2, metadata !31, metadata !DIExpression()), !dbg !33
-  ; I think this is a side-effect of a nested static inline call
   ; restoring un-checked &data_struct.a into %11
   %11 = load i32*, i32** %2, align 8, !dbg !35
   ; (int*)&data_struct.a -> (void*)&data_struct.a in %11, about to do a hakc_check
