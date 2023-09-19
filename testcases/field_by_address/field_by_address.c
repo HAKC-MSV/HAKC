@@ -1,4 +1,4 @@
-// this is the same way the Linux kernel forces code to actually be inlined
+// force code to actually be inlined
 #define inline   inline __attribute__((always_inline))
 
 // simple struct, a is the only field and we pass it around by address
