@@ -27,7 +27,9 @@ void fuse_foo(...) {
 The `atomic64_inc_return` call caused a HAKC-related address failure (manifesting as an `address between user and kernel` error from the kernel).
 
 The cause was the address of the struct member being unsigned, going through a `check_hakc_data_access` call in the code inlined from `atomic64_inc_return` in the body
-of `fuse_foo` , resulting in an invalid address that is then dereferenced in a manner similar to `LDR dest, [src, offset of field]`.
+of `fuse_foo` , resulting in an invalid address that is then dereferenced in a manner similar to
+`LDR dest, [src, offset of field]` .
+
 
 The simplified standalone test case in `field_by_address.c` is as follows:
 
