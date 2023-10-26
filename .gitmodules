@@ -1,7 +1,3 @@
-[submodule "ARM-MTE"]
-	path = ARM-MTE
-	url = git@github.mit.edu:inherently-secure/ARM-MTE.git
-	branch = main
 [submodule "linux"]
 	path = linux
 	url = git@github.mit.edu:inherently-secure/MTE-kernel.git
