@@ -1,11 +1,13 @@
 cmake_minimum_required(VERSION 3.4.3)
-project(HAKC-Compartmentalizer)
+project(HAKC-Pass)
 
 #===============================================================================
 # 1. VERIFY LLVM INSTALLATION DIR
 #===============================================================================
 # Set this to a valid LLVM installation dir
-set(LT_LLVM_INSTALL_DIR /usr CACHE PATH "LLVM installation directory")
+if(NOT DEFINED LT_LLVM_INSTALL_DIR)
+set(LT_LLVM_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "LLVM installation directory")
+endif(NOT DEFINED LT_LLVM_INSTALL_DIR)
 
 # A bit of a sanity checking
 set(LT_LLVM_INCLUDE_DIR "${LT_LLVM_INSTALL_DIR}/include/llvm")
@@ -82,12 +84,16 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
 if (HAKC_CHERIBSD)
     add_compile_definitions(HAKC_CHERIBSD)
+    set(HAKC_BUILD_TYPE cheribsd-morello)
 elseif (HAKC_LINUX_X86)
     add_compile_definitions(HAKC_LINUX_X86)
+    set(HAKC_BUILD_TYPE linux-x86)
 elseif (HAKC_LINUX_ARMV8)
     add_compile_definitions(HAKC_LINUX_ARMV8)
+    set(HAKC_BUILD_TYPE linux-armv8)
 elseif (HAKC_LINUX_ARMV9)
     add_compile_definitions(HAKC_LINUX_ARMV9)
+    set(HAKC_BUILD_TYPE linux-armv9)
 else ()
     message(FATAL_ERROR
             "Must Specify Target HAKC Architecture")
@@ -98,6 +104,6 @@ endif ()
 # Doing this at the end so that all definitions and link/include paths are
 # available for the sub-projects.
 #===============================================================================
-add_library(HAKC-Compartmentalizer SHARED)
-target_include_directories(HAKC-Compartmentalizer PRIVATE inc)
+add_library(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} SHARED)
+target_include_directories(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE inc)
 add_subdirectory(src)

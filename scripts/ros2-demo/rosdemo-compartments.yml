@@ -1,4 +1,4 @@
 kernel:
-  - "/home/de29664/code/MTE-kernel"
+  - "_KERNEL_SOURCE_"
 compartmentalize:
-  - "/home/de29664/code/MTE-kernel/drivers/rosdemo"
+  - "_KERNEL_SOURCE_/drivers/rosdemo"

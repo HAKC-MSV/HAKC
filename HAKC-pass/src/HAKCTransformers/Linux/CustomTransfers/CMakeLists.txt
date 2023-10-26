@@ -1,4 +1,4 @@
-target_sources(HAKC-Compartmentalizer PRIVATE
+target_sources(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/CustomTransfer_sk_buff.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/CustomTransfer_file.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/CustomTransfer_socket.cpp

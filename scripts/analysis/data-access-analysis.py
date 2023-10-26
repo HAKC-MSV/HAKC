@@ -16,7 +16,7 @@ import networkx as nx
 import yaml
 from networkx.algorithms.connectivity import EdgeComponentAuxGraph
 
-sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), 'HAKC-common', 'python'))
+sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '..', '..', 'python'))
 from hakc.HAKCCompartment import HAKCCompartment
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.StructInfo import StructInfo

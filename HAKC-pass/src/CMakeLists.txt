@@ -1,4 +1,4 @@
-target_sources(HAKC-Compartmentalizer PRIVATE
+target_sources(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCCompartment.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCFile.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCPass.cpp
