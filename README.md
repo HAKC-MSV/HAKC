@@ -102,8 +102,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 1. `cd $ROOT/build-$BUILD_TYPE/hakc-dag-analysis`
 2. `python3 $ROOT/scripts/analysis/data-access-analysis.py -c $PWD/dag.bin -r
-   $HAKC_DAG_ANALYSIS_ROOT -o $PWD/calls-and-types.bin --dag --filter_types
---filter_mod_files`
+   $HAKC_DAG_ANALYSIS_ROOT --dag --filter_types --filter_mod_files`
 
 ## Create and apply compartmentalization modifications
 
