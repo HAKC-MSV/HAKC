@@ -1,0 +1,93 @@
+From e293064444a99b394e8616ed2dec6d3a48fafe0a Mon Sep 17 00:00:00 2001
+From: Derrick McKee <derrick.mckee@gmail.com>
+Date: Tue, 18 Oct 2022 07:57:11 -0400
+Subject: [PATCH] adding hakc build options and getting chrome to build with
+ clang 13
+
+---
+ build/config/compiler/BUILD.gn | 14 +++++++++++++-
+ third_party/zlib/BUILD.gn      |  8 ++++----
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index b6aaae9b69576..275982990fe89 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -55,6 +55,10 @@ if (!is_clang) {
+ }
+ 
+ declare_args() {
++  hakc_pass_path = ""
++
++  hakc_dag_analysis = false
++
+   # Normally, Android builds are lightly optimized, even for debug builds, to
+   # keep binary size down. Setting this flag to true disables such optimization
+   android_full_debug = false
+@@ -826,6 +830,14 @@ config("compiler") {
+   if (is_official_build) {
+     rustflags += [ "-Ccodegen-units=1" ]
+   }
++  
++  if (hakc_pass_path != "") {
++    assert((hakc_dag_analysis), "hakc_dag_analysis must be true")   
++    cflags += [ "-fpass-plugin=" + hakc_pass_path ]
++    if (hakc_dag_analysis) {
++        cflags += [ "-DHAKC_DAG_ANALYSIS" ]
++    }
++  }
+ }
+ 
+ # The BUILDCONFIG file sets this config on targets by default, which means when
+@@ -1536,7 +1548,7 @@ config("default_warnings") {
+ 
+       if (!is_nacl) {
+         # TODO(https://crbug.com/1300731) Clean up and enable.
+-        cflags += [ "-Wno-unqualified-std-cast-call" ]
++#        cflags += [ "-Wno-unqualified-std-cast-call" ]
+ 
+         # Do not set the below flags if it's nacl as nacl-clang doesn't have the
+         # patches that require these flags.
+diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
+index ee7483e9ef6a4..97c4132675b7a 100644
+--- a/third_party/zlib/BUILD.gn
++++ b/third_party/zlib/BUILD.gn
+@@ -268,7 +268,7 @@ source_set("zlib_slide_hash_simd") {
+ config("zlib_warnings") {
+   if (is_clang) {
+     cflags = [
+-      "-Wno-deprecated-non-prototype",
++#      "-Wno-deprecated-non-prototype",
+       "-Wno-incompatible-pointer-types",
+       "-Wunused-variable",
+     ]
+@@ -377,7 +377,7 @@ config("minizip_warnings") {
+     cflags = [
+       # zlib uses `if ((a == b))` for some reason.
+       "-Wno-parentheses-equality",
+-      "-Wno-deprecated-non-prototype",
++#      "-Wno-deprecated-non-prototype",
+     ]
+   }
+ }
+@@ -445,7 +445,7 @@ if (!is_win || target_os != "winuwp") {
+       cflags = [
+         "-Wno-incompatible-pointer-types-discards-qualifiers",
+ 
+-        "-Wno-deprecated-non-prototype",
++#        "-Wno-deprecated-non-prototype",
+       ]
+     }
+ 
+@@ -468,7 +468,7 @@ if (!is_win || target_os != "winuwp") {
+     if (is_clang) {
+       cflags = [
+         "-Wno-incompatible-pointer-types-discards-qualifiers",
+-        "-Wno-deprecated-non-prototype",
++#        "-Wno-deprecated-non-prototype",
+       ]
+     }
+ 
+-- 
+2.25.1
+

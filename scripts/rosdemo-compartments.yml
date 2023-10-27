@@ -1,4 +1,0 @@
-kernel:
-  - "/home/de29664/code/MTE-kernel"
-compartmentalize:
-  - "/home/de29664/code/MTE-kernel/drivers/rosdemo"

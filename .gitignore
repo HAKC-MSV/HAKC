@@ -1,4 +1,8 @@
 .idea/
+cmake-build-*/
+install/
+build-*/
+llvm-project/
 
 # Prerequisites
 *.d

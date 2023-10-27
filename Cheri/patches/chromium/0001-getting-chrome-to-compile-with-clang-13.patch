@@ -1,0 +1,25 @@
+From e1d4fac54dea2d3147a6128171e931ee97417ce3 Mon Sep 17 00:00:00 2001
+From: Derrick McKee <derrick.mckee@gmail.com>
+Date: Tue, 18 Oct 2022 07:55:19 -0400
+Subject: [PATCH] getting chrome to compile with clang 13
+
+---
+ include/v8config.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/v8config.h b/include/v8config.h
+index be4c52f4d5..d381beb115 100644
+--- a/include/v8config.h
++++ b/include/v8config.h
+@@ -435,7 +435,7 @@ path. Add it with -I<path> to the command line
+ # define V8_ASSUME(condition)
+ #endif
+ 
+-#if V8_HAS_BUILTIN_ASSUME_ALIGNED
++#if V8_HAS_BUILTIN_ASSUME_ALIGNED && !defined(HAKC_DAG_ANALYSIS)
+ # define V8_ASSUME_ALIGNED(ptr, alignment) \
+   __builtin_assume_aligned((ptr), (alignment))
+ #else
+-- 
+2.25.1
+
