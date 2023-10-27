@@ -125,7 +125,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 1. `cd linux`
 2. ```
    env HAKC_ANALYSIS=compartmentalize \
-   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin) \
+   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
@@ -138,7 +138,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    ```
 3. ```
    env HAKC_ANALYSIS=compartmentalize \
-   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin) \
+   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
