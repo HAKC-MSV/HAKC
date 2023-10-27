@@ -100,23 +100,25 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## DAG Analysis
 
-1. `cd $ROOT/build-$BUILD_TYPE/hakc-dag-analysis`
-2. `python3 $ROOT/scripts/analysis/data-access-analysis.py -c $PWD/dag.bin -r
-   $HAKC_DAG_ANALYSIS_ROOT --dag --filter_types --filter_mod_files`
+1. `cd $ROOT`
+2. `python3 scripts/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin -r
+   build-$BUILD_TYPE/hakc-dag-analysis --dag --filter_types --filter_mod_files`
 
 ## Create and apply compartmentalization modifications
 
 1. `cd $ROOT`
-2. `sed "s+_KERNEL_SOURCE_+$(realpath linux)+g" scripts/ros2-demo/rosdemo-compartments.yml > 
-   build-$BUILD_TYPE/hakc-dag-analysis/hakc_compartments.yml`
+2. ```
+   sed "s+_KERNEL_SOURCE_+$(realpath linux)+g" scripts/ros2-demo/rosdemo-compartments.yml | \
+   sed "s+_KERNEL_BUILD_+$(realpath build-$BUILD_TYPE)+g" > build-$BUILD_TYPE/hakc-dag-analysis/hakc-ros2-adjustments.yml
+   ```
 3. `python3 scripts/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
-   --adjust build-$BUILD_TYPE/hakc-dag-analysis/hakc_compartments.yml`
+   --adjust build-$BUILD_TYPE/hakc-dag-analysis/hakc-ros2-adjustments.yml`
    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin`
 
 ## Output compartmentalization policy
 
-1. `python3 scripts/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin --output_compart
-   build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml`
+1. `python3 scripts/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin 
+    --output_compart build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml`
 
 ## Compile kernel with compartments enforced
 

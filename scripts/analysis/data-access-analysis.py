@@ -1,14 +1,11 @@
 import argparse
 import concurrent.futures
 import itertools
-import math
 import multiprocessing as mp
 import os
 import pickle
 import re
-import subprocess
 import sys
-import tempfile
 import time
 from enum import Enum
 
@@ -16,7 +13,6 @@ import networkx as nx
 import yaml
 from networkx.algorithms.connectivity import EdgeComponentAuxGraph
 
-sys.path.append(os.path.join(os.path.realpath(os.path.dirname(__file__)), '..', '..', 'python'))
 from hakc.HAKCCompartment import HAKCCompartment
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.StructInfo import StructInfo
@@ -1085,19 +1081,20 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization,
             if len(compartment.get_definition_sources()) == 0:
                 compartments_to_remove.add(compartment)
                 continue
+
+            remove = False
             for kernel_path in adjustments['kernel']:
-                remove = False
                 if 'compartmentalize' in adjustments:
                     for compartmentalize_path in adjustments['compartmentalize']:
                         if compartment.contains_symbol_defined_in_path(kernel_path) and not \
                                 compartment.contains_symbol_defined_in_path(compartmentalize_path):
                             remove = True
                             break
-                if remove:
-                    compartments_to_remove.add(compartment)
-                else:
-                    print(f"Not removing {compartment}")
-                    compartments_to_keep.add(compartment)
+            if remove:
+                compartments_to_remove.add(compartment)
+            else:
+                print(f"Not removing {compartment}")
+                compartments_to_keep.add(compartment)
 
         print(f"Removing {len(compartments_to_remove)} compartments")
         func_args = {"filter_func": compute_capacity,
@@ -1115,100 +1112,6 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization,
     print(f"Done adjusting compartmentalization. Current compartmentalization has "
           f"{len(compartmentalization)} compartments.")
     return compartmentalization
-
-
-def knapsack_dag_partition(data_access_graph: nx.Graph, num_bins: int) -> \
-        nx.DiGraph:
-    if num_bins >= len(data_access_graph.nodes):
-        return data_access_graph
-
-    data = {}
-    data['nodes'] = [node for node in data_access_graph.nodes]
-    data['num_nodes'] = len(data_access_graph.nodes)
-    data['values'] = [max(1, len(data_access_graph.adj[node])) for node in
-                      data['nodes']]
-    data['weights'] = [max(1, sum(edge_dict['capacity'] for _, edge_dict in
-                                  data_access_graph.adj[node].items())) for node
-                       in
-                       data['nodes']]
-    data['all_nodes'] = range(data['num_nodes'])
-    bin_capacity = max(sum(data['weights']) / num_bins, max(data['weights']))
-
-    data['num_bins'] = num_bins
-    data['all_bins'] = range(data['num_bins'])
-    data['bin_capacities'] = [int(bin_capacity)] * data['num_bins']
-
-    mulknap_name = os.path.join(os.path.dirname(__file__), '..',
-                                'cmake-build-debug', 'mulknap', 'mulknap')
-    if not os.path.exists(mulknap_name):
-        raise FileNotFoundError(mulknap_name)
-    input_file = tempfile.NamedTemporaryFile()
-    # input_file = open("test.txt", 'w+b')
-    input_file.write(f"{data['num_nodes']} {data['num_bins']}\n".encode(
-        'utf-8'))
-    for b in data['all_bins']:
-        input_file.write(f"{data['bin_capacities'][b]}\n".encode('utf-8'))
-    for i in data['all_nodes']:
-        input_file.write(
-            f"{data['values'][i]} {data['weights'][i]}\n".encode('utf-8'))
-    input_file.flush()
-    print(f"Starting solver for {num_bins} bins from {input_file.name}...")
-    start = time.time()
-    result = subprocess.run([mulknap_name, input_file.name],
-                            capture_output=True)
-    print("Solver returned {} after {} seconds".format(result.returncode,
-                                                       time.time() - start))
-    input_file.close()
-    result_graph = None
-    if result.returncode == 0:
-        result_graph = nx.DiGraph()
-        bin_counts = dict()
-        node_locations = dict()
-        for line in result.stdout.split(b'\n'):
-            line = line.decode('utf-8')
-            match = re.match("(\d+) (\d+)$", line)
-            if match:
-                node_idx = int(match.group(1))
-                bin_idx = int(match.group(2))
-                node = data['nodes'][node_idx]
-                if node in node_locations:
-                    raise RuntimeError(f"Multiple bins for edge {node_idx}")
-                node_locations[node] = bin_idx
-                if bin_idx not in bin_counts:
-                    bin_counts[bin_idx] = 0
-                bin_counts[bin_idx] += 1
-
-        compartments = dict()
-        for dag_compartment, b in node_locations.items():
-            found_compartment = None
-
-            if b in compartments:
-                found_compartment = compartments[b]
-
-            if found_compartment is None:
-                found_compartment = HAKCCompartment()
-                found_compartment.set_compartment_id(b)
-                result_graph.add_node(found_compartment)
-                compartments[b] = found_compartment
-
-            for clique in dag_compartment.get_cliques().nodes:
-                clique_copy = HAKCClique()
-                clique_copy.set_color(clique.get_color())
-                for d in clique.get_data():
-                    clique_copy.add_data(d)
-                found_compartment.add_clique(clique_copy)
-                # print(f"Adding\n{clique}\nto Compartment "
-                #       f"{found_compartment.get_compartment_id()}")
-
-        for (u, v) in data_access_graph.edges:
-            u_bin = node_locations[u]
-            v_bin = node_locations[v]
-            if u_bin != v_bin:
-                u_compartment = compartments[u_bin]
-                v_compartment = compartments[u_bin]
-                result_graph.add_edge(u_compartment, v_compartment)
-
-    return result_graph
 
 
 # Taken from https://stackoverflow.com/a/70423579
@@ -1320,9 +1223,6 @@ def main():
                              'compartments')
     parser.add_argument('--use_dynamic', help='Use dynamic data',
                         action='store_true')
-    parser.add_argument('--construct_knapsack', nargs=1, type=float,
-                        help='Compute a partition using multiple knapsack '
-                             'solver')
     parser.add_argument('--test_graph', metavar='testgraph', nargs=1,
                         help='Graph to use instead of compartmentalization')
     parser.add_argument("--output_compart", nargs=1,
@@ -1395,23 +1295,6 @@ def main():
                           f'{edge_compute_type.name}{extension}'
         with open(final_file_name, 'wb') as f:
             pickle.dump(compartmentalization, f)
-
-    if args.construct_knapsack:
-        if compartmentalization:
-            graph_to_use = compartmentalization.compartment_topo
-        if test_graph:
-            graph_to_use = test_graph
-
-        n_bins = args.construct_knapsack[0] * graph_to_use.number_of_nodes()
-        knapsack_partition = knapsack_dag_partition(graph_to_use,
-                                                    math.ceil(n_bins))
-        adjusted_file_name, extension = os.path.splitext(args.compartment[0])
-        adjusted_file_name += "-knapsack" + extension
-        resultant_compartmentalization = HAKCCompartmentalization()
-        resultant_compartmentalization.set_compartmentalization(
-            knapsack_partition)
-        with open(adjusted_file_name, 'wb') as f:
-            pickle.dump(resultant_compartmentalization, f)
 
     if args.compartmentalize_modules:
         if compartmentalization is None:

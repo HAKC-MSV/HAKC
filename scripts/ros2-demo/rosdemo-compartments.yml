@@ -1,4 +1,5 @@
 kernel:
   - "_KERNEL_SOURCE_"
+  - "_KERNEL_BUILD_"
 compartmentalize:
   - "_KERNEL_SOURCE_/drivers/rosdemo"
