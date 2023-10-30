@@ -130,6 +130,10 @@ namespace hakc {
             if (U.getOperandNo() == AtomicCmpXchgInst::getPointerOperandIndex()) {
                 UseAuthenticatedPointer = true;
             }
+        } else if(isa<AtomicRMWInst>(UserP)) {
+            if(U.getOperandNo() == AtomicRMWInst::getPointerOperandIndex()) {
+                UseAuthenticatedPointer = true;
+            }
         }
         return UseAuthenticatedPointer;
     }
@@ -159,6 +163,10 @@ namespace hakc {
             } else if (Call->isInlineAsm()) {
                 UseSignedPointer = false;
             }
+        } else if(isa<AtomicRMWInst>(UserP)) {
+            if(U.getOperandNo() != AtomicRMWInst::getPointerOperandIndex()) {
+                UseSignedPointer = true;
+            }
         }
 
         return UseSignedPointer;
@@ -180,7 +188,6 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::ClassifyAllUsesOfBaseDefinition(Value *Def) {
-
         for (auto &U: Def->uses()) {
             auto *User = U.getUser();
             auto UPtr = std::make_shared<ManagedHAKCPointerUse>(User, U.getOperandNo());
