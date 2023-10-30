@@ -148,6 +148,7 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << "Could find find Compartment " << std::to_string(sym.compartment)
                                                     << " "
                                                     << getColorStringFromValue(ConstantInt::get(i32_type, sym.color))
+                                                    << " for Symbol " << sym.name
                                                     << "\n";
                     throw std::exception();
                 }

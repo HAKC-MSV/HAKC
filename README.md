@@ -37,7 +37,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    cmake -G Ninja \
    -DHAKC_LINUX_ARMV8=True \
    -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
-   -DCMAKE_BUILD_TYPE=Relase \
+   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
    -DCMAKE_C_COMPILER=$(realpath ..)/install/bin/clang \
    -DCMAKE_CXX_COMPILER=$(realpath ..)/install/bin/clang++ ..
    ```
