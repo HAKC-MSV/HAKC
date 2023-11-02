@@ -31,20 +31,22 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Build the HAKC compiler pass
 1. `cd $ROOT`
-2. `mkdir cmake-build-hakc-pass-linux-{armv8,armv9,x86}`
+2. `mkdir cmake-build-hakc-pass-{linux-{armv8,armv9,x86},cheribsd-morello}`
 3. `cd cmake-build-hakc-pass-linux-armv8`
 4. ```
    cmake -G Ninja \
-   -DHAKC_LINUX_ARMV8=True \
    -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
    -DCMAKE_C_COMPILER=$(realpath ..)/install/bin/clang \
-   -DCMAKE_CXX_COMPILER=$(realpath ..)/install/bin/clang++ ..
+   -DCMAKE_CXX_COMPILER=$(realpath ..)/install/bin/clang++ \
+   -DHAKC_LINUX_ARMV8=True \
+   ..
    ```
-5. `cmake --build . -j$(nproc)`
+5. `cmake --build . -j$(nproc) --target install`
 6. Repeat steps 3-5 for the other directories created in step 2, but replacing `-DHAKC_LINUX_ARMV8=True` with 
     * `-DHAKC_LINUX_ARMV9=True` for `armv9`
     * `-DHAKC_LINUX_X86=True` for `x86`
+    * `-DHAKC_CHERIBSD_MORELLO=True` for `Morello`
 
 ## Build the Kernel
 
@@ -69,7 +71,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
    -e CONFIG_HAKC \
    --set-str CONFIG_HAKC_PASS_PATH \
-   $(realpath ../cmake-build-hakc-pass-$BUILD_TYPE)/HAKC-pass/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so \
+   $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so \
    -e CONFIG_HAKC_ARM_V8 \
    -d CONFIG_HAKC_ALLOW_FAILED \
    -e CONFIG_HAKC_SIGN_PTR \

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.3)
-project(HAKC-Pass)
+project(HAKC-Pass VERSION 1.0.0)
 
 #===============================================================================
 # 1. VERIFY LLVM INSTALLATION DIR
@@ -82,8 +82,8 @@ endif ()
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
-if (HAKC_CHERIBSD)
-    add_compile_definitions(HAKC_CHERIBSD)
+if (HAKC_CHERIBSD_MORELLO)
+    add_compile_definitions(HAKC_CHERIBSD_MORELLO)
     set(HAKC_BUILD_TYPE cheribsd-morello)
 elseif (HAKC_LINUX_X86)
     add_compile_definitions(HAKC_LINUX_X86)
@@ -104,6 +104,10 @@ endif ()
 # Doing this at the end so that all definitions and link/include paths are
 # available for the sub-projects.
 #===============================================================================
-add_library(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} SHARED)
-target_include_directories(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE inc)
+set(HAKC_PASS_LIB "HAKC-Compartmentalizer-${HAKC_BUILD_TYPE}")
+add_library(${HAKC_PASS_LIB} SHARED)
+set_target_properties(${HAKC_PASS_LIB} PROPERTIES
+                                        SOVERSION ${PROJECT_VERSION_MAJOR})
+target_include_directories(${HAKC_PASS_LIB} PRIVATE inc)
+install(TARGETS ${HAKC_PASS_LIB} DESTINATION lib)
 add_subdirectory(src)
