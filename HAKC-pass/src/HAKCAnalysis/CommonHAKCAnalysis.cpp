@@ -450,7 +450,7 @@ namespace hakc {
     }
 
     unsigned CommonHAKCAnalysis::getCompartmentStorageSizeInBits() {
-#if defined(HAKC_CHERIBSD)
+#if defined(HAKC_CHERIBSD_MORELLO)
         return 128;
 #else
         return 64;

@@ -11,9 +11,7 @@
 #if defined(HAKC_CHERIBSD_MORELLO)
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 #elif defined(HAKC_LINUX_X86)
-
 #include "HAKCAnalysis/Linux/X86/HAKCModuleAnalysisLinuxX86.h"
-
 #elif defined(HAKC_LINUX_ARMV8)
 #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV8.h"
 #elif defined(HAKC_LINUX_ARMV9)
@@ -34,7 +32,7 @@ namespace hakc {
 
     HAKCModuleAnalysis *GetModuleAnalysis(Module &M) {
         HAKCModuleAnalysis *ModuleAnalysis;
-#if defined(HAKC_CHERIBSD)
+#if defined(HAKC_CHERIBSD_MORELLO)
         ModuleAnalysis = new HAKCModuleAnalysisCheriBSDCheri(M);
 #elif defined(HAKC_LINUX_X86)
         ModuleAnalysis = new HAKCModuleAnalysisLinuxX86(M);
@@ -42,6 +40,8 @@ namespace hakc {
         ModuleAnalysis = new HAKCModuleAnalysisLinuxArmV8(M);
 #elif defined(HAKC_LINUX_ARMV9)
         ModuleAnalysis = new HAKCModuleAnalysisLinuxArmV9(M);
+#else
+#error "HAKC Architecture Unspecified"
 #endif
         ModuleAnalysis->InitAnalysis();
         return ModuleAnalysis;
