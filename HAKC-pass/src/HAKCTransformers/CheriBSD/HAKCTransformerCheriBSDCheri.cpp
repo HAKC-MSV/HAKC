@@ -182,20 +182,22 @@ namespace hakc {
             return;
         }
 
-        CommonHAKCAnalysis::getWriter() << "Modifying Module Driver Cap for Compartment " << std::to_string
-        (CompartmentID) << "\n";
+        if(DebugIsActive()) {
+            CommonHAKCAnalysis::getWriter() << "Modifying Module Driver Cap for Compartment "
+            << std::to_string(CompartmentID) << "\n";
+        }
         StringRef TargetStructTyName = "struct.driver_module_data";
         StringRef DriverObjectTyName = "struct.kobj_class";
         auto *TargetStructTy = StructType::getTypeByName(getModule().getContext(), TargetStructTyName);
         if(!TargetStructTy) {
-            if(DebugIsActive() || true) {
+            if(DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Could not find " << TargetStructTyName << "\n";
             }
             return;
         }
         auto *DriverObjectTy = StructType::getTypeByName(getModule().getContext(), DriverObjectTyName);
         if(!DriverObjectTy) {
-            if(DebugIsActive() || true) {
+            if(DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Could not find " << DriverObjectTyName << "\n";
             }
             return;
@@ -207,20 +209,26 @@ namespace hakc {
         std::set<std::pair<User*, unsigned>> UsesToReplace;
         for(auto &KernelSealingCapUse : KernelSealingCap->uses()) {
             if(KernelSealingCapUse.getUser()->getType() == TargetStructTy) {
-                CommonHAKCAnalysis::getWriter() << "Found TargetStruct ";
-                KernelSealingCapUse.getUser()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+                if(DebugIsActive()) {
+                    CommonHAKCAnalysis::getWriter() << "Found TargetStruct ";
+                    KernelSealingCapUse.getUser()->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
                 if(auto *DriverModuleInitializer = dyn_cast<ConstantStruct>(KernelSealingCapUse.getUser())) {
-                    CommonHAKCAnalysis::getWriter() << "Searching operands...\n";
+                    if(DebugIsActive()) {
+                        CommonHAKCAnalysis::getWriter() << "Searching operands...\n";
+                    }
                     for(auto &Member : DriverModuleInitializer->operands()) {
                         if(isa<PointerType>(Member->getType()) && Member->getType()->getPointerElementType() == DriverObjectTy) {
-                            CommonHAKCAnalysis::getWriter() << "Found driver object at argument " << std::to_string
-                            (Member.getOperandNo()) << "\n";
+                            if(DebugIsActive()) {
+                                CommonHAKCAnalysis::getWriter() << "Found driver object at argument "
+                                << std::to_string(Member.getOperandNo()) << "\n";
+                            }
                             auto MemberCompartmentID = getGlobalCompartmentID(dyn_cast<GlobalVariable>(Member.get()));
                             if(MemberCompartmentID == CompartmentID) {
                                 UsesToReplace.insert(std::make_pair(KernelSealingCapUse.getUser(),
                                                                     KernelSealingCapUse.getOperandNo()));
-                            } else {
+                            } else if(DebugIsActive()) {
                                 CommonHAKCAnalysis::getWriter() << "Member Compartment ID " << std::to_string
                                 (MemberCompartmentID) << " does not match " << std::to_string(CompartmentID) << "\n";
                             }
@@ -230,7 +238,7 @@ namespace hakc {
             }
         }
         for(auto it : UsesToReplace) {
-            if(DebugIsActive() || true) {
+            if(DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Setting Argument " << std::to_string(it.second) << " of ";
                 it.first->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " to be ";
