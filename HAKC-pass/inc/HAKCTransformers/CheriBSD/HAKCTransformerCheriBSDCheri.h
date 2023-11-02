@@ -46,14 +46,6 @@ namespace hakc {
         /* Class Specific members */
         virtual std::string GetSealingCapabilityName(hakc_compartment_id_t CompartmentID);
 
-        virtual CallInst *SaveCompartment(Value *V);
-
-        virtual CallInst *RestoreCompartment(Value *V, Value *OriginalCompartment);
-
-        virtual const StringRef GetSaveCompartmentName();
-
-        virtual const StringRef GetRestoreCompartmentName();
-
         virtual const StringRef GetSafeCapabilityName();
 
         virtual const StringRef GetSafePointerName();
@@ -80,6 +72,12 @@ namespace hakc {
          * @param CompartmentID
          */
         void CreateCapabilityReassignment(hakc_compartment_id_t CompartmentID);
+
+        /**
+         * Changes the default signing cap for drivers (_hakc_compartment_0) with the correct signing cap
+         * @param CompartmentID
+         */
+        void ModifyModuleDriverCap(hakc_compartment_id_t CompartmentID);
     };
 
 } // hakc

@@ -310,7 +310,7 @@ namespace hakc {
 
         virtual std::vector<Value *> CreateForwardArgumentTransfers(Function *Target, Function *TransferFunction);
 
-        virtual void CreateBackwardArgumentTransfers(Function *F, Function *TransferFunction);
+        virtual void CreateBackwardArgumentTransfers(Function *Target, Function *TransferFunction);
 
         virtual bool TargetIsKernel(Function *Target);
 
@@ -321,6 +321,8 @@ namespace hakc {
         virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(Type *HAKCType);
 
         virtual Instruction *CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, Type *TypeToUse);
+
+        virtual bool NoKernelTransfers(Function *Target);
     };
 }
 

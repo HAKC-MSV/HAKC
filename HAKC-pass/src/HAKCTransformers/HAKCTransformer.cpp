@@ -714,13 +714,19 @@ Function *hakc::HAKCTransformer::GetTransferFunction(Function *F) {
     return TransferFunction;
 }
 
+bool hakc::HAKCTransformer::NoKernelTransfers(Function *Target) {
+    return HAKCAnalysis->IsKernelFunction(Target) &&
+           !CommonHAKCAnalysis::NoKernelTransferFunctionsSet();
+}
+
 std::vector<Value *>
 hakc::HAKCTransformer::CreateForwardArgumentTransfers(Function *Target, Function *TransferFunction) {
     std::vector<Value *> TransferredArguments;
 
+    bool NoKernelXfers = NoKernelTransfers(Target);
+
     for (auto Arg = TransferFunction->arg_begin(); Arg != TransferFunction->arg_end(); Arg++) {
-        if (!CommonHAKCAnalysis::argShouldTransfer(Arg) ||
-            Arg->hasAttribute(llvm::Attribute::ReadNone)) {
+        if (!CommonHAKCAnalysis::argShouldTransfer(Arg) || NoKernelXfers) {
             TransferredArguments.push_back(Arg);
             continue;
         }
@@ -733,13 +739,14 @@ hakc::HAKCTransformer::CreateForwardArgumentTransfers(Function *Target, Function
     return TransferredArguments;
 }
 
-void hakc::HAKCTransformer::CreateBackwardArgumentTransfers(Function *F, Function *TransferFunction) {
+void hakc::HAKCTransformer::CreateBackwardArgumentTransfers(Function *Target, Function *TransferFunction) {
+    bool NoKernelXfers = NoKernelTransfers(Target);
+
     for (auto Arg = TransferFunction->arg_begin(); Arg != TransferFunction->arg_end(); Arg++) {
-        if (!CommonHAKCAnalysis::argShouldTransfer(Arg) ||
-            Arg->hasAttribute(llvm::Attribute::ReadNone)) {
+        if (!CommonHAKCAnalysis::argShouldTransfer(Arg) || NoKernelXfers) {
             continue;
         }
-        CreateTransferFunctionArg_PostCall(F, TransferFunction, Arg);
+        CreateTransferFunctionArg_PostCall(Target, TransferFunction, Arg);
     }
 }
 
