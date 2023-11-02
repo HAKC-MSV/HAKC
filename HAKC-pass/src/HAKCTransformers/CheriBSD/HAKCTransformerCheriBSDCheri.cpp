@@ -33,10 +33,14 @@ namespace hakc {
     }
 
     Type *HAKCTransformerCheriBSDCheri::GetEntryTokenType(unsigned AddrSpace) {
-        return HAKCIRBuilder.getInt8PtrTy()->getPointerTo(CapabilityAddressSpace);
+        return GetCapabilityType();
     }
 
     Type *HAKCTransformerCheriBSDCheri::GetCapabilityType() {
+        auto *KernelSealingCap = getModule().getNamedGlobal(GetSealingCapabilityName(0));
+        if(KernelSealingCap) {
+            return KernelSealingCap->getType();
+        }
         return HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace);
     }
 
@@ -51,7 +55,7 @@ namespace hakc {
                                                                                GetCapabilityType()));
             if (CompartmentID > 0) {
                 AccessCap->setLinkage(GlobalValue::InternalLinkage);
-                AccessCap->setInitializer(ConstantPointerNull::get(HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace)));
+                AccessCap->setInitializer(ConstantPointerNull::get(dyn_cast<PointerType>(GetCapabilityType())));
             }
         }
         return AccessCap;
@@ -61,36 +65,6 @@ namespace hakc {
         std::string name = "_hakc_compartment_cap_";
         name += std::to_string(CompartmentID);
         return name;
-    }
-
-    CallInst *HAKCTransformerCheriBSDCheri::SaveCompartment(Value *V) {
-        if (!V->getType()->isPointerTy()) {
-            CommonHAKCAnalysis::getWriter() << "Invalid Type for saving compartment: ";
-            V->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            throw std::exception();
-        }
-        auto *BitCast = HAKCIRBuilder.CreateBitOrPointerCast(V, HAKCIRBuilder.getInt8PtrTy());
-        return CreateCall(GetSaveCompartmentName(), HAKCIRBuilder.getInt64Ty(), {BitCast});
-    }
-
-    const StringRef HAKCTransformerCheriBSDCheri::GetSaveCompartmentName() {
-        return "hakc_get_compartment";
-    }
-
-    CallInst *HAKCTransformerCheriBSDCheri::RestoreCompartment(Value *V, Value *OriginalCompartment) {
-        if (!V->getType()->isPointerTy()) {
-            CommonHAKCAnalysis::getWriter() << "Invalid Type for saving compartment: ";
-            V->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            throw std::exception();
-        }
-        auto *BitCast = HAKCIRBuilder.CreateBitOrPointerCast(V, HAKCIRBuilder.getInt8PtrTy());
-        return CreateCall(GetRestoreCompartmentName(), HAKCIRBuilder.getInt8PtrTy(), {BitCast, OriginalCompartment});
-    }
-
-    const StringRef HAKCTransformerCheriBSDCheri::GetRestoreCompartmentName() {
-        return "hakc_restore_compartment";
     }
 
     const StringRef HAKCTransformerCheriBSDCheri::GetSafeCapabilityName() {
@@ -198,8 +172,73 @@ namespace hakc {
             GlobalModMetadataEntry->setAlignment(CapabilityAlign);
 
             CreateCapabilityReassignment(CompartmentId);
+            ModifyModuleDriverCap(CompartmentId);
         }
         return CompartmentEntry;
+    }
+
+    void HAKCTransformerCheriBSDCheri::ModifyModuleDriverCap(hakc_compartment_id_t CompartmentID) {
+        if(CompartmentID == KERNEL_COMPARTMENT) {
+            return;
+        }
+
+        CommonHAKCAnalysis::getWriter() << "Modifying Module Driver Cap for Compartment " << std::to_string
+        (CompartmentID) << "\n";
+        StringRef TargetStructTyName = "struct.driver_module_data";
+        StringRef DriverObjectTyName = "struct.kobj_class";
+        auto *TargetStructTy = StructType::getTypeByName(getModule().getContext(), TargetStructTyName);
+        if(!TargetStructTy) {
+            if(DebugIsActive() || true) {
+                CommonHAKCAnalysis::getWriter() << "Could not find " << TargetStructTyName << "\n";
+            }
+            return;
+        }
+        auto *DriverObjectTy = StructType::getTypeByName(getModule().getContext(), DriverObjectTyName);
+        if(!DriverObjectTy) {
+            if(DebugIsActive() || true) {
+                CommonHAKCAnalysis::getWriter() << "Could not find " << DriverObjectTyName << "\n";
+            }
+            return;
+        }
+
+        auto *KernelSealingCap = GetAccessCapability(0);
+        auto *CompartmentSealingCap = GetAccessCapability(CompartmentID);
+
+        std::set<std::pair<User*, unsigned>> UsesToReplace;
+        for(auto &KernelSealingCapUse : KernelSealingCap->uses()) {
+            if(KernelSealingCapUse.getUser()->getType() == TargetStructTy) {
+                CommonHAKCAnalysis::getWriter() << "Found TargetStruct ";
+                KernelSealingCapUse.getUser()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+                if(auto *DriverModuleInitializer = dyn_cast<ConstantStruct>(KernelSealingCapUse.getUser())) {
+                    CommonHAKCAnalysis::getWriter() << "Searching operands...\n";
+                    for(auto &Member : DriverModuleInitializer->operands()) {
+                        if(isa<PointerType>(Member->getType()) && Member->getType()->getPointerElementType() == DriverObjectTy) {
+                            CommonHAKCAnalysis::getWriter() << "Found driver object at argument " << std::to_string
+                            (Member.getOperandNo()) << "\n";
+                            auto MemberCompartmentID = getGlobalCompartmentID(dyn_cast<GlobalVariable>(Member.get()));
+                            if(MemberCompartmentID == CompartmentID) {
+                                UsesToReplace.insert(std::make_pair(KernelSealingCapUse.getUser(),
+                                                                    KernelSealingCapUse.getOperandNo()));
+                            } else {
+                                CommonHAKCAnalysis::getWriter() << "Member Compartment ID " << std::to_string
+                                (MemberCompartmentID) << " does not match " << std::to_string(CompartmentID) << "\n";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for(auto it : UsesToReplace) {
+            if(DebugIsActive() || true) {
+                CommonHAKCAnalysis::getWriter() << "Setting Argument " << std::to_string(it.second) << " of ";
+                it.first->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " to be ";
+                CompartmentSealingCap->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            it.first->setOperand(it.second, CompartmentSealingCap);
+        }
     }
 
     void HAKCTransformerCheriBSDCheri::CreateCapabilityReassignment(hakc_compartment_id_t CompartmentID) {
@@ -228,7 +267,7 @@ namespace hakc {
 
         Value *CapabilityPointer;
         if (CompilingPureCapKernel()) {
-            auto *CapCast = HAKCIRBuilder.CreateBitCast(SealingCap, GetCapabilityType());
+            auto *CapCast = HAKCIRBuilder.CreateBitCast(SealingCap, HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace));
             Value *BoundsSetArgs[] = {CapCast,
                                       HAKCIRBuilder.getInt64(CommonHAKCAnalysis::getCompartmentStorageSizeInBits() /
                                                              8)};

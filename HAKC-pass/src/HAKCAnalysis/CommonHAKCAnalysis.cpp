@@ -381,6 +381,12 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::argShouldTransfer(Value *V) {
+        if(auto *Arg = dyn_cast<Argument>(V)) {
+            if(Arg->hasAttribute(llvm::Attribute::ReadNone)) {
+                return false;
+            }
+        }
+
         return V->getType()->isPointerTy() && !isa<FunctionType>(V->getType()->getPointerElementType()) &&
                !isa<ConstantPointerNull>(V) && !isKernelUserPointer(V);
     }

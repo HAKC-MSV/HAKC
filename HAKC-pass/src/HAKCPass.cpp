@@ -8,7 +8,7 @@
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 
-#if defined(HAKC_CHERIBSD)
+#if defined(HAKC_CHERIBSD_MORELLO)
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 #elif defined(HAKC_LINUX_X86)
 
