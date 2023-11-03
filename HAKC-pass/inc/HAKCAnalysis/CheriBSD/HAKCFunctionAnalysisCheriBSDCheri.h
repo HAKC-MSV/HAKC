@@ -23,6 +23,8 @@ namespace hakc {
 
         std::set<Intrinsic::ID> GetInstrinsicsToSkip() override;
 
+        std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs() override;
+
         void handleComparison(CmpInst *compare) override;
 
         bool pointerShouldBeChecked(Value *ptr) override;

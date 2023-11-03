@@ -43,6 +43,24 @@ namespace hakc {
         return HAKCFunctionAnalysis::GetFinalAllocaDef(Alloca);
     }
 
+    std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsNeedingAuthenticatedArgs() {
+        auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs();
+
+        Intrinsic::ID AdditionalIDs[] = {
+                Intrinsic::cheri_cap_bounds_set,
+                Intrinsic::cheri_cap_bounds_set_exact,
+                Intrinsic::cheri_cap_address_get,
+                Intrinsic::cheri_cap_address_set,
+                Intrinsic::cheri_cap_sealed_get,
+        };
+
+        for (auto ID: AdditionalIDs) {
+            Intrinsics.insert(ID);
+        }
+
+        return Intrinsics;
+    }
+
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetInstrinsicsToSkip() {
         auto Intrinsics = HAKCFunctionAnalysis::GetInstrinsicsToSkip();
 
