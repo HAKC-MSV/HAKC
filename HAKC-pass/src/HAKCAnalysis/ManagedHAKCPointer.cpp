@@ -254,7 +254,7 @@ namespace hakc {
 
     bool ManagedHAKCPointer::BaseIsAuthenticatedPointer() {
         // Pointers from the kernel are trusted, and stack pointers are the "authenticated" pointer
-        bool BaseIsAuthenticated = BaseDefinitionIsFromKernel() || isa<AllocaInst>(BaseDefinition) ||
+        bool BaseIsAuthenticated = /*BaseDefinitionIsFromKernel() ||*/ isa<AllocaInst>(BaseDefinition) ||
                                    isa<GlobalVariable>(BaseDefinition);
         if(auto *Call = dyn_cast<CallInst>(BaseDefinition)) {
             if(Call->getCalledFunction()) {
@@ -267,7 +267,7 @@ namespace hakc {
                     }
                     CommonHAKCAnalysis::getWriter() << "a HAKC Transferred function\n";
                 }
-                BaseIsAuthenticated = !PointerIsTransferred;
+                BaseIsAuthenticated = PointerIsTransferred;
             }
         }
 
@@ -403,7 +403,7 @@ namespace hakc {
         }
 
         if (DebugActive) {
-            CommonHAKCAnalysis::getWriter() << "Creating " << CopyType << " Copies of uses of ";
+            CommonHAKCAnalysis::getWriter() << "\n\nCreating " << CopyType << " Copies of uses of ";
             BaseDefinition->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << ":\n";
             for (auto &U: ReplacementUses) {
@@ -793,6 +793,13 @@ namespace hakc {
 
     Value *HAKCPointerManager::CreateAuthenticatedInstruction(Value *Pointer, bool debug) {
         if (ValueIsAuthenticatedCopy(Pointer) || ValueIsAuthenticatedPointer(Pointer)) {
+            if(debug) {
+                if(ValueIsAuthenticatedCopy(Pointer)) {
+                    CommonHAKCAnalysis::getWriter() << "Pointer is Authenticated Copy\n";
+                } else if(ValueIsAuthenticatedPointer(Pointer)) {
+                    CommonHAKCAnalysis::getWriter() << "Pointer is AuthenticatedPointer\n";
+                }
+            }
             return Pointer;
         }
 
