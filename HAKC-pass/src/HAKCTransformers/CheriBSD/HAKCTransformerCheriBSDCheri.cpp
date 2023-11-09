@@ -33,7 +33,7 @@ namespace hakc {
     }
 
     Type *HAKCTransformerCheriBSDCheri::GetEntryTokenType(unsigned AddrSpace) {
-        return GetCapabilityType();
+        return HAKCIRBuilder.getInt32Ty();
     }
 
     Type *HAKCTransformerCheriBSDCheri::GetCapabilityType() {
@@ -45,7 +45,7 @@ namespace hakc {
     }
 
     Constant *HAKCTransformerCheriBSDCheri::GetEntryToken(hakc_compartment_id_t CompartmentID) {
-        return GetAccessCapability(CompartmentID);
+        return ConstantInt::get(GetEntryTokenType(CapabilityAddressSpace), CompartmentID);
     }
 
     GlobalValue *HAKCTransformerCheriBSDCheri::GetAccessCapability(hakc_compartment_id_t CompartmentID) {
