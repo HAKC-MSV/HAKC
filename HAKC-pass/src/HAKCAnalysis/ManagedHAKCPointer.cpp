@@ -253,8 +253,8 @@ namespace hakc {
     }
 
     bool ManagedHAKCPointer::BaseIsAuthenticatedPointer() {
-        // Pointers from the kernel are trusted, and stack pointers are the "authenticated" pointer
-        bool BaseIsAuthenticated = /*BaseDefinitionIsFromKernel() ||*/ isa<AllocaInst>(BaseDefinition) ||
+        // stack pointers are the "authenticated" pointer
+        bool BaseIsAuthenticated = isa<AllocaInst>(BaseDefinition) ||
                                    isa<GlobalVariable>(BaseDefinition);
         if(auto *Call = dyn_cast<CallInst>(BaseDefinition)) {
             if(Call->getCalledFunction()) {
@@ -467,15 +467,6 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
         }
-    }
-
-    bool ManagedHAKCPointer::BaseDefinitionIsFromKernel() {
-        if (auto *Call = dyn_cast<CallInst>(BaseDefinition)) {
-            if (Call->getCalledFunction()) {
-                return Manager->GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction());
-            }
-        }
-        return false;
     }
 
     bool ManagedHAKCPointer::BaseDefinitionShouldBeTransferred() {

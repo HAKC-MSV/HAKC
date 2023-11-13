@@ -275,8 +275,6 @@ namespace hakc {
 
         void CreatePointerUseClones();
 
-        bool BaseDefinitionIsFromKernel();
-
         bool BaseDefinitionShouldBeTransferred();
 
         void TransformUses();
