@@ -1386,4 +1386,11 @@ namespace hakc {
         return PointerManager.GetCodeAuthenticationsAdded();
     }
 
+    bool HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Value *Pointer) {
+        if(Pointer->getType()->isPointerTy()) {
+            return Pointer->getType()->getPointerElementType()->isFunctionTy();
+        }
+        return false;
+    }
+
 }// namespace hakc

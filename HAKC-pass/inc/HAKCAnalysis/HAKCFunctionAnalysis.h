@@ -261,6 +261,8 @@ namespace hakc {
 
         unsigned GetCodeAuthenticationCount();
 
+        virtual bool PointerShouldBeConsideredCode(Value *Pointer);
+
     };
 
 } // hakc

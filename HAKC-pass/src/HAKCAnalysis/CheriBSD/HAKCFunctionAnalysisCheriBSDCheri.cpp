@@ -204,28 +204,46 @@ namespace hakc {
         return false;
     }
 
-    bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
-        auto *PointerDef = getModuleAnalysis().getDef(Pointer, false, debug_output);
-        if(auto *Load = dyn_cast<LoadInst>(PointerDef)) {
-            auto *LoadDef = getModuleAnalysis().getDef(Load->getPointerOperand(), false, debug_output);
-            if(auto *StructTy = dyn_cast<StructType>(LoadDef->getType()->getPointerElementType())) {
-                if(StructTy->getName().contains("struct.kobj_method")) {
-                    /* FreeBSD wraps functions in a const struct, which means any write to it (including sealing) is
-                     * undefined behavior. Therefore, we are checking the pointer to the wrapping struct to ensure
-                     * that *it* is validated.
-                     */
-                    return true;
-                }
-            } else if(debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Load Pointer Def of ";
-                Pointer->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is not a StructType pointer: ";
-                LoadDef->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+    bool HAKCFunctionAnalysisCheriBSDCheri::IsFunctionPointerStruct(Value *Pointer) {
+        auto *Def = getModuleAnalysis().getDef(Pointer, false, debug_output);
+        if (!Def->getType()->isPointerTy()) {
+            return false;
+        }
+        if (auto *StructTy = dyn_cast<StructType>(Def->getType()->getPointerElementType())) {
+            if (StructTy->hasName() && StructTy->getName().contains("struct.kobj_method")) {
+                /* FreeBSD wraps functions in a const struct, which means any write to it (including sealing) is
+                 * undefined behavior. Therefore, we are checking the pointer to the wrapping struct to ensure
+                 * that *it* is validated.
+                 */
+                return true;
             }
         }
 
-        return HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Pointer);
+        return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::IsFunctionPointerWrapper(Value *Pointer) {
+        auto *PointerDef = getModuleAnalysis().getDef(Pointer, false, debug_output);
+        if (auto *Load = dyn_cast<LoadInst>(PointerDef)) {
+            if (IsFunctionPointerStruct(Load->getPointerOperand())) {
+                return true;
+            } else if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Load Pointer Def of ";
+                Pointer->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is not a StructType pointer: ";
+                Load->getPointerOperand()->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+        }
+        return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
+        return IsFunctionPointerWrapper(Pointer);
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeConsideredCode(Value *Pointer) {
+        return IsFunctionPointerStruct(Pointer) || HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Pointer);
     }
 
 } // hakc

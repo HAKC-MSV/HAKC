@@ -16,6 +16,10 @@ namespace hakc {
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca) override;
 
+        bool PointerIsAuthenticated_Arch(Value *Pointer) override;
+
+        bool PointerShouldBeConsideredCode(Value *Pointer) override;
+
     protected:
         HAKCModuleAnalysisCheriBSDCheri *ModAnalysis;
 
@@ -31,7 +35,9 @@ namespace hakc {
 
         static bool TypeMatchesIgnoredTypes(Type *Ty);
 
-        bool PointerIsAuthenticated_Arch(Value *Pointer) override;
+        bool IsFunctionPointerWrapper(Value *Pointer);
+
+        bool IsFunctionPointerStruct(Value *Pointer);
     };
 
 } // hakc

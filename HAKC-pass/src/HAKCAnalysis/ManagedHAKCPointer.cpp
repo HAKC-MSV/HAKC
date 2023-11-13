@@ -983,7 +983,7 @@ namespace hakc {
     }
 
     Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
-        if(Pointer->getType()->getPointerElementType()->isFunctionTy()) {
+        if(HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
         } else {
