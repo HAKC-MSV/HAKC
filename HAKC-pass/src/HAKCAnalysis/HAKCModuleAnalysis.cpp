@@ -516,9 +516,9 @@ namespace hakc {
         functionAnalysis->InstrumentCompartmentalizedCode();
         moduleModified |= functionAnalysis->modifiedFunction();
 
-        totalCodeChecks += functionAnalysis->CodeAccessCheckCount;
-        totalDataChecks += functionAnalysis->DataAccessCheckCount;
-        totalTransfers += functionAnalysis->CompartmentTransferCount;
+        totalCodeChecks += functionAnalysis->GetCodeAuthenticationCount();
+        totalDataChecks += functionAnalysis->GetDataAuthenticationCount();
+        totalTransfers += functionAnalysis->GetCompartmentTransferCount();
 
         delete functionAnalysis;
     }

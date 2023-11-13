@@ -270,6 +270,9 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsHAKCFunction(Function *F) {
+        if(F == nullptr) {
+            return false;
+        }
         auto HAKCFuncDef = getHAKCFunction(F->getName());
         return HAKCFuncDef != nullptr;
     }

@@ -92,6 +92,7 @@ namespace hakc {
      * clones, so exactly one is ever created.
      */
     class HAKCPointerManager {
+        friend class ManagedHAKCPointer;
     public:
         explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis);
 
@@ -169,11 +170,15 @@ namespace hakc {
          */
         void CreateAuthenticatedPointers(bool debug);
 
-        void RegisterInstructionAsAuthenticatedCopy(Instruction *I);
-
         void RegisterInstructionAsProtectedCopy(Instruction *I);
 
         void TransformPointers(bool Debug);
+
+        unsigned GetDataAuthenticationsAdded();
+        unsigned GetCodeAuthenticationsAdded();
+        unsigned GetSafePointersAdded();
+        unsigned GetClonesAdded();
+        unsigned GetTotalAdditions();
 
     protected:
         /**
@@ -188,6 +193,11 @@ namespace hakc {
 
         HAKCFunctionAnalysis *HAKCAnalysis;
 
+        unsigned DataAuthenticationsAdded;
+        unsigned CodeAuthenticationsAdded;
+        unsigned SafePointersAdded;
+        unsigned ClonesAdded;
+
         Instruction *CloneInstruction(Instruction *I, std::map<Instruction *, Instruction *> &CopyStorage);
 
         Instruction *FindCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage);
@@ -197,6 +207,10 @@ namespace hakc {
         void RegisterInstructionAsCopy(Instruction *I, std::map<Instruction *, Instruction *> &CopyStorage);
 
         void TransformClones(std::map<Instruction *, Instruction *> &CloneStorage, bool Debug);
+
+        Value* CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
+
+        Value* CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
     };
 
     /**

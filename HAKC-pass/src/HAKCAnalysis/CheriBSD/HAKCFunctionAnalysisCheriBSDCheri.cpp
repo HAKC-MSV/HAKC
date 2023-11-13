@@ -204,4 +204,28 @@ namespace hakc {
         return false;
     }
 
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
+        auto *PointerDef = getModuleAnalysis().getDef(Pointer, false, debug_output);
+        if(auto *Load = dyn_cast<LoadInst>(PointerDef)) {
+            auto *LoadDef = getModuleAnalysis().getDef(Load->getPointerOperand(), false, debug_output);
+            if(auto *StructTy = dyn_cast<StructType>(LoadDef->getType()->getPointerElementType())) {
+                if(StructTy->getName().contains("struct.kobj_method")) {
+                    /* FreeBSD wraps functions in a const struct, which means any write to it (including sealing) is
+                     * undefined behavior. Therefore, we are checking the pointer to the wrapping struct to ensure
+                     * that *it* is validated.
+                     */
+                    return true;
+                }
+            } else if(debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Load Pointer Def of ";
+                Pointer->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is not a StructType pointer: ";
+                LoadDef->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+        }
+
+        return HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Pointer);
+    }
+
 } // hakc

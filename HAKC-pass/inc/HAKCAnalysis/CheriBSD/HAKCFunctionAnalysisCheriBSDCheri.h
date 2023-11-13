@@ -30,6 +30,8 @@ namespace hakc {
         bool pointerShouldBeChecked(Value *ptr) override;
 
         static bool TypeMatchesIgnoredTypes(Type *Ty);
+
+        bool PointerIsAuthenticated_Arch(Value *Pointer) override;
     };
 
 } // hakc

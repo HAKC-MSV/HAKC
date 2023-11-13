@@ -33,11 +33,11 @@ namespace hakc {
         }
 
         bool isData = !valueIsReadonlyPtr(getDef(operand, false, debug_output));
-        if(debug_output) {
+        if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "isData: " << std::to_string(isData) << " for ";
             operand->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
-            operand->getType()->print( CommonHAKCAnalysis::getWriter());
+            operand->getType()->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
@@ -173,51 +173,45 @@ namespace hakc {
         return DominatorBlock->getTerminator();
     }
 
-    void HAKCFunctionAnalysis::addGetSafeCodePtr(Value *indirectCallTarget) {
-        Instruction *insertionPoint = FindUseInsertionPoint(
-                indirectCallTarget, IndirectCalls[indirectCallTarget]);
-        Value *safeCodePtr = getTransformer().CreateSafePointer(indirectCallTarget,
-                                                                insertionPoint);
-        for (auto *I: IndirectCalls[indirectCallTarget]) {
-            auto call = dyn_cast<CallInst>(I);
-            call->setCalledOperand(safeCodePtr);
-        }
-    }
 
-    /**
-         * @brief Adds a validity check for an indirect call
-         * @param indirectCall The indirect call to check
-         */
-    void HAKCFunctionAnalysis::addCodeAuthCheck(Value *indirectCallTarget) {
-        Instruction *insertionPoint = FindUseInsertionPoint(
-                indirectCallTarget, IndirectCalls[indirectCallTarget]);
-        if (!insertionPoint) {
-            CommonHAKCAnalysis::getWriter() << "Could not find insertion point\n";
-            throw std::exception();
-        }
-
-        if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Adding Code Auth check for ";
-            indirectCallTarget->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " at ";
-            insertionPoint->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-        }
-
-        auto *TargetAddress = getTransformer().CreateCodeAuthentication(indirectCallTarget, insertionPoint);
-        CodeAccessCheckCount++;
-
-        for (auto *I: IndirectCalls[indirectCallTarget]) {
-            if (auto call = dyn_cast<CallInst>(I)) {
-                call->setCalledOperand(TargetAddress);
-            } else {
-                CommonHAKCAnalysis::getWriter() << "Expected CallInst but got ";
-                I->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
-                throw std::exception();
-            }
-        }
-    }
+//    /**
+//         * @brief Adds a validity check for an indirect call
+//         * @param indirectCall The indirect call to check
+//         */
+//    void HAKCFunctionAnalysis::addCodeAuthCheck(Value *indirectCallTarget) {
+//        if (CodePointerValidated(indirectCallTarget)) {
+//            return;
+//        }
+//
+//        Instruction *insertionPoint = FindUseInsertionPoint(
+//                indirectCallTarget, IndirectCalls[indirectCallTarget]);
+//        if (!insertionPoint) {
+//            CommonHAKCAnalysis::getWriter() << "Could not find insertion point\n";
+//            throw std::exception();
+//        }
+//
+//        if (debug_output) {
+//            CommonHAKCAnalysis::getWriter() << "Adding Code Auth check for ";
+//            indirectCallTarget->print(CommonHAKCAnalysis::getWriter());
+//            CommonHAKCAnalysis::getWriter() << " at ";
+//            insertionPoint->print(CommonHAKCAnalysis::getWriter());
+//            CommonHAKCAnalysis::getWriter() << "\n";
+//        }
+//
+//        auto *TargetAddress = getTransformer().CreateCodeAuthentication(indirectCallTarget, insertionPoint);
+//        CodeAccessCheckCount++;
+//
+//        for (auto *I: IndirectCalls[indirectCallTarget]) {
+//            if (auto call = dyn_cast<CallInst>(I)) {
+//                call->setCalledOperand(TargetAddress);
+//            } else {
+//                CommonHAKCAnalysis::getWriter() << "Expected CallInst but got ";
+//                I->print(CommonHAKCAnalysis::getWriter());
+//                CommonHAKCAnalysis::getWriter() << "\n";
+//                throw std::exception();
+//            }
+//        }
+//    }
 
     /**
          * @brief Returns the current Function
@@ -234,11 +228,15 @@ namespace hakc {
          * @return The result of the transfer
          */
     Value *
-    HAKCFunctionAnalysis::addDataAuthCheckAtLocation(Value *signed_ptr,
+    HAKCFunctionAnalysis::AddDataAuthCheckAtLocation(Value *signed_ptr,
                                                      Instruction *location) {
         auto *bitcast = getTransformer().CreateDataAuthentication(signed_ptr, location);
-        DataAccessCheckCount++;
         return bitcast;
+    }
+
+    Value *HAKCFunctionAnalysis::AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location) {
+        auto *SafePointer = getTransformer().CreateCodeAuthentication(SignedPtr, Location);
+        return SafePointer;
     }
 
     void HAKCFunctionAnalysis::AddManagedPointer(Value *HAKCPointer) {
@@ -342,18 +340,18 @@ namespace hakc {
                !isa<Function>(arg) && pointerShouldBeChecked(arg);
     }
 
-    /**
-         * @brief Adds transfers of all indirect function arguments
-         */
-    void HAKCFunctionAnalysis::addAllIndirectTransfers() {
-        for (auto &it: IndirectCalls) {
-            if (isCompartmentalizedFunction()) {
-                addCodeAuthCheck(it.first);
-            } else {
-                addGetSafeCodePtr(it.first);
-            }
-        }
-    }
+//    /**
+//         * @brief Adds transfers of all indirect function arguments
+//         */
+//    void HAKCFunctionAnalysis::addAllIndirectTransfers() {
+//        for (auto &it: IndirectCalls) {
+//            if (isCompartmentalizedFunction()) {
+//                addCodeAuthCheck(it.first);
+//            } else {
+//                addGetSafeCodePtr(it.first);
+//            }
+//        }
+//    }
 
     bool HAKCFunctionAnalysis::isIntrinsicNeedingAuthentication(CallInst *call) {
         bool result = false;
@@ -955,7 +953,7 @@ namespace hakc {
                 call->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
-            IndirectCalls[call->getCalledOperand()].insert(call);
+            PointerManager.ManagePointer(call->getCalledOperand(), debug_output);
         } else if (needsAuthenticatedArgs) {
             for (auto &arg: call->args()) {
                 if (argNeedsAuthentication(arg)) {
@@ -1060,8 +1058,6 @@ namespace hakc {
               DTree(*F),
               CurrentFunction(F),
               SetupHasRun(false),
-              DataAccessCheckCount(0),
-              CodeAccessCheckCount(0),
               CompartmentTransferCount(0) {
     }
 
@@ -1091,11 +1087,9 @@ namespace hakc {
 
     bool HAKCFunctionAnalysis::modifiedFunction() {
         return !(PointerManager.empty() &&
-                 IndirectCalls.empty() &&
                  GlobalArgumentUses.empty() &&
                  NonKernelDirectFunctionCallSet.empty() &&
-                 DataAccessCheckCount == 0 &&
-                 CodeAccessCheckCount == 0 &&
+                 PointerManager.GetTotalAdditions() == 0 &&
                  CompartmentTransferCount == 0);
     }
 
@@ -1191,11 +1185,8 @@ namespace hakc {
             ReplaceDirectFunctionUsesWithTransfers();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "-------- addAllIndirectTransfers --------\n";
             }
-            addAllIndirectTransfers();
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter()
                         << "------ CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls -----\n";
             }
@@ -1356,9 +1347,7 @@ namespace hakc {
             ReplaceDirectFunctionUsesWithTransfers();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "-------- addAllIndirectTransfers --------\n";
             }
-            addAllIndirectTransfers();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter()
@@ -1379,6 +1368,22 @@ namespace hakc {
                 throw std::exception();
             }
         }
+    }
+
+    bool HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Value *Pointer) {
+        return false;
+    }
+
+    unsigned HAKCFunctionAnalysis::GetCompartmentTransferCount() {
+        return CompartmentTransferCount;
+    }
+
+    unsigned HAKCFunctionAnalysis::GetDataAuthenticationCount() {
+        return PointerManager.GetDataAuthenticationsAdded();
+    }
+
+    unsigned HAKCFunctionAnalysis::GetCodeAuthenticationCount() {
+        return PointerManager.GetCodeAuthenticationsAdded();
     }
 
 }// namespace hakc

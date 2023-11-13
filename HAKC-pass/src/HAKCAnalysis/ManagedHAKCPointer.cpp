@@ -121,6 +121,8 @@ namespace hakc {
                 UseAuthenticatedPointer = true;
             } else if (Manager->GetFunctionAnalysis()->isIntrinsicNeedingAuthentication(Call)) {
                 UseAuthenticatedPointer = true;
+            } else if(Call->getCalledOperandUse().getOperandNo() == U.getOperandNo()) {
+                UseAuthenticatedPointer = true;
             }
         } else if (isa<StoreInst>(UserP)) {
             if (U.getOperandNo() == StoreInst::getPointerOperandIndex()) {
@@ -312,6 +314,10 @@ namespace hakc {
             }
         }
 
+        if(!BaseIsAuthenticated) {
+            BaseIsAuthenticated = Manager->GetFunctionAnalysis()->PointerIsAuthenticated_Arch(BaseDefinition);
+        }
+
         return BaseIsAuthenticated;
     }
 
@@ -362,23 +368,22 @@ namespace hakc {
         if (Manager->GetFunctionAnalysis()->isCompartmentalizedFunction()) {
             if (Manager->GetFunctionAnalysis()->isIgnoredType(BaseDefinition->getType())) {
                 AuthenticatedPointer = dyn_cast<Instruction>(
-                        Manager->GetFunctionAnalysis()->AddSafePointerCreationAtLocation
-                                (BaseDefinition, AuthenticationInsertPoint));
+                        Manager->CreateSafePointerAtLocation(BaseDefinition, AuthenticationInsertPoint));
             } else if (auto *PHI = dyn_cast<PHINode>(BaseDefinition)) {
                 AuthenticatedPointer = Manager->CreateAuthenticatedInstruction(PHI, DebugActive);
             } else if (isa<CallInst>(BaseDefinition)) {
                 /* Pointers from the kernel are handled in BaseIsAuthenticatedPointer above */
                 AuthenticatedPointer = dyn_cast<Instruction>(
-                        Manager->GetFunctionAnalysis()->AddSafePointerCreationAtLocation
+                        Manager->CreateSafePointerAtLocation
                                 (BaseDefinition, AuthenticationInsertPoint));
             } else {
                 AuthenticatedPointer = dyn_cast<Instruction>(
-                        Manager->GetFunctionAnalysis()->addDataAuthCheckAtLocation(BaseDefinition,
+                        Manager->CreateAuthenticationAtLocation(BaseDefinition,
                                                                                    AuthenticationInsertPoint));
             }
         } else {
             AuthenticatedPointer = dyn_cast<Instruction>(
-                    Manager->GetFunctionAnalysis()->AddSafePointerCreationAtLocation
+                    Manager->CreateSafePointerAtLocation
                             (BaseDefinition, AuthenticationInsertPoint));
         }
 
@@ -670,7 +675,11 @@ namespace hakc {
             ManagedPointers(),
             AuthenticatedCopies(),
             ProtectedCopies(),
-            HAKCAnalysis(Analysis) {
+            HAKCAnalysis(Analysis),
+            DataAuthenticationsAdded(0),
+            CodeAuthenticationsAdded(0),
+            SafePointersAdded(0),
+            ClonesAdded(0) {
 
     }
 
@@ -746,6 +755,7 @@ namespace hakc {
         auto *Clone = I->clone();
         Clone->insertBefore(I);
         CopyStorage[I] = Clone;
+        ClonesAdded++;
         return Clone;
     }
 
@@ -896,8 +906,25 @@ namespace hakc {
         CopyStorage[I] = I;
     }
 
-    void HAKCPointerManager::RegisterInstructionAsAuthenticatedCopy(Instruction *I) {
-        RegisterInstructionAsCopy(I, AuthenticatedCopies);
+    unsigned HAKCPointerManager::GetDataAuthenticationsAdded() {
+        return DataAuthenticationsAdded;
+    }
+
+    unsigned HAKCPointerManager::GetCodeAuthenticationsAdded() {
+        return CodeAuthenticationsAdded;
+    }
+
+    unsigned HAKCPointerManager::GetSafePointersAdded() {
+        return SafePointersAdded;
+    }
+
+    unsigned HAKCPointerManager::GetClonesAdded() {
+        return ClonesAdded;
+    }
+
+    unsigned HAKCPointerManager::GetTotalAdditions() {
+        return GetClonesAdded() + GetSafePointersAdded() + GetCodeAuthenticationsAdded() +
+        GetDataAuthenticationsAdded();
     }
 
     void HAKCPointerManager::RegisterInstructionAsProtectedCopy(Instruction *I) {
@@ -947,6 +974,21 @@ namespace hakc {
 
         for (auto &ManagedPointer: ManagedPointers) {
             ManagedPointer->TransformUses();
+        }
+    }
+
+    Value *HAKCPointerManager::CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation) {
+        SafePointersAdded++;
+        return GetFunctionAnalysis()->AddSafePointerCreationAtLocation(Pointer, InsertLocation);
+    }
+
+    Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
+        if(Pointer->getType()->getPointerElementType()->isFunctionTy()) {
+            CodeAuthenticationsAdded++;
+            return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
+        } else {
+            DataAuthenticationsAdded++;
+            return GetFunctionAnalysis()->AddDataAuthCheckAtLocation(Pointer, InsertLocation);
         }
     }
 } // hakc
