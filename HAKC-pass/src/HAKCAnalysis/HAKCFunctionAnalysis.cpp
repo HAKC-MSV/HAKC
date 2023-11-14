@@ -259,7 +259,7 @@ namespace hakc {
             getFunction().print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
-        PointerManager.CreateAuthenticatedPointers(debug_output);
+        PointerManager.CreateAuthenticatedPointersAndAllClones(debug_output);
     }
 
     /**

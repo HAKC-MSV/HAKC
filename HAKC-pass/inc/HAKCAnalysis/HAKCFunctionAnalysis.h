@@ -9,7 +9,7 @@
 
 #include "HAKCModuleAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
-#include "ManagedHAKCPointer.h"
+#include "HAKCPointerManager.h"
 
 namespace hakc {
 
@@ -17,7 +17,9 @@ namespace hakc {
 
     class CommonHAKCAnalysis;
 
-    class ManagedHAKCPointer;
+//    class ManagedHAKCPointer;
+
+    class HAKCPointerManager;
 
     template<unsigned argNo>
     llvm::Value *simpleArgumentSize(llvm::Value *allocation) {

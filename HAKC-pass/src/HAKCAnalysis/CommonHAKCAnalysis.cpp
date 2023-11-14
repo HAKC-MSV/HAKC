@@ -124,7 +124,12 @@ namespace hakc {
      */
     Value *CommonHAKCAnalysis::getDef(Value *V, bool followLoad, bool debug) {
         std::vector<Value *> def_chain = findDefChain(V, followLoad, debug);
-        assert(!def_chain.empty());
+        if(def_chain.empty()) {
+            CommonHAKCAnalysis::getWriter() << "Def Chain for ";
+            V->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " is empty!\n";
+            throw std::exception();
+        }
         return def_chain.back();
     }
 
