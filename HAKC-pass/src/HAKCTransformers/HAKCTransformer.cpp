@@ -143,9 +143,10 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
     auto Compartment = SystemInformation.findSymbol(F)->getCompartment();
 
     if (Compartment) {
+        GlobalVariable *EntryTokenArray;
         auto CompartmentID = Compartment->getID();
         std::string name = "entry_tokens_" + std::to_string(CompartmentID);
-        GlobalVariable *EntryTokenArray = getModule().getNamedGlobal(name);
+        EntryTokenArray = getModule().getNamedGlobal(name);
         if (EntryTokenArray) {
             if (!EntryTokenArray->getValueType()->isArrayTy()) {
                 CommonHAKCAnalysis::getWriter() << "Invalid type for ";
@@ -156,18 +157,20 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
             return EntryTokenArray;
         }
 
-        std::vector<Constant *> EntryTokenValues;
+        std::set<Constant *> EntryTokenValues;
 
         for (auto &t: Compartment->getTargets()) {
             Constant *EntryToken = GetEntryToken(t->getID());
-            EntryTokenValues.push_back(EntryToken);
+            EntryTokenValues.insert(EntryToken);
         }
         if (EntryTokenValues.empty()) {
             CommonHAKCAnalysis::getWriter() << "No valid transitions exist for " << F->getName() << " in Compartment "
                                             << std::to_string(CompartmentID) << "\n";
             throw std::exception();
         }
-        Type *EntryTokenTy = GetEntryTokenType(GetPointerAddrSpace(EntryTokenValues[0]));
+        EntryTokenValues.insert(GetEntryToken(CompartmentID));
+
+        Type *EntryTokenTy = GetEntryTokenType(GetPointerAddrSpace(*EntryTokenValues.begin()));
 
         for (auto *Token: EntryTokenValues) {
             if (Token->getType() != EntryTokenTy) {
@@ -182,14 +185,24 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
                 throw std::exception();
             }
         }
+        std::vector<Constant*> TokenArray(EntryTokenValues.begin(), EntryTokenValues.end());
 
         auto *Initializer = ConstantArray::get(ArrayType::get(EntryTokenTy,
-                                                              Compartment->getTargets().size()), EntryTokenValues);
+                                                              Compartment->getTargets().size()), TokenArray);
 
-        getModule().getOrInsertGlobal(name, Initializer->getType());
-        EntryTokenArray = getModule().getNamedGlobal(name);
+        EntryTokenArray = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(name, Initializer->getType()));
         EntryTokenArray->setConstant(true);
         EntryTokenArray->setLinkage(GlobalValue::InternalLinkage);
+        if(DebugIsActive()) {
+            CommonHAKCAnalysis::getWriter() << "Setting initializer for " << EntryTokenArray->getName() << " to be ";
+            Initializer->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " from token values ";
+            for(auto *TokenValue : EntryTokenValues) {
+                CommonHAKCAnalysis::getWriter() << "\n\t";
+                TokenValue->print(CommonHAKCAnalysis::getWriter());
+            }
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
         EntryTokenArray->setInitializer(Initializer);
 
         return EntryTokenArray;

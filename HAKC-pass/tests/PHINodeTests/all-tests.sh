@@ -16,7 +16,7 @@ for d in */; do
     printf '\tBuild: %s\n' "$FAIL"
     continue
   fi
-  diff build/phi.bc expected.bc
+  diff build/test.bc expected.bc
   error=$?
   if [ $error -eq 0 ]
   then

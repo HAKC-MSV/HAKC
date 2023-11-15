@@ -9,7 +9,7 @@
 
 #include "HAKCModuleAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
-#include "ManagedHAKCPointer.h"
+#include "HAKCPointerManager.h"
 
 namespace hakc {
 
@@ -17,7 +17,7 @@ namespace hakc {
 
     class CommonHAKCAnalysis;
 
-    class ManagedHAKCPointer;
+    class HAKCPointerManager;
 
     template<unsigned argNo>
     llvm::Value *simpleArgumentSize(llvm::Value *allocation) {
@@ -111,13 +111,6 @@ namespace hakc {
  */
     class HAKCFunctionAnalysis : public CommonHAKCAnalysis {
     protected:
-        /**
-        * @brief Indirect function calls which are tested for validity and pointer arguments
-        * are then recolored and resigned before invocation. Those arguments are then
-        * colored their original color and signed with the current niche id.
-        */
-        std::map<Value *, std::set<Instruction *>> IndirectCalls;
-
         HAKCPointerManager PointerManager;
 
         /**
@@ -140,10 +133,7 @@ namespace hakc {
          * functions, so replace direct uses with transfer functions */
         std::set<Instruction *> directFunctionUsers;
 
-    public:
-        unsigned DataAccessCheckCount, CodeAccessCheckCount, CompartmentTransferCount;
-
-    protected:
+        unsigned CompartmentTransferCount;
 
         Instruction *
         addCompartmentTransferCall(Value *operand,
@@ -156,10 +146,6 @@ namespace hakc {
         BasicBlock *
         findDominatorUseBlock(Value *ptr, std::set<Instruction *> &users);
 
-        void addCodeAuthCheck(Value *indirectCallTarget);
-
-        void addGetSafeCodePtr(Value *indirectCallTarget);
-
         void createAllAuthenticatedPointers();
 
         void createMissingTransfers();
@@ -167,8 +153,6 @@ namespace hakc {
         void transformPointerDereferences();
 
         bool argNeedsAuthentication(Use &arg);
-
-        void addAllIndirectTransfers();
 
         bool phiNodeUsesValue(PHINode *phiNode, Value *target, std::set<PHINode *> &visited);
 
@@ -251,11 +235,13 @@ namespace hakc {
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
 
         Value *
-        addDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
+        AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
 
-        bool isCompartmentalizedFunction();
+        Value* AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
 
         Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location);
+
+        bool isCompartmentalizedFunction();
 
         Function &getFunction();
 
@@ -264,6 +250,17 @@ namespace hakc {
         virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
         virtual bool isIntrinsicNeedingAuthentication(CallInst *);
+
+        virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
+
+        unsigned GetCompartmentTransferCount();
+
+        unsigned GetDataAuthenticationCount();
+
+        unsigned GetCodeAuthenticationCount();
+
+        virtual bool PointerShouldBeConsideredCode(Value *Pointer);
+
     };
 
 } // hakc

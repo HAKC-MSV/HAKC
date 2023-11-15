@@ -16,6 +16,10 @@ namespace hakc {
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca) override;
 
+        bool PointerIsAuthenticated_Arch(Value *Pointer) override;
+
+        bool PointerShouldBeConsideredCode(Value *Pointer) override;
+
     protected:
         HAKCModuleAnalysisCheriBSDCheri *ModAnalysis;
 
@@ -23,11 +27,17 @@ namespace hakc {
 
         std::set<Intrinsic::ID> GetInstrinsicsToSkip() override;
 
+        std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs() override;
+
         void handleComparison(CmpInst *compare) override;
 
         bool pointerShouldBeChecked(Value *ptr) override;
 
         static bool TypeMatchesIgnoredTypes(Type *Ty);
+
+        bool IsFunctionPointerWrapper(Value *Pointer);
+
+        bool IsFunctionPointerStruct(Value *Pointer);
     };
 
 } // hakc

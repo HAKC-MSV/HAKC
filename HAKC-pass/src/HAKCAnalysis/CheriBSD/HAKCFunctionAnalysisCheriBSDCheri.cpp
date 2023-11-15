@@ -43,6 +43,24 @@ namespace hakc {
         return HAKCFunctionAnalysis::GetFinalAllocaDef(Alloca);
     }
 
+    std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsNeedingAuthenticatedArgs() {
+        auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs();
+
+        Intrinsic::ID AdditionalIDs[] = {
+                Intrinsic::cheri_cap_bounds_set,
+                Intrinsic::cheri_cap_bounds_set_exact,
+                Intrinsic::cheri_cap_address_get,
+                Intrinsic::cheri_cap_address_set,
+                Intrinsic::cheri_cap_sealed_get,
+        };
+
+        for (auto ID: AdditionalIDs) {
+            Intrinsics.insert(ID);
+        }
+
+        return Intrinsics;
+    }
+
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetInstrinsicsToSkip() {
         auto Intrinsics = HAKCFunctionAnalysis::GetInstrinsicsToSkip();
 
@@ -184,6 +202,48 @@ namespace hakc {
             }
         }
         return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::IsFunctionPointerStruct(Value *Pointer) {
+        auto *Def = getModuleAnalysis().getDef(Pointer, false, debug_output);
+        if (!Def->getType()->isPointerTy()) {
+            return false;
+        }
+        if (auto *StructTy = dyn_cast<StructType>(Def->getType()->getPointerElementType())) {
+            if (StructTy->hasName() && StructTy->getName().contains("struct.kobj_method")) {
+                /* FreeBSD wraps functions in a const struct, which means any write to it (including sealing) is
+                 * undefined behavior. Therefore, we are checking the pointer to the wrapping struct to ensure
+                 * that *it* is validated.
+                 */
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::IsFunctionPointerWrapper(Value *Pointer) {
+        auto *PointerDef = getModuleAnalysis().getDef(Pointer, false, debug_output);
+        if (auto *Load = dyn_cast<LoadInst>(PointerDef)) {
+            if (IsFunctionPointerStruct(Load->getPointerOperand())) {
+                return true;
+            } else if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Load Pointer Def of ";
+                Pointer->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is not a StructType pointer: ";
+                Load->getPointerOperand()->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+        }
+        return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
+        return IsFunctionPointerWrapper(Pointer);
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeConsideredCode(Value *Pointer) {
+        return IsFunctionPointerStruct(Pointer) || HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Pointer);
     }
 
 } // hakc
