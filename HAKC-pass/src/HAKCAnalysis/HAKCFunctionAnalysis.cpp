@@ -173,46 +173,6 @@ namespace hakc {
         return DominatorBlock->getTerminator();
     }
 
-
-//    /**
-//         * @brief Adds a validity check for an indirect call
-//         * @param indirectCall The indirect call to check
-//         */
-//    void HAKCFunctionAnalysis::addCodeAuthCheck(Value *indirectCallTarget) {
-//        if (CodePointerValidated(indirectCallTarget)) {
-//            return;
-//        }
-//
-//        Instruction *insertionPoint = FindUseInsertionPoint(
-//                indirectCallTarget, IndirectCalls[indirectCallTarget]);
-//        if (!insertionPoint) {
-//            CommonHAKCAnalysis::getWriter() << "Could not find insertion point\n";
-//            throw std::exception();
-//        }
-//
-//        if (debug_output) {
-//            CommonHAKCAnalysis::getWriter() << "Adding Code Auth check for ";
-//            indirectCallTarget->print(CommonHAKCAnalysis::getWriter());
-//            CommonHAKCAnalysis::getWriter() << " at ";
-//            insertionPoint->print(CommonHAKCAnalysis::getWriter());
-//            CommonHAKCAnalysis::getWriter() << "\n";
-//        }
-//
-//        auto *TargetAddress = getTransformer().CreateCodeAuthentication(indirectCallTarget, insertionPoint);
-//        CodeAccessCheckCount++;
-//
-//        for (auto *I: IndirectCalls[indirectCallTarget]) {
-//            if (auto call = dyn_cast<CallInst>(I)) {
-//                call->setCalledOperand(TargetAddress);
-//            } else {
-//                CommonHAKCAnalysis::getWriter() << "Expected CallInst but got ";
-//                I->print(CommonHAKCAnalysis::getWriter());
-//                CommonHAKCAnalysis::getWriter() << "\n";
-//                throw std::exception();
-//            }
-//        }
-//    }
-
     /**
          * @brief Returns the current Function
          * @return

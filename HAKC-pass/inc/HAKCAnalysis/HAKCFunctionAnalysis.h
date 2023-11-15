@@ -17,8 +17,6 @@ namespace hakc {
 
     class CommonHAKCAnalysis;
 
-//    class ManagedHAKCPointer;
-
     class HAKCPointerManager;
 
     template<unsigned argNo>
@@ -155,8 +153,6 @@ namespace hakc {
         void transformPointerDereferences();
 
         bool argNeedsAuthentication(Use &arg);
-
-//        void addAllIndirectTransfers();
 
         bool phiNodeUsesValue(PHINode *phiNode, Value *target, std::set<PHINode *> &visited);
 
