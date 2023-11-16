@@ -1,6 +1,4 @@
 import bisect
-
-import hakc.HAKCCompartment
 import networkx as nx
 
 

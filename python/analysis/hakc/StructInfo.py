@@ -1,6 +1,3 @@
-import os
-
-
 class StructInfo:
     def __init__(self):
         self.name = None

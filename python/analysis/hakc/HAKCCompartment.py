@@ -1,8 +1,8 @@
 import os
 from enum import Enum
 
-from hakc.StructInfo import StructInfo
-from hakc.SymbolInfo import SymbolInfo
+from .StructInfo import StructInfo
+from .SymbolInfo import SymbolInfo
 
 
 class CliqueColors(Enum):
