@@ -62,6 +62,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 5. ```
    env HAKC_ANALYSIS=dag \
    HAKC_DAG_ANALYSIS_ROOT=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
@@ -94,6 +96,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 7. ```
    env HAKC_ANALYSIS=dag \
    HAKC_DAG_ANALYSIS_ROOT=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
@@ -108,7 +112,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## DAG Analysis
 
 1. `cd $ROOT`
-2. `python3 scripts/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin -r
+2. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin -r
    build-$BUILD_TYPE/hakc-dag-analysis --dag --filter_types --filter_mod_files`
 
 ## Create and apply compartmentalization modifications
@@ -133,6 +137,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 2. ```
    env HAKC_ANALYSIS=compartmentalize \
    HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
@@ -146,6 +152,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 3. ```
    env HAKC_ANALYSIS=compartmentalize \
    HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
    make \
    ARCH=arm64 \
    CROSS_COMPILE=aarch64-linux-gnu- \
