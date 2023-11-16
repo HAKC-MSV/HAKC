@@ -1,5 +1,5 @@
 kernel:
-  - "_KERNEL_SOURCE_"
-  - "_KERNEL_BUILD_"
+  - "$HAKC_SOURCE_PATH$"
+  - "$HAKC_BUILD_PATH$"
 compartmentalize:
-  - "_KERNEL_SOURCE_/drivers/rosdemo"
+  - "$HAKC_SOURCE_PATH$/drivers/rosdemo"

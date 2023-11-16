@@ -118,12 +118,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## Create and apply compartmentalization modifications
 
 1. `cd $ROOT`
-2. ```
-   sed "s+_KERNEL_SOURCE_+$(realpath linux)+g" scripts/ros2-demo/rosdemo-compartments.yml | \
-   sed "s+_KERNEL_BUILD_+$(realpath build-$BUILD_TYPE)+g" > build-$BUILD_TYPE/hakc-dag-analysis/hakc-ros2-adjustments.yml
-   ```
-3. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
-   --adjust build-$BUILD_TYPE/hakc-dag-analysis/hakc-ros2-adjustments.yml`
+2. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
+   --adjust scripts/ros2-demo/rosdemo-compartments.yml`
    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin`
 
 ## Output compartmentalization policy

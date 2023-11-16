@@ -18,10 +18,8 @@ class StructInfo:
         new_type.set_name(yaml_def['name'])
         new_type.set_type_hash(yaml_def['type'])
         new_type.add_compilation_unit(compilation_unit)
-        if yaml_def['directory']:
-            new_type.set_path(
-                os.path.abspath(os.path.join(yaml_def['directory'],
-                                             yaml_def['file'])))
+        if yaml_def['file']:
+            new_type.set_path(yaml_def['file'])
             new_type.set_line(int(yaml_def['line']))
         if yaml_def['Users']:
             for user in yaml_def['Users']:
