@@ -200,28 +200,28 @@ namespace hakc {
     void HAKCSystemInformation::DetectCompartmentalization() {
         std::vector<GlobalValue *> ModuleSymbols;
 
+#define COMPARTMENT_CHECK(ModuleSymbol)                                                                 \
+        do {                                                                                            \
+            auto Symbol = findSymbol(ModuleSymbol);                                                     \
+            if(Symbol) {                                                                                \
+                if (!CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {             \
+                    ModuleContainsCompartmentalizedSymbols = true;                                      \
+                    return;                                                                             \
+                }                                                                                       \
+            }                                                                                           \
+        } while(0)
+
         for (auto &GV: M.globals()) {
             if (GV.isDeclaration()) {
                 continue;
             }
-            ModuleSymbols.push_back(&GV);
+            COMPARTMENT_CHECK(&GV);
         }
         for (auto &F: M.functions()) {
             if (F.isIntrinsic() || F.isDeclaration()) {
                 continue;
             }
-            ModuleSymbols.push_back(&F);
-        }
-        for (auto *GV: ModuleSymbols) {
-            auto Symbol = findSymbol(GV);
-            if (Symbol) {
-                if (!CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {
-                    CommonHAKCAnalysis::getWriter() << "Symbol " << Symbol->getName() << " is in compartment " <<
-                                                    std::to_string(Symbol->getCompartmentID()) << "\n";
-                    ModuleContainsCompartmentalizedSymbols = true;
-                    return;
-                }
-            }
+            COMPARTMENT_CHECK(&F);
         }
     }
 
@@ -230,9 +230,16 @@ namespace hakc {
     }
 
     bool HAKCSystemInformation::SymbolIsInScope(std::shared_ptr<HAKCSymbol> Symbol, const DIScope *Scope) {
-        std::string ScopeFile = Scope->getDirectory().str();
-        ScopeFile += llvm::sys::path::get_separator();
-        ScopeFile += Scope->getFilename();
+        std::string ScopeFile;
+        if(sys::path::is_relative(Scope->getFilename())) {
+            ScopeFile = Scope->getDirectory().str();
+            if(!Scope->getDirectory().endswith(llvm::sys::path::get_separator())) {
+                ScopeFile += llvm::sys::path::get_separator();
+            }
+            ScopeFile += Scope->getFilename();
+        } else {
+            ScopeFile = Scope->getFilename().str();
+        }
 
         std::error_code err;
         SmallVector<char> ScopePath;
