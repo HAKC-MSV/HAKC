@@ -429,6 +429,13 @@ namespace hakc {
             } else {
                 ReplacementCopy = CreateProtectedValue(U->get());
             }
+            if(!ReplacementCopy) {
+                CommonHAKCAnalysis::getWriter() << CopyType << " Replacement of " << U << " is null!\n";
+                Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+                throw std::exception();
+            }
+
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << CopyType << " Replacement of " << U << ": ";
                 ReplacementCopy->print(CommonHAKCAnalysis::getWriter());

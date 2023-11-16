@@ -3,7 +3,7 @@
 //
 
 #include "HAKCTypeIdentifier/HAKCFunctionInfo.h"
-#include "HAKCTypeIdentifier/HAKCHash.h"
+#include "HAKCTypeIdentifier/HAKCTypeInfo.h"
 #include "llvm/IR/InstIterator.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "llvm/IR/DebugInfoMetadata.h"

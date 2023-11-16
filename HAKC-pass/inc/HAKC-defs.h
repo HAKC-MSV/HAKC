@@ -50,6 +50,11 @@ namespace hakc {
     const StringRef HAKC_ENV_VAR = "HAKC_ANALYSIS";
     const StringRef HAKC_NO_KERNEL_TRANSFERS = "HAKC_NO_KERNEL_TRANSFERS";
     const StringRef HAKC_MORELLO_HYBRID_ENV_VAR = "HAKC_MORELLO_HYBRID";
+    const StringRef HAKC_SOURCE_PATH = "HAKC_SOURCE_PATH";
+    const StringRef HAKC_BUILD_PATH = "HAKC_BUILD_PATH";
+
+    const StringRef HAKC_SOURCE_PATH_REPLACEMENT = "$HAKC_SOURCE_PATH$";
+    const StringRef HAKC_BUILD_PATH_REPLACEMENT = "$HAKC_BUILD_PATH$";
 
     typedef enum {
         SILVER_CLIQUE = 0xF0,

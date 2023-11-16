@@ -21,7 +21,7 @@ hakc::HAKCTransformer::HAKCTransformer(Module &Module, HAKCModuleAnalysis *HAKCA
 }
 
 Module &hakc::HAKCTransformer::getModule() {
-    return SystemInformation.getModule();
+    return HAKCAnalysis->GetModule();
 }
 
 hakc::HAKCSystemInformation &hakc::HAKCTransformer::getSystemInformation() {

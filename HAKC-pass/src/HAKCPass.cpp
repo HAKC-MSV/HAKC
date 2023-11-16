@@ -48,33 +48,36 @@ namespace hakc {
     }
 
     bool runDataAccessGraphAnalysis(Module &M) {
-        StringRef P = M.getSourceFileName();
-        bool end;
-        do {
-            end = P.consume_front("../");
-        } while (end);
+        std::string BasePath;
+        if(llvm::sys::path::is_relative(M.getSourceFileName())) {
+            BasePath = std::getenv("PWD");
+        }
+        BasePath += M.getSourceFileName();
+        auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
+        StringRef PRef(P);
 
-        SmallString<512> Path = P;
-        auto *Transformation = GetModuleAnalysis(M);
-        HAKCTypeIdentifier typeIdentifier(M, Transformation);
+        if(PRef.contains(HAKC_SOURCE_PATH_REPLACEMENT)) {
+            P.replace(0, HAKC_SOURCE_PATH_REPLACEMENT.size() + 1, "");
+        } else if(PRef.contains(HAKC_BUILD_PATH_REPLACEMENT)) {
+            P.replace(0, HAKC_BUILD_PATH_REPLACEMENT.size() + 1, "");
+        }
+
         const char *root = std::getenv(DAG_ANALYSIS_ROOT_ENV_VAR.str().c_str());
         if (!root || std::strlen(root) == 0) {
             CommonHAKCAnalysis::getWriter() << DAG_ANALYSIS_ROOT_ENV_VAR << " is not set!\n";
             throw std::exception();
         }
 
+        auto *Transformation = GetModuleAnalysis(M);
+        HAKCTypeIdentifier typeIdentifier(M, Transformation);
+
         std::string Prefix = root;
         if (Prefix.back() != llvm::sys::path::get_separator().back()) {
             Prefix += llvm::sys::path::get_separator();
         }
-        llvm::sys::path::replace_path_prefix(Path, "", Prefix);
-        llvm::sys::path::remove_dots(Path, true);
-        llvm::sys::path::replace_extension(Path, ".dag.yml");
-
-        if (!Path.endswith(".dag.yml")) {
-            CommonHAKCAnalysis::getWriter() << "Invalid file name: " << Path << "\n";
-            throw std::exception();
-        }
+        std::string Path = Prefix;
+        Path += P;
+        Path += ".dag.yml";
 
         std::error_code err;
         err = sys::fs::create_directories(sys::path::parent_path(Path));

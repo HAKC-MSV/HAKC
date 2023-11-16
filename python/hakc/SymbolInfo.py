@@ -13,7 +13,6 @@ class SymbolInfo:
         self.direct_calls = set()
         self.indirect_calls = dict()
         self.escape_to_symbols = set()
-        self.definition_directory = None
         self.definition_file = None
         self.definition_line = None
         self.is_global = False
@@ -31,23 +30,20 @@ class SymbolInfo:
         new_symbol.set_is_global('is-global' in yaml_def and yaml_def['is-global'] == 'y')
 
         declaration_site = None
-        if 'directory' in yaml_def and \
-                'file' in yaml_def and \
+        if 'file' in yaml_def and \
                 'line' in yaml_def:
-            new_symbol.definition_directory = yaml_def['directory']
             new_symbol.definition_file = yaml_def['file']
             new_symbol.definition_line = int(yaml_def['line'])
             declaration_site = new_symbol.get_definition_site()
             new_symbol.add_declaration_site(declaration_site)
             if yaml_def['is-defined'] == 'n':
-                new_symbol.definition_directory = None
                 new_symbol.definition_file = None
                 new_symbol.definition_line = None
 
         if yaml_def['is-defined'] == 'y':
             if declaration_site is None:
                 raise RuntimeError(f'Symbol {new_symbol.name} from {compilation_unit} is defined but has no '
-                                   f'definition site. {new_symbol.definition_directory} '
+                                   f'definition site.'
                                    f'{new_symbol.definition_file} {new_symbol.definition_line}')
             if new_symbol.name in _redefinable_symbol_names:
                 new_symbol.set_name(
@@ -116,23 +112,13 @@ class SymbolInfo:
         return self.indirect_calls
 
     def get_full_definition_file(self):
-        definition_file = None
-        if self.definition_file and self.definition_directory:
-            definition_file = os.path.realpath(os.path.join(self.definition_directory, self.definition_file))
-        return definition_file
+        return self.definition_file
 
     def get_definition_site(self):
         declaration_site = None
-        if self.definition_directory and \
-                self.definition_file:
+        if self.definition_file:
             declaration_site = self.get_full_definition_file() + ":" + str(self.definition_line)
         return declaration_site
-
-    def get_definition_directory(self):
-        return self.definition_directory
-
-    def set_definition_directory(self, definition_directory):
-        self.definition_directory = definition_directory
 
     def get_definition_file(self):
         return self.definition_file
@@ -186,8 +172,6 @@ class SymbolInfo:
             self.add_escaping_symbol(escape)
         for cu in symbol_info.get_user_compilation_units():
             self.add_user_compilation_unit(cu)
-        if symbol_info.get_definition_directory() and self.definition_directory is None:
-            self.set_definition_directory(symbol_info.get_definition_directory())
         if symbol_info.get_definition_file() and self.definition_file is None:
             self.set_definition_file(symbol_info.get_definition_file())
         if symbol_info.get_definition_line() and self.definition_line is None:

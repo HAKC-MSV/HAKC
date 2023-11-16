@@ -7,6 +7,7 @@
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
 #include <memory>
 
@@ -89,9 +90,6 @@ struct yaml::MappingTraits<hakc::YamlInformation> {
 };
 
 namespace hakc {
-    Module &HAKCSystemInformation::getModule() {
-        return M;
-    }
 
     std::string HAKCSystemInformation::getCompartmentYamlPath() {
         const char *path_env_var = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
@@ -102,7 +100,11 @@ namespace hakc {
         return path_env_var;
     }
 
-    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
+    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M),
+                                                              compartments(),
+                                                              symbols(),
+                                                              ModuleContainsCompartmentalizedSymbols(false),
+                                                              DebugInfo() {
         YamlInformation yi;
 
         auto yaml_file = getCompartmentYamlPath();
@@ -116,7 +118,10 @@ namespace hakc {
         ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
         yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
 
-        assert(!yin.error() && "Error parsing yaml file");
+        if (yin.error()) {
+            CommonHAKCAnalysis::getWriter() << "Error parsing YAML file " << yaml_file << "\n";
+            throw std::exception();
+        }
         yin >> yi;
 
         IntegerType *i32_type = IntegerType::getInt32Ty(M.getContext());
@@ -157,19 +162,9 @@ namespace hakc {
                 symbols.insert(symbol);
             }
         }
-    }
 
-    StringRef GetModifiedName(StringRef Path) {
-        StringRef ModifiedFileName = Path.drop_while([](char c) {
-            return c == '.' || llvm::sys::path::is_separator(c);
-        });
-        return ModifiedFileName;
-    }
-
-    bool HAKCSystemInformation::PathContainsPath(StringRef Path1, StringRef Path2) {
-        auto ModifiedFileName = GetModifiedName(Path2);
-
-        return Path1.contains(ModifiedFileName);
+        DebugInfo.processModule(M);
+        DetectCompartmentalization();
     }
 
     std::set<std::shared_ptr<HAKCCompartment>> HAKCSystemInformation::getCompartments(hakc_compartment_id_t ID) {
@@ -202,83 +197,82 @@ namespace hakc {
         return (*Compartments.begin())->getEntryToken();
     }
 
-    bool HAKCSystemInformation::ContainsCompartmentalizedSymbols(Module &M) {
-        for (auto Symbol: symbols) {
-            if (CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {
+    void HAKCSystemInformation::DetectCompartmentalization() {
+        std::vector<GlobalValue *> ModuleSymbols;
+
+        for (auto &GV: M.globals()) {
+            if (GV.isDeclaration()) {
                 continue;
             }
-            if (PathContainsPath(Symbol->getFile()->GetPath(), M.getName())) {
-                return true;
+            ModuleSymbols.push_back(&GV);
+        }
+        for (auto &F: M.functions()) {
+            if (F.isIntrinsic() || F.isDeclaration()) {
+                continue;
+            }
+            ModuleSymbols.push_back(&F);
+        }
+        for (auto *GV: ModuleSymbols) {
+            auto Symbol = findSymbol(GV);
+            if (Symbol) {
+                if (!CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {
+                    CommonHAKCAnalysis::getWriter() << "Symbol " << Symbol->getName() << " is in compartment " <<
+                                                    std::to_string(Symbol->getCompartmentID()) << "\n";
+                    ModuleContainsCompartmentalizedSymbols = true;
+                    return;
+                }
             }
         }
-        return false;
+    }
+
+    bool HAKCSystemInformation::ContainsCompartmentalizedSymbols() {
+        return ModuleContainsCompartmentalizedSymbols;
+    }
+
+    bool HAKCSystemInformation::SymbolIsInScope(std::shared_ptr<HAKCSymbol> Symbol, const DIScope *Scope) {
+        std::string ScopeFile = Scope->getDirectory().str();
+        ScopeFile += llvm::sys::path::get_separator();
+        ScopeFile += Scope->getFilename();
+
+        std::error_code err;
+        SmallVector<char> ScopePath;
+        err = sys::fs::real_path(ScopeFile, ScopePath, true);
+        if (err) {
+            CommonHAKCAnalysis::getWriter() << "Could not get real path to " << ScopeFile << "\n";
+            throw std::exception();
+        }
+
+        auto TransformedScopePath = HAKCTypeIdentifier::GetTransformedPath(ScopePath);
+        return TransformedScopePath == Symbol->getFile()->GetPath();
     }
 
     std::shared_ptr<HAKCSymbol> HAKCSystemInformation::findSymbol(GlobalValue *GV) {
-        bool IsGlobal = GV->hasExternalLinkage();
         StringRef Name = GV->getName();
         if (auto *Func = dyn_cast<Function>(GV)) {
             Name = CommonHAKCAnalysis::GetFunctionName(Func);
         }
-
-        auto AllSymbols = getSymbols(Name);
-        std::vector<std::shared_ptr<HAKCSymbol>> FoundSymbols;
-
-        for (auto &symbol: AllSymbols) {
-            if (IsGlobal && symbol->isGlobal()) {
-                FoundSymbols.push_back(symbol);
-            } else if (!IsGlobal && !symbol->isGlobal()) {
-                if (PathContainsPath(symbol->getFile()->GetPath(), GV->getParent()->getName())) {
-                    FoundSymbols.push_back(symbol);
-                }
-            }
-        }
-
-        if (FoundSymbols.empty()) {
+        auto Symbols = getSymbols(Name);
+        if(Symbols.empty()) {
             return nullptr;
-        } else if (FoundSymbols.size() > 1) {
-            /* FreeBSD allows for a symbol to be defined multiple places (see fse_compress.c in contrib/{zstd,
-             * subrepo-openzfs}), so find the symbol with the smallest edit distance file location
-             */
-            std::vector<std::shared_ptr<HAKCSymbol>> ClosestMatches;
-            unsigned ClosestEditDistance = UINT32_MAX;
-            for (auto &symbol: FoundSymbols) {
-                auto EditDistance = symbol->getFile()->GetPath().edit_distance(GV->getParent()->getName());
-                if (EditDistance < ClosestEditDistance) {
-                    ClosestMatches.clear();
-                    ClosestMatches.push_back(symbol);
-                    ClosestEditDistance = EditDistance;
-                } else if (EditDistance == ClosestEditDistance) {
-                    ClosestMatches.push_back(symbol);
-                }
-            }
-
-            if (ClosestMatches.size() > 1) {
-                CommonHAKCAnalysis::getWriter() << "Found multiple global definitions for " << Name
-                                                << " in " << GV->getParent()->getName()
-                                                << " are in Compartments:\n";
-                unsigned ShortestPath = UINT32_MAX;
-                std::shared_ptr<HAKCSymbol> ShortestPathSymbol;
-                for (auto &symbol: FoundSymbols) {
-                    CommonHAKCAnalysis::getWriter() << symbol->getFile()->GetPath() << ": "
-                                                    << std::to_string(symbol->getCompartmentID())
-                                                    << " (" << std::to_string(
-                            symbol->getFile()->GetPath().edit_distance(GV->getParent()->getName())) << ")"
-                                                    << "\n";
-                    auto Path = symbol->getFile()->GetPath();
-                    if (Path.size() < ShortestPath) {
-                        ShortestPath = Path.size();
-                        ShortestPathSymbol = symbol;
+        } else if(Symbols.size() == 1) {
+            return *Symbols.begin();
+        }
+        for(auto Symbol : Symbols) {
+            if (isa<Function>(GV)) {
+                for (auto *DIF: DebugInfo.subprograms()) {
+                    if(SymbolIsInScope(Symbol, DIF->getScope())) {
+                        return Symbol;
                     }
                 }
-                CommonHAKCAnalysis::getWriter() << "Choosing " << ShortestPathSymbol->getName() << "\n";
-                return ShortestPathSymbol;
             } else {
-                return ClosestMatches[0];
+                for (auto *DIGV: DebugInfo.global_variables()) {
+                    if(SymbolIsInScope(Symbol, DIGV->getVariable()->getScope())) {
+                        return Symbol;
+                    }
+                }
             }
-        } else {
-            return FoundSymbols[0];
         }
+        return *Symbols.begin();
     }
 
     std::set<std::shared_ptr<HAKCSymbol>> HAKCSystemInformation::getSymbols(StringRef name) {

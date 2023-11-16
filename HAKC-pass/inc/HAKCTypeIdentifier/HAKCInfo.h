@@ -7,13 +7,13 @@
 
 #include "llvm/IR/DerivedTypes.h"
 
+#include "HAKCTypeIdentifier.h"
+
 #include <set>
 
 using namespace llvm;
 
 namespace hakc {
-
-    class HAKCTypeIdentifier;
 
     class HAKCInfo {
     public:

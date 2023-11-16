@@ -87,7 +87,7 @@ namespace hakc {
 
         virtual ~HAKCModuleAnalysis() = default;
 
-        virtual bool isModuleTransformed();;
+        virtual bool isModuleTransformed();
 
         virtual void performTransformations();
 
@@ -140,6 +140,8 @@ namespace hakc {
         virtual void generateModuleParamGetCtxFunction(GlobalVariable *GV) = 0;
 
         virtual void transferModuleParams() = 0;
+
+        Module &GetModule();
     };
 
 } // hakc

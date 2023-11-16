@@ -16,9 +16,6 @@
 
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
-#include "HAKCFunctionInfo.h"
-#include "HAKCGlobalInfo.h"
-#include "HAKCTypeInfo.h"
 #include "HAKCDebugInfoProcessor.h"
 
 #include <map>
@@ -29,6 +26,7 @@ using namespace llvm;
 namespace hakc {
 
     class HAKCTypeInfo;
+    class HAKCGlobalInfo;
 
     class HAKCTypeIdentifier : public HAKCDebugInfoProcessor {
     public:
@@ -47,6 +45,12 @@ namespace hakc {
         Value *GetDef(Value *V);
 
         std::vector<Value *> GetDefChain(Value *V);
+
+        static std::string GetTransformedPath(std::string Path);
+
+        static std::string GetTransformedPath(SmallVector<char> &Path);
+
+        Module &GetModule();
 
     protected:
 

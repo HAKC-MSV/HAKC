@@ -74,8 +74,7 @@ class HAKCCompartment:
         result = set()
         for symbol, is_defined_here in self.symbols_accessed.items():
             if is_defined_here:
-                full_path = os.path.realpath(os.path.join(symbol.get_definition_directory(),
-                                                          symbol.get_definition_file()))
+                full_path = symbol.get_definition_file()
                 result.add(full_path)
         return result
 

@@ -9,6 +9,7 @@
 
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/DebugInfo.h"
 
 #include "HAKCCompartment.h"
 #include "HAKCFile.h"
@@ -23,12 +24,16 @@ namespace hakc {
         Module &M;
         std::set<std::shared_ptr<HAKCCompartment>> compartments;
         std::set<std::shared_ptr<HAKCSymbol>> symbols;
-
-        bool PathContainsPath(StringRef Path1, StringRef Path2);
+        bool ModuleContainsCompartmentalizedSymbols;
+        DebugInfoFinder DebugInfo;
 
         std::set<std::shared_ptr<HAKCCompartment>> getCompartments(hakc_compartment_id_t ID);
 
         static std::string getColorStringFromValue(ConstantInt *color);
+
+        void DetectCompartmentalization();
+
+        bool SymbolIsInScope(std::shared_ptr<HAKCSymbol> Symbol, const DIScope *Scope);
 
     public:
         HAKCSystemInformation(Module &M);
@@ -37,15 +42,13 @@ namespace hakc {
 
         std::shared_ptr<HAKCCompartment> getCompartment(hakc_compartment_id_t id, sym_color_t color);
 
-        Module &getModule();
-
         std::shared_ptr<HAKCSymbol> findSymbol(GlobalValue *GV);
 
         static std::string getCompartmentYamlPath();
 
         hakc_access_token_t getEntryToken(hakc_compartment_id_t CompartmentID);
 
-        bool ContainsCompartmentalizedSymbols(Module &M);
+        bool ContainsCompartmentalizedSymbols();
 
     };
 

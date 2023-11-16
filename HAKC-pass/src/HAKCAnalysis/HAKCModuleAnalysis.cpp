@@ -133,7 +133,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysis::isModuleCompartmentalized() {
-        return getTransformer().getSystemInformation().ContainsCompartmentalizedSymbols(getModule());
+        return getTransformer().getSystemInformation().ContainsCompartmentalizedSymbols();
     }
 
     void HAKCModuleAnalysis::updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map) {}
@@ -249,7 +249,6 @@ namespace hakc {
             updateCallParameters(HAKCFunctions);
 
             compartmentalizeModule();
-
         } else {
             removeSignatures();
         }
@@ -560,5 +559,9 @@ namespace hakc {
 
     StringRef hakc::HAKCModuleAnalysis::HAKCEntryTokenName() {
         return "HAKCEntryToken";
+    }
+
+    Module &HAKCModuleAnalysis::GetModule() {
+        return M;
     }
 }// namespace hakc
