@@ -72,11 +72,9 @@ namespace hakc {
         Instruction *FindProtectedCopy(Value *V);
 
         /**
-         * Returns true if V will have an authenticated version
-         * @param V
-         * @return
+         * Checks if V is an authenticated pointer or an authenticated copy
          */
-        bool ValueWillBeAuthenticated(Value *V);
+        bool ValueIsAuthenticated(Value *V);
 
         /**
          * Return true if V is in the copy set

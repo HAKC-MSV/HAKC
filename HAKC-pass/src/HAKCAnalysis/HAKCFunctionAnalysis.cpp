@@ -555,7 +555,7 @@ namespace hakc {
         bool shouldBeChecked = !isa<ConstantPointerNull>(ptr) &&
                                !isa<GlobalValue>(ptr) &&
                                !isPHIofGlobalsOnly(ptr, nodes) &&
-                               !isSelectOfAuthenticatedPointers(ptr) &&
+                               /*!isSelectOfAuthenticatedPointers(ptr) &&*/
                                !isKernelUserPointer(ptr);
 
         return shouldBeChecked;

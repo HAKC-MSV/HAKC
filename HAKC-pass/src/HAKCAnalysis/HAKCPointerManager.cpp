@@ -169,11 +169,8 @@ namespace hakc {
         return nullptr;
     }
 
-    bool HAKCPointerManager::ValueWillBeAuthenticated(Value *V) {
-        if (auto *I = dyn_cast<Instruction>(V)) {
-            return AuthenticatedCopies.find(I) != AuthenticatedCopies.end();
-        }
-        return false;
+    bool HAKCPointerManager::ValueIsAuthenticated(Value *V) {
+        return ValueIsAuthenticatedCopy(V) || ValueIsAuthenticatedPointer(V);
     }
 
     bool HAKCPointerManager::ValueIsAuthenticatedCopy(Value *V) {

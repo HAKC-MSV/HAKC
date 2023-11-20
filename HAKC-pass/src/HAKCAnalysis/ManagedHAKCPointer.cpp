@@ -274,8 +274,8 @@ namespace hakc {
         }
 
         if (auto *SelectI = dyn_cast<SelectInst>(BaseDefinition)) {
-            if (Manager->ValueWillBeAuthenticated(SelectI->getTrueValue()) &&
-                Manager->ValueWillBeAuthenticated(SelectI->getFalseValue())) {
+            if (Manager->ValueIsAuthenticated(SelectI->getTrueValue()) &&
+                Manager->ValueIsAuthenticated(SelectI->getFalseValue())) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "All resultant values of ";
                     SelectI->print(CommonHAKCAnalysis::getWriter());
@@ -287,7 +287,7 @@ namespace hakc {
         } else if (auto *PHI = dyn_cast<PHINode>(BaseDefinition)) {
             bool AllValuesAuthenticated = true;
             for (auto &IncomingValue: PHI->incoming_values()) {
-                if (!Manager->ValueWillBeAuthenticated(IncomingValue.get())) {
+                if (!Manager->ValueIsAuthenticated(IncomingValue.get())) {
                     if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Incoming Value ";
                         IncomingValue.get()->print(CommonHAKCAnalysis::getWriter());
