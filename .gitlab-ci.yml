@@ -1,0 +1,421 @@
+# CI framework for HAKC repo
+
+variables:
+  NEXT_BRANCH: '/^*-next/'
+  DEV_BRANCH: '/^*-dev/'
+  EXT_BRANCH: '/^ext-*/'
+  MAIN_BRANCH: 'main'
+  STAGING_BRANCH: 'staging'
+  TARGET_ARCH: linux-armv8 # TODO - we should build all targets
+  DAG_FILE_PATH: 'dag-output'
+  BUILD_PROCESSORS: 8 
+
+# Overview of stages (all jobs for a given stage run parallel before the next stage)
+# check - check that repo is in logical functioning manner (e.g. submodules match)
+# build - build everything (we may need to break this down for building DAGs)
+# test - Test different setups
+
+stages:
+  - check
+  - build_llvm
+  - build
+  - test
+  - deploy
+  - cleanup
+
+# List of jobs (and stage)
+# - submodule consistency test (check)
+# - building everything (build)
+# - DAG generation (build?)
+# - DAG testing (test)
+# - Build successful (test?)
+# - rosdemo (deploy)
+# - spectra demo (deploy - on hw)
+
+
+submodule_consistency-job:
+  stage: check
+  variables:
+    SUBMODULES_TO_TEST: linux llvm-project
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: manual
+  script:
+    - git submodule deinit -f .
+    - git submodule update --init --recursive
+    - export BRANCH_TO_CHECK="main" # TODO - maybe make this branch dependent?
+    - export LLVM_BRANCH_TO_CHECK="release/12.x"
+    - export COUNT=0
+    - |
+      for i in $SUBMODULES_TO_TEST
+      do
+        if [ $i == "llvm-project" ]
+        then
+          export COMPARISON=origin/$LLVM_BRANCH_TO_CHECK
+        else
+          export COMPARISON=origin/$BRANCH_TO_CHECK
+        fi
+        echo "Checking if $i is up to date with $COMPARISON"
+        cd $i
+        { git diff $COMPARISON --quiet && echo -e "\e[32m$i is up to date with $COMPARISON\e[0m"; } || { echo -e "\e[31m$i is not up to date with $COMPARISON\e[0m" && COUNT=$((COUNT + 1)); }
+        cd ..
+      done
+      if [ $COUNT -ne 0 ]; then
+        echo -e "\e[31mOne or more submodules is not up to date - to fix this run\e[0m `git submodule update --remote --merge`"
+      fi
+    - exit $COUNT
+  allow_failure: true # TODO - get rid of this once we've fixed it
+
+
+build_llvm-job:
+  stage: build_llvm
+  needs:
+    - job: submodule_consistency-job
+  rules:
+    - changes:
+        paths: 
+          - llvm-patches/*.patch
+        compare_to: 'main'
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Building llvm into $CLANG_BUILD_PATH"
+    - git submodule init llvm-project
+    - git submodule update
+    - mkdir -p $CLANG_BUILD_PATH
+    - cd llvm-project
+    - git apply ../llvm-patches/*.patch
+    - cd ..
+    - mkdir cmake-build-hakc-llvm
+    - cd cmake-build-hakc-llvm
+    - |
+      cmake -G Ninja \
+      -DLLVM_ENABLE_PROJECTS='clang;lld;clang-tools-extra;llvm' \
+      -DCMAKE_INSTALL_PREFIX=$(realpath $CLANG_BUILD_PATH) \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DCMAKE_C_COMPILER=/usr/bin/clang \
+      -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+      -DLLVM_TARGETS_TO_BUILD='X86;AArch64' \
+      -DLLVM_OPTIMIZED_TABLEGEN=True \
+      -DLLVM_USE_LINKER=lld \
+      -DLLVM_ENABLE_IDE=True \
+      -DHAKC_LLVM=True ..
+    - cmake --build . --target install -j$BUILD_PROCESSORS
+
+
+build_pass-job:
+  stage: build
+  needs:
+    - job: submodule_consistency-job
+    - job: build_llvm-job
+      optional: true
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: manual
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Checking which clang to use"
+    - |
+      if [ -d "$CLANG_BUILD_PATH" ]; then
+        export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
+      else
+        export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
+      fi
+    - echo "Using $CLANG_PATH"
+    - echo "Building HAKC compiler pass"
+    - mkdir cmake-build-hakc-pass-linux-armv8 # TODO - copy from ARM-MTE to get all versions working
+    - cd cmake-build-hakc-pass-linux-armv8
+    - |
+      cmake -G Ninja \
+      -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
+      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+      -DLT_LLVM_INSTALL_DIR=$CLANG_PATH \
+      -DCMAKE_C_COMPILER=$CLANG_PATH/bin/clang \
+      -DCMAKE_CXX_COMPILER=$CLANG_PATH/bin/clang++ \
+      -DHAKC_LINUX_ARMV8=True \
+      ..
+    - cmake --build . -j$BUILD_PROCESSORS --target install
+  artifacts:
+    paths:
+      - install
+
+
+build_kernel-job:
+  stage: build
+  needs:
+    - job: build_pass-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: manual
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Checking which clang to use"
+    - |
+      if [ -d "$CLANG_BUILD_PATH" ]; then
+        export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
+      else
+        export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
+      fi
+    - echo "Using $CLANG_PATH"
+    - mkdir -p $HAKC_DAG_ROOT
+    - git submodule init linux
+    - git submodule update
+    - cd linux
+    - echo "Building kernel"
+    - |
+      env HAKC_ANALYSIS=dag \
+      HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
+      make \
+      ARCH=arm64 \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      LLVM=1 \
+      O=$(realpath ../build-$BUILD_TYPE) \
+      CC=$CLANG_PATH/bin/clang \
+      HOSTCC=$CLANG_PATH/bin/clang \
+      LOCALVERSION=$BUILD_TYPE \
+      -j$BUILD_PROCESSORS defconfig
+    - |
+      scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
+      -e CONFIG_HAKC \
+      --set-str CONFIG_HAKC_PASS_PATH \
+      $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
+      -e CONFIG_HAKC_ARM_V8 \
+      -d CONFIG_HAKC_ALLOW_FAILED \
+      -e CONFIG_HAKC_SIGN_PTR \
+      -m CONFIG_ROSDEMO \
+      -e CONFIG_DEBUG_INFO \
+      -e CONFIG_DEBUG_INFO_SPLIT \
+      -e CONFIG_DEBUG_INFO_DWARF4 \
+      -e CONFIG_GDB_SCRIPTS \
+      -e CONFIG_HAKC_ARM_V8_MEMORY \
+      -d CONFIG_HAKC_ARM_V9 \
+      -d CONFIG_HAKC_DEBUG_PRINT \
+      -d CONFIG_HAKC_ALLOW_FAILED \
+      -d CONFIG_HAKC_LOG_FAILURE
+    - |
+      env HAKC_ANALYSIS=dag \
+      HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
+      make \
+      ARCH=arm64 \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      LLVM=1 \
+      O=$(realpath ../build-$BUILD_TYPE) \
+      CC=$CLANG_PATH/bin/clang \
+      HOSTCC=$CLANG_PATH/bin/clang \
+      LOCALVERSION=$BUILD_TYPE \
+      -j$BUILD_PROCESSORS
+  artifacts:
+    paths:
+      - $HAKC_DAG_ROOT
+      - build-$BUILD_TYPE/.config
+  dependencies:
+    - build_pass-job
+
+
+dag_analysis-job:
+  stage: build
+  needs:
+    - job: build_kernel-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: on_success # Will run once build-kernel is kicked off
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+  script:
+    - echo "Performing DAG Analysis"
+    - python3 scripts/analysis/data-access-analysis.py -c $HAKC_DAG_ROOT/dag.bin
+      -r $HAKC_DAG_ROOT --dag --filter_types --filter_mod_files
+  artifacts:
+    paths:
+      - $HAKC_DAG_ROOT/dag.bin
+  dependencies:
+    - build_kernel-job
+
+dag_adjustment-job:
+  stage: build
+  needs:
+    - job: dag_analysis-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: on_success # Will run once build-kernel is kicked off
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+  script:
+    - echo "Creating / Applying compartmentalization modifications"
+    - sed "s+_KERNEL_SOURCE_+$(realpath linux)+g" scripts/ros2-demo/rosdemo-compartments.yml |
+      sed "s+_KERNEL_BUILD_+$(realpath build-$BUILD_TYPE)+g" > $HAKC_DAG_ROOT/hakc-ros2-adjustments.yml
+    - python3 scripts/analysis/data-access-analysis.py -c $HAKC_DAG_ROOT/dag.bin
+      --adjust $HAKC_DAG_ROOT/hakc-ros2-adjustments.yml
+    - echo "Outputing compartmentalization policy"
+    - python3 scripts/analysis/data-access-analysis.py -c $HAKC_DAG_ROOT/dag-adjusted.bin
+      --output_compart $HAKC_DAG_ROOT/hakc-compartments.yml
+  artifacts:
+    paths:
+      - $HAKC_DAG_ROOT/hakc-compartments.yml
+  dependencies:
+    - dag_analysis-job
+
+build_compartmentalized_kernel-job:
+  stage: build
+  needs:
+    - job: build_pass-job
+    - job: build_kernel-job
+    - job: dag_adjustment-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: on_success # Will run once dag_analysis has completed
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Checking which clang to use"
+    - |
+      if [ -d "$CLANG_BUILD_PATH" ]; then
+        export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
+      else
+        export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
+      fi
+    - echo "Using $CLANG_PATH"
+    - git submodule init linux
+    - git submodule update
+    - cd linux
+    - echo "Building kernel"
+    - |
+      env HAKC_ANALYSIS=compartmentalize \
+      HAKC_COMPARTMENT_PATH=$(realpath ../$HAKC_DAG_ROOT/hakc-compartments.yml) \
+      make \
+      ARCH=arm64 \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      LLVM=1 \
+      O=$(realpath ../build-$BUILD_TYPE) \
+      CC=$CLANG_PATH/bin/clang \
+      HOSTCC=$CLANG_PATH/bin/clang \
+      LOCALVERSION=$BUILD_TYPE \
+      -j$BUILD_PROCESSORS clean
+    - |
+      env HAKC_ANALYSIS=compartmentalize \
+      HAKC_COMPARTMENT_PATH=$(realpath ../$HAKC_DAG_ROOT/hakc-compartments.yml) \
+      make \
+      ARCH=arm64 \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      LLVM=1 \
+      O=$(realpath ../build-$BUILD_TYPE) \
+      CC=$CLANG_PATH/bin/clang \
+      HOSTCC=$CLANG_PATH/bin/clang \
+      LOCALVERSION=$BUILD_TYPE \
+      -j$BUILD_PROCESSORS
+  dependencies:
+    - build_pass-job
+    - build_kernel-job
+    - dag_adjustment-job
+
+deploy_llvm-job:
+  stage: deploy
+  needs: 
+    - build_compartmentalized_kernel-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH # TODO - We may need to do this on a pull request?
+      changes:
+        paths: 
+          - llvm-patches/*.patches
+        compare_to: 'main'
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Installing $CLANG_BUILD_PATH to $CLANG_DEPLOY_PATH"
+    - mv $CLANG_DEPLOY_PATH $CLANG_DEPLOY_PATH.old
+    - mv $CLANG_BUILD_PATH $CLANG_DEPLOY_PATH
+
+
+deploy_kernel-job:
+  stage: deploy
+  needs:
+    - build_compartmentalized_kernel-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+  script:
+    - echo "Deploying kernel to artifactory... - TODO"
+
+
+.cleanup_llvm-job: &cleanup_llvm-job
+  stage: cleanup
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - echo "Removing $CLANG_BUILD_PATH"
+    - rm -rf $CLANG_BUILD_PATH
+
+cleanup_llvm_failure:
+  needs: 
+    - job: build_llvm-job
+    - job: build_compartmentalized_kernel-job
+    - job: deploy_llvm-job
+      optional: true
+  rules:
+    - changes:
+        paths: 
+          - llvm-patches/*.patches
+        compare_to: 'main'
+  when: on_failure
+  <<: *cleanup_llvm-job
+
+cleanup_llvm_success:
+  needs:
+    - build_compartmentalized_kernel-job # This will run after deploy if applicable
+  rules:
+    - if: $CI_COMMIT_BRANCH != $MAIN_BRANCH
+      changes:
+        paths: 
+          - llvm-patches/*.patches
+        compare_to: 'main'
+  when: on_success
+  <<: *cleanup_llvm-job
+
+# Skeleton of a job to test in a dev branch
+# Don't edit before EDIT BELOW HERE (except the name) unless you REALLY mean to
+development-job:
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # only internal dev branches
+      variables:
+        BRANCH_TYPE: "branch-dev"
+      when: never # TODO - change this back
+    - if: $CI_COMMIT_BRANCH !~ $DEV_BRANCH
+      variables:
+        BRANCH_TYPE: $CI_COMMIT_BRANCH
+      when: never
+  script:
+    - |
+      if [ $BRANCH_TYPE != "branch-dev" ]
+      then
+        echo "This shouldn't be running in a non-dev branch..."
+        exit 1
+      fi
+      ############# EDIT BELOW HERE ####################
+    - echo "Change me to what you need me to do"
+  stage: check # change me to the stage you need
