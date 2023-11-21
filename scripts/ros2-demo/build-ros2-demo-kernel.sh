@@ -1,8 +1,5 @@
 #!/bin/bash
 
-BUILD_TYPE=_ros2_demo
-LOCATION=/home/na28772/Code/linux-env/QEMO-Ros2/$BUILD_TYPE/boot
-
 mkdir -p $LOCATION
 
 while [ -n "$1" ]; do
