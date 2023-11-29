@@ -1082,14 +1082,13 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization,
                 compartments_to_remove.add(compartment)
                 continue
 
-            remove = False
-            for kernel_path in adjustments['kernel']:
-                if 'compartmentalize' in adjustments:
-                    for compartmentalize_path in adjustments['compartmentalize']:
-                        if compartment.contains_symbol_defined_in_path(kernel_path) and not \
-                                compartment.contains_symbol_defined_in_path(compartmentalize_path):
-                            remove = True
-                            break
+            remove = True
+            if 'compartmentalize' in adjustments:
+                for compartmentalize_path in adjustments['compartmentalize']:
+                    if compartment.contains_symbol_defined_in_path(compartmentalize_path):
+                        remove = False
+                        break
+
             if remove:
                 compartments_to_remove.add(compartment)
             else:
