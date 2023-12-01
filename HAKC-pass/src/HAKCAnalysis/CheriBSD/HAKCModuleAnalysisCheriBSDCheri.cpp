@@ -16,6 +16,8 @@ namespace hakc {
     void HAKCModuleAnalysisCheriBSDCheri::InitHAKCFunctions() {
         HAKC_FUNCTION("get_hakc_compartment_id");
         HAKC_TRANSFER_NO_COLOR("hakc_xfer_to_compartment", 1);
+        HAKC_TRANSFER_NO_COLOR("hakc_xfer_const_to_compartment", 1);
+        HAKC_TRANSFER_NO_COLOR("hakc_xfer_to_compartment_nocap", 1);
     }
 
     std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisCheriBSDCheri::CreateTransformer() {

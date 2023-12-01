@@ -14,16 +14,18 @@ namespace hakc {
     public:
         HAKCFunctionAnalysisLinux(Function *F);
 
+        static StringRef SafePointerName;
+
     protected:
         std::string getHAKCFunctionSectionName() override;
 
         ConstantInt *getColor();
 
-        bool pointerShouldBeChecked(Value *ptr) override;
-
         virtual HAKCModuleAnalysisLinux &getLinuxModuleAnalysis() = 0;
 
         bool isSafeTransitionFunction(Function *F) override;
+
+        std::set<StringRef> GetSafePointerFunctionNames() override;
     };
 
 } // hakc

@@ -104,6 +104,10 @@ namespace hakc {
                         isa<SExtInst>(UserP) ||
                         isa<IntToPtrInst>(UserP) ||
                         isa<PHINode>(UserP);
+        if(auto *Call = dyn_cast<CallInst>(U.getUser())) {
+            CloneUse = Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call);
+        }
+
         return CloneUse;
     }
 
@@ -119,7 +123,7 @@ namespace hakc {
                 UseAuthenticatedPointer = true;
             } else if (Call->isInlineAsm()) {
                 UseAuthenticatedPointer = true;
-            } else if (Manager->GetFunctionAnalysis()->isIntrinsicNeedingAuthentication(Call)) {
+            } else if (Manager->GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call)) {
                 UseAuthenticatedPointer = true;
             } else if(Call->getCalledOperandUse().getOperandNo() == U.getOperandNo()) {
                 UseAuthenticatedPointer = true;

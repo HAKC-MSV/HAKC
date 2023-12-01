@@ -17,11 +17,32 @@ namespace hakc {
         return *ModAnalysis;
     }
 
+    std::vector<Value *> HAKCFunctionAnalysisCheriBSDCheri::findDefChain(Value *v, bool followLoad, bool debug) {
+        std::vector<Value*> Chain;
+        return AddToDefChain(v, Chain, followLoad, debug);
+    }
+
+    std::vector<Value *>
+    HAKCFunctionAnalysisCheriBSDCheri::AddToDefChain(Value *V, std::vector<Value *> &ExistingChain, bool FollowLoad,
+                                                     bool Debug) {
+        auto DefChain = CommonHAKCAnalysis::findDefChain(V, FollowLoad, Debug);
+        auto CapabilityAdjustingIntrinsics = GetCapabilityAdjustingIntrinsics();
+
+        for(auto *Link : DefChain) {
+            ExistingChain.push_back(Link);
+        }
+
+        if(auto *Call = dyn_cast<CallInst>(DefChain.back())) {
+            if(IsCallInIntrinsicSet(Call, CapabilityAdjustingIntrinsics)) {
+                return AddToDefChain(Call->getArgOperand(0), ExistingChain, FollowLoad, Debug);
+            }
+        }
+
+        return ExistingChain;
+    }
+
     Instruction *HAKCFunctionAnalysisCheriBSDCheri::GetFinalAllocaDef(AllocaInst *Alloca) {
-        std::set<Intrinsic::ID> IntrinsicDefs = {
-                Intrinsic::cheri_cap_bounds_set,
-                Intrinsic::cheri_cap_bounds_set_exact,
-        };
+        auto IntrinsicDefs = GetCapabilityAdjustingIntrinsics();
 
         std::set<Instruction *> WorkingList = {Alloca};
         while (!WorkingList.empty()) {
@@ -29,10 +50,8 @@ namespace hakc {
             WorkingList.erase(I);
             for (auto *U: I->users()) {
                 if (auto *Call = dyn_cast<CallInst>(U)) {
-                    if (Call->getCalledFunction() && Call->getCalledFunction()->isIntrinsic()) {
-                        if (IntrinsicDefs.find(Call->getCalledFunction()->getIntrinsicID()) != IntrinsicDefs.end()) {
-                            return Call;
-                        }
+                    if (IsCallInIntrinsicSet(Call, IntrinsicDefs)) {
+                        return Call;
                     }
                 } else if (auto *BitCast = dyn_cast<BitCastInst>(U)) {
                     WorkingList.insert(BitCast);
@@ -43,20 +62,38 @@ namespace hakc {
         return HAKCFunctionAnalysis::GetFinalAllocaDef(Alloca);
     }
 
+    std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetCapabilityAdjustingIntrinsics() {
+        return {
+                Intrinsic::cheri_cap_bounds_set,
+                Intrinsic::cheri_cap_bounds_set_exact,
+                Intrinsic::cheri_cap_address_set,
+                Intrinsic::cheri_cap_flags_set,
+                Intrinsic::cheri_cap_offset_set,
+                Intrinsic::cheri_cap_seal,
+                Intrinsic::cheri_cap_seal_entry,
+                Intrinsic::cheri_cap_conditional_seal,
+                Intrinsic::cheri_cap_from_pointer,
+                Intrinsic::cheri_cap_from_pointer_nonnull_zero,
+                Intrinsic::cheri_cap_tag_clear,
+        };
+    }
+
+    std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsToClone() {
+        return GetCapabilityAdjustingIntrinsics();
+    }
+
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsNeedingAuthenticatedArgs() {
         auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs();
 
-        Intrinsic::ID AdditionalIDs[] = {
-                Intrinsic::cheri_cap_bounds_set,
-                Intrinsic::cheri_cap_bounds_set_exact,
-                Intrinsic::cheri_cap_address_get,
-                Intrinsic::cheri_cap_address_set,
-                Intrinsic::cheri_cap_sealed_get,
-        };
-
-        for (auto ID: AdditionalIDs) {
-            Intrinsics.insert(ID);
-        }
+//        Intrinsic::ID AdditionalIDs[] = {
+//                Intrinsic::cheri_cap_address_get,
+//                Intrinsic::cheri_cap_address_set,
+//                Intrinsic::cheri_cap_sealed_get,
+//        };
+//
+//        for (auto ID: AdditionalIDs) {
+//            Intrinsics.insert(ID);
+//        }
 
         return Intrinsics;
     }
@@ -68,32 +105,21 @@ namespace hakc {
                 Intrinsic::cheri_bounded_stack_cap,
                 Intrinsic::cheri_bounded_stack_cap_dynamic,
                 Intrinsic::cheri_cap_address_get,
-                Intrinsic::cheri_cap_address_set,
                 Intrinsic::cheri_cap_base_get,
-                Intrinsic::cheri_cap_bounds_set,
-                Intrinsic::cheri_cap_bounds_set_exact,
                 Intrinsic::cheri_cap_build,
-                Intrinsic::cheri_cap_conditional_seal,
                 Intrinsic::cheri_cap_copy_from_high,
                 Intrinsic::cheri_cap_copy_to_high,
                 Intrinsic::cheri_cap_diff,
                 Intrinsic::cheri_cap_equal_exact,
                 Intrinsic::cheri_cap_flags_get,
-                Intrinsic::cheri_cap_flags_set,
-                Intrinsic::cheri_cap_from_pointer,
-                Intrinsic::cheri_cap_from_pointer_nonnull_zero,
                 Intrinsic::cheri_cap_length_get,
                 Intrinsic::cheri_cap_load_tags,
                 Intrinsic::cheri_cap_offset_get,
-                Intrinsic::cheri_cap_offset_set,
                 Intrinsic::cheri_cap_perms_and,
                 Intrinsic::cheri_cap_perms_check,
                 Intrinsic::cheri_cap_perms_get,
                 Intrinsic::cheri_cap_sealed_get,
-                Intrinsic::cheri_cap_seal,
-                Intrinsic::cheri_cap_seal_entry,
                 Intrinsic::cheri_cap_subset_test,
-                Intrinsic::cheri_cap_tag_clear,
                 Intrinsic::cheri_cap_tag_get,
                 Intrinsic::cheri_cap_to_pointer,
                 Intrinsic::cheri_cap_type_check,
@@ -126,20 +152,9 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::pointerShouldBeChecked(Value *ptr) {
-        auto *Def = HAKCFunctionAnalysis::getDef(ptr, false, debug_output);
+        auto *Def = getDef(ptr, false, debug_output);
         if (TypeMatchesIgnoredTypes(Def->getType())) {
             return false;
-        }
-        if (auto *Call = dyn_cast<CallInst>(Def)) {
-            if (Call->getCalledFunction() && Call->getCalledFunction()->isIntrinsic()) {
-                std::set<Intrinsic::ID> IDsToIgnore = {
-                        Intrinsic::cheri_cap_bounds_set,
-                        Intrinsic::cheri_cap_bounds_set_exact,
-                };
-                if (IDsToIgnore.find(Call->getCalledFunction()->getIntrinsicID()) != IDsToIgnore.end()) {
-                    return false;
-                }
-            }
         }
 
         if (auto *Phi = dyn_cast<PHINode>(Def)) {
@@ -245,5 +260,15 @@ namespace hakc {
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeConsideredCode(Value *Pointer) {
         return IsFunctionPointerStruct(Pointer) || HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Pointer);
     }
+
+    std::set<StringRef> HAKCFunctionAnalysisCheriBSDCheri::GetSafePointerFunctionNames() {
+        return {
+                GetSafeCapName,
+                GetSafePtrName,
+        };
+    }
+
+    StringRef HAKCFunctionAnalysisCheriBSDCheri::GetSafeCapName = "hakc_get_safe_cap";
+    StringRef HAKCFunctionAnalysisCheriBSDCheri::GetSafePtrName = "hakc_get_safe_ptr";
 
 } // hakc

@@ -156,7 +156,7 @@ namespace hakc {
 
         bool phiNodeUsesValue(PHINode *phiNode, Value *target, std::set<PHINode *> &visited);
 
-        bool isSelectOfAuthenticatedPointers(Value *v);
+        bool IsManualSafePointer(CallInst *Call);
 
         void HandleInstruction(Instruction *I);
 
@@ -194,6 +194,8 @@ namespace hakc {
 
         virtual std::set<Intrinsic::ID> GetInstrinsicsToSkip();
 
+        virtual std::set<Intrinsic::ID> GetIntrinsicsToClone();
+
         virtual void AddManagedPointer(Value *HAKCPointer);
 
         void ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value *NewValue);
@@ -203,6 +205,10 @@ namespace hakc {
         void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned OpNo);
 
         void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
+
+        bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
+
+        virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
     public:
         HAKCFunctionAnalysis(Function *F, bool debug);
@@ -249,7 +255,9 @@ namespace hakc {
 
         virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
-        virtual bool isIntrinsicNeedingAuthentication(CallInst *);
+        virtual bool IsIntrinsicNeedingAuthentication(CallInst *Call);
+
+        virtual bool IsIntrinsicsNeedingCloning(CallInst *Call);
 
         virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
 

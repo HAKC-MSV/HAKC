@@ -5,6 +5,7 @@
 #include "llvm/IR/Verifier.h"
 
 #include "HAKCTransformers/CheriBSD/HAKCTransformerCheriBSDCheri.h"
+#include "HAKCAnalysis/CheriBSD/HAKCFunctionAnalysisCheriBSDCheri.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
@@ -68,11 +69,11 @@ namespace hakc {
     }
 
     const StringRef HAKCTransformerCheriBSDCheri::GetSafeCapabilityName() {
-        return "hakc_get_safe_cap";
+        return HAKCFunctionAnalysisCheriBSDCheri::GetSafeCapName;
     }
 
     const StringRef HAKCTransformerCheriBSDCheri::GetSafePointerName() {
-        return "hakc_get_safe_ptr";
+        return HAKCFunctionAnalysisCheriBSDCheri::GetSafePtrName;
     }
 
     const StringRef HAKCTransformerCheriBSDCheri::GetCompartmentInitName() {

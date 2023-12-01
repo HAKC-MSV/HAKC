@@ -31,18 +31,29 @@ namespace hakc {
         return getTransformer().getInt64(getLinuxModuleAnalysis().GetMajoritySymbolColor());
     }
 
-    bool HAKCFunctionAnalysisLinux::pointerShouldBeChecked(Value *ptr) {
-        if (auto *call = dyn_cast<CallInst>(ptr)) {
-            if (call->getCalledFunction() &&
-                call->getCalledFunction()->getName() == "hakc_safe_ptr") {
-                return false;
-            }
-        }
-        return HAKCFunctionAnalysis::pointerShouldBeChecked(ptr);
+    std::set<StringRef> HAKCFunctionAnalysisLinux::GetSafePointerFunctionNames() {
+        return {
+                HAKCFunctionAnalysisLinux::SafePointerName,
+        };
     }
 
     bool HAKCFunctionAnalysisLinux::isSafeTransitionFunction(Function *F) {
         auto isSafe = CommonHAKCAnalysis::isSafeTransitionFunction(F);
-        return isSafe || F->getName().contains("__lse_atomic_") || F->getName().contains("get_pid_ns") || F->getName().contains("get_user_ns") || F->getName().contains("static_branch_");
+        std::set<StringRef> ExcludedFunctions = {
+                "__lse_atomic_",
+                "get_pid_ns",
+                "get_user_ns",
+                "static_branch_",
+        };
+        for(auto ExcludedName : ExcludedFunctions) {
+            if(F->getName().contains(ExcludedName)) {
+                isSafe = true;
+                break;
+            }
+        }
+
+        return isSafe;
     }
+
+    StringRef HAKCFunctionAnalysisLinux::SafePointerName = "hakc_safe_ptr";
 } // hakc

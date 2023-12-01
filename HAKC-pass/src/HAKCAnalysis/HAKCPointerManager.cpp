@@ -23,7 +23,13 @@ namespace hakc {
         auto ManagedPointer = GetManagedPointer(V);
         if (!ManagedPointer) {
             ManagedPointer = std::make_shared<ManagedHAKCPointer>(V, this, debug);
-            ManagedPointers.insert(ManagedPointer);
+            if(!isa<Constant>(ManagedPointer->GetBaseDefinition())) {
+                ManagedPointers.insert(ManagedPointer);
+            } else if(debug) {
+                CommonHAKCAnalysis::getWriter() << "HAKCPointerManager is ignoring Constant ";
+                ManagedPointer->GetBaseDefinition()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
         }
     }
 

@@ -51,7 +51,7 @@ namespace hakc {
 
         virtual Value *getDef(Value *V, bool followLoad, bool debug);
 
-        std::vector<Value *> findDefChain(Value *v, bool followLoad = false, bool debug = false);
+        virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
 
         static bool argShouldTransfer(Value *V);
 

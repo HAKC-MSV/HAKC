@@ -292,7 +292,7 @@ namespace hakc {
                 return ((arg->getType()->isPointerTy() ||
                          isa<PtrToIntInst>(arg.get()))) &&
                        (isSafeTransitionFunction(call->getCalledFunction()) ||
-                        isIntrinsicNeedingAuthentication(call));
+                        IsIntrinsicNeedingAuthentication(call));
             }
         }
         return (arg->getType()->isPointerTy() ||
@@ -300,26 +300,20 @@ namespace hakc {
                !isa<Function>(arg) && pointerShouldBeChecked(arg);
     }
 
-//    /**
-//         * @brief Adds transfers of all indirect function arguments
-//         */
-//    void HAKCFunctionAnalysis::addAllIndirectTransfers() {
-//        for (auto &it: IndirectCalls) {
-//            if (isCompartmentalizedFunction()) {
-//                addCodeAuthCheck(it.first);
-//            } else {
-//                addGetSafeCodePtr(it.first);
-//            }
-//        }
-//    }
-
-    bool HAKCFunctionAnalysis::isIntrinsicNeedingAuthentication(CallInst *call) {
-        bool result = false;
+    bool HAKCFunctionAnalysis::IsIntrinsicNeedingAuthentication(CallInst *Call) {
         auto IntrinsicsNeedingAuth = GetIntrinsicsNeedingAuthenticatedArgs();
-        if (auto *intrinsic = dyn_cast<IntrinsicInst>(call)) {
-            result = (IntrinsicsNeedingAuth.find(
-                    intrinsic->getIntrinsicID()) !=
-                      IntrinsicsNeedingAuth.end());
+        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingAuth);
+    }
+
+    bool HAKCFunctionAnalysis::IsIntrinsicsNeedingCloning(CallInst *Call) {
+        auto IntrinsicsNeedingCloning = GetIntrinsicsToClone();
+        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingCloning);
+    }
+
+    bool HAKCFunctionAnalysis::IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet) {
+        bool result = false;
+        if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
+            result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Intrinsic (" << intrinsic->getIntrinsicID() << ") ";
                 intrinsic->print(CommonHAKCAnalysis::getWriter());
@@ -328,7 +322,7 @@ namespace hakc {
                 } else {
                     CommonHAKCAnalysis::getWriter() << " is not in { ";
                 }
-                for (auto id: IntrinsicsNeedingAuth) {
+                for (auto id: IntrinsicsSet) {
                     CommonHAKCAnalysis::getWriter() << id << " ";
                 }
                 CommonHAKCAnalysis::getWriter() << "}\n";
@@ -367,6 +361,10 @@ namespace hakc {
                 Intrinsic::IndependentIntrinsics::memmove,
                 Intrinsic::IndependentIntrinsics::memset
         };
+    }
+
+    std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsToClone() {
+        return {};
     }
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetInstrinsicsToSkip() {
@@ -484,14 +482,10 @@ namespace hakc {
         return false;
     }
 
-    bool HAKCFunctionAnalysis::isSelectOfAuthenticatedPointers(Value *v) {
-        if (auto *select = dyn_cast<SelectInst>(v)) {
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter()
-                        << "Checking if Value is a select statement of pointers that need checking: ";
-            }
-            return !pointerShouldBeChecked(select->getOperandUse(1)) &&
-                   !pointerShouldBeChecked(select->getOperandUse(2));
+    bool HAKCFunctionAnalysis::IsManualSafePointer(CallInst *Call) {
+        if(Call->getCalledFunction()) {
+            auto SafePointerNames = GetSafePointerFunctionNames();
+            return SafePointerNames.find(Call->getCalledFunction()->getName()) != SafePointerNames.end();
         }
 
         return false;
@@ -526,6 +520,8 @@ namespace hakc {
                  * See find_mm_struct in mm/migrate.c.
                  */
                 return false;
+            } else if(IsManualSafePointer(call)) {
+                return false;
             }
         } else if (isa<Constant>(ptr)) {
             return false;
@@ -555,7 +551,6 @@ namespace hakc {
         bool shouldBeChecked = !isa<ConstantPointerNull>(ptr) &&
                                !isa<GlobalValue>(ptr) &&
                                !isPHIofGlobalsOnly(ptr, nodes) &&
-                               /*!isSelectOfAuthenticatedPointers(ptr) &&*/
                                !isKernelUserPointer(ptr);
 
         return shouldBeChecked;
@@ -599,7 +594,7 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: ";
                         use->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\nDef chain:\n";
-                        for (auto *v: findDefChain(use.get())) {
+                        for (auto *v: findDefChain(use.get(), false, debug_output)) {
                             CommonHAKCAnalysis::getWriter() << "\t";
                             v->print(CommonHAKCAnalysis::getWriter());
                             CommonHAKCAnalysis::getWriter() << "\n";
@@ -895,7 +890,7 @@ namespace hakc {
                                        callIsSafeTransition(call));
 
         if (isa<IntrinsicInst>(call)) {
-            needsAuthenticatedArgs = isIntrinsicNeedingAuthentication(call);
+            needsAuthenticatedArgs = IsIntrinsicNeedingAuthentication(call);
         }
 
         if (debug_output) {

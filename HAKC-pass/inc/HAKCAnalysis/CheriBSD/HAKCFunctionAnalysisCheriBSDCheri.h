@@ -20,6 +20,12 @@ namespace hakc {
 
         bool PointerShouldBeConsideredCode(Value *Pointer) override;
 
+        std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug) override;
+
+        static StringRef GetSafeCapName;
+
+        static StringRef GetSafePtrName;
+
     protected:
         HAKCModuleAnalysisCheriBSDCheri *ModAnalysis;
 
@@ -27,7 +33,11 @@ namespace hakc {
 
         std::set<Intrinsic::ID> GetInstrinsicsToSkip() override;
 
+        std::set<Intrinsic::ID> GetCapabilityAdjustingIntrinsics();
+
         std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs() override;
+
+        std::set<Intrinsic::ID> GetIntrinsicsToClone() override;
 
         void handleComparison(CmpInst *compare) override;
 
@@ -38,6 +48,11 @@ namespace hakc {
         bool IsFunctionPointerWrapper(Value *Pointer);
 
         bool IsFunctionPointerStruct(Value *Pointer);
+
+        std::set<StringRef> GetSafePointerFunctionNames() override;
+
+    private:
+        std::vector<Value *> AddToDefChain(Value *V, std::vector<Value*> &ExistingChain, bool FollowLoad, bool Debug);
     };
 
 } // hakc
