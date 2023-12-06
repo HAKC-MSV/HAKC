@@ -122,6 +122,8 @@ namespace hakc {
                 UseAuthenticatedPointer = true;
             } else if(Call->getCalledOperandUse().getOperandNo() == U.getOperandNo()) {
                 UseAuthenticatedPointer = true;
+            } else if(Call->getCalledFunction() == nullptr) {
+                UseAuthenticatedPointer = true;
             }
         } else if (isa<StoreInst>(UserP)) {
             if (U.getOperandNo() == StoreInst::getPointerOperandIndex()) {
@@ -163,6 +165,8 @@ namespace hakc {
                 UseSignedPointer = true;
             } else if (Call->isInlineAsm()) {
                 UseSignedPointer = false;
+            } else if(Call->getCalledFunction() != nullptr) {
+                UseSignedPointer = true;
             }
         } else if(isa<AtomicRMWInst>(UserP)) {
             if(U.getOperandNo() != AtomicRMWInst::getPointerOperandIndex()) {

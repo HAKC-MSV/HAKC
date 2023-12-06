@@ -908,7 +908,23 @@ namespace hakc {
                 call->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
-            PointerManager.ManagePointer(call->getCalledOperand(), debug_output);
+            AddManagedPointer(call->getCalledOperand());
+            /* Using checked pointers for indirect calls because the indirect call
+             * can be an assembly function, which currently requires valid pointers.
+             * This is safe for other functions, since the target will be a transfer
+             * function, and will perform the protecting before entering compartmentalized
+             * code, or again create a valid pointer for uncompartmentalized code */
+            for (auto &arg: call->args()) {
+                if (argNeedsAuthentication(arg)) {
+                    registerPointerDereference(arg);
+                } else if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Argument ";
+                    arg->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " for ";
+                    call->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " does not need authentication\n";
+                }
+            }
         } else if (needsAuthenticatedArgs) {
             for (auto &arg: call->args()) {
                 if (argNeedsAuthentication(arg)) {
