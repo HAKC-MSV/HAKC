@@ -64,6 +64,10 @@ namespace hakc {
     std::vector<StringRef> HAKCModuleAnalysisCheriBSDCheri::GetSafeTransitionFunctions_Arch() {
         return {
                 /* These are all assembly functions */
+                "generic_bs_w_1",
+                "generic_bs_w_2",
+                "generic_bs_w_3",
+                "generic_bs_w_4",
                 "generic_bs_r_1",
                 "generic_bs_r_2",
                 "generic_bs_r_4",
@@ -111,6 +115,7 @@ namespace hakc {
                 "mpentry",
                 "generic_bs_fault",
                 "fork_trampoline",
+                "free",
         };
     }
 
@@ -136,7 +141,7 @@ namespace hakc {
             "sys/arm64/arm64/machdep.c",
             "sys/arm64/arm64/machdep_boot.c",
             "sys/contrib/libfdt/fdt.c",
-//            "sys/kern/subr_prf.c",
+            "sys/kern/init_main.c",
         };
     }
 

@@ -66,7 +66,11 @@ namespace hakc {
     }
 
     Value *HAKCPointerManager::GetDef(Value *V) {
-        return HAKCAnalysis->getDef(V, false, false);
+        auto *Def = GetFunctionAnalysis()->getDef(V, false, false);
+        if (auto *Alloca = dyn_cast<AllocaInst>(Def)) {
+            Def = GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
+        }
+        return Def;
     }
 
     Instruction *HAKCPointerManager::FindAuthenticatedCopy(Value *V) {

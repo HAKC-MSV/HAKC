@@ -327,18 +327,21 @@ namespace hakc {
                 F,
                 ConstantPointerNull::get(dyn_cast<PointerType>(SysInitTy->getTypeAtIndex(3)))
         });
-        SysInitEntry->setConstant(true);
         SysInitEntry->setInitializer(SysInitEntryInitializer);
-        SysInitEntry->setLinkage(llvm::GlobalValue::PrivateLinkage);
+        SysInitEntry->setLinkage(llvm::GlobalValue::ExternalLinkage);
+        SysInitEntry->setConstant(false);
 
         std::string SysInitRecordName = "_sym_";
         SysInitRecordName += SysInitEntryName;
         auto *SysInitRecord = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(SysInitRecordName,
-                                                                                     SysInitEntry->getType()));
+                                                                                     HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace)));
         SysInitRecord->setSection("set_sysinit_set");
-        SysInitRecord->setInitializer(SysInitEntry);
+        SysInitRecord->setInitializer(ConstantExpr::getPointerCast(SysInitEntry,
+                                                                   HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace)));
+        SysInitRecord->setConstant(false);
         SysInitRecord->setLinkage(llvm::GlobalValue::ExternalLinkage);
-
+        MaybeAlign align(16);
+        SysInitRecord->setAlignment(align);
     }
 
     std::vector<Value *> HAKCTransformerCheriBSDCheri::CreateArgumentsWithCompartment(Value *HAKCPointer,

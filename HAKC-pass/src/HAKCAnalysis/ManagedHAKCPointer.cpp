@@ -75,12 +75,7 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::InitBaseDefinition(Value *Pointer) {
-        auto *V = Manager->GetFunctionAnalysis()->getDef(Pointer, false, DebugActive);
-        if (auto *Alloca = dyn_cast<AllocaInst>(V)) {
-            BaseDefinition = Manager->GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
-        } else {
-            BaseDefinition = V;
-        }
+        BaseDefinition = Manager->GetDef(Pointer);
         if (!BaseDefinition) {
             CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer could not find BaseDefinition for ";
             Pointer->print(CommonHAKCAnalysis::getWriter());
