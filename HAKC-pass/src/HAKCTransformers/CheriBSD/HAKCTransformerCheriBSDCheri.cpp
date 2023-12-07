@@ -38,10 +38,6 @@ namespace hakc {
     }
 
     Type *HAKCTransformerCheriBSDCheri::GetCapabilityType() {
-        auto *KernelSealingCap = getModule().getNamedGlobal(GetSealingCapabilityName(0));
-        if(KernelSealingCap) {
-            return KernelSealingCap->getType();
-        }
         return HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace);
     }
 

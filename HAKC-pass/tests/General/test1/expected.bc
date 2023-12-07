@@ -7,7 +7,7 @@ target triple = "x86_64-unknown-linux-gnu"
 %struct.data_struct2 = type { i32 (%struct.data_struct*)* }
 %struct.data_struct = type { i32 }
 
-@entry_tokens_6 = internal constant [1 x %HAKCEntryToken] [%HAKCEntryToken { i64 6, i64 393218 }, %HAKCEntryToken { i64 7, i64 458756 }]
+@entry_tokens_6 = internal constant [1 x %HAKCEntryToken] [%HAKCEntryToken { i64 7, i64 458756 }, %HAKCEntryToken { i64 6, i64 393218 }]
 
 @foo = alias i32 (%struct.data_struct2*), i32 (%struct.data_struct2*)* @HAKC_XFER_foo
 
@@ -37,7 +37,7 @@ define dso_local i32 @HAKC_ORIG_foo(%struct.data_struct2* readonly %0) local_unn
   %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
   %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
   %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
-  %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+  %20 = call i32 %19(%struct.data_struct* nonnull %2) #3, !dbg !43
   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
   br label %21
 

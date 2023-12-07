@@ -57,8 +57,15 @@ namespace hakc {
 
     void HAKCFunctionAnalysisLinux::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
                                                                       hakc_transfer_def_t &HAKCTransferFunction) {
-        CallI->setArgOperand(HAKCTransferFunction->GetCompartmentIdIdx(),
-                             getTransformer().GetHAKCCompartmentValue(TargetID));
+        auto *CompartmentIDValue =  getTransformer().GetHAKCCompartmentValue(TargetID);
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Setting ";
+            CallI->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " to be ";
+            CompartmentIDValue->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
+        CallI->setOperand(HAKCTransferFunction->GetCompartmentIdIdx(), CompartmentIDValue);
 
         if (HAKCTransferFunction->HasColorIdx()) {
             auto *F = CallI->getFunction();
@@ -76,7 +83,13 @@ namespace hakc {
                                                 << "\n";
                 throw std::exception();
             }
-            CallI->setArgOperand(HAKCTransferFunction->GetColorIdx(), color);
+            if(debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Setting argument " << HAKCTransferFunction->GetColorIdx()
+                << " to be ";
+                color->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            CallI->setOperand(HAKCTransferFunction->GetColorIdx(), color);
         }
     }
 

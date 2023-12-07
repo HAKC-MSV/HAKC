@@ -6,7 +6,7 @@ target triple = "x86_64-unknown-linux-gnu"
 @test = alias i32 (i32*), i32 (i32*)* @HAKC_XFER_test
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_ORIG_test(i32* %0) local_unnamed_addr #0 !dbg !10 {
+define dso_local i32 @HAKC_ORIG_test(i32* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !10 {
   call void @llvm.dbg.value(metadata i32* %0, metadata !14, metadata !DIExpression()), !dbg !16
   %2 = icmp eq i32* %0, null, !dbg !17
   br i1 %2, label %9, label %3, !dbg !19
@@ -49,7 +49,7 @@ declare void @llvm.dbg.value(metadata, metadata, metadata) #2
 declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_XFER_test(i32* %0) local_unnamed_addr #0 {
+define dso_local i32 @HAKC_XFER_test(i32* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" {
   %2 = bitcast i32* %0 to i8*, !dbg !27
   %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !27
   %4 = bitcast i32* %0 to i8*, !dbg !27
