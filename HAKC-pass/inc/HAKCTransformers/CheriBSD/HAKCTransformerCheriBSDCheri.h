@@ -6,12 +6,13 @@
 #define HAKC_HAKCTRANSFERCHERI_H
 
 #include "HAKCTransformers/HAKCTransformer.h"
-#include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 
 #define HAKC_INIT_ORDER 0x2000000 /* SI_SUB_KLD in CheriBSD */
 #define HAKC_ELEM_ORDER 0x0000000 /* SI_ORDER_FIRST in CheriBSD */
 
 namespace hakc {
+
+    class HAKCModuleAnalysisCheriBSDCheri;
 
     /**
      * CheriBSD specific changes for the Arm Morello ISA.
@@ -27,6 +28,8 @@ namespace hakc {
                                                Instruction *I,
                                                Function *Target,
                                                bool IsData) override;
+
+        LoadInst* GetFunctionCapabilityLoad(Function *F);
 
     protected:
         unsigned CapabilityAddressSpace;

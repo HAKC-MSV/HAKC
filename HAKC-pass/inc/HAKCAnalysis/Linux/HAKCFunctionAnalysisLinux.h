@@ -26,6 +26,9 @@ namespace hakc {
         bool isSafeTransitionFunction(Function *F) override;
 
         std::set<StringRef> GetSafePointerFunctionNames() override;
+
+        void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID, hakc_transfer_def_t
+        &HAKCTransferFunction) override;
     };
 
 } // hakc

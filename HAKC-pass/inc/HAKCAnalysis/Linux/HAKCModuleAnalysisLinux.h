@@ -30,8 +30,6 @@ namespace hakc {
 
         void transferModuleParams() override;
 
-        void updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map) override;
-
         std::set<StringRef> GetIgnoredGlobals() override;
 
         std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() override;

@@ -136,8 +136,6 @@ namespace hakc {
         return getTransformer().getSystemInformation().ContainsCompartmentalizedSymbols();
     }
 
-    void HAKCModuleAnalysis::updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map) {}
-
     bool HAKCModuleAnalysis::AliasShouldBeCreated(Function *F) {
         return TransferFunctionShouldBeCreated(F);
     }
@@ -230,24 +228,6 @@ namespace hakc {
 
     void HAKCModuleAnalysis::performTransformations() {
         if (isModuleCompartmentalized()) {
-            std::map<Function *, std::set<CallInst *>> transferFunctionCalls;
-            for (auto &F: getModule().getFunctionList()) {
-                for (auto it = inst_begin(F); it != inst_end(F); ++it) {
-                    Instruction *inst = &*it;
-
-                    if (auto *call = dyn_cast<CallInst>(inst)) {
-                        if (call->getCalledFunction()) {
-                            if (IsHAKCTransferFunction(call->getCalledFunction())) {
-                                transferFunctionCalls[&F].insert(call);
-                            }
-                        }
-                    }
-                }
-            }
-
-            updateCallParameters(transferFunctionCalls);
-            updateCallParameters(HAKCFunctions);
-
             compartmentalizeModule();
         } else {
             removeSignatures();

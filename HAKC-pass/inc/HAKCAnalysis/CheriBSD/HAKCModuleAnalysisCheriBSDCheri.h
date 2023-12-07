@@ -6,6 +6,7 @@
 #define HAKC_HAKCMODULEANALYSISCHERIBSDCHERI_H
 
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
+#include "HAKCTransformers/CheriBSD/HAKCTransformerCheriBSDCheri.h"
 
 namespace hakc {
 
@@ -41,7 +42,10 @@ namespace hakc {
 
         Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy) override;
 
+        std::shared_ptr<HAKCTransformerCheriBSDCheri> GetCheriBSDTransformer();
+
     protected:
+        std::shared_ptr<HAKCTransformerCheriBSDCheri> CheriBSDTransformer;
 
         HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) override;
 

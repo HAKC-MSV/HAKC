@@ -37,8 +37,6 @@ namespace hakc {
 
         virtual std::string getGlobalHAKCSectionName(GlobalVariable *GV);
 
-        virtual void updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map);
-
         virtual void CompartmentalizeFunction(Function *F);
 
         virtual HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) = 0;
@@ -83,7 +81,6 @@ namespace hakc {
 
     public:
         unsigned totalDataChecks, totalCodeChecks, totalTransfers;
-        std::map<Function *, std::set<CallInst *>> HAKCFunctions;
 
         virtual ~HAKCModuleAnalysis() = default;
 

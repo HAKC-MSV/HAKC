@@ -12,7 +12,7 @@ namespace hakc {
 
     class HAKCFunctionAnalysisCheriBSDCheri : public HAKCFunctionAnalysis {
     public:
-        HAKCFunctionAnalysisCheriBSDCheri(Function *F, HAKCModuleAnalysisCheriBSDCheri *ModTransform);
+        HAKCFunctionAnalysisCheriBSDCheri(Function *F, HAKCModuleAnalysisCheriBSDCheri *ModAnalysis);
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca) override;
 
@@ -50,6 +50,9 @@ namespace hakc {
         bool IsFunctionPointerStruct(Value *Pointer);
 
         std::set<StringRef> GetSafePointerFunctionNames() override;
+
+        void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
+                                               hakc_transfer_def_t &HAKCTransferFunction) override;
 
     private:
         std::vector<Value *> AddToDefChain(Value *V, std::vector<Value*> &ExistingChain, bool FollowLoad, bool Debug);

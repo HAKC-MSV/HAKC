@@ -55,5 +55,30 @@ namespace hakc {
         return isSafe;
     }
 
+    void HAKCFunctionAnalysisLinux::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
+                                                                      hakc_transfer_def_t &HAKCTransferFunction) {
+        CallI->setArgOperand(HAKCTransferFunction->GetCompartmentIdIdx(),
+                             getTransformer().GetHAKCCompartmentValue(TargetID));
+
+        if (HAKCTransferFunction->HasColorIdx()) {
+            auto *F = CallI->getFunction();
+            ConstantInt *color;
+            if (isOutsideTransferFunc(F)) {
+                auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
+                auto *TransferTarget = getModule().getFunction(transferTargetName);
+                color = getLinuxModuleAnalysis().getFunctionColor(TransferTarget);
+            } else {
+                color = getLinuxModuleAnalysis().getFunctionColor(F);
+            }
+
+            if (!color) {
+                CommonHAKCAnalysis::getWriter() << "Could not find Color for function " << F->getName()
+                                                << "\n";
+                throw std::exception();
+            }
+            CallI->setArgOperand(HAKCTransferFunction->GetColorIdx(), color);
+        }
+    }
+
     StringRef HAKCFunctionAnalysisLinux::SafePointerName = "hakc_safe_ptr";
 } // hakc

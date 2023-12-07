@@ -4,13 +4,12 @@
 
 #include "llvm/IR/InstIterator.h"
 
-#include "HAKCTransformers/CheriBSD/HAKCTransformerCheriBSDCheri.h"
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 #include "HAKCAnalysis/CheriBSD/HAKCFunctionAnalysisCheriBSDCheri.h"
 
 namespace hakc {
     HAKCModuleAnalysisCheriBSDCheri::HAKCModuleAnalysisCheriBSDCheri(Module &Module)
-            : HAKCModuleAnalysis(Module) {
+            : HAKCModuleAnalysis(Module), CheriBSDTransformer(nullptr) {
     }
 
     void HAKCModuleAnalysisCheriBSDCheri::InitHAKCFunctions() {
@@ -21,7 +20,11 @@ namespace hakc {
     }
 
     std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisCheriBSDCheri::CreateTransformer() {
-        return std::make_shared<HAKCTransformerCheriBSDCheri>(M, this);
+        auto Transformer = std::make_shared<HAKCTransformerCheriBSDCheri>(M, this);
+        if(!CheriBSDTransformer) {
+            CheriBSDTransformer = Transformer;
+        }
+        return Transformer;
     }
 
     std::set<StringRef> HAKCModuleAnalysisCheriBSDCheri::GetNoTransferFunctions() {
@@ -179,5 +182,9 @@ namespace hakc {
         }
 
         return false;
+    }
+
+    std::shared_ptr<HAKCTransformerCheriBSDCheri> HAKCModuleAnalysisCheriBSDCheri::GetCheriBSDTransformer() {
+        return CheriBSDTransformer;
     }
 } // hakc

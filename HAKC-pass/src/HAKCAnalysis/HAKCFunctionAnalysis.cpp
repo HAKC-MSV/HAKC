@@ -10,6 +10,70 @@
 
 namespace hakc {
 
+    HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, bool debug)
+            : CommonHAKCAnalysis(debug),
+              PointerManager(this),
+              DTree(*F),
+              CurrentFunction(F),
+              SetupHasRun(false),
+              CompartmentTransferCount(0) {
+    }
+
+    void HAKCFunctionAnalysis::UpdateHAKCFunctionParameters() {
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Updating parameters for the following HAKC functions:\n";
+            for (auto *CallI: HAKCFunctionCalls) {
+                CallI->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+        }
+
+        auto *F = &getFunction();
+        hakc_compartment_id_t id;
+        StringRef transferTargetName = F->getName();
+        if (isOutsideTransferFunc(F)) {
+            transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
+            Function *TransferTarget = getModule().getFunction(transferTargetName);
+            id = getTransformer().getFunctionCompartmentID(TransferTarget);
+        } else {
+            id = getTransformer().getFunctionCompartmentID(F);
+        }
+        if (id < 0) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Compartment ID for function "
+                                            << transferTargetName << "\n";
+            throw std::exception();
+        }
+
+        for (auto *CallI: HAKCFunctionCalls) {
+            auto HAKCTransferFunction = GetHAKCTransferDef(CallI->getCalledFunction()->getName());
+            if (HAKCTransferFunction) {
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for ";
+                    CallI->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string
+                            (HAKCTransferFunction->GetCompartmentIdIdx()) << " (";
+                    CallI->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(
+                            CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << ") to " << std::to_string(id) << "\n";
+
+                }
+
+                UpdateHAKCFunctionParameters_Arch(CallI, id, HAKCTransferFunction);
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "After update call is ";
+                    CallI->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+            } else if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "No HAKC Transfer function found for "
+                                                << CallI->getCalledFunction()->getName() << "\n";
+            }
+        }
+    }
+
     /**
          * @brief Transfers a pointer argument back to its original color after an indirect call returns
          * @param operand Indirect call argument
@@ -483,7 +547,7 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysis::IsManualSafePointer(CallInst *Call) {
-        if(Call->getCalledFunction()) {
+        if (Call->getCalledFunction()) {
             auto SafePointerNames = GetSafePointerFunctionNames();
             return SafePointerNames.find(Call->getCalledFunction()->getName()) != SafePointerNames.end();
         }
@@ -520,7 +584,7 @@ namespace hakc {
                  * See find_mm_struct in mm/migrate.c.
                  */
                 return false;
-            } else if(IsManualSafePointer(call)) {
+            } else if (IsManualSafePointer(call)) {
                 return false;
             }
         } else if (isa<Constant>(ptr)) {
@@ -870,6 +934,10 @@ namespace hakc {
             return;
         }
 
+        if (IsHAKCFunction(call->getCalledFunction())) {
+            HAKCFunctionCalls.insert(call);
+        }
+
         auto CurrentSymbol = getTransformer().getSystemInformation().findSymbol(CurrentFunction);
 
         if (debug_output) {
@@ -1000,8 +1068,6 @@ namespace hakc {
                     NonKernelDirectFunctionCallSet.insert(call);
                 }
             }
-        } else if (IsHAKCFunction(call->getCalledFunction())) {
-            getModuleAnalysis().HAKCFunctions[CurrentFunction].insert(call);
         }
     }
 
@@ -1021,15 +1087,6 @@ namespace hakc {
             sectionName += getFunction().getSection().str();
         }
         return sectionName;
-    }
-
-    HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, bool debug)
-            : CommonHAKCAnalysis(debug),
-              PointerManager(this),
-              DTree(*F),
-              CurrentFunction(F),
-              SetupHasRun(false),
-              CompartmentTransferCount(0) {
     }
 
     void HAKCFunctionAnalysis::setup() {
@@ -1303,6 +1360,12 @@ namespace hakc {
             }
             createMissingTransfers();
             if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+                CommonHAKCAnalysis::getWriter() << "----- UpdateHAKCFunctionParameters ------\n";
+            }
+            UpdateHAKCFunctionParameters();
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter() << "---- createAllAuthenticatedPointers ----\n";
             }
             createAllAuthenticatedPointers();
@@ -1358,7 +1421,7 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Value *Pointer) {
-        if(Pointer->getType()->isPointerTy()) {
+        if (Pointer->getType()->isPointerTy()) {
             return Pointer->getType()->getPointerElementType()->isFunctionTy();
         }
         return false;

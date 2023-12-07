@@ -351,11 +351,7 @@ namespace hakc {
         hakc_compartment_id_t CompartmentID = 0;
         if (Symbol) {
             CompartmentID = Symbol->getCompartmentID();
-//            CommonHAKCAnalysis::getWriter() << "Could not find symbol for function " <<
-//                                            Target->getName() << "\n";
-//            throw std::exception();
         }
-
 
         unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
         auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
@@ -366,10 +362,8 @@ namespace hakc {
         }
         auto *AccessCapacity = GetAccessCapability(CompartmentID);
         auto *CurrentFunction = HAKCIRBuilder.GetInsertBlock()->getParent();
-        LoadInst *CapabilityLoad;
-        if (CapabilityLoads.find(CurrentFunction) != CapabilityLoads.end()) {
-            CapabilityLoad = CapabilityLoads[CurrentFunction];
-        } else {
+        LoadInst *CapabilityLoad = GetFunctionCapabilityLoad(CurrentFunction);
+        if (!CapabilityLoad) {
             auto &EntryBlock = CurrentFunction->getEntryBlock();
             auto *FirstInstruction = EntryBlock.getFirstNonPHIOrDbgOrLifetime();
             IRBuilder<> TempBuilder(FirstInstruction);
@@ -434,5 +428,13 @@ namespace hakc {
 
     bool HAKCTransformerCheriBSDCheri::CompilingPureCapKernel() const {
         return CapabilityAddressSpace > 0;
+    }
+
+    LoadInst *HAKCTransformerCheriBSDCheri::GetFunctionCapabilityLoad(Function *F) {
+        if(CapabilityLoads.find(F) != CapabilityLoads.end()) {
+            return CapabilityLoads[F];
+        }
+
+        return nullptr;
     }
 } // hakc

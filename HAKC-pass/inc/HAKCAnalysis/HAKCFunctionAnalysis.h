@@ -125,6 +125,8 @@ namespace hakc {
 
         std::set<CallInst *> NonKernelDirectFunctionCallSet;
 
+        std::set<CallInst *> HAKCFunctionCalls;
+
         Function *CurrentFunction;
 
         bool SetupHasRun;
@@ -209,6 +211,11 @@ namespace hakc {
         bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
 
         virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
+
+        virtual void UpdateHAKCFunctionParameters();
+
+        virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
+        hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
     public:
         HAKCFunctionAnalysis(Function *F, bool debug);

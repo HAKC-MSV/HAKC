@@ -3,13 +3,14 @@
 //
 
 #include "HAKCAnalysis/CheriBSD/HAKCFunctionAnalysisCheriBSDCheri.h"
+#include "HAKCTransformers/CheriBSD/HAKCTransformerCheriBSDCheri.h"
 
 namespace hakc {
     HAKCFunctionAnalysisCheriBSDCheri::HAKCFunctionAnalysisCheriBSDCheri(Function *F,
-                                                                         HAKCModuleAnalysisCheriBSDCheri *ModTransform)
+                                                                         HAKCModuleAnalysisCheriBSDCheri *ModAnalysis)
             :
             HAKCFunctionAnalysis(F, CommonHAKCAnalysis::getHAKCDebugName() == F->getName()),
-            ModAnalysis(ModTransform) {
+            ModAnalysis(ModAnalysis) {
 
     }
 
@@ -84,16 +85,6 @@ namespace hakc {
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsNeedingAuthenticatedArgs() {
         auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs();
-
-//        Intrinsic::ID AdditionalIDs[] = {
-//                Intrinsic::cheri_cap_address_get,
-//                Intrinsic::cheri_cap_address_set,
-//                Intrinsic::cheri_cap_sealed_get,
-//        };
-//
-//        for (auto ID: AdditionalIDs) {
-//            Intrinsics.insert(ID);
-//        }
 
         return Intrinsics;
     }
@@ -266,6 +257,20 @@ namespace hakc {
                 GetSafeCapName,
                 GetSafePtrName,
         };
+    }
+
+    void HAKCFunctionAnalysisCheriBSDCheri::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
+                                                                              hakc_transfer_def_t &HAKCTransferFunction) {
+
+        auto CheriBSDTransformer = ModAnalysis->GetCheriBSDTransformer();
+
+        auto *CapabilityLoad = CheriBSDTransformer->GetFunctionCapabilityLoad(CallI->getFunction());
+        if(!CapabilityLoad) {
+            CommonHAKCAnalysis::getWriter() << "Function " << CallI->getFunction()->getName() << " does not have a "
+                                                                                                 "capability load!\n";
+            throw std::exception();
+        }
+        CallI->setArgOperand(HAKCTransferFunction->GetCompartmentIdIdx(), CapabilityLoad);
     }
 
     StringRef HAKCFunctionAnalysisCheriBSDCheri::GetSafeCapName = "hakc_get_safe_cap";
