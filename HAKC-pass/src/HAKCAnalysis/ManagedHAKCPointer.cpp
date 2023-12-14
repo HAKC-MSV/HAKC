@@ -413,6 +413,16 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << " is the authenticated pointer\n";
             }
             AuthenticatedPointer = BaseDefinition;
+            if (auto *Alloca = dyn_cast<AllocaInst>(BaseDefinition)) {
+                AuthenticatedPointer = Manager->GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
+                if(DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "Base Definition is an AllocaInst\n\t";
+                    Alloca->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\nAuthenticated pointer is\n\t";
+                    AuthenticatedPointer->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+            }
             return;
         }
 

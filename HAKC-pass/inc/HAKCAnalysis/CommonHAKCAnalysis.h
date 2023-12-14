@@ -23,6 +23,8 @@ namespace hakc {
         */
         bool debug_output;
 
+        std::map<Value*, std::vector<Value*>> DefchainCache;
+
         explicit CommonHAKCAnalysis(bool debug);
 
         bool isHAKCFunction(Function *F);

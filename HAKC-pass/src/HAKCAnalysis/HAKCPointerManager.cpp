@@ -125,14 +125,6 @@ namespace hakc {
 
     Value *HAKCPointerManager::GetDef(Value *V, bool DebugActive) {
         auto *BaseDefinition = GetFunctionAnalysis()->getDef(V, false, DebugActive);
-        if (auto *Alloca = dyn_cast<AllocaInst>(BaseDefinition)) {
-            if(DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "Base Definition is an AllocaInst\n";
-                Alloca->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
-            }
-            BaseDefinition = GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
-        }
 
         if(isa<GlobalVariable>(BaseDefinition) &&
            !CommonHAKCAnalysis::IsStringType(BaseDefinition->getType())) {
