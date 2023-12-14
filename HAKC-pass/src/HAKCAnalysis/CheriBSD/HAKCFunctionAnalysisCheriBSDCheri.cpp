@@ -35,6 +35,11 @@ namespace hakc {
 
         if(auto *Call = dyn_cast<CallInst>(DefChain.back())) {
             if(IsCallInIntrinsicSet(Call, CapabilityAdjustingIntrinsics)) {
+                if(debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Adding ";
+                    Call->getArgOperand(0)->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " to Def Chain\n";
+                }
                 return AddToDefChain(Call->getArgOperand(0), ExistingChain, FollowLoad, Debug);
             }
         }
@@ -142,7 +147,8 @@ namespace hakc {
         MaybeAddCompareToDirectUsers(compare);
     }
 
-    bool HAKCFunctionAnalysisCheriBSDCheri::pointerShouldBeChecked(Value *ptr) {
+    bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeManaged(Use &U) {
+        auto *ptr = U.get();
         auto *Def = getDef(ptr, false, debug_output);
         if (TypeMatchesIgnoredTypes(Def->getType())) {
             return false;
@@ -187,7 +193,7 @@ namespace hakc {
             }
         }
 
-        return HAKCFunctionAnalysis::pointerShouldBeChecked(ptr);
+        return HAKCFunctionAnalysis::PointerShouldBeManaged(U);
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::TypeMatchesIgnoredTypes(Type *Ty) {
@@ -245,6 +251,12 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
+        if(auto *IntrinsicI = dyn_cast<IntrinsicInst>(Pointer)) {
+            auto *IntrinsicArg = HAKCFunctionAnalysis::getDef(IntrinsicI->getOperand(0), false, debug_output);
+            if(isa<GlobalVariable>(IntrinsicArg) || isa<AllocaInst>(IntrinsicArg)) {
+                return true;
+            }
+        }
         return IsFunctionPointerWrapper(Pointer);
     }
 

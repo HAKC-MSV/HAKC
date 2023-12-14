@@ -102,6 +102,8 @@ namespace hakc {
         Value *ProtectedPointer;
         bool DebugActive;
         HAKCPointerManager *Manager;
+
+        bool ManuallyTransferred;
         /**
          * Pointer uses and their replacements
          */
@@ -142,9 +144,7 @@ namespace hakc {
 
         std::set<Instruction *> GetBaseDefinitionUsers();
 
-        unsigned GetAuthenticatedUserCount();
-
-        unsigned GetProtectedUserCount();
+        bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
 
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, bool debug);
@@ -166,6 +166,12 @@ namespace hakc {
         void MaybeCreateMissingTransfer();
 
         void InitializeUses();
+
+        void RegisterManualHAKCTransfer(CallInst *CallI);
+
+        unsigned GetAuthenticatedUserCount();
+
+        unsigned GetProtectedUserCount();
 
     private:
         void InitBaseDefinition(Value *Pointer);

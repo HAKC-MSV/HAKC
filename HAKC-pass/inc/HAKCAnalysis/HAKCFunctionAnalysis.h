@@ -166,9 +166,7 @@ namespace hakc {
 
         bool isPHIofGlobalsOnly(Value *ptr, std::set<PHINode *> &nodes);
 
-        virtual bool pointerShouldBeChecked(Value *ptr);
-
-        void registerPointerDereference(Use &use);
+        void RegisterPointerDereference(Use &use);
 
         virtual void handleLoad(LoadInst *load);
 
@@ -207,8 +205,6 @@ namespace hakc {
         void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned OpNo);
 
         void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
-
-        bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
 
         virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
@@ -275,6 +271,8 @@ namespace hakc {
         unsigned GetCodeAuthenticationCount();
 
         virtual bool PointerShouldBeConsideredCode(Value *Pointer);
+
+        virtual bool PointerShouldBeManaged(Use &use);
 
     };
 

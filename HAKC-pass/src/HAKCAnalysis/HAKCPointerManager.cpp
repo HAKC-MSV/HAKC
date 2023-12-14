@@ -19,18 +19,72 @@ namespace hakc {
 
     }
 
-    void HAKCPointerManager::ManagePointer(Value *V, bool debug) {
+    bool HAKCPointerManager::PointerIsEligableForManagement(Value *Pointer, bool Debug) {
+        /* The HAKCPointerManager::GetDef method performs some analysis to find a definition that could
+        * be different from the "true" definition. Use the true definition to check if we are managing
+        * constant strings.
+        */
+        auto *Definition = GetFunctionAnalysis()->getDef(Pointer, false, Debug);
+        if(isa<ConstantPointerNull>(Definition)) {
+            if(Debug) {
+                CommonHAKCAnalysis::getWriter() << "Pointer Manager ignores null pointers\n";
+            }
+            return false;
+        } else if(isa<ConstantInt>(Pointer)) {
+            if(Debug) {
+                CommonHAKCAnalysis::getWriter() << "Pointer Manager ignores Constant Ints\n";
+            }
+            return false;
+        } else if(!CommonHAKCAnalysis::IsPointerLikeType(Pointer->getType())) {
+            if (Debug) {
+                CommonHAKCAnalysis::getWriter() << "Pointer Manager ignores non-pointers\n";
+            }
+            return false;
+        }
+
+        if(auto *GV = dyn_cast<GlobalVariable>(Definition)) {
+            if (CommonHAKCAnalysis::IsStringType(GV->getValueType())) {
+                if (Debug) {
+                    CommonHAKCAnalysis::getWriter() << "Pointer Manager is ignoring constant string ";
+                    Definition->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool HAKCPointerManager::ManagePointer(Value *V, bool debug) {
+        bool result = false;
+        if(!PointerIsEligableForManagement(V, debug)) {
+            if(debug) {
+                CommonHAKCAnalysis::getWriter() << "Value ";
+                V->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is not eligable for management\n";
+            }
+            return result;
+        }
         auto ManagedPointer = GetManagedPointer(V);
         if (!ManagedPointer) {
             ManagedPointer = std::make_shared<ManagedHAKCPointer>(V, this, debug);
-            if(!isa<Constant>(ManagedPointer->GetBaseDefinition())) {
-                ManagedPointers.insert(ManagedPointer);
-            } else if(debug) {
-                CommonHAKCAnalysis::getWriter() << "HAKCPointerManager is ignoring Constant ";
-                ManagedPointer->GetBaseDefinition()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+            ManagedPointers.insert(ManagedPointer);
+            result = true;
+        } else {
+            if(auto *CallI = dyn_cast<CallInst>(V)) {
+                if(GetFunctionAnalysis()->IsHAKCTransferFunction(CallI->getCalledFunction())) {
+                    ManagedPointer->RegisterManualHAKCTransfer(CallI);
+                    return result;
+                }
+            }
+            if(debug) {
+                CommonHAKCAnalysis::getWriter() << "Pointer ";
+                V->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is already managed: " << ManagedPointer << "\n";
             }
         }
+        return result;
     }
 
     HAKCFunctionAnalysis *HAKCPointerManager::GetFunctionAnalysis() {
@@ -66,11 +120,43 @@ namespace hakc {
     }
 
     Value *HAKCPointerManager::GetDef(Value *V) {
-        auto *Def = GetFunctionAnalysis()->getDef(V, false, false);
-        if (auto *Alloca = dyn_cast<AllocaInst>(Def)) {
-            Def = GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
+        return GetDef(V, false);
+    }
+
+    Value *HAKCPointerManager::GetDef(Value *V, bool DebugActive) {
+        auto *BaseDefinition = GetFunctionAnalysis()->getDef(V, false, DebugActive);
+        if (auto *Alloca = dyn_cast<AllocaInst>(BaseDefinition)) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Base Definition is an AllocaInst\n";
+                Alloca->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            BaseDefinition = GetFunctionAnalysis()->GetFinalAllocaDef(Alloca);
         }
-        return Def;
+
+        if(isa<GlobalVariable>(BaseDefinition) &&
+           !CommonHAKCAnalysis::IsStringType(BaseDefinition->getType())) {
+            Value *NewBaseDefinition = nullptr;
+            for(auto *Link : GetFunctionAnalysis()->findDefChain(V, false, DebugActive)) {
+                if(isa<CallInst>(Link)) {
+                    NewBaseDefinition = Link;
+                    break;
+                }
+            }
+
+            if(NewBaseDefinition) {
+                if(DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "Changing BaseDefinition from ";
+                    BaseDefinition->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " to ";
+                    NewBaseDefinition->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+                BaseDefinition = NewBaseDefinition;
+            }
+        }
+
+        return BaseDefinition;
     }
 
     Instruction *HAKCPointerManager::FindAuthenticatedCopy(Value *V) {
@@ -140,10 +226,10 @@ namespace hakc {
 
     Value *HAKCPointerManager::CreateAuthenticatedInstruction(Value *Pointer, bool debug) {
         if (ValueIsAuthenticatedCopy(Pointer) || ValueIsAuthenticatedPointer(Pointer)) {
-            if(debug) {
-                if(ValueIsAuthenticatedCopy(Pointer)) {
+            if (debug) {
+                if (ValueIsAuthenticatedCopy(Pointer)) {
                     CommonHAKCAnalysis::getWriter() << "Pointer is Authenticated Copy\n";
-                } else if(ValueIsAuthenticatedPointer(Pointer)) {
+                } else if (ValueIsAuthenticatedPointer(Pointer)) {
                     CommonHAKCAnalysis::getWriter() << "Pointer is AuthenticatedPointer\n";
                 }
             }
@@ -230,7 +316,7 @@ namespace hakc {
             ManagedPtr->CreatePointerUseClones();
             if (debug) {
                 CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for " << ManagedPtr <<
-                "\n";
+                                                "\n";
             }
         }
     }
@@ -324,7 +410,7 @@ namespace hakc {
     }
 
     Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
-        if(HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
+        if (HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
         } else {

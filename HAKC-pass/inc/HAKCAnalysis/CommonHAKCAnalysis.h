@@ -75,6 +75,8 @@ namespace hakc {
 
         static bool IsKernelCompartment(hakc_compartment_id_t ID);
 
+        static bool IsPointerLikeType(Type *Ty);
+
         std::string getOutsideTransferName(Function *F);
 
         static std::string getVariadicTransferName(Function *F);
@@ -126,6 +128,16 @@ namespace hakc {
         bool IsKernelAllocation(Value *V);
 
         bool IsCompartmentalizedFunction(Function *F);
+
+        static bool IsStringType(Type *Ty);
+
+        static Instruction* GetTargetTypeCast(Instruction *I, Type* TargetType);
+
+        virtual std::set<Intrinsic::ID> GetBitshiftIntrinsics();
+
+        virtual std::set<Instruction::BinaryOps> GetPointerManipulatingBinaryOps();
+
+        bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

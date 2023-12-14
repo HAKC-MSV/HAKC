@@ -28,7 +28,7 @@ namespace hakc {
     public:
         explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis);
 
-        void ManagePointer(Value *V, bool debug);
+        bool ManagePointer(Value *V, bool debug);
 
         std::set<std::shared_ptr<ManagedHAKCPointer>> GetManagedPointers();
 
@@ -51,6 +51,8 @@ namespace hakc {
         bool empty();
 
         Value *GetDef(Value *V);
+
+        Value *GetDef(Value *V, bool DebugActive);
 
         /**
          * Return the Authenticated version of Pointer
@@ -141,6 +143,8 @@ namespace hakc {
         Value* CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
 
         Value* CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
+
+        bool PointerIsEligableForManagement(Value *Pointer, bool Debug);
     };
 
 } // hakc

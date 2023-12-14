@@ -145,6 +145,7 @@ namespace hakc {
             "sys/arm64/arm64/machdep_boot.c",
             "sys/contrib/libfdt/fdt.c",
             "sys/kern/init_main.c",
+            "sys/crypto/skein/skein_block.c",
         };
     }
 

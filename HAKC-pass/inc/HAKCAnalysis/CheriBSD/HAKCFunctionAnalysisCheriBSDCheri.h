@@ -22,6 +22,8 @@ namespace hakc {
 
         std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug) override;
 
+        bool PointerShouldBeManaged(Use &U) override;
+
         static StringRef GetSafeCapName;
 
         static StringRef GetSafePtrName;
@@ -40,8 +42,6 @@ namespace hakc {
         std::set<Intrinsic::ID> GetIntrinsicsToClone() override;
 
         void handleComparison(CmpInst *compare) override;
-
-        bool pointerShouldBeChecked(Value *ptr) override;
 
         static bool TypeMatchesIgnoredTypes(Type *Ty);
 

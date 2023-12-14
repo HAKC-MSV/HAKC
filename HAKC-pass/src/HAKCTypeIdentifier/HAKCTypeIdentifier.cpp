@@ -404,9 +404,9 @@ bool hakc::HAKCTypeIdentifier::GlobalShouldBeSkipped(GlobalVariable *GV) {
                   GV->getName().empty() || GV->hasPrivateLinkage() ||
                   GV->getName().startswith(".") ||
                   /* Skip constant strings */
-                  (GV->hasInitializer() && isa<Constant>(GV->getInitializer()) &&
-                   GV->getInitializer()->getType()->isArrayTy() &&
-                   GV->getInitializer()->getType()->getArrayElementType()->isIntegerTy(8));
+                  (GV->hasInitializer() &&
+                  isa<Constant>(GV->getInitializer()) &&
+                   CommonHAKCAnalysis::IsStringType(GV->getInitializer()->getType()));
     if (!result && !isa<Function>(GV)) {
         if (auto *StructTy = dyn_cast<StructType>(GV->getType()->getPointerElementType())) {
             result = StructTy->isOpaque();
