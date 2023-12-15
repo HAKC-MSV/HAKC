@@ -175,26 +175,26 @@ namespace hakc {
     }
 
     void HAKCTransformerCheriBSDCheri::ModifyModuleDriverCap(hakc_compartment_id_t CompartmentID) {
-        if(CompartmentID == KERNEL_COMPARTMENT) {
+        if (CompartmentID == KERNEL_COMPARTMENT) {
             return;
         }
 
-        if(DebugIsActive()) {
+        if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "Modifying Module Driver Cap for Compartment "
-            << std::to_string(CompartmentID) << "\n";
+                                            << std::to_string(CompartmentID) << "\n";
         }
         StringRef TargetStructTyName = "struct.driver_module_data";
         StringRef DriverObjectTyName = "struct.kobj_class";
         auto *TargetStructTy = StructType::getTypeByName(getModule().getContext(), TargetStructTyName);
-        if(!TargetStructTy) {
-            if(DebugIsActive()) {
+        if (!TargetStructTy) {
+            if (DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Could not find " << TargetStructTyName << "\n";
             }
             return;
         }
         auto *DriverObjectTy = StructType::getTypeByName(getModule().getContext(), DriverObjectTyName);
-        if(!DriverObjectTy) {
-            if(DebugIsActive()) {
+        if (!DriverObjectTy) {
+            if (DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Could not find " << DriverObjectTyName << "\n";
             }
             return;
@@ -203,39 +203,41 @@ namespace hakc {
         auto *KernelSealingCap = GetAccessCapability(0);
         auto *CompartmentSealingCap = GetAccessCapability(CompartmentID);
 
-        std::set<std::pair<User*, unsigned>> UsesToReplace;
-        for(auto &KernelSealingCapUse : KernelSealingCap->uses()) {
-            if(KernelSealingCapUse.getUser()->getType() == TargetStructTy) {
-                if(DebugIsActive()) {
+        std::set<std::pair<User *, unsigned>> UsesToReplace;
+        for (auto &KernelSealingCapUse: KernelSealingCap->uses()) {
+            if (KernelSealingCapUse.getUser()->getType() == TargetStructTy) {
+                if (DebugIsActive()) {
                     CommonHAKCAnalysis::getWriter() << "Found TargetStruct ";
                     KernelSealingCapUse.getUser()->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << "\n";
                 }
-                if(auto *DriverModuleInitializer = dyn_cast<ConstantStruct>(KernelSealingCapUse.getUser())) {
-                    if(DebugIsActive()) {
+                if (auto *DriverModuleInitializer = dyn_cast<ConstantStruct>(KernelSealingCapUse.getUser())) {
+                    if (DebugIsActive()) {
                         CommonHAKCAnalysis::getWriter() << "Searching operands...\n";
                     }
-                    for(auto &Member : DriverModuleInitializer->operands()) {
-                        if(isa<PointerType>(Member->getType()) && Member->getType()->getPointerElementType() == DriverObjectTy) {
-                            if(DebugIsActive()) {
+                    for (auto &Member: DriverModuleInitializer->operands()) {
+                        if (isa<PointerType>(Member->getType()) &&
+                            Member->getType()->getPointerElementType() == DriverObjectTy) {
+                            if (DebugIsActive()) {
                                 CommonHAKCAnalysis::getWriter() << "Found driver object at argument "
-                                << std::to_string(Member.getOperandNo()) << "\n";
+                                                                << std::to_string(Member.getOperandNo()) << "\n";
                             }
                             auto MemberCompartmentID = getGlobalCompartmentID(dyn_cast<GlobalVariable>(Member.get()));
-                            if(MemberCompartmentID == CompartmentID) {
+                            if (MemberCompartmentID == CompartmentID) {
                                 UsesToReplace.insert(std::make_pair(KernelSealingCapUse.getUser(),
                                                                     KernelSealingCapUse.getOperandNo()));
-                            } else if(DebugIsActive()) {
+                            } else if (DebugIsActive()) {
                                 CommonHAKCAnalysis::getWriter() << "Member Compartment ID " << std::to_string
-                                (MemberCompartmentID) << " does not match " << std::to_string(CompartmentID) << "\n";
+                                        (MemberCompartmentID) << " does not match " << std::to_string(CompartmentID)
+                                                                << "\n";
                             }
                         }
                     }
                 }
             }
         }
-        for(auto it : UsesToReplace) {
-            if(DebugIsActive()) {
+        for (auto it: UsesToReplace) {
+            if (DebugIsActive()) {
                 CommonHAKCAnalysis::getWriter() << "Setting Argument " << std::to_string(it.second) << " of ";
                 it.first->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " to be ";
@@ -330,7 +332,8 @@ namespace hakc {
         std::string SysInitRecordName = "_sym_";
         SysInitRecordName += SysInitEntryName;
         auto *SysInitRecord = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(SysInitRecordName,
-                                                                                     HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace)));
+                                                                                     HAKCIRBuilder.getInt8PtrTy(
+                                                                                             CapabilityAddressSpace)));
         SysInitRecord->setSection("set_sysinit_set");
         SysInitRecord->setInitializer(ConstantExpr::getPointerCast(SysInitEntry,
                                                                    HAKCIRBuilder.getInt8PtrTy(CapabilityAddressSpace)));
@@ -343,11 +346,6 @@ namespace hakc {
     std::vector<Value *> HAKCTransformerCheriBSDCheri::CreateArgumentsWithCompartment(Value *HAKCPointer,
                                                                                       Function *Target) {
         Value *HAKCPointerBitCast;
-        auto Symbol = SystemInformation.findSymbol(Target);
-        hakc_compartment_id_t CompartmentID = 0;
-        if (Symbol) {
-            CompartmentID = Symbol->getCompartmentID();
-        }
 
         unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
         auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
@@ -356,18 +354,8 @@ namespace hakc {
         } else {
             HAKCPointerBitCast = HAKCIRBuilder.CreateBitCast(HAKCPointer, DataAuthFuncTy->getParamType(0));
         }
-        auto *AccessCapacity = GetAccessCapability(CompartmentID);
         auto *CurrentFunction = HAKCIRBuilder.GetInsertBlock()->getParent();
         LoadInst *CapabilityLoad = GetFunctionCapabilityLoad(CurrentFunction);
-        if (!CapabilityLoad) {
-            auto &EntryBlock = CurrentFunction->getEntryBlock();
-            auto *FirstInstruction = EntryBlock.getFirstNonPHIOrDbgOrLifetime();
-            IRBuilder<> TempBuilder(FirstInstruction);
-
-            CapabilityLoad = TempBuilder.CreateLoad(AccessCapacity->getType()->getPointerElementType(),
-                                                    AccessCapacity);
-            CapabilityLoads[CurrentFunction] = CapabilityLoad;
-        }
 
         return {
                 HAKCPointerBitCast,
@@ -427,10 +415,41 @@ namespace hakc {
     }
 
     LoadInst *HAKCTransformerCheriBSDCheri::GetFunctionCapabilityLoad(Function *F) {
-        if(CapabilityLoads.find(F) != CapabilityLoads.end()) {
+        if (CapabilityLoads.find(F) != CapabilityLoads.end()) {
             return CapabilityLoads[F];
         }
 
-        return nullptr;
+        if (F->empty()) {
+            CommonHAKCAnalysis::getWriter() << "Function " << F->getName()
+                                            << " needs a basic block to add a Capability Load";
+            throw std::exception();
+        }
+
+        auto *TransferTarget = F;
+
+        if (CommonHAKCAnalysis::isOutsideTransferFunc(F)) {
+            auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
+            TransferTarget = getModule().getFunction(transferTargetName);
+            if (!TransferTarget) {
+                CommonHAKCAnalysis::getWriter() << "Could not find Function " << transferTargetName << "\n";
+                throw std::exception();
+            }
+        }
+
+        auto Symbol = SystemInformation.findSymbol(TransferTarget);
+        hakc_compartment_id_t CompartmentID = 0;
+        if (Symbol) {
+            CompartmentID = Symbol->getCompartmentID();
+        }
+
+        auto *AccessCapacity = GetAccessCapability(CompartmentID);
+        auto &EntryBlock = F->getEntryBlock();
+        auto *FirstInstruction = EntryBlock.getFirstNonPHIOrDbgOrLifetime();
+        IRBuilder<> TempBuilder(FirstInstruction);
+
+        auto *CapabilityLoad = TempBuilder.CreateLoad(AccessCapacity->getType()->getPointerElementType(),
+                                                      AccessCapacity);
+        CapabilityLoads[F] = CapabilityLoad;
+        return CapabilityLoad;
     }
 } // hakc

@@ -50,20 +50,20 @@ namespace hakc {
     Instruction *HAKCFunctionAnalysisCheriBSDCheri::GetFinalAllocaDef(AllocaInst *Alloca) {
         auto IntrinsicDefs = GetCapabilityAdjustingIntrinsics();
 
-        std::set<Instruction *> WorkingList = {Alloca};
-        while (!WorkingList.empty()) {
-            auto *I = *WorkingList.begin();
-            WorkingList.erase(I);
-            for (auto *U: I->users()) {
-                if (auto *Call = dyn_cast<CallInst>(U)) {
-                    if (IsCallInIntrinsicSet(Call, IntrinsicDefs)) {
-                        return Call;
-                    }
-                } else if (auto *BitCast = dyn_cast<BitCastInst>(U)) {
-                    WorkingList.insert(BitCast);
-                }
-            }
-        }
+//        std::set<Instruction *> WorkingList = {Alloca};
+//        while (!WorkingList.empty()) {
+//            auto *I = *WorkingList.begin();
+//            WorkingList.erase(I);
+//            for (auto *U: I->users()) {
+//                if (auto *Call = dyn_cast<CallInst>(U)) {
+//                    if (IsCallInIntrinsicSet(Call, IntrinsicDefs)) {
+//                        return Call;
+//                    }
+//                } else if (auto *BitCast = dyn_cast<BitCastInst>(U)) {
+//                    WorkingList.insert(BitCast);
+//                }
+//            }
+//        }
 
         return HAKCFunctionAnalysis::GetFinalAllocaDef(Alloca);
     }
@@ -150,6 +150,7 @@ namespace hakc {
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeManaged(Use &U) {
         auto *ptr = U.get();
         auto *Def = getDef(ptr, false, debug_output);
+        bool MemberIsNotIgnoredType = false;
         if (TypeMatchesIgnoredTypes(Def->getType())) {
             return false;
         }
@@ -163,7 +164,7 @@ namespace hakc {
                         PhiNodeV->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << " is an ignored type\n";
                     }
-                    return false;
+                    continue;
                 } else if (auto *LoadI = dyn_cast<LoadInst>(PhiNodeV)) {
                     auto *LoadPtrV = getDef(LoadI->getPointerOperand(), false, debug_output);
                     Type *LoadPtrVTy = LoadPtrV->getType();
@@ -176,7 +177,7 @@ namespace hakc {
                             LoadPtrV->print(CommonHAKCAnalysis::getWriter());
                             CommonHAKCAnalysis::getWriter() << " is an ignored type\n";
                         }
-                        return false;
+                        continue;
                     }
                     if (debug_output) {
                         LoadPtrV->print(CommonHAKCAnalysis::getWriter());
@@ -190,10 +191,18 @@ namespace hakc {
                         }
                     }
                 }
+                if(debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Incoming value " << std::to_string(i)
+                    << " not an ignored Type in ";
+                    Phi->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+                MemberIsNotIgnoredType = true;
+                break;
             }
         }
 
-        return HAKCFunctionAnalysis::PointerShouldBeManaged(U);
+        return MemberIsNotIgnoredType && HAKCFunctionAnalysis::PointerShouldBeManaged(U);
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::TypeMatchesIgnoredTypes(Type *Ty) {

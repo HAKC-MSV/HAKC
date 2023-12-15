@@ -136,8 +136,6 @@ namespace hakc {
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 
-        bool BaseIsAuthenticatedPointer();
-
         void TransformUseSet(std::map<ManagedHAKCPointerUseP, Value *> &StorageToUse);
 
         void CreatePointerReplacements(std::map<ManagedHAKCPointerUseP, Value *> &ReplacementStorage);
@@ -172,6 +170,10 @@ namespace hakc {
         unsigned GetAuthenticatedUserCount();
 
         unsigned GetProtectedUserCount();
+
+        bool IsDebugActive();
+
+        bool BaseIsAuthenticatedPointer();
 
     private:
         void InitBaseDefinition(Value *Pointer);

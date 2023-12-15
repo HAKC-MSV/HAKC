@@ -57,10 +57,10 @@ namespace hakc {
         /**
          * Return the Authenticated version of Pointer
          * @param Pointer
-         * @param debug
+         * @param Debug
          * @return
          */
-        Value *CreateAuthenticatedInstruction(Value *Pointer, bool debug);
+        Value *CreateAuthenticatedInstruction(Value *Pointer, bool Debug);
 
         Value *CreateProtectedInstruction(Value *Pointer, bool debug);
 
@@ -72,6 +72,10 @@ namespace hakc {
         Instruction *FindAuthenticatedCopy(Value *V);
 
         Instruction *FindProtectedCopy(Value *V);
+
+        Instruction *FindAuthenticatedCopy(Value *V, bool Debug);
+
+        Instruction *FindProtectedCopy(Value *V, bool Debug);
 
         /**
          * Checks if V is an authenticated pointer or an authenticated copy
@@ -132,7 +136,7 @@ namespace hakc {
 
         Instruction *CloneInstruction(Instruction *I, std::map<Instruction *, Instruction *> &CopyStorage);
 
-        Instruction *FindCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage);
+        Instruction *FindCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage, bool Debug);
 
         bool ValueIsCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage);
 
