@@ -81,6 +81,7 @@ namespace hakc {
                 Intrinsic::cheri_cap_from_pointer,
                 Intrinsic::cheri_cap_from_pointer_nonnull_zero,
                 Intrinsic::cheri_cap_tag_clear,
+                Intrinsic::cheri_round_representable_length,
         };
     }
 
@@ -150,59 +151,15 @@ namespace hakc {
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerShouldBeManaged(Use &U) {
         auto *ptr = U.get();
         auto *Def = getDef(ptr, false, debug_output);
-        bool MemberIsNotIgnoredType = false;
-        if (TypeMatchesIgnoredTypes(Def->getType())) {
+        if (ValueIsIgnoredType(Def)) {
+            if(debug_output) {
+                Def->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " Type matches ignored type\n";
+            }
             return false;
         }
 
-        if (auto *Phi = dyn_cast<PHINode>(Def)) {
-            for (unsigned i = 0; i < Phi->getNumIncomingValues(); i++) {
-                auto *PhiNodeV = getDef(Phi->getIncomingValue(i), false, debug_output);
-                if (TypeMatchesIgnoredTypes(PhiNodeV->getType())) {
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "PHI Node Value ";
-                        PhiNodeV->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " is an ignored type\n";
-                    }
-                    continue;
-                } else if (auto *LoadI = dyn_cast<LoadInst>(PhiNodeV)) {
-                    auto *LoadPtrV = getDef(LoadI->getPointerOperand(), false, debug_output);
-                    Type *LoadPtrVTy = LoadPtrV->getType();
-                    if (isa<PointerType>(LoadPtrVTy)) {
-                        LoadPtrVTy = LoadPtrVTy->getPointerElementType();
-                    }
-                    if (TypeMatchesIgnoredTypes(LoadPtrVTy)) {
-                        if (debug_output) {
-                            CommonHAKCAnalysis::getWriter() << "Load Pointer PHI Value ";
-                            LoadPtrV->print(CommonHAKCAnalysis::getWriter());
-                            CommonHAKCAnalysis::getWriter() << " is an ignored type\n";
-                        }
-                        continue;
-                    }
-                    if (debug_output) {
-                        LoadPtrV->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " is not an ignored Type (";
-                        LoadPtrV->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << ")\n";
-                        if (auto *GEPI = dyn_cast<GetElementPtrInst>(LoadI->getPointerOperand())) {
-                            CommonHAKCAnalysis::getWriter() << "GEP ResultType = ";
-                            GEPI->getResultElementType()->print(CommonHAKCAnalysis::getWriter());
-                            CommonHAKCAnalysis::getWriter() << "\n";
-                        }
-                    }
-                }
-                if(debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "Incoming value " << std::to_string(i)
-                    << " not an ignored Type in ";
-                    Phi->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                }
-                MemberIsNotIgnoredType = true;
-                break;
-            }
-        }
-
-        return MemberIsNotIgnoredType && HAKCFunctionAnalysis::PointerShouldBeManaged(U);
+        return HAKCFunctionAnalysis::PointerShouldBeManaged(U);
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::TypeMatchesIgnoredTypes(Type *Ty) {
@@ -223,6 +180,68 @@ namespace hakc {
             }
         }
         return false;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::ValueIsIgnoredType(Value *V, std::map<Value *, bool> &IgnoreMap) {
+        bool result = false;
+        auto *Def = getDef(V, false, debug_output);
+        if(IgnoreMap.find(V) != IgnoreMap.end()) {
+            return IgnoreMap[V];
+        }
+        IgnoreMap[V] = result;
+
+        if(TypeMatchesIgnoredTypes(Def->getType())) {
+            result = true;
+            goto out;
+        }
+
+        if (auto *LoadI = dyn_cast<LoadInst>(Def)) {
+            auto *LoadPtrV = getDef(LoadI->getPointerOperand(), false, debug_output);
+            Type *LoadPtrVTy = LoadPtrV->getType();
+            if (isa<PointerType>(LoadPtrVTy)) {
+                LoadPtrVTy = LoadPtrVTy->getPointerElementType();
+            }
+            if (TypeMatchesIgnoredTypes(LoadPtrVTy)) {
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Load Pointer Value ";
+                    LoadPtrV->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " is an ignored type\n";
+                }
+                result = true;
+            }
+            if (debug_output) {
+                LoadPtrV->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is not an ignored Type (";
+                LoadPtrV->getType()->getPointerElementType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << ")\n";
+                if (auto *GEPI = dyn_cast<GetElementPtrInst>(LoadI->getPointerOperand())) {
+                    CommonHAKCAnalysis::getWriter() << "GEP ResultType = ";
+                    GEPI->getResultElementType()->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+            }
+            goto out;
+        }
+
+        if(auto *PHI = dyn_cast<PHINode>(Def)) {
+            for(auto &Incoming : PHI->incoming_values()) {
+                if(ValueIsIgnoredType(Incoming.get(), IgnoreMap)) {
+                    result = true;
+                    goto out;
+                }
+            }
+        }
+
+        out:
+        IgnoreMap[V] = result;
+
+        return result;
+    }
+
+    bool HAKCFunctionAnalysisCheriBSDCheri::ValueIsIgnoredType(Value *V) {
+        std::map<Value *, bool> IgnoreMap;
+        ValueIsIgnoredType(V, IgnoreMap);
+        return IgnoreMap[V];
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::IsFunctionPointerStruct(Value *Pointer) {

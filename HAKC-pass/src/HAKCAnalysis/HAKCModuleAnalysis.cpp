@@ -247,6 +247,10 @@ namespace hakc {
             HAKCFunctionAnalysis *functionAnalysis = GetFunctionTransformation(F);
             functionAnalysis->InstrumentKernelCode();
             moduleModified |= functionAnalysis->modifiedFunction();
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Completed signature removal in " << F->getName() << "\n";
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
             delete functionAnalysis;
         }
     }

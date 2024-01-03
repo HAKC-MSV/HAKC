@@ -553,6 +553,13 @@ namespace hakc {
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
         std::set<PHINode *> nodes;
 
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for ";
+            U.get()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " from ";
+            U.getUser()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
         auto *ptr = getDef(U.get(), false, debug_output);
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
@@ -562,19 +569,36 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << " is a CallInst\n";
             }
 
-            if (call->isInlineAsm() || IsManualSafePointer(call)) {
+            bool IsInline = call->isInlineAsm();
+            bool IsManualSafe = IsManualSafePointer(call);
+            if (IsInline || IsManualSafe) {
+                if(debug_output) {
+                    if(IsInline) {
+                        CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
+                    } else if(IsManualSafe) {
+                        CommonHAKCAnalysis::getWriter() << "Value ";
+                        ptr->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << " is a manual safe pointer\n";
+                    }
+                }
                 /* These are usually the result of reading a register value */
                 return CommonHAKCAnalysis::IsPointerLikeType(call->getType());
             } else if (call->getCalledFunction() &&
                        call->getCalledFunction()->isIntrinsic() &&
                        call->getCalledFunction()->getIntrinsicID() ==
                        Intrinsic::IndependentIntrinsics::read_register) {
+                if(debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Call is a read register intrinsic\n";
+                }
                 return false;
             } else if (call->getType()->isIntegerTy(32)) {
                 /* Sometimes functions that return i32 are cast to a pointer for a check
                  * against IS_ERR(). No need to check this.
                  * See find_mm_struct in mm/migrate.c.
                  */
+                if(debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Call returns 32-bit integer\n";
+                }
                 return false;
             }
         } else if (isa<Constant>(ptr)) {
@@ -587,7 +611,7 @@ namespace hakc {
                    !ptr->getType()->isArrayTy() && !isa<PtrToIntInst>(ptr)) {
             if (debug_output) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is not a pointer\n";
+                CommonHAKCAnalysis::getWriter() << " is not a pointer, array, or pointer to int cast\n";
             }
             return false;
         } else if (isa<ConstantPointerNull>(ptr)) {
@@ -642,6 +666,22 @@ namespace hakc {
                 }
                 return true;
             }
+        } else if(!ptr->getType()->isPointerTy()) {
+            if (debug_output) {
+                ptr->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " Type is not a pointer: ";
+                ptr->getType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            return false;
+        } else if(ptr->getType()->isPointerTy()) {
+            if (debug_output) {
+                ptr->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " Type is a pointer: ";
+                ptr->getType()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            return true;
         }
         return ptr->getType()->isPointerTy();
     }
@@ -740,6 +780,13 @@ namespace hakc {
          * @param load
          */
     void HAKCFunctionAnalysis::handleLoad(LoadInst *load) {
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Handling ";
+            load->getOperandUse(LoadInst::getPointerOperandIndex())->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " from Load ";
+            load->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
         RegisterPointerDereference(
                 load->getOperandUse(LoadInst::getPointerOperandIndex()));
     }

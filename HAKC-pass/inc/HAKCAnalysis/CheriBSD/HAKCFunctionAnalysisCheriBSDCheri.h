@@ -45,6 +45,10 @@ namespace hakc {
 
         static bool TypeMatchesIgnoredTypes(Type *Ty);
 
+        bool ValueIsIgnoredType(Value *V);
+
+        bool ValueIsIgnoredType(Value *V, std::map<Value*, bool> &IgnoreMap);
+
         bool IsFunctionPointerWrapper(Value *Pointer);
 
         bool IsFunctionPointerStruct(Value *Pointer);
