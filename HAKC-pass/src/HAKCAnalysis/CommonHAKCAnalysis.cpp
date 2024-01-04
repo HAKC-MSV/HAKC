@@ -242,7 +242,8 @@ namespace hakc {
         }
 
         if (debug) {
-            CommonHAKCAnalysis::getWriter() << "Returning Def Chain for ";
+            CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << std::to_string(def_chain.size())
+            << " for ";
             v->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }

@@ -103,6 +103,8 @@ namespace hakc {
         bool DebugActive;
         HAKCPointerManager *Manager;
 
+        bool BaseIsAuthenticated;
+
         bool ManuallyTransferred;
         /**
          * Pointer uses and their replacements
@@ -144,6 +146,8 @@ namespace hakc {
 
         bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
 
+        bool ComputeBasePointerAuthenticated();
+
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, bool debug);
 
@@ -174,6 +178,8 @@ namespace hakc {
         bool IsDebugActive();
 
         bool BaseIsAuthenticatedPointer();
+
+        bool DetermineIfBasePointerIsAuthenticated();
 
     private:
         void InitBaseDefinition(Value *Pointer);

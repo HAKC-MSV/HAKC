@@ -48,6 +48,7 @@ namespace hakc {
             ProtectedPointer(nullptr),
             DebugActive(debug),
             Manager(Manager),
+            BaseIsAuthenticated(false),
             ManuallyTransferred(false),
             AuthenticatedPointerReplacements(),
             ProtectedPointerReplacements() {
@@ -122,15 +123,14 @@ namespace hakc {
                                        isa<TruncInst>(UserP) ||
                                        IsAuthenticatedUseNeedingAdditionalClassification(U);
         if (auto *Call = dyn_cast<CallInst>(UserP)) {
-            if (Manager->GetFunctionAnalysis()->callIsSafeTransition(Call)) {
-                UseAuthenticatedPointer = true;
-            } else if (Call->isInlineAsm()) {
-                UseAuthenticatedPointer = true;
-            } else if (Manager->GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call)) {
-                UseAuthenticatedPointer = true;
-            } else if(Call->getCalledOperandUse().getOperandNo() == U.getOperandNo()) {
-                UseAuthenticatedPointer = true;
-            } else if(Call->getCalledFunction() == nullptr) {
+            if (
+                    Manager->GetFunctionAnalysis()->callIsSafeTransition(Call) ||
+                    Call->isInlineAsm() ||
+                    Manager->GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call) ||
+                    Call->getCalledOperandUse().getOperandNo() == U.getOperandNo() ||
+                    Call->getCalledFunction() == nullptr ||
+                    Manager->GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction())
+            ) {
                 UseAuthenticatedPointer = true;
             }
         } else if (isa<StoreInst>(UserP)) {
@@ -169,12 +169,16 @@ namespace hakc {
                 UseSignedPointer = true;
             }
         } else if (auto *Call = dyn_cast<CallInst>(UserP)) {
-            if (!Manager->GetFunctionAnalysis()->callIsSafeTransition(Call)) {
+            if (
+                    !Manager->GetFunctionAnalysis()->callIsSafeTransition(Call) ||
+                    Call->getCalledFunction() != nullptr
+            ) {
                 UseSignedPointer = true;
-            } else if (Call->isInlineAsm()) {
+            } else if (
+                    Call->isInlineAsm() ||
+                    Manager->GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction())
+            ) {
                 UseSignedPointer = false;
-            } else if(Call->getCalledFunction() != nullptr) {
-                UseSignedPointer = true;
             }
         } else if(isa<AtomicRMWInst>(UserP)) {
             if(U.getOperandNo() != AtomicRMWInst::getPointerOperandIndex()) {
@@ -277,11 +281,13 @@ namespace hakc {
                     ClassifyAllUsesOfBaseDefinition(User);
                 }
             } else if (UseShouldUtilizeSignedBasePointer(U)) {
-                if (DebugActive) {
-                    CommonHAKCAnalysis::getWriter() << UPtr << " should use signed Base Definition\n";
+                if(auto *Call = dyn_cast<CallInst>(User)) {
+                    if (DebugActive) {
+                        CommonHAKCAnalysis::getWriter() << UPtr << " should use signed Base Definition\n";
+                    }
+                    UPtr->SetForProtectedUse(true);
+                    ProtectedPointerReplacements[UPtr] = nullptr;
                 }
-                UPtr->SetForProtectedUse(true);
-                ProtectedPointerReplacements[UPtr] = nullptr;
             } else {
                 CommonHAKCAnalysis::getWriter() << "Unexpected use of " << UPtr << " with Base Definition ";
                 BaseDefinition->print(CommonHAKCAnalysis::getWriter());
@@ -320,6 +326,15 @@ namespace hakc {
     }
 
     bool ManagedHAKCPointer::BaseIsAuthenticatedPointer() {
+        return BaseIsAuthenticated;
+    }
+
+    bool ManagedHAKCPointer::DetermineIfBasePointerIsAuthenticated() {
+        BaseIsAuthenticated = ComputeBasePointerAuthenticated();
+        return BaseIsAuthenticated;
+    }
+
+    bool ManagedHAKCPointer::ComputeBasePointerAuthenticated() {
         // stack pointers are the "authenticated" pointer
         bool BaseIsAuthenticated = isa<AllocaInst>(BaseDefinition) ||
                                    isa<GlobalVariable>(BaseDefinition);
@@ -334,7 +349,11 @@ namespace hakc {
                     }
                     CommonHAKCAnalysis::getWriter() << "a HAKC Transferred function\n";
                 }
-                BaseIsAuthenticated = PointerIsTransferred;
+                if(PointerIsTransferred) {
+                    BaseIsAuthenticated = PointerIsTransferred;
+                } else {
+                    BaseIsAuthenticated = Manager->GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction());
+                }
             } else if(Call->isInlineAsm()) {
                 BaseIsAuthenticated = true;
             }
@@ -352,18 +371,20 @@ namespace hakc {
                 BaseIsAuthenticated = true;
             }
         } else if (auto *PHI = dyn_cast<PHINode>(BaseDefinition)) {
-            bool AllValuesAuthenticated = true;
-            for (auto &IncomingValue: PHI->incoming_values()) {
-                if (!Manager->ValueIsAuthenticated(IncomingValue.get())) {
-                    if (DebugActive) {
-                        CommonHAKCAnalysis::getWriter() << "Incoming Value ";
-                        IncomingValue.get()->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " of ";
-                        PHI->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " is not authenticated\n";
+            bool AllValuesAuthenticated = Manager->GetFunctionAnalysis()->IsPHIOfGlobalsOnly(PHI);
+            if(!AllValuesAuthenticated) {
+                for (auto &IncomingValue: PHI->incoming_values()) {
+                    if (!Manager->ValueIsAuthenticated(IncomingValue.get())) {
+                        if (DebugActive) {
+                            CommonHAKCAnalysis::getWriter() << "Incoming Value ";
+                            IncomingValue.get()->print(CommonHAKCAnalysis::getWriter());
+                            CommonHAKCAnalysis::getWriter() << " of ";
+                            PHI->print(CommonHAKCAnalysis::getWriter());
+                            CommonHAKCAnalysis::getWriter() << " is not authenticated\n";
+                        }
+                        AllValuesAuthenticated = false;
+                        break;
                     }
-                    AllValuesAuthenticated = false;
-                    break;
                 }
             }
             if (AllValuesAuthenticated) {
@@ -401,15 +422,6 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::CreateBaseAuthenticatedPointer() {
-        if(GetAuthenticatedUserCount() == 0) {
-            if(DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "No authenticated pointer uses of ";
-                BaseDefinition->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << ", so creation is not needed\n";
-            }
-            return;
-        }
-
         if (BaseIsAuthenticatedPointer()) {
             if(DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "BaseDefinition ";
@@ -417,6 +429,15 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << " is the authenticated pointer\n";
             }
             AuthenticatedPointer = BaseDefinition;
+            return;
+        }
+
+        if(GetAuthenticatedUserCount() == 0) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "No authenticated pointer uses of ";
+                BaseDefinition->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << ", so creation is not needed\n";
+            }
             return;
         }
 

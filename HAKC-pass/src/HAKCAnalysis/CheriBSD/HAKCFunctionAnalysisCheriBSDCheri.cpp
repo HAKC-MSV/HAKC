@@ -35,12 +35,17 @@ namespace hakc {
 
         if(auto *Call = dyn_cast<CallInst>(DefChain.back())) {
             if(IsCallInIntrinsicSet(Call, CapabilityAdjustingIntrinsics)) {
+                auto *IntrinsicArg = Call->getArgOperand(0);
                 if(debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Adding ";
-                    Call->getArgOperand(0)->print(CommonHAKCAnalysis::getWriter());
+                    IntrinsicArg->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " to Def Chain\n";
                 }
-                return AddToDefChain(Call->getArgOperand(0), ExistingChain, FollowLoad, Debug);
+                auto IntrinsicArgChain = findDefChain(IntrinsicArg, FollowLoad, Debug);
+                for(auto *Link : IntrinsicArgChain) {
+                    ExistingChain.push_back(Link);
+                }
+                DefchainCache[V] = ExistingChain;
             }
         }
 

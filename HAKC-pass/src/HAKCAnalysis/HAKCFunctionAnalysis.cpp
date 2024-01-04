@@ -495,6 +495,11 @@ namespace hakc {
         }
     }
 
+    bool HAKCFunctionAnalysis::IsPHIOfGlobalsOnly(Value *V) {
+        std::set<PHINode*> nodes;
+        return isPHIofGlobalsOnly(V, nodes);
+    }
+
     /**
          * @brief Returns true of ptr is a PHINode consisting only of global variables
          * @param ptr
@@ -551,8 +556,6 @@ namespace hakc {
          * @return
          */
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
-        std::set<PHINode *> nodes;
-
         if(debug_output) {
             CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for ";
             U.get()->print(CommonHAKCAnalysis::getWriter());
@@ -626,7 +629,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << " is a GlobalValue\n";
             }
             return false;
-        } else if (isPHIofGlobalsOnly(ptr, nodes)) {
+        } else if (IsPHIOfGlobalsOnly(ptr)) {
             if (debug_output) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " is a PHINode of Globals\n";
@@ -1019,9 +1022,9 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-//        if (call->getType()->isPointerTy()) {
-//            AddManagedPointer(call);
-//        }
+        if (IsPointerLikeType(call->getType())) {
+            AddManagedPointer(call);
+        }
 
         bool needsAuthenticatedArgs = (call->isInlineAsm() ||
                                        (getModuleAnalysis().functionInAnalysisSet(

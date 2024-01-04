@@ -274,6 +274,8 @@ namespace hakc {
 
         virtual bool PointerShouldBeManaged(Use &use);
 
+        bool IsPHIOfGlobalsOnly(Value *V);
+
     };
 
 } // hakc
