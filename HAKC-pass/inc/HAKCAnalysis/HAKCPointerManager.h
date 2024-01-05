@@ -41,13 +41,6 @@ namespace hakc {
          */
         std::shared_ptr<ManagedHAKCPointer> GetManagedPointer(Value *V);
 
-        /**
-         * Returns the ManagedHAKCPointer if V == BaseDefinition
-         * @param V
-         * @return
-         */
-        std::shared_ptr<ManagedHAKCPointer> GetManagedPointerByBaseDefinition(Value *V);
-
         bool empty();
 
         Value *GetDef(Value *V);
@@ -60,45 +53,12 @@ namespace hakc {
          * @param Debug
          * @return
          */
-        Value *CreateAuthenticatedInstruction(Value *Pointer, bool Debug);
+        Value *CreateAuthenticatedValue(Value *Pointer, bool Debug);
 
-        Value *CreateProtectedInstruction(Value *Pointer, bool debug);
+        Value *CreateProtectedValue(Value *Pointer, bool debug);
 
-        /**
-         * Search the copy set for V
-         * @param V
-         * @return
-         */
-        Instruction *FindAuthenticatedCopy(Value *V);
-
-        Instruction *FindProtectedCopy(Value *V);
-
-        Instruction *FindAuthenticatedCopy(Value *V, bool Debug);
-
-        Instruction *FindProtectedCopy(Value *V, bool Debug);
-
-        /**
-         * Checks if V is an authenticated pointer or an authenticated copy
-         */
-        bool ValueIsAuthenticated(Value *V);
-
-        /**
-         * Return true if V is in the copy set
-         * @param V
-         * @return
-         */
-        bool ValueIsAuthenticatedCopy(Value *V);
-
-        bool ValueIsProtectedCopy(Value *V);
-
-        /**
-         * Return true if V is an authenticated pointer
-         * @param V
-         * @return
-         */
-        bool ValueIsAuthenticatedPointer(Value *V);
-
-        bool ValueIsProtectedPointer(Value *V);
+        Value* FindAuthenticatedValue(Value *V);
+        Value* FindProtectedValue(Value *V);
 
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
@@ -106,9 +66,14 @@ namespace hakc {
          */
         void CreateAuthenticatedPointersAndAllClones(bool debug);
 
-        void RegisterInstructionAsProtectedCopy(Instruction *I);
-
         void TransformPointers(bool Debug);
+
+        void AddAuthenticatedPointer(Value *Ptr, Value *Replacement);
+        void AddProtectedPointer(Value *Ptr, Value *Replacement);
+        void AddAuthenticatedPointer(Value *Ptr, Value *Replacement, bool Debug);
+        void AddProtectedPointer(Value *Ptr, Value *Replacement, bool Debug);
+
+        bool ValueWillBeAuthenticated(Value *V);
 
         unsigned GetDataAuthenticationsAdded();
         unsigned GetCodeAuthenticationsAdded();
@@ -116,16 +81,17 @@ namespace hakc {
         unsigned GetClonesAdded();
         unsigned GetTotalAdditions();
 
+        void PrintProtectedValues() const;
+        void PrintAuthenticatedValues() const;
+
     protected:
         /**
          * The set of pointers under management
          */
         std::set<std::shared_ptr<ManagedHAKCPointer>> ManagedPointers;
-        /**
-         * Mapping of original Instructions to their copies
-         */
-        std::map<Instruction *, Instruction *> AuthenticatedCopies;
-        std::map<Instruction *, Instruction *> ProtectedCopies;
+
+        std::map<Value *, Value *> AuthenticatedValues;
+        std::map<Value *, Value *> ProtectedValues;
 
         HAKCFunctionAnalysis *HAKCAnalysis;
 
@@ -134,21 +100,15 @@ namespace hakc {
         unsigned SafePointersAdded;
         unsigned ClonesAdded;
 
-        Instruction *CloneInstruction(Instruction *I, std::map<Instruction *, Instruction *> &CopyStorage);
-
-        Instruction *FindCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage, bool Debug);
-
-        bool ValueIsCopy(Value *V, std::map<Instruction *, Instruction *> &CopyStorage);
-
-        void RegisterInstructionAsCopy(Instruction *I, std::map<Instruction *, Instruction *> &CopyStorage);
-
-        void TransformClones(std::map<Instruction *, Instruction *> &CloneStorage, bool Debug);
+        Instruction *CloneInstruction(Instruction *I);
 
         Value* CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
 
         Value* CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
 
         bool PointerIsEligableForManagement(Value *Pointer, bool Debug);
+
+        bool CloneableManagedPointer(Value *V);
     };
 
 } // hakc

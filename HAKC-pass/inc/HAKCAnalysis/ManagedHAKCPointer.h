@@ -31,19 +31,9 @@ namespace hakc {
 
         Value *get() const;
 
-        bool ForAuthenticatedUse() const;
-
-        bool ForProtectedUse() const;
-
-        void SetForAuthenticatedUse(bool ForAuthUse);
-
-        void SetForProtectedUse(bool ForProtUse);
-
     protected:
         User *UserP;
         unsigned OperandNo;
-        bool AuthenticatedUse;
-        bool ProtectedUse;
 
     public:
         friend bool operator==(const std::shared_ptr<ManagedHAKCPointerUse> &lhs, const Use &rhs) {
@@ -106,13 +96,15 @@ namespace hakc {
         bool BaseIsAuthenticated;
 
         bool ManuallyTransferred;
+
         /**
          * Pointer uses and their replacements
          */
-        std::map<ManagedHAKCPointerUseP, Value *> AuthenticatedPointerReplacements;
-        std::map<ManagedHAKCPointerUseP, Value *> ProtectedPointerReplacements;
+        std::set<ManagedHAKCPointerUseP> AuthenticatedUses;
+        std::set<ManagedHAKCPointerUseP> ProtectedUses;
+        std::set<ManagedHAKCPointerUseP> AnalyzedUses;
 
-        void ClassifyAllUsesOfBaseDefinition(Value *Def);
+        void ClassifyAllUsesOfDefinition(Value *Def);
 
         /**
          * Return the Authenticated version of Operand
@@ -138,15 +130,27 @@ namespace hakc {
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 
-        void TransformUseSet(std::map<ManagedHAKCPointerUseP, Value *> &StorageToUse);
+        void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
-        void CreatePointerReplacements(std::map<ManagedHAKCPointerUseP, Value *> &ReplacementStorage);
+        void CreatePointerReplacements(std::set<ManagedHAKCPointerUseP> &UseSet);
 
         std::set<Instruction *> GetBaseDefinitionUsers();
 
         bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
 
+        bool IsClonedUseNeedingAdditionalClassification(Use &U);
+
         bool ComputeBasePointerAuthenticated();
+
+        void AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr);
+
+        void AddProtectedUse(ManagedHAKCPointerUseP &UPtr);
+
+        std::set<ManagedHAKCPointerUseP> GetAllUses();
+
+        void SetProtectedPointer(Value *NewProtectedPointer);
+
+        void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, bool debug);
@@ -175,7 +179,7 @@ namespace hakc {
 
         unsigned GetProtectedUserCount();
 
-        bool IsDebugActive();
+        bool IsDebugActive() const;
 
         bool BaseIsAuthenticatedPointer();
 

@@ -86,7 +86,7 @@ namespace hakc {
         if (!operand->getType()->isPointerTy()
             && !isa<PtrToIntInst>(operand)
             && !operand->getType()->isIntegerTy(getCompartmentStorageSizeInBits())) {
-            CommonHAKCAnalysis::getWriter() << "Clique transfer target ";
+            CommonHAKCAnalysis::getWriter() << "Compartment transfer target ";
             operand->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " is not a pointer but of type ";
             operand->getType()->print(CommonHAKCAnalysis::getWriter());
