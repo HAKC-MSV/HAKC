@@ -418,7 +418,10 @@ namespace hakc {
     }
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsToClone() {
-        return {};
+        return {
+            Intrinsic::IndependentIntrinsics::lifetime_start,
+            Intrinsic::IndependentIntrinsics::lifetime_end,
+        };
     }
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetInstrinsicsToSkip() {
@@ -427,8 +430,6 @@ namespace hakc {
                 Intrinsic::IndependentIntrinsics::dbg_addr,
                 Intrinsic::IndependentIntrinsics::dbg_label,
                 Intrinsic::IndependentIntrinsics::dbg_value,
-                Intrinsic::IndependentIntrinsics::lifetime_start,
-                Intrinsic::IndependentIntrinsics::lifetime_end,
                 Intrinsic::IndependentIntrinsics::read_register,
         };
     }

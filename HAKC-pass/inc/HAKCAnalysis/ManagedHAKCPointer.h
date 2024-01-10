@@ -90,6 +90,7 @@ namespace hakc {
          * A pointer belonging to the current function compartment
          */
         Value *ProtectedPointer;
+
         bool DebugActive;
         HAKCPointerManager *Manager;
 
@@ -191,7 +192,8 @@ namespace hakc {
 
     public:
         friend bool operator==(const std::shared_ptr<ManagedHAKCPointer> &lhs, Value *V) {
-            return lhs->GetBaseDefinition() == lhs->Manager->GetDef(V);
+            auto *Def = lhs->Manager->GetDef(V);
+            return lhs->GetBaseDefinition() == Def;
         }
 
         friend bool operator!=(const std::shared_ptr<ManagedHAKCPointer> &lhs, Value *V) {

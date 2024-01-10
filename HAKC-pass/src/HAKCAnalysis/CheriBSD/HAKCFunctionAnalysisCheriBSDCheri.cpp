@@ -27,48 +27,47 @@ namespace hakc {
     HAKCFunctionAnalysisCheriBSDCheri::AddToDefChain(Value *V, std::vector<Value *> &ExistingChain, bool FollowLoad,
                                                      bool Debug) {
         auto DefChain = CommonHAKCAnalysis::findDefChain(V, FollowLoad, Debug);
-        auto CapabilityAdjustingIntrinsics = GetCapabilityAdjustingIntrinsics();
+//        auto CapabilityAdjustingIntrinsics = GetCapabilityAdjustingIntrinsics();
 
         for(auto *Link : DefChain) {
             ExistingChain.push_back(Link);
         }
 
-        if(auto *Call = dyn_cast<CallInst>(DefChain.back())) {
-            if(IsCallInIntrinsicSet(Call, CapabilityAdjustingIntrinsics)) {
-                auto *IntrinsicArg = Call->getArgOperand(0);
-                if(debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "Adding ";
-                    IntrinsicArg->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " to Def Chain\n";
-                }
-                auto IntrinsicArgChain = findDefChain(IntrinsicArg, FollowLoad, Debug);
-                for(auto *Link : IntrinsicArgChain) {
-                    ExistingChain.push_back(Link);
-                }
-                DefchainCache[V] = ExistingChain;
-            }
-        }
+//        if(auto *Call = dyn_cast<CallInst>(DefChain.back())) {
+//            if(IsCallInIntrinsicSet(Call, CapabilityAdjustingIntrinsics)) {
+//                auto *IntrinsicArg = Call->getArgOperand(0);
+//                if(debug_output) {
+//                    CommonHAKCAnalysis::getWriter() << "Adding ";
+//                    IntrinsicArg->print(CommonHAKCAnalysis::getWriter());
+//                    CommonHAKCAnalysis::getWriter() << " to Def Chain\n";
+//                }
+//                auto IntrinsicArgChain = findDefChain(IntrinsicArg, FollowLoad, Debug);
+//                for(auto *Link : IntrinsicArgChain) {
+//                    ExistingChain.push_back(Link);
+//                }
+//                DefchainCache[V] = ExistingChain;
+//            }
+//        }
 
         return ExistingChain;
     }
 
     Instruction *HAKCFunctionAnalysisCheriBSDCheri::GetFinalAllocaDef(AllocaInst *Alloca) {
         auto IntrinsicDefs = GetCapabilityAdjustingIntrinsics();
-
-//        std::set<Instruction *> WorkingList = {Alloca};
-//        while (!WorkingList.empty()) {
-//            auto *I = *WorkingList.begin();
-//            WorkingList.erase(I);
-//            for (auto *U: I->users()) {
-//                if (auto *Call = dyn_cast<CallInst>(U)) {
-//                    if (IsCallInIntrinsicSet(Call, IntrinsicDefs)) {
-//                        return Call;
-//                    }
-//                } else if (auto *BitCast = dyn_cast<BitCastInst>(U)) {
-//                    WorkingList.insert(BitCast);
-//                }
-//            }
-//        }
+        std::set<Instruction *> WorkingList = {Alloca};
+        while (!WorkingList.empty()) {
+            auto *I = *WorkingList.begin();
+            WorkingList.erase(I);
+            for (auto *U: I->users()) {
+                if (auto *Call = dyn_cast<CallInst>(U)) {
+                    if (IsCallInIntrinsicSet(Call, IntrinsicDefs)) {
+                        return Call;
+                    }
+                } else if (auto *BitCast = dyn_cast<BitCastInst>(U)) {
+                    WorkingList.insert(BitCast);
+                }
+            }
+        }
 
         return HAKCFunctionAnalysis::GetFinalAllocaDef(Alloca);
     }
@@ -91,7 +90,13 @@ namespace hakc {
     }
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsToClone() {
-        return GetCapabilityAdjustingIntrinsics();
+        auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsToClone();
+
+        for(auto ID : GetCapabilityAdjustingIntrinsics()) {
+            Intrinsics.insert(ID);
+        }
+
+        return Intrinsics;
     }
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsNeedingAuthenticatedArgs() {

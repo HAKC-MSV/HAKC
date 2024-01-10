@@ -148,7 +148,10 @@ namespace hakc {
     }
 
     bool HAKCPointerManager::CloneableManagedPointer(Value *V) {
-        bool IsUnclonable = isa<LoadInst>(V) || isa<CallInst>(V);
+        bool IsUnclonable = isa<LoadInst>(V);
+        if(auto *Call = dyn_cast<CallInst>(V)) {
+            IsUnclonable = !GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call);
+        }
 
         return !IsUnclonable;
     }
@@ -174,6 +177,11 @@ namespace hakc {
             }
             return ProtectedValue;
         }
+        auto ManagedPtr = GetManagedPointer(Pointer);
+        if(ManagedPtr) {
+            return ManagedPtr->GetProtectedPointer();
+        }
+
         if (auto *I = dyn_cast<Instruction>(Pointer)) {
             auto Clone = CloneInstruction(I);
             if (Debug) {
@@ -221,13 +229,25 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
             AddAuthenticatedPointer(Pointer, Clone);
+            auto ManagedPtr = GetManagedPointer(Pointer);
+            if(ManagedPtr) {
+                if(!ManagedPtr->GetAuthenticatedPointer()) {
+                    if(Debug) {
+                        CommonHAKCAnalysis::getWriter() << "Requested Authenticated Value of ";
+                        Pointer->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << " in function " << I->getFunction()->getName();
+                        CommonHAKCAnalysis::getWriter() << " but authenticated pointer has not been created.\n";
+                    }
+                    ManagedPtr->CreateBaseAuthenticatedPointer();
+                }
+            }
             return Clone;
         }
         return nullptr;
     }
 
-    void HAKCPointerManager::CreateAuthenticatedPointersAndAllClones(bool debug) {
-        if (debug) {
+    void HAKCPointerManager::CreateAuthenticatedPointersAndAllClones(bool Debug) {
+        if (Debug) {
             CommonHAKCAnalysis::getWriter() << "Starting Base Pointer Authentication determination\n";
         }
         for (auto &ManagedPtr: GetManagedPointers()) {
@@ -238,39 +258,35 @@ namespace hakc {
         while (AuthenticationChanged) {
             AuthenticationChanged = false;
             for (auto &ManagedPtr: GetManagedPointers()) {
-                if (debug) {
+                if (Debug) {
                     CommonHAKCAnalysis::getWriter() << "Checking Base Authenticated for " << ManagedPtr << "\n";
                 }
                 auto OriginalAuthentication = ManagedPtr->BaseIsAuthenticatedPointer();
                 ManagedPtr->DetermineIfBasePointerIsAuthenticated();
                 if (ManagedPtr->BaseIsAuthenticatedPointer() != OriginalAuthentication) {
-                    if (debug) {
+                    if (Debug) {
                         CommonHAKCAnalysis::getWriter() << ManagedPtr << " changed base authentication value\n";
                     }
                     AuthenticationChanged = true;
                 }
             }
         }
-        if (debug) {
+        if (Debug) {
             CommonHAKCAnalysis::getWriter() << "Base Pointer Authentication determination completed\n";
         }
 
-        bool PointerChanged = true;
-        while (PointerChanged) {
-            PointerChanged = false;
-            for (auto &ManagedPtr: GetManagedPointers()) {
-                ManagedPtr->CreateBaseAuthenticatedPointer();
-                if (debug && ManagedPtr->GetAuthenticatedPointer()) {
-                    CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << ManagedPtr << ": ";
-                    ManagedPtr->GetAuthenticatedPointer()->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                }
-                ManagedPtr->CreatePointerUseClones();
-                if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for "
-                                                    << ManagedPtr
-                                                    << "\n";
-                }
+        for (auto &ManagedPtr: GetManagedPointers()) {
+            ManagedPtr->CreateBaseAuthenticatedPointer();
+            if (Debug && ManagedPtr->GetAuthenticatedPointer()) {
+                CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << ManagedPtr << ": ";
+                ManagedPtr->GetAuthenticatedPointer()->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            ManagedPtr->CreatePointerUseClones();
+            if (Debug) {
+                CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for "
+                                                << ManagedPtr
+                                                << "\n";
             }
         }
     }

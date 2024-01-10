@@ -62,9 +62,9 @@ namespace hakc {
 
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
-         * @param debug
+         * @param Debug
          */
-        void CreateAuthenticatedPointersAndAllClones(bool debug);
+        void CreateAuthenticatedPointersAndAllClones(bool Debug);
 
         void TransformPointers(bool Debug);
 
