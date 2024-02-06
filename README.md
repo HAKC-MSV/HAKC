@@ -75,11 +75,10 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -j$(nproc) defconfig
    ```
 6. ```
-   scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
+   `scripts/config --file $(realpath ../`build-$BUILD_TYPE/.config) \
    -e CONFIG_HAKC \
    --set-str CONFIG_HAKC_PASS_PATH \
-   $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so \
-   -e CONFIG_HAKC_ARM_V8 \
+   $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
    -d CONFIG_HAKC_ALLOW_FAILED \
    -e CONFIG_HAKC_SIGN_PTR \
    -m CONFIG_ROSDEMO \
@@ -87,11 +86,12 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -e CONFIG_DEBUG_INFO_SPLIT \
    -e CONFIG_DEBUG_INFO_DWARF4 \
    -e CONFIG_GDB_SCRIPTS \
-   -e CONFIG_HAKC_ARM_V8_MEMORY \
-   -d CONFIG_HAKC_ARM_V9 \
    -d CONFIG_HAKC_DEBUG_PRINT \
    -d CONFIG_HAKC_ALLOW_FAILED \
-   -d CONFIG_HAKC_LOG_FAILURE
+   -d CONFIG_HAKC_LOG_FAILURE \
+   -d CONFIG_HAKC_ARM_V9 \
+   -e CONFIG_HAKC_ARM_V8 \
+   -e CONFIG_HAKC_ARM_V8_MEMORY
    ```
 7. ```
    env HAKC_ANALYSIS=dag \

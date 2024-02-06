@@ -20,8 +20,8 @@ for d in */; do
   error=$?
   if [ $error -eq 0 ]
   then
-    printf '\tTest: %s\n' "$SUCCESS"
+    printf '\tTest:  %s\n' "$SUCCESS"
   else
-    printf '\tTest: %s\n' "$FAIL"
+    printf '\tTest:  %s\n' "$FAIL"
   fi
 done

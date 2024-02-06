@@ -1,4 +1,6 @@
 test.bc
+build-*/
+
 
 **/__pycache__/
 .idea/

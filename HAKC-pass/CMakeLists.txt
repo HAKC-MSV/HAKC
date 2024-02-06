@@ -84,16 +84,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
 if (HAKC_CHERIBSD_MORELLO)
     add_compile_definitions(HAKC_CHERIBSD_MORELLO)
-    set(HAKC_BUILD_TYPE cheribsd-morello)
 elseif (HAKC_LINUX_X86)
     add_compile_definitions(HAKC_LINUX_X86)
-    set(HAKC_BUILD_TYPE linux-x86)
 elseif (HAKC_LINUX_ARMV8)
     add_compile_definitions(HAKC_LINUX_ARMV8)
-    set(HAKC_BUILD_TYPE linux-armv8)
 elseif (HAKC_LINUX_ARMV9)
     add_compile_definitions(HAKC_LINUX_ARMV9)
-    set(HAKC_BUILD_TYPE linux-armv9)
 else ()
     message(FATAL_ERROR
             "Must Specify Target HAKC Architecture")
@@ -104,7 +100,6 @@ endif ()
 # Doing this at the end so that all definitions and link/include paths are
 # available for the sub-projects.
 #===============================================================================
-set(HAKC_PASS_LIB "HAKC-Compartmentalizer-${HAKC_BUILD_TYPE}")
 add_library(${HAKC_PASS_LIB} SHARED)
 set_target_properties(${HAKC_PASS_LIB} PROPERTIES
                                         SOVERSION ${PROJECT_VERSION_MAJOR})
