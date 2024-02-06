@@ -1,7 +1,7 @@
 [submodule "linux"]
 	path = linux
 	url = git@github.mit.edu:inherently-secure/MTE-kernel.git
-	branch = main
+	branch = derrick-main-dev
 [submodule "llvm-project"]
 	path = llvm-project
 	url = https://github.com/llvm/llvm-project.git
