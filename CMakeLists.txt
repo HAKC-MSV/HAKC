@@ -59,18 +59,6 @@ else()
                 "-e" "CONFIG_HAKC"
                 "--set-str" "CONFIG_HAKC_PASS_PATH"
                 "${CMAKE_SOURCE_DIR}/install/lib/libHAKC-Compartmentalizer-${HAKC_BUILD_TYPE}.so"
-                "-d" "CONFIG_HAKC_ALLOW_FAILED"
-                "-e" "CONFIG_HAKC_SIGN_PTR"
-                "-m" "CONFIG_ROSDEMO"
-                "-e" "CONFIG_DEBUG_INFO"
-                "-e" "CONFIG_DEBUG_INFO_SPLIT"
-                "-e" "CONFIG_DEBUG_INFO_DWARF4"
-                "-e" "CONFIG_GDB_SCRIPTS"
-                "-d" "CONFIG_HAKC_DEBUG_PRINT"
-                "-d" "CONFIG_HAKC_ALLOW_FAILED"
-                "-d" "CONFIG_HAKC_LOG_FAILURE"
-                "-d" "CONFIG_DEBUG_INFO_REDUCED"
-                "-d" "CONFIG_DEBUG_INFO_COMPRESSED"
         )
 
         if (HAKC_LINUX_ARMV8)
@@ -90,9 +78,26 @@ else()
         if (HAKC_LINUX_X86)
             list(APPEND LINUX_CONFIG_ADJUSTMENTS
                     "-e" "CONFIG_HAKC_X86"
+                    "-e" "CONFIG_HAKC_X86_SIGN_NI"
+                    "-d" "CONFIG_HAKC_X86_SIGN_SSSE3"
                     "-e" "CONFIG_HAKC_X86_MEMORY"
+                    "-d" "CONFIG_HAKC_X86_BTREE"
             )
         endif(HAKC_LINUX_X86)
+
+        list(APPEND LINUX_CONFIG_ADJUSTMENTS
+                "-d" "CONFIG_HAKC_ALLOW_FAILED"
+                "-e" "CONFIG_HAKC_SIGN_PTR"
+                "-d" "CONFIG_HAKC_DEBUG_PRINT"
+                "-d" "CONFIG_HAKC_LOG_FAILURE"
+                "-m" "CONFIG_ROSDEMO"
+                "-e" "CONFIG_DEBUG_INFO"
+                "-e" "CONFIG_DEBUG_INFO_SPLIT"
+                "-e" "CONFIG_DEBUG_INFO_DWARF4"
+                "-e" "CONFIG_GDB_SCRIPTS"
+                "-d" "CONFIG_DEBUG_INFO_REDUCED"
+                "-d" "CONFIG_DEBUG_INFO_COMPRESSED"
+        )
 
         add_custom_target(linux-config
                 env ${LINUX_ENV_VARS} make ${LINUX_MAKE_FLAGS} defconfig
