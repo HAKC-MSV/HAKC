@@ -634,4 +634,16 @@ namespace hakc {
         return nullptr;
     }
 
+    std::string CommonHAKCAnalysis::GetModuleFullPath(Module &M) {
+        const auto &SourceFileName = M.getSourceFileName();
+        SmallString<256> FilenameVec = StringRef(SourceFileName);
+        SmallString<256> RealPath;
+
+        auto err = sys::fs::real_path(FilenameVec, RealPath, true);
+        if (err) {
+            CommonHAKCAnalysis::getWriter() << "Could not get real path to " << M.getSourceFileName() << "\n";
+            throw std::exception();
+        }
+        return RealPath.str().str();
+    }
 }// namespace hakc

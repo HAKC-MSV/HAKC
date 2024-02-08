@@ -242,7 +242,7 @@ namespace hakc {
         }
 
         std::error_code err;
-        SmallVector<char> ScopePath;
+        SmallString<256> ScopePath;
         err = sys::fs::real_path(ScopeFile, ScopePath, true);
         if (err) {
             CommonHAKCAnalysis::getWriter() << "Could not get real path to " << ScopeFile << "\n";

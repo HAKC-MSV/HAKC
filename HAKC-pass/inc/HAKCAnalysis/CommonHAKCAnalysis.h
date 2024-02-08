@@ -141,6 +141,8 @@ namespace hakc {
 
         bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
 
+        static std::string GetModuleFullPath(Module &M);
+
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);
 

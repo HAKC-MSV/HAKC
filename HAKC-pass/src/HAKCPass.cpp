@@ -48,11 +48,7 @@ namespace hakc {
     }
 
     bool runDataAccessGraphAnalysis(Module &M) {
-        std::string BasePath;
-        if(llvm::sys::path::is_relative(M.getSourceFileName())) {
-            BasePath = std::getenv("PWD");
-        }
-        BasePath += M.getSourceFileName();
+        auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
         auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
         StringRef PRef(P);
 

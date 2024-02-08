@@ -405,7 +405,7 @@ bool hakc::HAKCTypeIdentifier::GlobalShouldBeSkipped(GlobalVariable *GV) {
                   GV->getName().startswith(".") ||
                   /* Skip constant strings */
                   (GV->hasInitializer() &&
-                  isa<Constant>(GV->getInitializer()) &&
+                   isa<Constant>(GV->getInitializer()) &&
                    CommonHAKCAnalysis::IsStringType(GV->getInitializer()->getType()));
     if (!result && !isa<Function>(GV)) {
         if (auto *StructTy = dyn_cast<StructType>(GV->getType()->getPointerElementType())) {
@@ -621,69 +621,53 @@ hakc::HAKCTypeIdentifier::getHAKCType(const DIType *type) {
     return nullptr;
 }
 
-std::string hakc::HAKCTypeIdentifier::GetTransformedPath(std::string Path) {
-    if(Path.empty()) {
-        return Path;
+std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
+    if (Path.empty()) {
+        return Path.str();
     }
 
-    auto* SourcePath = std::getenv(hakc::HAKC_SOURCE_PATH.str().c_str());
-    if(!SourcePath || std::strlen(SourcePath) == 0) {
+    auto *SourcePath = std::getenv(hakc::HAKC_SOURCE_PATH.str().c_str());
+    if (!SourcePath || std::strlen(SourcePath) == 0) {
         CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
         throw std::exception();
     }
 
     auto *BuildPath = std::getenv(hakc::HAKC_BUILD_PATH.str().c_str());
-    if(!BuildPath || std::strlen(BuildPath) == 0) {
+    if (!BuildPath || std::strlen(BuildPath) == 0) {
         CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
         throw std::exception();
     }
 
-    StringRef PathRef(Path);
-    auto Result = Path;
     unsigned length = 0;
     std::string Replacement;
-    if(PathRef.startswith(BuildPath)) {
+    if (Path.startswith(BuildPath)) {
         length = std::strlen(BuildPath);
         Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
-    } else if(PathRef.startswith(SourcePath)) {
+    } else if (Path.startswith(SourcePath)) {
         length = std::strlen(SourcePath);
         Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
     } else {
-        CommonHAKCAnalysis::getWriter() << "Path " << PathRef << " does not start with either "
-        << BuildPath << " or " << SourcePath << "!\n";
-//        return Path;
-                throw std::exception();
+        CommonHAKCAnalysis::getWriter() << "Path " << Path << " does not start with either "
+                                        << BuildPath << " or " << SourcePath << "!\n";
+        throw std::exception();
     }
 
-    if(!sys::path::is_separator(Path[length])) {
+    if (!sys::path::is_separator(Path[length])) {
         Replacement += sys::path::get_separator();
     }
 
+    auto Result = Path.str();
     Result.replace(0, length, Replacement);
     return Result;
 }
 
-std::string hakc::HAKCTypeIdentifier::GetTransformedPath(SmallVector<char> &Path) {
-    std::stringstream sstream;
-    for(auto c : Path) {
-        sstream << c;
-    }
-
-    return GetTransformedPath(sstream.str());
-}
-
 void hakc::HAKCTypeIdentifier::outputTypes(raw_fd_ostream &out) {
     std::error_code err;
-    SmallVector<char> sourcePath;
-    err = sys::fs::real_path(M.getSourceFileName(), sourcePath, true);
-    if (err) {
-        CommonHAKCAnalysis::getWriter() << "Could not get real path to " << M.getSourceFileName() << "\n";
-        throw std::exception();
-    }
+    auto RealPath = CommonHAKCAnalysis::GetModuleFullPath(M);
 
     out << "---\n";
     out << "CU: ";
-    out << GetTransformedPath(sourcePath);
+    out << GetTransformedPath(RealPath);
     out << "\n";
 
     out << "types:\n";

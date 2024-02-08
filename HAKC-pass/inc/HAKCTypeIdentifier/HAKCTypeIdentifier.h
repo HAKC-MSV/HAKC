@@ -46,9 +46,7 @@ namespace hakc {
 
         std::vector<Value *> GetDefChain(Value *V);
 
-        static std::string GetTransformedPath(std::string Path);
-
-        static std::string GetTransformedPath(SmallVector<char> &Path);
+        static std::string GetTransformedPath(StringRef Path);
 
         Module &GetModule();
 

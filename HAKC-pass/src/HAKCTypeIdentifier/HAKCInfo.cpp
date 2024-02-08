@@ -31,7 +31,7 @@ namespace hakc {
     std::string HAKCInfo::getYaml() {
         std::stringstream out;
         std::error_code err;
-        SmallVector<char> RealPath;
+        SmallString<256> RealPath;
         std::string InitialPath = getDefinitionDirectory().str();
         if(!getDefinitionDirectory().endswith(sys::path::get_separator())) {
             InitialPath += sys::path::get_separator();
