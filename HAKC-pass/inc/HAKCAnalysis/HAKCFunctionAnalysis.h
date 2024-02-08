@@ -213,6 +213,8 @@ namespace hakc {
         virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
         hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
+        virtual bool CallShouldBeManaged(CallInst *CallI);
+
     public:
         HAKCFunctionAnalysis(Function *F, bool debug);
 

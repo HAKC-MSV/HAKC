@@ -17,7 +17,7 @@ namespace hakc {
 
     }
 
-    bool HAKCPointerManager::PointerIsEligableForManagement(Value *Pointer, bool Debug) {
+    bool HAKCPointerManager::PointerIsEligibleForManagement(Value *Pointer, bool Debug) {
         /* The HAKCPointerManager::GetDef method performs some analysis to find a definition that could
         * be different from the "true" definition. Use the true definition to check if we are managing
         * constant strings.
@@ -56,11 +56,11 @@ namespace hakc {
 
     bool HAKCPointerManager::ManagePointer(Value *V, bool debug) {
         bool result = false;
-        if (!PointerIsEligableForManagement(V, debug)) {
+        if (!PointerIsEligibleForManagement(V, debug)) {
             if (debug) {
                 CommonHAKCAnalysis::getWriter() << "Value ";
                 V->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is not eligable for management\n";
+                CommonHAKCAnalysis::getWriter() << " is not eligible for management\n";
             }
             return result;
         }
@@ -328,6 +328,7 @@ do {                                                        \
                 CommonHAKCAnalysis::getWriter() << "\n";                                                            \
             }                                                                                                       \
             Storage[Ptr] = Replacement;                                                                             \
+            Storage[Replacement] = Replacement;                                                                     \
         } else {                                                                                                    \
             auto *ExistingPointer = Storage[Ptr];                                                                   \
             if(ExistingPointer && ExistingPointer != Ptr && Replacement && ExistingPointer != Replacement) {        \
@@ -349,6 +350,7 @@ do {                                                        \
                     CommonHAKCAnalysis::getWriter() << "\n";                                                        \
                 }                                                                                                   \
                 Storage[Ptr] = Replacement;                                                                         \
+                Storage[Replacement] = Replacement;                                                                 \
             }                                                                                                       \
         }                                                                                                           \
     } while (0)

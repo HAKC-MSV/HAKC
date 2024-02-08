@@ -998,6 +998,29 @@ namespace hakc {
         return CommonHAKCAnalysis::IsCompartmentalizedFunction(CurrentFunction);
     }
 
+    bool HAKCFunctionAnalysis::CallShouldBeManaged(CallInst *CallI) {
+        if(!IsPointerLikeType(CallI->getType())) {
+            return false;
+        }
+
+        bool CallIsUsedAsPointer = CallI->getType()->isPointerTy();
+        if(CallI->getType()->isIntegerTy()) {
+            CallIsUsedAsPointer = false;
+            /* Search for uses that determine if the call is considered a pointer or integer */
+            for(auto *UserP : CallI->users()) {
+                if(isa<IntToPtrInst>(UserP)) {
+                    CallIsUsedAsPointer = true;
+                }
+
+                if(CallIsUsedAsPointer) {
+                    break;
+                }
+            }
+        }
+
+        return CallIsUsedAsPointer;
+    }
+
     /**
          * @brief Processes a function call for analysis
          * @param call
@@ -1023,8 +1046,11 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-        if (IsPointerLikeType(call->getType())) {
+        if (CallShouldBeManaged(call)) {
             AddManagedPointer(call);
+        } else if(debug_output) {
+            call->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " should not be managed\n";
         }
 
         bool needsAuthenticatedArgs = (call->isInlineAsm() ||

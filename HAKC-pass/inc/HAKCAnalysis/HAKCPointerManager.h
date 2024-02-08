@@ -106,7 +106,7 @@ namespace hakc {
 
         Value* CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
 
-        bool PointerIsEligableForManagement(Value *Pointer, bool Debug);
+        bool PointerIsEligibleForManagement(Value *Pointer, bool Debug);
 
         bool CloneableManagedPointer(Value *V);
     };
