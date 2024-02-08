@@ -77,6 +77,11 @@ else()
 
         if (HAKC_LINUX_X86)
             list(APPEND LINUX_CONFIG_ADJUSTMENTS
+                    "-e" "CONFIG_CRYPTO_SHA1"
+                    "-e" "CONFIG_CRYPTO_SHA256"
+                    "-e" "CONFIG_CRYPTO_SHA256_SSSE3"
+                    "-e" "CONFIG_CRYPTO_SHA1_SSSE3"
+                    "-e" "CONFIG_AS_SHA256_NI"
                     "-e" "CONFIG_HAKC_X86"
                     "-e" "CONFIG_HAKC_X86_SIGN_NI"
                     "-d" "CONFIG_HAKC_X86_SIGN_SSSE3"
