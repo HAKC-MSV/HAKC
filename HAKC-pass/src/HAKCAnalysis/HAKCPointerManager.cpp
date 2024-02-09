@@ -425,11 +425,21 @@ do {                                                                            
     }
 
     Value *HAKCPointerManager::CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation) {
+        auto *Managed = FindAuthenticatedValue(Pointer);
+        if(Managed) {
+            return Managed;
+        }
+
         SafePointersAdded++;
         return GetFunctionAnalysis()->AddSafePointerCreationAtLocation(Pointer, InsertLocation);
     }
 
     Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
+        auto *Managed = FindAuthenticatedValue(Pointer);
+        if(Managed) {
+            return Managed;
+        }
+
         if (HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation);

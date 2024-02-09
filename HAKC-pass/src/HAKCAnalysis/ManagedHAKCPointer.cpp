@@ -585,6 +585,11 @@ do{                                                                             
         std::set<Value *> ReplacementsToCreate;
         for (auto &it: UseSet) {
             Value *ReplacementUse, *ReplacementUser;
+            auto &U = it->getUser()->getOperandUse(it->getOperandNo());
+            if(UseShouldBeIgnored(U) || !UseShouldBeCloned(U)) {
+                continue;
+            }
+
             if (CreatingAuthenticatedReplacements) {
                 ReplacementUser = Manager->FindAuthenticatedValue(it->getUser());
                 ReplacementUse = Manager->FindAuthenticatedValue(it->get());

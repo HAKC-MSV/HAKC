@@ -564,6 +564,7 @@ namespace hakc {
             U.getUser()->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
+
         auto *ptr = getDef(U.get(), false, debug_output);
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
@@ -586,7 +587,7 @@ namespace hakc {
                     }
                 }
                 /* These are usually the result of reading a register value */
-                return CommonHAKCAnalysis::IsPointerLikeType(call->getType());
+                return ValueIsUsedAsPointer(call);
             } else if (call->getCalledFunction() &&
                        call->getCalledFunction()->isIntrinsic() &&
                        call->getCalledFunction()->getIntrinsicID() ==
@@ -668,7 +669,7 @@ namespace hakc {
                     ptr->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " is used in inline assembly\n";
                 }
-                return true;
+                return ValueIsUsedAsPointer(U.get());
             }
         } else if(!ptr->getType()->isPointerTy()) {
             if (debug_output) {
@@ -998,16 +999,16 @@ namespace hakc {
         return CommonHAKCAnalysis::IsCompartmentalizedFunction(CurrentFunction);
     }
 
-    bool HAKCFunctionAnalysis::CallShouldBeManaged(CallInst *CallI) {
-        if(!IsPointerLikeType(CallI->getType())) {
+    bool HAKCFunctionAnalysis::ValueIsUsedAsPointer(Value *V) {
+        if(!IsPointerLikeType(V->getType())) {
             return false;
         }
 
-        bool CallIsUsedAsPointer = CallI->getType()->isPointerTy();
-        if(CallI->getType()->isIntegerTy()) {
+        bool CallIsUsedAsPointer = V->getType()->isPointerTy();
+        if(V->getType()->isIntegerTy()) {
             CallIsUsedAsPointer = false;
             /* Search for uses that determine if the call is considered a pointer or integer */
-            for(auto *UserP : CallI->users()) {
+            for(auto *UserP : V->users()) {
                 if(isa<IntToPtrInst>(UserP)) {
                     CallIsUsedAsPointer = true;
                 }
@@ -1046,7 +1047,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-        if (CallShouldBeManaged(call)) {
+        if (ValueIsUsedAsPointer(call)) {
             AddManagedPointer(call);
         } else if(debug_output) {
             call->print(CommonHAKCAnalysis::getWriter());
