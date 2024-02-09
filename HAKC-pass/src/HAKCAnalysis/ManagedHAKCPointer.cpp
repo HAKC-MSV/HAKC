@@ -345,6 +345,7 @@ do{                                                                             
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use authenticated Base Definition\n";
                 }
                 AddAuthenticatedUse(UPtr);
+                Manager->AddAuthenticatedPointer(UPtr->get(), UPtr->get());
                 if (IsAuthenticatedUseNeedingAdditionalClassification(U)) {
                     ClassifyAllUsesOfDefinition(User);
                 }
@@ -353,6 +354,7 @@ do{                                                                             
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use signed Base Definition\n";
                 }
                 AddProtectedUse(UPtr);
+                Manager->AddProtectedPointer(UPtr->get(), UPtr->get());
             } else {
                 CommonHAKCAnalysis::getWriter() << "Unexpected use of " << UPtr << " with Base Definition ";
                 BaseDefinition->print(CommonHAKCAnalysis::getWriter());
