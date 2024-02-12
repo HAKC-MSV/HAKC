@@ -1,12 +1,11 @@
 test.bc
-build-*/
+build-linux-*/
 
 
 **/__pycache__/
 .idea/
 cmake-build-*/
 install/
-build-*/
 llvm-project/
 
 # Prerequisites
