@@ -380,7 +380,7 @@ namespace hakc {
         return IsCallInIntrinsicSet(Call, IntrinsicsNeedingAuth);
     }
 
-    bool HAKCFunctionAnalysis::IsIntrinsicsNeedingCloning(CallInst *Call) {
+    bool HAKCFunctionAnalysis::IsIntrinsicsNeedingCloning(CallBase *Call) {
         auto IntrinsicsNeedingCloning = GetIntrinsicsToClone();
         return IsCallInIntrinsicSet(Call, IntrinsicsNeedingCloning);
     }

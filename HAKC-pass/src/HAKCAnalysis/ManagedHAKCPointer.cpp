@@ -145,7 +145,7 @@ namespace hakc {
                                        isa<SubOperator>(UserP) ||
                                        isa<TruncInst>(UserP) ||
                                        IsAuthenticatedUseNeedingAdditionalClassification(U);
-        if (auto *Call = dyn_cast<CallInst>(UserP)) {
+        if (auto *Call = dyn_cast<CallBase>(UserP)) {
             if (
                     Manager->GetFunctionAnalysis()->callIsSafeTransition(Call) ||
                     Call->isInlineAsm() ||

@@ -58,7 +58,7 @@ namespace hakc {
         };
     }
 
-    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet) {
+    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet) {
         bool result = false;
         if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
             result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
@@ -272,7 +272,7 @@ namespace hakc {
      * @param call
      * @return
      */
-    bool CommonHAKCAnalysis::callIsSafeTransition(CallInst *call) {
+    bool CommonHAKCAnalysis::callIsSafeTransition(CallBase *call) {
         if (call->getCalledFunction()) {
             return isSafeTransitionFunction(call->getCalledFunction());
         }

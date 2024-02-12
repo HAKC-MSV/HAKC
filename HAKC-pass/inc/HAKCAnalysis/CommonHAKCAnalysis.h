@@ -125,7 +125,7 @@ namespace hakc {
 
         bool FunctionsAreInSameCompartment(Function *F, Function *G);
 
-        bool callIsSafeTransition(CallInst *call);
+        bool callIsSafeTransition(CallBase *call);
 
         bool IsKernelAllocation(Value *V);
 
@@ -139,7 +139,7 @@ namespace hakc {
 
         virtual std::set<Instruction::BinaryOps> GetPointerManipulatingBinaryOps();
 
-        bool IsCallInIntrinsicSet(CallInst *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
+        bool IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
 
         static std::string GetModuleFullPath(Module &M);
 

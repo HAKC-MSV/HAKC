@@ -262,7 +262,7 @@ namespace hakc {
 
         virtual bool IsIntrinsicNeedingAuthentication(CallInst *Call);
 
-        virtual bool IsIntrinsicsNeedingCloning(CallInst *Call);
+        virtual bool IsIntrinsicsNeedingCloning(CallBase *Call);
 
         virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
 
