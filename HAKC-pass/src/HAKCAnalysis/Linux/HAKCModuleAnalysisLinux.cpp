@@ -443,6 +443,7 @@ namespace hakc {
         return {
                 /* legacy + current path for common HAKC code */
                 "kernel/hakc/hakc_common.c",
+                "kernel/hakc/hakc_init_tag.c",
                 /* current paths for architecture-independent HAKC */
                 "kernel/hakc/hakc_noarch_tag_btree.c",
                 "kernel/hakc/hakc_noarch_tag_memory.c",
