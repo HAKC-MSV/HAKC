@@ -89,11 +89,11 @@ namespace hakc {
         return HAKCAnalysis;
     }
 
-    std::set <std::shared_ptr<ManagedHAKCPointer>> HAKCPointerManager::GetManagedPointers() {
+    std::set<std::shared_ptr<ManagedHAKCPointer>> HAKCPointerManager::GetManagedPointers() {
         return ManagedPointers;
     }
 
-    std::shared_ptr <ManagedHAKCPointer> HAKCPointerManager::GetManagedPointer(Value *V) {
+    std::shared_ptr<ManagedHAKCPointer> HAKCPointerManager::GetManagedPointer(Value *V) {
         for (auto &ManagedPointer: ManagedPointers) {
             if (ManagedPointer == V) {
                 return ManagedPointer;
@@ -149,7 +149,7 @@ namespace hakc {
 
     bool HAKCPointerManager::CloneableManagedPointer(Value *V) {
         bool IsUnclonable = isa<LoadInst>(V);
-        if(auto *Call = dyn_cast<CallInst>(V)) {
+        if (auto *Call = dyn_cast<CallInst>(V)) {
             IsUnclonable = !GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call);
         }
 
@@ -178,7 +178,7 @@ namespace hakc {
             return ProtectedValue;
         }
         auto ManagedPtr = GetManagedPointer(Pointer);
-        if(ManagedPtr) {
+        if (ManagedPtr && ManagedPtr->GetBaseDefinition() == Pointer) {
             return ManagedPtr->GetProtectedPointer();
         }
 
@@ -230,9 +230,9 @@ namespace hakc {
             }
             AddAuthenticatedPointer(Pointer, Clone);
             auto ManagedPtr = GetManagedPointer(Pointer);
-            if(ManagedPtr) {
-                if(!ManagedPtr->GetAuthenticatedPointer()) {
-                    if(Debug) {
+            if (ManagedPtr) {
+                if (!ManagedPtr->GetAuthenticatedPointer()) {
+                    if (Debug) {
                         CommonHAKCAnalysis::getWriter() << "Requested Authenticated Value of ";
                         Pointer->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << " in function " << I->getFunction()->getName();
@@ -291,76 +291,80 @@ namespace hakc {
         }
     }
 
-#define FindManagedValue(Storage, Target)                   \
-do {                                                        \
-    for(auto &it : Storage) {                               \
-        if(it.first == Target) {                            \
-            return it.second;                               \
-        }                                                   \
-    }                                                       \
-    return nullptr;                                         \
-} while(0)
+    Value *HAKCPointerManager::FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target) {
+        for (auto &it: Storage) {
+            if (it.first == Target) {
+                return it.second;
+            }
+        }
+        return nullptr;
+    }
+
 
     Value *HAKCPointerManager::FindAuthenticatedValue(Value *V) {
-        FindManagedValue(AuthenticatedValues, V);
+        return FindManagedValue(AuthenticatedValues, V);
     }
 
     Value *HAKCPointerManager::FindProtectedValue(Value *V) {
-        FindManagedValue(ProtectedValues, V);
+        return FindManagedValue(ProtectedValues, V);
     }
 
-#define AddHAKCPointerReplacement(Storage, Ptr, Replacement, StorageName, Debug) \
-   do {                                                                                                             \
-        if(!Ptr) {                                                                                                  \
-            CommonHAKCAnalysis::getWriter() << "Trying to add null " << StorageName << " Pointer Replacement\n";    \
-            throw std::exception();                                                                                 \
-        }                                                                                                           \
-        if(Storage.find(Ptr) == Storage.end()) {                                                                    \
-            if(Debug) {                                                                                             \
-                CommonHAKCAnalysis::getWriter() << "Adding New " << StorageName << "Pointer Replacement: ";         \
-                Ptr->print(CommonHAKCAnalysis::getWriter());                                                        \
-                CommonHAKCAnalysis::getWriter() << " -> ";                                                          \
-                if(Replacement) {                                                                                   \
-                    Replacement->print(CommonHAKCAnalysis::getWriter());                                            \
-                } else {                                                                                            \
-                    CommonHAKCAnalysis::getWriter() << "nullptr";                                                   \
-                }                                                                                                   \
-                CommonHAKCAnalysis::getWriter() << "\n";                                                            \
-            }                                                                                                       \
-            Storage[Ptr] = Replacement;                                                                             \
-            Storage[Replacement] = Replacement;                                                                     \
-        } else {                                                                                                    \
-            auto *ExistingPointer = Storage[Ptr];                                                                   \
-            if(ExistingPointer && ExistingPointer != Ptr && Replacement && ExistingPointer != Replacement) {        \
-                CommonHAKCAnalysis::getWriter() << "Trying to replace existing " << StorageName << " Replacement "; \
-                ExistingPointer->print(CommonHAKCAnalysis::getWriter());                                            \
-                CommonHAKCAnalysis::getWriter() << " with ";                                                        \
-                Replacement->print(CommonHAKCAnalysis::getWriter());                                                \
-                CommonHAKCAnalysis::getWriter() << "\n";                                                            \
-                GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());                        \
-                CommonHAKCAnalysis::getWriter() << "\n";                                                            \
-                throw std::exception();                                                                             \
-            }                                                                                                       \
-            if(Replacement) {                                                                                       \
-                if(Debug) {                                                                                         \
-                    CommonHAKCAnalysis::getWriter() << "Setting " << StorageName << "Pointer Replacement: ";        \
-                    Ptr->print(CommonHAKCAnalysis::getWriter());                                                    \
-                    CommonHAKCAnalysis::getWriter() << " -> ";                                                      \
-                    Replacement->print(CommonHAKCAnalysis::getWriter());                                            \
-                    CommonHAKCAnalysis::getWriter() << "\n";                                                        \
-                }                                                                                                   \
-                Storage[Ptr] = Replacement;                                                                         \
-                Storage[Replacement] = Replacement;                                                                 \
-            }                                                                                                       \
-        }                                                                                                           \
-    } while (0)
+    void
+    HAKCPointerManager::AddHAKCPointerReplacement(std::map<Value *, Value *> &Storage, Value *Ptr, Value *Replacement,
+                                                  bool Debug) {
+        bool CreatingAuthenticatedReplacements = (&Storage == &AuthenticatedValues);
+        StringRef StorageName = CreatingAuthenticatedReplacements ? "Authenticated" : "Protected";
+
+        if (!Ptr) {
+            CommonHAKCAnalysis::getWriter() << "Trying to add null " << StorageName << " Pointer Replacement\n";
+            throw std::exception();
+        }
+        if (Storage.find(Ptr) == Storage.end()) {
+            if (Debug) {
+                CommonHAKCAnalysis::getWriter() << "Adding New " << StorageName << "Pointer Replacement: ";
+                Ptr->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " -> ";
+                if (Replacement) {
+                    Replacement->print(CommonHAKCAnalysis::getWriter());
+                } else {
+                    CommonHAKCAnalysis::getWriter() << "nullptr";
+                }
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            Storage[Ptr] = Replacement;
+            Storage[Replacement] = Replacement;
+        } else {
+            auto *ExistingPointer = Storage[Ptr];
+            if (ExistingPointer && ExistingPointer != Ptr && Replacement && ExistingPointer != Replacement) {
+                CommonHAKCAnalysis::getWriter() << "Trying to replace existing " << StorageName << " Replacement ";
+                ExistingPointer->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " with ";
+                Replacement->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+                GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+                throw std::exception();
+            }
+            if (Replacement) {
+                if (Debug) {
+                    CommonHAKCAnalysis::getWriter() << "Setting " << StorageName << "Pointer Replacement: ";
+                    Ptr->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " -> ";
+                    Replacement->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                }
+                Storage[Ptr] = Replacement;
+                Storage[Replacement] = Replacement;
+            }
+        }
+    }
 
     void HAKCPointerManager::AddAuthenticatedPointer(Value *Pointer, Value *Replacement, bool Debug) {
-        AddHAKCPointerReplacement(AuthenticatedValues, Pointer, Replacement, "Authenticated", Debug);
+        AddHAKCPointerReplacement(AuthenticatedValues, Pointer, Replacement, Debug);
     }
 
     void HAKCPointerManager::AddProtectedPointer(Value *Pointer, Value *Replacement, bool Debug) {
-        AddHAKCPointerReplacement(ProtectedValues, Pointer, Replacement, "Protected", Debug);
+        AddHAKCPointerReplacement(ProtectedValues, Pointer, Replacement, Debug);
     }
 
     void HAKCPointerManager::AddAuthenticatedPointer(Value *Ptr, Value *Replacement) {
@@ -426,7 +430,7 @@ do {                                                                            
 
     Value *HAKCPointerManager::CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation) {
         auto *Managed = FindAuthenticatedValue(Pointer);
-        if(Managed) {
+        if (Managed) {
             return Managed;
         }
 
@@ -436,7 +440,7 @@ do {                                                                            
 
     Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
         auto *Managed = FindAuthenticatedValue(Pointer);
-        if(Managed) {
+        if (Managed) {
             return Managed;
         }
 

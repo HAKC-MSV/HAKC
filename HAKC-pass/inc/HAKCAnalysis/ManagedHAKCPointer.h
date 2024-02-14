@@ -31,6 +31,8 @@ namespace hakc {
 
         Value *get() const;
 
+        void setUser(User *U);
+
     protected:
         User *UserP;
         unsigned OperandNo;
@@ -103,6 +105,7 @@ namespace hakc {
          */
         std::set<ManagedHAKCPointerUseP> AuthenticatedUses;
         std::set<ManagedHAKCPointerUseP> ProtectedUses;
+        std::set<ManagedHAKCPointerUseP> CloneUses;
         std::set<ManagedHAKCPointerUseP> AnalyzedUses;
 
         void ClassifyAllUsesOfDefinition(Value *Def);
@@ -133,7 +136,9 @@ namespace hakc {
 
         void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
-        void CreatePointerReplacements(std::set<ManagedHAKCPointerUseP> &UseSet);
+        void TransformClones();
+
+        void CreatePointerReplacements();
 
         std::set<Instruction *> GetBaseDefinitionUsers();
 
@@ -146,6 +151,8 @@ namespace hakc {
         void AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr);
 
         void AddProtectedUse(ManagedHAKCPointerUseP &UPtr);
+
+        void AddCloneUse(ManagedHAKCPointerUseP &UPtr);
 
         std::set<ManagedHAKCPointerUseP> GetAllUses();
 
@@ -180,9 +187,7 @@ namespace hakc {
 
         unsigned GetProtectedUserCount();
 
-        bool IsDebugActive() const;
-
-        bool BaseIsAuthenticatedPointer();
+        bool BaseIsAuthenticatedPointer() const;
 
         bool DetermineIfBasePointerIsAuthenticated();
 

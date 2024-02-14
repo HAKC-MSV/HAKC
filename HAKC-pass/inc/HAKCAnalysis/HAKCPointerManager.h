@@ -109,6 +109,10 @@ namespace hakc {
         bool PointerIsEligibleForManagement(Value *Pointer, bool Debug);
 
         bool CloneableManagedPointer(Value *V);
+
+        void AddHAKCPointerReplacement(std::map<Value *, Value *> &Storage, Value *Ptr, Value *Replacement, bool Debug);
+
+        Value *FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target);
     };
 
 } // hakc
