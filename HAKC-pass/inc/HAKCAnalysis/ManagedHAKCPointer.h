@@ -130,7 +130,7 @@ namespace hakc {
 
         bool UseShouldUtilizeSignedBasePointer(Use &U);
 
-        bool UseShouldBeIgnored(Use &U);
+        static bool UseShouldBeIgnored(Use &U);
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 
@@ -142,7 +142,9 @@ namespace hakc {
 
         std::set<Instruction *> GetBaseDefinitionUsers();
 
-        bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
+        static bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
+
+        static bool IsAuthenticatedVersionOfItself(Use &U);
 
         bool IsClonedUseNeedingAdditionalClassification(Use &U);
 

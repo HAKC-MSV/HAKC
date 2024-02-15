@@ -161,6 +161,13 @@ namespace hakc {
         return NeedsAdditionalClassification;
     }
 
+    bool ManagedHAKCPointer::IsAuthenticatedVersionOfItself(Use &U) {
+        auto *UserP = U.getUser();
+        bool IsAuthenticatedVersion = isa<OverflowingBinaryOperator>(UserP) ||
+                isa<BinaryOperator>(UserP) || isa<TruncInst>(UserP);
+        return IsAuthenticatedVersion;
+    }
+
     bool ManagedHAKCPointer::UseShouldUtilizeAuthenticatedPointer(Use &U) {
         auto *UserP = U.getUser();
         bool UseAuthenticatedPointer = isa<CmpInst>(UserP) ||
@@ -374,6 +381,9 @@ do{                                                                             
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use authenticated Base Definition\n";
                 }
                 AddAuthenticatedUse(UPtr);
+                if(IsAuthenticatedVersionOfItself(U)) {
+                    Manager->AddAuthenticatedPointer(UPtr->getUser(), UPtr->getUser(), DebugActive);
+                }
                 if (IsAuthenticatedUseNeedingAdditionalClassification(U)) {
                     ClassifyAllUsesOfDefinition(User);
                 }
@@ -382,6 +392,7 @@ do{                                                                             
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use signed Base Definition\n";
                 }
                 AddProtectedUse(UPtr);
+                Manager->AddProtectedPointer(UPtr->getUser(), UPtr->getUser(), DebugActive);
             } else {
                 CommonHAKCAnalysis::getWriter() << "Unexpected use of " << UPtr << " with Base Definition ";
                 BaseDefinition->print(CommonHAKCAnalysis::getWriter());
