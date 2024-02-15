@@ -9,12 +9,13 @@
 namespace hakc {
     HAKCPointerManager::HAKCPointerManager(HAKCFunctionAnalysis *Analysis) :
             ManagedPointers(),
+            AuthenticatedValues(),
+            ProtectedValues(),
             HAKCAnalysis(Analysis),
             DataAuthenticationsAdded(0),
             CodeAuthenticationsAdded(0),
             SafePointersAdded(0),
             ClonesAdded(0) {
-
     }
 
     bool HAKCPointerManager::PointerIsEligibleForManagement(Value *Pointer, bool Debug) {
@@ -332,7 +333,6 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
             Storage[Ptr] = Replacement;
-            Storage[Replacement] = Replacement;
         } else {
             auto *ExistingPointer = Storage[Ptr];
             if (ExistingPointer && ExistingPointer != Ptr && Replacement && ExistingPointer != Replacement) {
@@ -354,7 +354,6 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << "\n";
                 }
                 Storage[Ptr] = Replacement;
-                Storage[Replacement] = Replacement;
             }
         }
     }
@@ -375,19 +374,18 @@ namespace hakc {
         AddProtectedPointer(Ptr, Replacement, false);
     }
 
-#define PrintManagedValues(Storage)                                                                         \
-do {                                                                                                        \
-    for(auto &it : Storage) {                                                                               \
-        it.first->print (CommonHAKCAnalysis::getWriter());                                                  \
-        CommonHAKCAnalysis::getWriter() << " -> ";                                                          \
-        if(it.second) {                                                                                     \
-            it.second->print(CommonHAKCAnalysis::getWriter());                                              \
-        } else {                                                                                            \
-            CommonHAKCAnalysis::getWriter() << "nullptr";                                                   \
-        }                                                                                                   \
-        CommonHAKCAnalysis::getWriter() << "\n\n";                                                          \
-    }                                                                                                       \
-} while(0)
+void HAKCPointerManager::PrintManagedValues(const std::map<Value *, Value *> &Storage) {
+    for (auto &it: Storage) {
+        it.first->print(CommonHAKCAnalysis::getWriter());
+        CommonHAKCAnalysis::getWriter() << " -> ";
+        if (it.second) {
+            it.second->print(CommonHAKCAnalysis::getWriter());
+        } else {
+            CommonHAKCAnalysis::getWriter() << "nullptr";
+        }
+        CommonHAKCAnalysis::getWriter() << "\n\n";
+    }
+}
 
     void HAKCPointerManager::PrintProtectedValues() const {
         PrintManagedValues(ProtectedValues);

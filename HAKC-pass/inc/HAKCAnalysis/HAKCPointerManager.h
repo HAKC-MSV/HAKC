@@ -83,6 +83,7 @@ namespace hakc {
 
         void PrintProtectedValues() const;
         void PrintAuthenticatedValues() const;
+        static void PrintManagedValues(const std::map<Value *, Value *> &Storage);
 
     protected:
         /**
@@ -112,7 +113,7 @@ namespace hakc {
 
         void AddHAKCPointerReplacement(std::map<Value *, Value *> &Storage, Value *Ptr, Value *Replacement, bool Debug);
 
-        Value *FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target);
+        static Value *FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target);
     };
 
 } // hakc
