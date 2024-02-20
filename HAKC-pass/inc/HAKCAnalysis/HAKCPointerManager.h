@@ -88,6 +88,9 @@ namespace hakc {
         bool ValueIsAuthenticatedPointer(Value *V);
         bool ValueIsProtectedPointer(Value *V);
 
+        bool FunctionIsCompartmentalized() const;
+        void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
+
     protected:
         /**
          * The set of pointers under management
@@ -103,6 +106,8 @@ namespace hakc {
         unsigned CodeAuthenticationsAdded;
         unsigned SafePointersAdded;
         unsigned ClonesAdded;
+
+        bool IsCompartmentalized;
 
         Instruction *CloneInstruction(Instruction *I);
 

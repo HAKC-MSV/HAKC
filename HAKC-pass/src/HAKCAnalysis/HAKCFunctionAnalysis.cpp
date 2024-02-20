@@ -1200,6 +1200,7 @@ namespace hakc {
                 getFunction().print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
+            PointerManager.SetFunctionIsCompartmentalized(IsCompartmentalizedFunction(CurrentFunction));
             for (auto it = inst_begin(CurrentFunction); it != inst_end(CurrentFunction); ++it) {
                 Instruction *inst = &*it;
                 HandleInstruction(inst);

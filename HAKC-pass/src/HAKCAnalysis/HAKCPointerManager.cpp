@@ -180,7 +180,7 @@ namespace hakc {
         }
         auto ManagedPtr = GetManagedPointer(Pointer);
         if (ManagedPtr && ManagedPtr->GetBaseDefinition() == Pointer) {
-            if(Debug) {
+            if (Debug) {
                 CommonHAKCAnalysis::getWriter() << "Returning ProtectedPointer\n";
             }
             return ManagedPtr->GetProtectedPointer();
@@ -314,21 +314,24 @@ namespace hakc {
     }
 
     bool HAKCPointerManager::ManagedPointerFinder(Value *V,
-                                                  std::function<bool(const std::shared_ptr<ManagedHAKCPointer> &)> const &Search) {
-        if(!V) {
+                                                  std::function<bool(
+                                                          const std::shared_ptr<ManagedHAKCPointer> &)> const &Search) {
+        if (!V) {
             return false;
         }
 
-        return std::any_of(ManagedPointers.begin(), ManagedPointers.end(),Search);
+        return std::any_of(ManagedPointers.begin(), ManagedPointers.end(), Search);
     }
 
     bool HAKCPointerManager::ValueIsAuthenticatedPointer(Value *V) {
-        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr){return V == Ptr->GetAuthenticatedPointer();};
+        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr) {
+            return V == Ptr->GetAuthenticatedPointer();
+        };
         return ManagedPointerFinder(V, Search);
     }
 
     bool HAKCPointerManager::ValueIsProtectedPointer(Value *V) {
-        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr){return V == Ptr->GetProtectedPointer();};
+        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr) { return V == Ptr->GetProtectedPointer(); };
         return ManagedPointerFinder(V, Search);
     }
 
@@ -385,6 +388,9 @@ namespace hakc {
     }
 
     void HAKCPointerManager::AddProtectedPointer(Value *Pointer, Value *Replacement, bool Debug) {
+        if (!FunctionIsCompartmentalized()) {
+            return;
+        }
         AddHAKCPointerReplacement(ProtectedValues, Pointer, Replacement, Debug);
     }
 
@@ -396,18 +402,26 @@ namespace hakc {
         AddProtectedPointer(Ptr, Replacement, false);
     }
 
-void HAKCPointerManager::PrintManagedValues(const std::map<Value *, Value *> &Storage) {
-    for (auto &it: Storage) {
-        it.first->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << " -> ";
-        if (it.second) {
-            it.second->print(CommonHAKCAnalysis::getWriter());
-        } else {
-            CommonHAKCAnalysis::getWriter() << "nullptr";
-        }
-        CommonHAKCAnalysis::getWriter() << "\n\n";
+    bool HAKCPointerManager::FunctionIsCompartmentalized() const {
+        return IsCompartmentalized;
     }
-}
+
+    void HAKCPointerManager::SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized) {
+        IsCompartmentalized = FunctionIsCompartmentalized;
+    }
+
+    void HAKCPointerManager::PrintManagedValues(const std::map<Value *, Value *> &Storage) {
+        for (auto &it: Storage) {
+            it.first->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " -> ";
+            if (it.second) {
+                it.second->print(CommonHAKCAnalysis::getWriter());
+            } else {
+                CommonHAKCAnalysis::getWriter() << "nullptr";
+            }
+            CommonHAKCAnalysis::getWriter() << "\n\n";
+        }
+    }
 
     void HAKCPointerManager::PrintProtectedValues() const {
         PrintManagedValues(ProtectedValues);

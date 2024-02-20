@@ -340,6 +340,9 @@ do{                                                                             
     }
 
     void ManagedHAKCPointer::AddProtectedUse(ManagedHAKCPointerUseP &UPtr) {
+        if(!Manager->FunctionIsCompartmentalized()) {
+            return;
+        }
         auto Copy = std::make_shared<ManagedHAKCPointerUse>(UPtr->getUser(), UPtr->getOperandNo());
         ProtectedUses.insert(Copy);
         Manager->AddProtectedPointer(Copy->get(), nullptr, DebugActive);
@@ -678,6 +681,7 @@ do{                                                                             
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     Manager->AddAuthenticatedPointer(V, AuthenticatedCopy);
+                    Manager->AddAuthenticatedPointer(AuthenticatedCopy, AuthenticatedCopy);
                 } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "CreateAuthenticatedValue returned null\n";
                 }
@@ -698,6 +702,7 @@ do{                                                                             
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     Manager->AddProtectedPointer(V, ProtectedCopy);
+                    Manager->AddProtectedPointer(ProtectedCopy, ProtectedCopy);
                 } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "CreateProtectedValue returned null\n";
                 }
