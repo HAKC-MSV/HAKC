@@ -6,7 +6,8 @@
 
 namespace hakc {
     CustomTransfer_usb_device::CustomTransfer_usb_device(Module &M, unsigned CompartmentStorageSizeInBits) :
-            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.usb_device", "hakc_transfer_usb_device",
+            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.usb_device",
+                                         "hakc_transfer_usb_device",
                                          nullptr,
                                          {
                                                  nullptr,
@@ -18,4 +19,3 @@ namespace hakc {
 
     }
 } // hakc
-

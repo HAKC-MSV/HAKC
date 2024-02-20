@@ -211,7 +211,7 @@ namespace hakc {
         virtual void UpdateHAKCFunctionParameters();
 
         virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
-        hakc_transfer_def_t &HAKCTransferFunction) = 0;
+                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
         virtual bool ValueIsUsedAsPointer(Value *V);
 
@@ -248,7 +248,7 @@ namespace hakc {
         Value *
         AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
 
-        Value* AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
+        Value *AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
 
         Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location);
 

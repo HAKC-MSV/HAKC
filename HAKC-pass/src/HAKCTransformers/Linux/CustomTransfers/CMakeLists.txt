@@ -10,4 +10,4 @@ target_sources(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/CustomTransfer_us_data.cpp
 
         ${CMAKE_CURRENT_SOURCE_DIR}/CustomTransfer_scsi_device.cpp
-        )
+)

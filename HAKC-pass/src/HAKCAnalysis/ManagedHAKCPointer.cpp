@@ -340,7 +340,7 @@ do{                                                                             
     }
 
     void ManagedHAKCPointer::AddProtectedUse(ManagedHAKCPointerUseP &UPtr) {
-        if(!Manager->FunctionIsCompartmentalized()) {
+        if (!Manager->FunctionIsCompartmentalized()) {
             return;
         }
         auto Copy = std::make_shared<ManagedHAKCPointerUse>(UPtr->getUser(), UPtr->getOperandNo());
@@ -823,7 +823,7 @@ do{                                                                             
             }
             if (GetAuthenticatedUserCount() > 0 && !BaseIsAuthenticatedPointer()) {
                 auto *AuthenticatedVersion = Manager->FindAuthenticatedValue(CloneUse->getUser());
-                if(!Manager->ValueIsAuthenticatedPointer(AuthenticatedVersion)) {
+                if (!Manager->ValueIsAuthenticatedPointer(AuthenticatedVersion)) {
                     auto *AuthenticatedUser = dyn_cast<User>(AuthenticatedVersion);
                     auto *Replacement = Manager->FindAuthenticatedValue(CloneUse->get());
                     if (!Replacement) {
@@ -856,7 +856,7 @@ do{                                                                             
                                                         << "\n";
                     }
                     AuthenticatedUser->setOperand(CloneUse->getOperandNo(), Replacement);
-                } else if(DebugActive) {
+                } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "AutheticatedVersion ";
                     AuthenticatedVersion->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " is a Managed Authenticated Pointer, so no change is needed\n";
@@ -872,7 +872,7 @@ do{                                                                             
                     }
                     continue;
                 }
-                if(!Manager->ValueIsProtectedPointer(ProtectedVersion)) {
+                if (!Manager->ValueIsProtectedPointer(ProtectedVersion)) {
                     auto *ProtectedUser = dyn_cast<User>(ProtectedVersion);
                     auto *Replacement = Manager->FindProtectedValue(CloneUse->get());
                     if (!Replacement) {
@@ -903,7 +903,7 @@ do{                                                                             
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     ProtectedUser->setOperand(CloneUse->getOperandNo(), Replacement);
-                } else if(DebugActive) {
+                } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "ProtectedVersion ";
                     ProtectedVersion->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " is a Managed Protected Pointer, so no change is needed\n";

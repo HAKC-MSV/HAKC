@@ -23,7 +23,7 @@ namespace hakc {
         */
         bool debug_output;
 
-        std::map<Value*, std::vector<Value*>> DefchainCache;
+        std::map<Value *, std::vector<Value *>> DefchainCache;
 
         explicit CommonHAKCAnalysis(bool debug);
 
@@ -133,7 +133,7 @@ namespace hakc {
 
         static bool IsStringType(Type *Ty);
 
-        static Instruction* GetTargetTypeCast(Instruction *I, Type* TargetType);
+        static Instruction *GetTargetTypeCast(Instruction *I, Type *TargetType);
 
         virtual std::set<Intrinsic::ID> GetBitshiftIntrinsics();
 

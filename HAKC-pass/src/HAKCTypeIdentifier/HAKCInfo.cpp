@@ -33,7 +33,7 @@ namespace hakc {
         std::error_code err;
         SmallString<256> RealPath;
         std::string InitialPath = getDefinitionDirectory().str();
-        if(!getDefinitionDirectory().endswith(sys::path::get_separator())) {
+        if (!getDefinitionDirectory().endswith(sys::path::get_separator())) {
             InitialPath += sys::path::get_separator();
         }
         InitialPath += getDefinitionFile();

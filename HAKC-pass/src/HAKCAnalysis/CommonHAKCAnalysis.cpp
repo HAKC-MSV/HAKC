@@ -99,7 +99,7 @@ namespace hakc {
                 v->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " containing "
                                                 << std::to_string(CachedChain.size()) << " links\n";
-                for(auto *Link : CachedChain) {
+                for (auto *Link: CachedChain) {
                     CommonHAKCAnalysis::getWriter() << "\t";
                     Link->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << "\n";
@@ -129,8 +129,8 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << " containing "
                                                     << std::to_string(CachedChain.size()) << " links\n";
                 }
-                for(auto *Link : CachedChain) {
-                    if(debug) {
+                for (auto *Link: CachedChain) {
+                    if (debug) {
                         CommonHAKCAnalysis::getWriter() << "\t";
                         Link->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
@@ -205,8 +205,8 @@ namespace hakc {
 
                 auto *LHSDef = getDef(binOp->getOperand(0), false, debug);
                 auto *RHSDef = getDef(binOp->getOperand(1), false, debug);
-                if(!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
-                    if(debug) {
+                if (!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
+                    if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of ";
                         binOp->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << " are constants\n";
@@ -214,23 +214,23 @@ namespace hakc {
                     /* We stop here */
                     goto add_to_chain;
                 }
-                if(isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
-                    if(debug) {
+                if (isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
+                    if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of ";
                         binOp->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << " are constants\n";
                     }
                     /* We stop here */
                     goto add_to_chain;
-                } else if(!isa<Constant>(LHSDef) && IsPointerLikeType(LHSDef->getType())) {
-                    if(debug) {
+                } else if (!isa<Constant>(LHSDef) && IsPointerLikeType(LHSDef->getType())) {
+                    if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
                         binOp->getOperand(0)->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
-                } else if(!isa<Constant>(RHSDef) && IsPointerLikeType(RHSDef->getType())) {
-                    if(debug) {
+                } else if (!isa<Constant>(RHSDef) && IsPointerLikeType(RHSDef->getType())) {
+                    if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand ";
                         binOp->getOperand(1)->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
@@ -244,7 +244,7 @@ namespace hakc {
 
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << std::to_string(def_chain.size())
-            << " for ";
+                                            << " for ";
             v->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }

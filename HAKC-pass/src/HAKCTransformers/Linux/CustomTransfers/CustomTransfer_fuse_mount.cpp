@@ -6,7 +6,8 @@
 
 namespace hakc {
     CustomTransfer_fuse_mount::CustomTransfer_fuse_mount(Module &M, unsigned CompartmentStorageSizeInBits) :
-            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.fuse_mount", "hakc_transfer_fuse_mount",
+            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.fuse_mount",
+                                         "hakc_transfer_fuse_mount",
                                          nullptr,
                                          {
                                                  nullptr,

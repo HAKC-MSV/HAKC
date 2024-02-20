@@ -19,7 +19,7 @@ namespace hakc {
     }
 
     std::vector<Value *> HAKCFunctionAnalysisCheriBSDCheri::findDefChain(Value *v, bool followLoad, bool debug) {
-        std::vector<Value*> Chain;
+        std::vector<Value *> Chain;
         return AddToDefChain(v, Chain, followLoad, debug);
     }
 
@@ -29,7 +29,7 @@ namespace hakc {
         auto DefChain = CommonHAKCAnalysis::findDefChain(V, FollowLoad, Debug);
 //        auto CapabilityAdjustingIntrinsics = GetCapabilityAdjustingIntrinsics();
 
-        for(auto *Link : DefChain) {
+        for (auto *Link: DefChain) {
             ExistingChain.push_back(Link);
         }
 
@@ -92,7 +92,7 @@ namespace hakc {
     std::set<Intrinsic::ID> HAKCFunctionAnalysisCheriBSDCheri::GetIntrinsicsToClone() {
         auto Intrinsics = HAKCFunctionAnalysis::GetIntrinsicsToClone();
 
-        for(auto ID : GetCapabilityAdjustingIntrinsics()) {
+        for (auto ID: GetCapabilityAdjustingIntrinsics()) {
             Intrinsics.insert(ID);
         }
 
@@ -162,7 +162,7 @@ namespace hakc {
         auto *ptr = U.get();
         auto *Def = getDef(ptr, false, debug_output);
         if (ValueIsIgnoredType(Def)) {
-            if(debug_output) {
+            if (debug_output) {
                 Def->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " Type matches ignored type\n";
             }
@@ -195,12 +195,12 @@ namespace hakc {
     bool HAKCFunctionAnalysisCheriBSDCheri::ValueIsIgnoredType(Value *V, std::map<Value *, bool> &IgnoreMap) {
         bool result = false;
         auto *Def = getDef(V, false, debug_output);
-        if(IgnoreMap.find(V) != IgnoreMap.end()) {
+        if (IgnoreMap.find(V) != IgnoreMap.end()) {
             return IgnoreMap[V];
         }
         IgnoreMap[V] = result;
 
-        if(TypeMatchesIgnoredTypes(Def->getType())) {
+        if (TypeMatchesIgnoredTypes(Def->getType())) {
             result = true;
             goto out;
         }
@@ -233,9 +233,9 @@ namespace hakc {
             goto out;
         }
 
-        if(auto *PHI = dyn_cast<PHINode>(Def)) {
-            for(auto &Incoming : PHI->incoming_values()) {
-                if(ValueIsIgnoredType(Incoming.get(), IgnoreMap)) {
+        if (auto *PHI = dyn_cast<PHINode>(Def)) {
+            for (auto &Incoming: PHI->incoming_values()) {
+                if (ValueIsIgnoredType(Incoming.get(), IgnoreMap)) {
                     result = true;
                     goto out;
                 }
@@ -289,9 +289,9 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
-        if(auto *IntrinsicI = dyn_cast<IntrinsicInst>(Pointer)) {
+        if (auto *IntrinsicI = dyn_cast<IntrinsicInst>(Pointer)) {
             auto *IntrinsicArg = HAKCFunctionAnalysis::getDef(IntrinsicI->getOperand(0), false, debug_output);
-            if(isa<GlobalVariable>(IntrinsicArg) || isa<AllocaInst>(IntrinsicArg)) {
+            if (isa<GlobalVariable>(IntrinsicArg) || isa<AllocaInst>(IntrinsicArg)) {
                 return true;
             }
         }
@@ -309,13 +309,14 @@ namespace hakc {
         };
     }
 
-    void HAKCFunctionAnalysisCheriBSDCheri::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
+    void HAKCFunctionAnalysisCheriBSDCheri::UpdateHAKCFunctionParameters_Arch(CallInst *CallI,
+                                                                              hakc_compartment_id_t TargetID,
                                                                               hakc_transfer_def_t &HAKCTransferFunction) {
 
         auto CheriBSDTransformer = ModAnalysis->GetCheriBSDTransformer();
 
         auto *CapabilityLoad = CheriBSDTransformer->GetFunctionCapabilityLoad(CallI->getFunction());
-        if(!CapabilityLoad) {
+        if (!CapabilityLoad) {
             CommonHAKCAnalysis::getWriter() << "Function " << CallI->getFunction()->getName() << " does not have a "
                                                                                                  "capability load!\n";
             throw std::exception();

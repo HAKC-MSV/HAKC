@@ -31,8 +31,9 @@ namespace hakc {
         virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
                                             Value *HAKCPointer, Value *Size, bool IsData) = 0;
 
-        virtual Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
-                                            Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy) = 0;
+        virtual Instruction *
+        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
+                                Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy) = 0;
 
     protected:
         Type *TargetType;

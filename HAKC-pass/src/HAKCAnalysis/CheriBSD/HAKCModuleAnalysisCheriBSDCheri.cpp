@@ -21,7 +21,7 @@ namespace hakc {
 
     std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisCheriBSDCheri::CreateTransformer() {
         auto Transformer = std::make_shared<HAKCTransformerCheriBSDCheri>(M, this);
-        if(!CheriBSDTransformer) {
+        if (!CheriBSDTransformer) {
             CheriBSDTransformer = Transformer;
         }
         return Transformer;
@@ -140,11 +140,11 @@ namespace hakc {
 
     std::set<StringRef> HAKCModuleAnalysisCheriBSDCheri::GetSeparateNamespacePaths() {
         return {
-            "sys/arm64/arm64/elf_machdep.c",
-            "sys/arm64/arm64/machdep.c",
-            "sys/arm64/arm64/machdep_boot.c",
-            "sys/contrib/libfdt/fdt.c",
-            "sys/kern/init_main.c",
+                "sys/arm64/arm64/elf_machdep.c",
+                "sys/arm64/arm64/machdep.c",
+                "sys/arm64/arm64/machdep_boot.c",
+                "sys/contrib/libfdt/fdt.c",
+                "sys/kern/init_main.c",
 //            "sys/crypto/skein/skein_block.c",
         };
     }

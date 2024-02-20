@@ -6,7 +6,8 @@
 
 namespace hakc {
     CustomTransfer_scsi_device::CustomTransfer_scsi_device(Module &M, unsigned CompartmentStorageSizeInBits) :
-            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.scsi_device", "hakc_transfer_scsi_device",
+            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.scsi_device",
+                                         "hakc_transfer_scsi_device",
                                          nullptr,
                                          {
                                                  nullptr,
@@ -18,4 +19,3 @@ namespace hakc {
 
     }
 } // hakc
-

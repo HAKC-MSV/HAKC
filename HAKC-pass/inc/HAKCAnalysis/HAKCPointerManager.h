@@ -25,6 +25,7 @@ namespace hakc {
      */
     class HAKCPointerManager {
         friend class ManagedHAKCPointer;
+
     public:
         explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis);
 
@@ -57,8 +58,9 @@ namespace hakc {
 
         Value *CreateProtectedValue(Value *Pointer, bool debug);
 
-        Value* FindAuthenticatedValue(Value *V);
-        Value* FindProtectedValue(Value *V);
+        Value *FindAuthenticatedValue(Value *V);
+
+        Value *FindProtectedValue(Value *V);
 
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
@@ -69,26 +71,37 @@ namespace hakc {
         void TransformPointers(bool Debug);
 
         void AddAuthenticatedPointer(Value *Ptr, Value *Replacement);
+
         void AddProtectedPointer(Value *Ptr, Value *Replacement);
+
         void AddAuthenticatedPointer(Value *Ptr, Value *Replacement, bool Debug);
+
         void AddProtectedPointer(Value *Ptr, Value *Replacement, bool Debug);
 
         bool ValueWillBeAuthenticated(Value *V);
 
         unsigned GetDataAuthenticationsAdded();
+
         unsigned GetCodeAuthenticationsAdded();
+
         unsigned GetSafePointersAdded();
+
         unsigned GetClonesAdded();
+
         unsigned GetTotalAdditions();
 
         void PrintProtectedValues() const;
+
         void PrintAuthenticatedValues() const;
+
         static void PrintManagedValues(const std::map<Value *, Value *> &Storage);
 
         bool ValueIsAuthenticatedPointer(Value *V);
+
         bool ValueIsProtectedPointer(Value *V);
 
         bool FunctionIsCompartmentalized() const;
+
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
     protected:
@@ -111,9 +124,9 @@ namespace hakc {
 
         Instruction *CloneInstruction(Instruction *I);
 
-        Value* CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
+        Value *CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
 
-        Value* CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
+        Value *CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
 
         bool PointerIsEligibleForManagement(Value *Pointer, bool Debug);
 
@@ -123,7 +136,8 @@ namespace hakc {
 
         static Value *FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target);
 
-        bool ManagedPointerFinder(Value *V,  std::function<bool(const std::shared_ptr<ManagedHAKCPointer> &)> const &Search);
+        bool
+        ManagedPointerFinder(Value *V, std::function<bool(const std::shared_ptr<ManagedHAKCPointer> &)> const &Search);
     };
 
 } // hakc

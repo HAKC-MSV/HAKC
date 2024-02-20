@@ -26,6 +26,7 @@ using namespace llvm;
 namespace hakc {
 
     class HAKCTypeInfo;
+
     class HAKCGlobalInfo;
 
     class HAKCTypeIdentifier : public HAKCDebugInfoProcessor {

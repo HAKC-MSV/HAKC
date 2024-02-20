@@ -45,8 +45,8 @@ namespace hakc {
                 "get_user_ns",
                 "static_branch_",
         };
-        for(auto ExcludedName : ExcludedFunctions) {
-            if(F->getName().contains(ExcludedName)) {
+        for (auto ExcludedName: ExcludedFunctions) {
+            if (F->getName().contains(ExcludedName)) {
                 isSafe = true;
                 break;
             }
@@ -57,8 +57,8 @@ namespace hakc {
 
     void HAKCFunctionAnalysisLinux::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
                                                                       hakc_transfer_def_t &HAKCTransferFunction) {
-        auto *CompartmentIDValue =  getTransformer().GetHAKCCompartmentValue(TargetID);
-        if(debug_output) {
+        auto *CompartmentIDValue = getTransformer().GetHAKCCompartmentValue(TargetID);
+        if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Setting ";
             CallI->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " to be ";
@@ -83,9 +83,9 @@ namespace hakc {
                                                 << "\n";
                 throw std::exception();
             }
-            if(debug_output) {
+            if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Setting argument " << HAKCTransferFunction->GetColorIdx()
-                << " to be ";
+                                                << " to be ";
                 color->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
             }

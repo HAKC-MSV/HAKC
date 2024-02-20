@@ -29,7 +29,7 @@ namespace hakc {
                                                Function *Target,
                                                bool IsData) override;
 
-        LoadInst* GetFunctionCapabilityLoad(Function *F);
+        LoadInst *GetFunctionCapabilityLoad(Function *F);
 
     protected:
         unsigned CapabilityAddressSpace;

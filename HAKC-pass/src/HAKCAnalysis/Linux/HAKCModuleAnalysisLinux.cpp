@@ -185,11 +185,10 @@ namespace hakc {
 
         // trying to find globals of type GetKernelParamType()
         if (auto *F = dyn_cast<StructType>(GV->getValueType())) {
-           if (!(F->getName().equals(KernelParamType->getName()))) {
-               return nullptr; // someone passed us a struct that wasn't a kernel param struct
-           }
-        }
-        else {
+            if (!(F->getName().equals(KernelParamType->getName()))) {
+                return nullptr; // someone passed us a struct that wasn't a kernel param struct
+            }
+        } else {
             return nullptr; // this is not good, don't give non-structs to this function
         }
 
@@ -226,23 +225,23 @@ namespace hakc {
                         }
 
                         // now we have kp->arg
-                   }
-                   // the thing in the union isn't a BitCastOperator, that's bad
-                   else {
-                       return nullptr;
-                   }
+                    }
+                        // the thing in the union isn't a BitCastOperator, that's bad
+                    else {
+                        return nullptr;
+                    }
                 }
-                // we couldn't get the union out of the union struct, that's bad
+                    // we couldn't get the union out of the union struct, that's bad
                 else {
                     return nullptr;
                 }
             }
-            // we couldn't get the union struct at all out of the param struct, that's bad
+                // we couldn't get the union struct at all out of the param struct, that's bad
             else {
                 return nullptr;
             }
         }
-        // we couldn't even get the kernel param struct as a struct, that's bad
+            // we couldn't even get the kernel param struct as a struct, that's bad
         else {
             return nullptr;
         }
@@ -277,13 +276,13 @@ namespace hakc {
         }
 
         // inspect all globals
-        for (auto &Global : M.getGlobalList()) {
+        for (auto &Global: M.getGlobalList()) {
 
             // trying to find globals of type GetKernelParamType()
             if (auto *F = dyn_cast<StructType>(Global.getValueType())) {
 
-               // if true, the type of Global matches GetKernelParamType
-               if (F->getName().equals(KernelParamType->getName())) {
+                // if true, the type of Global matches GetKernelParamType
+                if (F->getName().equals(KernelParamType->getName())) {
 
                     if (debug_output) {
                         CommonHAKCAnalysis::getWriter() << "found kernel param: \n";
@@ -301,17 +300,17 @@ namespace hakc {
 
     void HAKCModuleAnalysisLinux::emitModParamGetCtx(GlobalValue *kernparam) {
         // type of void*
-        PointerType* PointerTy = PointerType::get(IntegerType::get(M.getContext(), 8), 0);
+        PointerType *PointerTy = PointerType::get(IntegerType::get(M.getContext(), 8), 0);
 
         // two args
-        std::vector<Type*>FuncTy_args;
+        std::vector<Type *> FuncTy_args;
         // first arg points to param
         FuncTy_args.push_back(PointerTy);
         // second arg is int64_t flag (0 to return param's access token, 1 to return param's color)
-        FuncTy_args.push_back(IntegerType::get(M.getContext(),64));
+        FuncTy_args.push_back(IntegerType::get(M.getContext(), 64));
 
         // type of function that returns int64_t, takes (void *, int64_t)
-        FunctionType* FuncTy = FunctionType::get(IntegerType::get(M.getContext(),64),
+        FunctionType *FuncTy = FunctionType::get(IntegerType::get(M.getContext(), 64),
                                                  FuncTy_args,
                                                  false);
 
@@ -320,7 +319,7 @@ namespace hakc {
                                        FuncTy);
 
         auto *constc = dyn_cast<Constant>(c.getCallee());
-        Function* getctx = cast<Function>(constc);
+        Function *getctx = cast<Function>(constc);
         getctx->setCallingConv(CallingConv::C);
 
         // put "hakc_modparam_getctx_paramname" in a special text section in the module
@@ -333,26 +332,25 @@ namespace hakc {
         Value *returnTypeArg = args++;
 
         // create entry basic block in our new function
-        BasicBlock* block = BasicBlock::Create(M.getContext(), "entry", getctx);
+        BasicBlock *block = BasicBlock::Create(M.getContext(), "entry", getctx);
         //
         IRBuilder<> builder(block);
         // constant zero for compare/select
-        Value *czero = ConstantInt::get(IntegerType::get(M.getContext(),64), 0);
+        Value *czero = ConstantInt::get(IntegerType::get(M.getContext(), 64), 0);
 
         // get HAKC symbol for the kernel parameter Value
         auto Symbol = getTransformer().getSystemInformation().findSymbol(kernparam);
 
         // find the color of the HAKC symbol
-        ConstantInt* Color;
+        ConstantInt *Color;
         if (!Symbol) {
             CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: \n";
             kernparam->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
             Color = getTransformer().getInt64(KERNEL_COLOR);
             throw std::exception();
-        }
-        else {
-           Color = getTransformer().getInt64(Symbol->getCompartment()->getColor());
+        } else {
+            Color = getTransformer().getInt64(Symbol->getCompartment()->getColor());
         }
 
         // find the compartment ID of the HAKC symbol
@@ -369,7 +367,7 @@ namespace hakc {
 
         // get the access token for HAKC symbol as an int64_t
         auto AccessToken = Symbol->getCompartment()->getAccessToken();
-        ConstantInt* tok = builder.getInt64(AccessToken);
+        ConstantInt *tok = builder.getInt64(AccessToken);
 
         // cast kernparam to a void*
         Value *voidCast;
@@ -396,13 +394,13 @@ namespace hakc {
         builder.CreateRet(ctxSelect);
 
         if (debug_output) {
-           getctx->print(CommonHAKCAnalysis::getWriter());
-           CommonHAKCAnalysis::getWriter() << "\n";
-           CommonHAKCAnalysis::getWriter() << llvm::verifyFunction(*getctx, &CommonHAKCAnalysis::getWriter()) << "\n";
+            getctx->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << llvm::verifyFunction(*getctx, &CommonHAKCAnalysis::getWriter()) << "\n";
         }
 
         // generate function pointer and place in modparam fp section
-        GlobalVariable* gcfp = new GlobalVariable(M,
+        GlobalVariable *gcfp = new GlobalVariable(M,
                                                   getctx->getType(),
                                                   true, // const
                                                   GlobalValue::ExternalLinkage,
@@ -476,10 +474,10 @@ namespace hakc {
                 {"kvmalloc_array",         multiplyTwoArguments<0, 1>},
                 {"kvzalloc",               simpleArgumentSize<0>},
                 {"kmem_cache_alloc",       argumentGEP<0, 1>}, /* TODO: Get GEP indices */
-                {"kmem_cache_alloc_trace", simpleArgumentSize < 2 > },
+                {"kmem_cache_alloc_trace", simpleArgumentSize<2>},
                 {"create_workqueue",       simpleStaticSize<320>},
-                {"device_create",  simpleStaticSize<6144 / 8>},
-                {"__class_create", simpleStaticSize<960 / 8>},
+                {"device_create",          simpleStaticSize<6144 / 8>},
+                {"__class_create",         simpleStaticSize<960 / 8>},
         };
     }
 
@@ -535,10 +533,10 @@ namespace hakc {
                 "parse_memtest",
                 "__stack_chk_fail",
 // some of these might be macros
-"is_vmalloc_addr",
-"page_to_phys",
-"vmalloc_to_page",
-"virt_to_pfn",
+                "is_vmalloc_addr",
+                "page_to_phys",
+                "vmalloc_to_page",
+                "virt_to_pfn",
 /*                "init_module",
                 "cleanup_module",*/
                 /* The following are generated functions, and I don't want to figure

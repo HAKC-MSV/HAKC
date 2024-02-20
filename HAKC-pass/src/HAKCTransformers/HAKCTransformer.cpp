@@ -185,7 +185,7 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
                 throw std::exception();
             }
         }
-        std::vector<Constant*> TokenArray(EntryTokenValues.begin(), EntryTokenValues.end());
+        std::vector<Constant *> TokenArray(EntryTokenValues.begin(), EntryTokenValues.end());
 
         auto *Initializer = ConstantArray::get(ArrayType::get(EntryTokenTy,
                                                               Compartment->getTargets().size()), TokenArray);
@@ -193,11 +193,11 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
         EntryTokenArray = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(name, Initializer->getType()));
         EntryTokenArray->setConstant(true);
         EntryTokenArray->setLinkage(GlobalValue::InternalLinkage);
-        if(DebugIsActive()) {
+        if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "Setting initializer for " << EntryTokenArray->getName() << " to be ";
             Initializer->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " from token values ";
-            for(auto *TokenValue : EntryTokenValues) {
+            for (auto *TokenValue: EntryTokenValues) {
                 CommonHAKCAnalysis::getWriter() << "\n\t";
                 TokenValue->print(CommonHAKCAnalysis::getWriter());
             }
@@ -334,17 +334,17 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
      * If V is an argument, we determine V's argument index for the function.
      * The argument will have the same index in Target.
      */
-    size_t index = (size_t)-1;
+    size_t index = (size_t) -1;
 
-    for(size_t i = 0; i < Target->arg_size(); i++) {
+    for (size_t i = 0; i < Target->arg_size(); i++) {
         if (I->getFunction()->getArg(i) == V) {
-             index = i;
-             break;
+            index = i;
+            break;
         }
     }
 
     /* not an argument, nothing to return */
-    if (index == (size_t)-1) {
+    if (index == (size_t) -1) {
         return nullptr;
     }
 
@@ -444,7 +444,7 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
                         LoadInst *loadArgFromDefInstr = nullptr;
 
                         for (auto *deflink: HAKCAnalysis->findDefChain(bcoOperand, true, true)) {
-                            if(auto *instr = dyn_cast<LoadInst>(deflink)) {
+                            if (auto *instr = dyn_cast<LoadInst>(deflink)) {
                                 /*
                                  * found a load in the defChain
                                  */
@@ -497,9 +497,9 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
                 /* This Bitcast is Operating on the argument from Target. */
                 if (bcoOperandDefOk) {// && bcoOperandDef == targetV) {
                     //if (DebugIsActive()) {
-                        CommonHAKCAnalysis::getWriter() << "Target argument is being bitcast:\n";
-                        CommonHAKCAnalysis::getWriter() << " " << *targetV /* *bcoOperandDef*/ << "\n";
-                        CommonHAKCAnalysis::getWriter() << " " << *bcoType << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Target argument is being bitcast:\n";
+                    CommonHAKCAnalysis::getWriter() << " " << *targetV /* *bcoOperandDef*/ << "\n";
+                    CommonHAKCAnalysis::getWriter() << " " << *bcoType << "\n";
                     //}
 
                     /* Dest type is what will be used to create a Typed transfer. */
@@ -524,7 +524,9 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
  * This function will try to find a custom transfer function by Type instead of from the Value (which is of type "i8*")
  * and generate a call to the custom function instead of "hakc_transfer_to_clique".
  */
-Instruction *hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, Type *TypeToUse) {
+Instruction *
+hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target,
+                                                         Type *TypeToUse) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
 
     /* just give safe pointer to kernel targets */
@@ -580,7 +582,7 @@ Instruction *hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAK
         size = StructTy->getScalarSizeInBits();
     }
 
-    if(size == 0) {
+    if (size == 0) {
         CommonHAKCAnalysis::getWriter() << "Unexpected (zero) dest-cast struct size:\n" << size;
         CommonHAKCAnalysis::getWriter() << "\n";
         throw std::exception();
@@ -595,9 +597,11 @@ Instruction *hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAK
      * more accurate transfer than the previous void* single-byte transfer
      */
 
-    if(auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
+    if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
-        Instruction *customXfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer, HAKCIRBuilder.getInt64(size / BITS_PER_BYTE), HAKCPointer->getType(), TypeToUse);
+        Instruction *customXfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer,
+                                                                          HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
+                                                                          HAKCPointer->getType(), TypeToUse);
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "Struct type name: " << StructTypeName << "\n";
@@ -607,10 +611,10 @@ Instruction *hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAK
             CommonHAKCAnalysis::getWriter() << *customXfer << "\n";
         }
         return customXfer;
-    }
-    else {
+    } else {
         /* no custom transfer exists, give the next-most specific transfer possible, correctly-sized generic transfer */
-        Instruction *sizedXfer = CreateSizedCompartmentTransfer(HAKCPointer, I, Target, true, HAKCIRBuilder.getInt64(size / BITS_PER_BYTE));
+        Instruction *sizedXfer = CreateSizedCompartmentTransfer(HAKCPointer, I, Target, true,
+                                                                HAKCIRBuilder.getInt64(size / BITS_PER_BYTE));
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "Struct type name: " << StructTypeName << "\n";
@@ -639,7 +643,7 @@ Instruction *hakc::HAKCTransformer::CreateCompartmentTransfer(Value *HAKCPointer
      * I don't think this is the only case where that happens, so we do another check.
      * Only care about data transfer.
      */
-    if(ObjectSize == HAKCIRBuilder.getInt64(1) && IsData) {
+    if (ObjectSize == HAKCIRBuilder.getInt64(1) && IsData) {
         /*
          * TODO
          *

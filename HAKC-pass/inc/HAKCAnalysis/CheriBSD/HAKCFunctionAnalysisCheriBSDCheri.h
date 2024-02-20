@@ -47,7 +47,7 @@ namespace hakc {
 
         bool ValueIsIgnoredType(Value *V);
 
-        bool ValueIsIgnoredType(Value *V, std::map<Value*, bool> &IgnoreMap);
+        bool ValueIsIgnoredType(Value *V, std::map<Value *, bool> &IgnoreMap);
 
         bool IsFunctionPointerWrapper(Value *Pointer);
 
@@ -59,7 +59,7 @@ namespace hakc {
                                                hakc_transfer_def_t &HAKCTransferFunction) override;
 
     private:
-        std::vector<Value *> AddToDefChain(Value *V, std::vector<Value*> &ExistingChain, bool FollowLoad, bool Debug);
+        std::vector<Value *> AddToDefChain(Value *V, std::vector<Value *> &ExistingChain, bool FollowLoad, bool Debug);
     };
 
 } // hakc

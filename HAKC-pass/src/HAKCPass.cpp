@@ -11,7 +11,9 @@
 #if defined(HAKC_CHERIBSD_MORELLO)
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 #elif defined(HAKC_LINUX_X86)
+
 #include "HAKCAnalysis/Linux/X86/HAKCModuleAnalysisLinuxX86.h"
+
 #elif defined(HAKC_LINUX_ARMV8)
 #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV8.h"
 #elif defined(HAKC_LINUX_ARMV9)
@@ -52,9 +54,9 @@ namespace hakc {
         auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
         StringRef PRef(P);
 
-        if(PRef.contains(HAKC_SOURCE_PATH_REPLACEMENT)) {
+        if (PRef.contains(HAKC_SOURCE_PATH_REPLACEMENT)) {
             P.replace(0, HAKC_SOURCE_PATH_REPLACEMENT.size() + 1, "");
-        } else if(PRef.contains(HAKC_BUILD_PATH_REPLACEMENT)) {
+        } else if (PRef.contains(HAKC_BUILD_PATH_REPLACEMENT)) {
             P.replace(0, HAKC_BUILD_PATH_REPLACEMENT.size() + 1, "");
         }
 
@@ -176,4 +178,3 @@ extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
     return getHAKCPluginInfo();
 }
-

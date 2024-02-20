@@ -320,7 +320,8 @@ namespace hakc {
 
         virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(Type *HAKCType);
 
-        virtual Instruction *CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, Type *TypeToUse);
+        virtual Instruction *
+        CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, Type *TypeToUse);
 
         virtual bool NoKernelTransfers(Function *Target);
     };

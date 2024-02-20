@@ -5,9 +5,9 @@ project(HAKC-Pass VERSION 1.0.0)
 # 1. VERIFY LLVM INSTALLATION DIR
 #===============================================================================
 # Set this to a valid LLVM installation dir
-if(NOT DEFINED LT_LLVM_INSTALL_DIR)
-set(LT_LLVM_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "LLVM installation directory")
-endif(NOT DEFINED LT_LLVM_INSTALL_DIR)
+if (NOT DEFINED LT_LLVM_INSTALL_DIR)
+    set(LT_LLVM_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "LLVM installation directory")
+endif (NOT DEFINED LT_LLVM_INSTALL_DIR)
 
 # A bit of a sanity checking
 set(LT_LLVM_INCLUDE_DIR "${LT_LLVM_INSTALL_DIR}/include/llvm")
@@ -40,7 +40,7 @@ message("LLVM STATUS:
   Includes    ${LLVM_INCLUDE_DIRS}
   Libraries   ${LLVM_LIBRARY_DIRS}
   Targets     ${LLVM_TARGETS_TO_BUILD}"
-        )
+)
 
 # Set the LLVM header and library paths
 include_directories(SYSTEM ${LLVM_INCLUDE_DIRS})
@@ -102,7 +102,7 @@ endif ()
 #===============================================================================
 add_library(${HAKC_PASS_LIB} SHARED)
 set_target_properties(${HAKC_PASS_LIB} PROPERTIES
-                                        SOVERSION ${PROJECT_VERSION_MAJOR})
+        SOVERSION ${PROJECT_VERSION_MAJOR})
 target_include_directories(${HAKC_PASS_LIB} PRIVATE inc)
 install(TARGETS ${HAKC_PASS_LIB} DESTINATION lib)
 add_subdirectory(src)

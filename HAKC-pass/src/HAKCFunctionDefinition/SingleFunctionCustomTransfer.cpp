@@ -4,6 +4,7 @@
 
 #include "HAKCFunctionDefinition/SingleFunctionCustomTransfer.h"
 #include <iostream>
+
 namespace hakc {
     SingleFunctionCustomTransfer::SingleFunctionCustomTransfer(Module &M, unsigned int CompartmentStorageSizeInBits,
                                                                StringRef TypeName, StringRef TransferFunctionName,
@@ -70,7 +71,7 @@ namespace hakc {
         Value *BitcastArgForTransferCall = HAKCIRBuilder.CreateBitCast(HAKCPointer, DestTy);
         /* Call transfer function with DestTy HAKCPointer */
         Value *TransferCall = HAKCIRBuilder.CreateCall(GetFunction(), {
-                             BitcastArgForTransferCall, Compartment, Color
+                BitcastArgForTransferCall, Compartment, Color
         });
         /* cast DestTy HAKCPointer back to void* */
         Value *BitcastArgForTargetCall = HAKCIRBuilder.CreateBitCast(TransferCall, SrcTy);

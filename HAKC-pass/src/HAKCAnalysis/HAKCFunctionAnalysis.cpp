@@ -419,8 +419,8 @@ namespace hakc {
 
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsToClone() {
         return {
-            Intrinsic::IndependentIntrinsics::lifetime_start,
-            Intrinsic::IndependentIntrinsics::lifetime_end,
+                Intrinsic::IndependentIntrinsics::lifetime_start,
+                Intrinsic::IndependentIntrinsics::lifetime_end,
         };
     }
 
@@ -497,7 +497,7 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysis::IsPHIOfGlobalsOnly(Value *V) {
-        std::set<PHINode*> nodes;
+        std::set<PHINode *> nodes;
         return isPHIofGlobalsOnly(V, nodes);
     }
 
@@ -557,7 +557,7 @@ namespace hakc {
          * @return
          */
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
-        if(debug_output) {
+        if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for ";
             U.get()->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " from ";
@@ -577,10 +577,10 @@ namespace hakc {
             bool IsInline = call->isInlineAsm();
             bool IsManualSafe = IsManualSafePointer(call);
             if (IsInline || IsManualSafe) {
-                if(debug_output) {
-                    if(IsInline) {
+                if (debug_output) {
+                    if (IsInline) {
                         CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
-                    } else if(IsManualSafe) {
+                    } else if (IsManualSafe) {
                         CommonHAKCAnalysis::getWriter() << "Value ";
                         ptr->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << " is a manual safe pointer\n";
@@ -592,7 +592,7 @@ namespace hakc {
                        call->getCalledFunction()->isIntrinsic() &&
                        call->getCalledFunction()->getIntrinsicID() ==
                        Intrinsic::IndependentIntrinsics::read_register) {
-                if(debug_output) {
+                if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Call is a read register intrinsic\n";
                 }
                 return false;
@@ -601,7 +601,7 @@ namespace hakc {
                  * against IS_ERR(). No need to check this.
                  * See find_mm_struct in mm/migrate.c.
                  */
-                if(debug_output) {
+                if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Call returns 32-bit integer\n";
                 }
                 return false;
@@ -671,7 +671,7 @@ namespace hakc {
                 }
                 return ValueIsUsedAsPointer(U.get());
             }
-        } else if(!ptr->getType()->isPointerTy()) {
+        } else if (!ptr->getType()->isPointerTy()) {
             if (debug_output) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " Type is not a pointer: ";
@@ -679,7 +679,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
             return false;
-        } else if(ptr->getType()->isPointerTy()) {
+        } else if (ptr->getType()->isPointerTy()) {
             if (debug_output) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " Type is a pointer: ";
@@ -785,7 +785,7 @@ namespace hakc {
          * @param load
          */
     void HAKCFunctionAnalysis::handleLoad(LoadInst *load) {
-        if(debug_output) {
+        if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Handling ";
             load->getOperandUse(LoadInst::getPointerOperandIndex())->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " from Load ";
@@ -1000,20 +1000,20 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysis::ValueIsUsedAsPointer(Value *V) {
-        if(!IsPointerLikeType(V->getType())) {
+        if (!IsPointerLikeType(V->getType())) {
             return false;
         }
 
         bool CallIsUsedAsPointer = V->getType()->isPointerTy();
-        if(V->getType()->isIntegerTy()) {
+        if (V->getType()->isIntegerTy()) {
             CallIsUsedAsPointer = false;
             /* Search for uses that determine if the call is considered a pointer or integer */
-            for(auto *UserP : V->users()) {
-                if(isa<IntToPtrInst>(UserP)) {
+            for (auto *UserP: V->users()) {
+                if (isa<IntToPtrInst>(UserP)) {
                     CallIsUsedAsPointer = true;
                 }
 
-                if(CallIsUsedAsPointer) {
+                if (CallIsUsedAsPointer) {
                     break;
                 }
             }
@@ -1049,7 +1049,7 @@ namespace hakc {
 
         if (ValueIsUsedAsPointer(call)) {
             AddManagedPointer(call);
-        } else if(debug_output) {
+        } else if (debug_output) {
             call->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " should not be managed\n";
         }

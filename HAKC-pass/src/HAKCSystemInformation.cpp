@@ -231,9 +231,9 @@ namespace hakc {
 
     bool HAKCSystemInformation::SymbolIsInScope(std::shared_ptr<HAKCSymbol> Symbol, const DIScope *Scope) {
         std::string ScopeFile;
-        if(sys::path::is_relative(Scope->getFilename())) {
+        if (sys::path::is_relative(Scope->getFilename())) {
             ScopeFile = Scope->getDirectory().str();
-            if(!Scope->getDirectory().endswith(llvm::sys::path::get_separator())) {
+            if (!Scope->getDirectory().endswith(llvm::sys::path::get_separator())) {
                 ScopeFile += llvm::sys::path::get_separator();
             }
             ScopeFile += Scope->getFilename();
@@ -259,21 +259,21 @@ namespace hakc {
             Name = CommonHAKCAnalysis::GetFunctionName(Func);
         }
         auto Symbols = getSymbols(Name);
-        if(Symbols.empty()) {
+        if (Symbols.empty()) {
             return nullptr;
-        } else if(Symbols.size() == 1) {
+        } else if (Symbols.size() == 1) {
             return *Symbols.begin();
         }
-        for(auto Symbol : Symbols) {
+        for (auto Symbol: Symbols) {
             if (isa<Function>(GV)) {
                 for (auto *DIF: DebugInfo.subprograms()) {
-                    if(SymbolIsInScope(Symbol, DIF->getScope())) {
+                    if (SymbolIsInScope(Symbol, DIF->getScope())) {
                         return Symbol;
                     }
                 }
             } else {
                 for (auto *DIGV: DebugInfo.global_variables()) {
-                    if(SymbolIsInScope(Symbol, DIGV->getVariable()->getScope())) {
+                    if (SymbolIsInScope(Symbol, DIGV->getVariable()->getScope())) {
                         return Symbol;
                     }
                 }
