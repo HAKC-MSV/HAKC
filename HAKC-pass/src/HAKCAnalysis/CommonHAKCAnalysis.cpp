@@ -3,6 +3,7 @@
 //
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
+#include "llvm/Support/FileSystem.h"
 
 namespace hakc {
 
