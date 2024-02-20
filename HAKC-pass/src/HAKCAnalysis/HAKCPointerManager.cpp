@@ -180,6 +180,9 @@ namespace hakc {
         }
         auto ManagedPtr = GetManagedPointer(Pointer);
         if (ManagedPtr && ManagedPtr->GetBaseDefinition() == Pointer) {
+            if(Debug) {
+                CommonHAKCAnalysis::getWriter() << "Returning ProtectedPointer\n";
+            }
             return ManagedPtr->GetProtectedPointer();
         }
 
@@ -310,6 +313,25 @@ namespace hakc {
         return FindManagedValue(ProtectedValues, V);
     }
 
+    bool HAKCPointerManager::ManagedPointerFinder(Value *V,
+                                                  std::function<bool(const std::shared_ptr<ManagedHAKCPointer> &)> const &Search) {
+        if(!V) {
+            return false;
+        }
+
+        return std::any_of(ManagedPointers.begin(), ManagedPointers.end(),Search);
+    }
+
+    bool HAKCPointerManager::ValueIsAuthenticatedPointer(Value *V) {
+        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr){return V == Ptr->GetAuthenticatedPointer();};
+        return ManagedPointerFinder(V, Search);
+    }
+
+    bool HAKCPointerManager::ValueIsProtectedPointer(Value *V) {
+        auto Search = [V](const std::shared_ptr<ManagedHAKCPointer> &Ptr){return V == Ptr->GetProtectedPointer();};
+        return ManagedPointerFinder(V, Search);
+    }
+
     void
     HAKCPointerManager::AddHAKCPointerReplacement(std::map<Value *, Value *> &Storage, Value *Ptr, Value *Replacement,
                                                   bool Debug) {
@@ -423,7 +445,8 @@ void HAKCPointerManager::PrintManagedValues(const std::map<Value *, Value *> &St
     }
 
     bool HAKCPointerManager::ValueWillBeAuthenticated(Value *V) {
-        return AuthenticatedValues.find(V) != AuthenticatedValues.end();
+        auto *Def = GetDef(V);
+        return AuthenticatedValues.find(Def) != AuthenticatedValues.end();
     }
 
     Value *HAKCPointerManager::CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation) {

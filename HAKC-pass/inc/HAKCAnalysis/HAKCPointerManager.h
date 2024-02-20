@@ -85,6 +85,9 @@ namespace hakc {
         void PrintAuthenticatedValues() const;
         static void PrintManagedValues(const std::map<Value *, Value *> &Storage);
 
+        bool ValueIsAuthenticatedPointer(Value *V);
+        bool ValueIsProtectedPointer(Value *V);
+
     protected:
         /**
          * The set of pointers under management
@@ -114,6 +117,8 @@ namespace hakc {
         void AddHAKCPointerReplacement(std::map<Value *, Value *> &Storage, Value *Ptr, Value *Replacement, bool Debug);
 
         static Value *FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target);
+
+        bool ManagedPointerFinder(Value *V,  std::function<bool(const std::shared_ptr<ManagedHAKCPointer> &)> const &Search);
     };
 
 } // hakc
