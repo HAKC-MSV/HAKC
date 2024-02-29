@@ -141,15 +141,6 @@ else()
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
 
-        add_custom_target(linux-adjust-compartments
-                python3 python/analysis/data-access-analysis.py
-                -c ${HAKC_DAG_DIR}/dag.bin
-                --adjust scripts/ros2-demo/rosdemo-compartments.yml
-                BYPRODUCTS ${HAKC_DAG_DIR}/dag-adjusted.bin
-                COMMENT "Adjusting Compartments for ${HAKC_BUILD_TYPE}"
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        )
-
         add_custom_target(linux-output-policy
                 python3 python/analysis/data-access-analysis.py
                 -c ${HAKC_DAG_DIR}/dag-adjusted.bin
@@ -159,20 +150,52 @@ else()
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
 
-        add_custom_target(linux-hakc
+        add_custom_target(linux-ros2-adjust-compartments
+                python3 python/analysis/data-access-analysis.py
+                -c ${HAKC_DAG_DIR}/dag.bin
+                --adjust scripts/ros2-demo/rosdemo-compartments.yml
+                COMMAND mv ${HAKC_DAG_DIR}/dag-adjusted.bin ${HAKC_DAG_DIR}/dag-adjusted-ros2.bin
+                BYPRODUCTS ${HAKC_DAG_DIR}/dag-adjusted-ros2.bin
+                COMMENT "Adjusting ROS2 Compartments for ${HAKC_BUILD_TYPE}"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+
+        add_custom_target(linux-ros2-hakc
                 env HAKC_ANALYSIS=compartmentalize ${LINUX_ENV_VARS} make ${LINUX_MAKE_FLAGS}
+                COMMAND mv ${LINUX_BUILD_PATH}/vmlinux ${LINUX_BUILD_PATH}/vmlinux-ros2
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                BYPRODUCTS ${LINUX_BUILD_PATH}/vmlinux
-                COMMENT "Building HAKC Protected kernel for ${HAKC_BUILD_TYPE}"
+                BYPRODUCTS ${LINUX_BUILD_PATH}/vmlinux-ros2
+                COMMENT "Building ROS2 HAKC Protected kernel for ${HAKC_BUILD_TYPE}"
+        )
+
+        add_custom_target(linux-hyres-adjust-compartments
+                python3 python/analysis/data-access-analysis.py
+                -c ${HAKC_DAG_DIR}/dag.bin
+                --adjust scripts/resilient-hypervisor/hyres-compartments.yml
+                COMMAND mv ${HAKC_DAG_DIR}/dag-adjusted.bin ${HAKC_DAG_DIR}/dag-adjusted-hyres.bin
+                BYPRODUCTS ${HAKC_DAG_DIR}/dag-adjusted-hyres.bin
+                COMMENT "Adjusting Resilient Hypervisor Compartments for ${HAKC_BUILD_TYPE}"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+
+        add_custom_target(linux-hyres-hakc
+                env HAKC_ANALYSIS=compartmentalize ${LINUX_ENV_VARS} make ${LINUX_MAKE_FLAGS}
+                COMMAND mv ${LINUX_BUILD_PATH}/vmlinux ${LINUX_BUILD_PATH}/vmlinux-hyres
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                BYPRODUCTS ${LINUX_BUILD_PATH}/vmlinux-hyres
+                COMMENT "Building Resilient Hypervisor HAKC Protected kernel for ${HAKC_BUILD_TYPE}"
         )
 
         add_dependencies(linux-config ${HAKC_PASS_LIB})
         add_dependencies(linux-dag linux-adjust-config)
         add_dependencies(linux-adjust-config linux-config)
         add_dependencies(linux-compartments linux-dag)
-        add_dependencies(linux-adjust-compartments linux-compartments)
-        add_dependencies(linux-output-policy linux-adjust-compartments)
-        add_dependencies(linux-hakc linux-output-policy)
+
+        add_dependencies(linux-ros2-adjust-compartments linux-compartments)
+        add_dependencies(linux-ros2-hakc linux-ros2-adjust-compartments linux-output-policy)
+
+        add_dependencies(linux-hyres-adjust-compartments linux-compartments)
+        add_dependencies(linux-hyres-hakc linux-hyres-adjust-compartments linux-output-policy)
 
     endif(NOT HAKC_CHERIBSD_MORELLO)
 

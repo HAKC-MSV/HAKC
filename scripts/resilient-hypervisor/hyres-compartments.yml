@@ -1,0 +1,4 @@
+kernel:
+  - "$HAKC_SOURCE_PATH$"
+  - "$HAKC_BUILD_PATH$"
+compartmentalize:
