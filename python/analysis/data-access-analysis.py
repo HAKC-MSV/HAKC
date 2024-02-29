@@ -1083,7 +1083,7 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization,
                 continue
 
             remove = True
-            if 'compartmentalize' in adjustments:
+            if 'compartmentalize' in adjustments and adjustments['compartmentalize'] is not None:
                 for compartmentalize_path in adjustments['compartmentalize']:
                     if compartment.contains_symbol_defined_in_path(compartmentalize_path):
                         remove = False
