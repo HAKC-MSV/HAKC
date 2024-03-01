@@ -999,29 +999,6 @@ namespace hakc {
         return CommonHAKCAnalysis::IsCompartmentalizedFunction(CurrentFunction);
     }
 
-    bool HAKCFunctionAnalysis::ValueIsUsedAsPointer(Value *V) {
-        if (!IsPointerLikeType(V->getType())) {
-            return false;
-        }
-
-        bool CallIsUsedAsPointer = V->getType()->isPointerTy();
-        if (V->getType()->isIntegerTy()) {
-            CallIsUsedAsPointer = false;
-            /* Search for uses that determine if the call is considered a pointer or integer */
-            for (auto *UserP: V->users()) {
-                if (isa<IntToPtrInst>(UserP)) {
-                    CallIsUsedAsPointer = true;
-                }
-
-                if (CallIsUsedAsPointer) {
-                    break;
-                }
-            }
-        }
-
-        return CallIsUsedAsPointer;
-    }
-
     /**
          * @brief Processes a function call for analysis
          * @param call

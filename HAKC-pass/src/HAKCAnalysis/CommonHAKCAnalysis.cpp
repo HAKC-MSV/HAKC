@@ -222,14 +222,14 @@ namespace hakc {
                     }
                     /* We stop here */
                     goto add_to_chain;
-                } else if (!isa<Constant>(LHSDef) && IsPointerLikeType(LHSDef->getType())) {
+                } else if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
                         binOp->getOperand(0)->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
-                } else if (!isa<Constant>(RHSDef) && IsPointerLikeType(RHSDef->getType())) {
+                } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand ";
                         binOp->getOperand(1)->print(CommonHAKCAnalysis::getWriter());
@@ -250,6 +250,41 @@ namespace hakc {
         }
         DefchainCache[v] = def_chain;
         return def_chain;
+    }
+
+    bool CommonHAKCAnalysis::ValueIsUsedAsPointer(Value *V) {
+        if (!IsPointerLikeType(V->getType())) {
+            return false;
+        }
+
+        bool CallIsUsedAsPointer = V->getType()->isPointerTy();
+        if (V->getType()->isIntegerTy()) {
+            CallIsUsedAsPointer = false;
+            /* Search for uses that determine if the call is considered a pointer or integer */
+            for (auto &U: V->uses()) {
+                if (isa<IntToPtrInst>(U.getUser())) {
+                    CallIsUsedAsPointer = true;
+                } else if(auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
+                    if(BinOp->getOpcode() == BinaryOperator::Add) {
+                        auto *OtherOp = U.getUser()->getOperand((U.getOperandNo() + 1) % 2);
+                        auto *OtherOpDef = getDef(OtherOp, false, debug_output);
+                        if (OtherOpDef->getType()->isPointerTy()) {
+                            /* V is an integer (which could still be used as a pointer), but is used in an add operation
+                             * that involves another pointer.  Adding two pointers together does not make sense, so V
+                             * is a true integer and not a pointer.
+                             */
+                            break;
+                        }
+                    }
+                }
+
+                if (CallIsUsedAsPointer) {
+                    break;
+                }
+            }
+        }
+
+        return CallIsUsedAsPointer;
     }
 
     /**

@@ -513,6 +513,21 @@ do{                                                                             
             if (isa<AllocaInst>(LoadedPointer)) {
                 AlreadyAuthenticated = true;
             }
+        } else if (auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
+            auto *LHS = Manager->GetDef(BinOp->getOperand(0));
+            auto *RHS = Manager->GetDef(BinOp->getOperand(1));
+            AlreadyAuthenticated = isa<GlobalVariable>(LHS) || isa<GlobalVariable>(RHS);
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Base Definition ";
+                BaseDefinition->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is a BinaryOperator that ";
+                if (!AlreadyAuthenticated) {
+                    CommonHAKCAnalysis::getWriter() << "does not use ";
+                } else {
+                    CommonHAKCAnalysis::getWriter() << "uses ";
+                }
+                CommonHAKCAnalysis::getWriter() << "a GlobalVariable\n";
+            }
         }
 
         if (!AlreadyAuthenticated) {
