@@ -1103,6 +1103,9 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization,
             kernel_compartment.merge_compartment_data(compartment)
             compartmentalization.compartment_topo.remove_node(compartment)
         for compartment in compartments_to_keep:
+            edge_data = compute_dag_edge_capacities(kernel_compartment, compartment, **func_args)
+            if edge_data:
+                compartmentalization.add_compartment_transition(kernel_compartment, compartment, **edge_data)
             for other_compartment in [c for c in compartmentalization.get_compartments() if c != compartment]:
                 edge_data = compute_dag_edge_capacities(compartment, other_compartment, **func_args)
                 if edge_data:
