@@ -141,15 +141,6 @@ else()
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
 
-        add_custom_target(linux-output-policy
-                python3 python/analysis/data-access-analysis.py
-                -c ${HAKC_DAG_DIR}/dag-adjusted.bin
-                --output_compart ${HAKC_DAG_DIR}/hakc-compartments.yml
-                BYPRODUCTS ${HAKC_DAG_DIR}/hakc-compartments.yml
-                COMMENT "Outputting Compartmentalization Policy for ${HAKC_BUILD_TYPE}"
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        )
-
         add_custom_target(linux-ros2-adjust-compartments
                 python3 python/analysis/data-access-analysis.py
                 -c ${HAKC_DAG_DIR}/dag.bin
@@ -157,6 +148,17 @@ else()
                 COMMAND mv ${HAKC_DAG_DIR}/dag-adjusted.bin ${HAKC_DAG_DIR}/dag-adjusted-ros2.bin
                 BYPRODUCTS ${HAKC_DAG_DIR}/dag-adjusted-ros2.bin
                 COMMENT "Adjusting ROS2 Compartments for ${HAKC_BUILD_TYPE}"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+
+        add_custom_target(linux-output-ros2-policy
+                python3 python/analysis/data-access-analysis.py
+                -c ${HAKC_DAG_DIR}/dag-adjusted-ros2.bin
+                --output_compart ${HAKC_DAG_DIR}/hakc-compartments-ros2.yml
+                COMMAND rm -f ${HAKC_DAG_DIR}/hakc-compartments.yml
+                COMMAND ln -s ${HAKC_DAG_DIR}/hakc-compartments-ros2.yml ${HAKC_DAG_DIR}/hakc-compartments.yml
+                BYPRODUCTS ${HAKC_DAG_DIR}/hakc-compartments-ros2.yml
+                COMMENT "Outputting ROS2 Compartmentalization Policy for ${HAKC_BUILD_TYPE}"
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
 
@@ -178,6 +180,17 @@ else()
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         )
 
+        add_custom_target(linux-output-hyres-policy
+                python3 python/analysis/data-access-analysis.py
+                -c ${HAKC_DAG_DIR}/dag-adjusted-hyres.bin
+                --output_compart ${HAKC_DAG_DIR}/hakc-compartments-hyres.yml
+                COMMAND rm -f ${HAKC_DAG_DIR}/hakc-compartments.yml
+                COMMAND ln -s ${HAKC_DAG_DIR}/hakc-compartments-hyres.yml ${HAKC_DAG_DIR}/hakc-compartments.yml
+                BYPRODUCTS ${HAKC_DAG_DIR}/hakc-compartments-hyres.yml
+                COMMENT "Outputting Resilient Hypervisor Compartmentalization Policy for ${HAKC_BUILD_TYPE}"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        )
+
         add_custom_target(linux-hyres-hakc
                 env HAKC_ANALYSIS=compartmentalize ${LINUX_ENV_VARS} make ${LINUX_MAKE_FLAGS}
                 COMMAND mv ${LINUX_BUILD_PATH}/vmlinux ${LINUX_BUILD_PATH}/vmlinux-hyres
@@ -192,10 +205,12 @@ else()
         add_dependencies(linux-compartments linux-dag)
 
         add_dependencies(linux-ros2-adjust-compartments linux-compartments)
-        add_dependencies(linux-ros2-hakc linux-ros2-adjust-compartments linux-output-policy)
+        add_dependencies(linux-output-ros2-policy linux-ros2-adjust-compartments)
+        add_dependencies(linux-ros2-hakc linux-output-ros2-policy)
 
         add_dependencies(linux-hyres-adjust-compartments linux-compartments)
-        add_dependencies(linux-hyres-hakc linux-hyres-adjust-compartments linux-output-policy)
+        add_dependencies(linux-output-hyres-policy linux-hyres-adjust-compartments)
+        add_dependencies(linux-hyres-hakc linux-output-hyres-policy)
 
     endif(NOT HAKC_CHERIBSD_MORELLO)
 
