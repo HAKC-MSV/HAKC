@@ -587,7 +587,7 @@ namespace hakc {
                     }
                 }
                 /* These are usually the result of reading a register value */
-                return ValueIsUsedAsPointer(call);
+                return ValueIsUsedAsPointer(call, debug_output);
             } else if (call->getCalledFunction() &&
                        call->getCalledFunction()->isIntrinsic() &&
                        call->getCalledFunction()->getIntrinsicID() ==
@@ -669,7 +669,7 @@ namespace hakc {
                     ptr->print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " is used in inline assembly\n";
                 }
-                return ValueIsUsedAsPointer(U.get());
+                return ValueIsUsedAsPointer(U.get(), debug_output);
             }
         } else if (!ptr->getType()->isPointerTy()) {
             if (debug_output) {
@@ -1024,7 +1024,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-        if (ValueIsUsedAsPointer(call)) {
+        if (ValueIsUsedAsPointer(call, debug_output)) {
             AddManagedPointer(call);
         } else if (debug_output) {
             call->print(CommonHAKCAnalysis::getWriter());

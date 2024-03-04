@@ -211,14 +211,14 @@ namespace hakc {
                     }
                     /* We stop here */
                     goto add_to_chain;
-                } else if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef)) {
+                } else if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
                         binOp->getOperand(0)->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
-                } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef)) {
+                } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef, debug)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand ";
                         binOp->getOperand(1)->print(CommonHAKCAnalysis::getWriter());
@@ -241,7 +241,7 @@ namespace hakc {
         return def_chain;
     }
 
-    bool CommonHAKCAnalysis::ValueIsUsedAsPointer(Value *V) {
+    bool CommonHAKCAnalysis::ValueIsUsedAsPointer(Value *V, bool debug) {
         if (!IsPointerLikeType(V->getType())) {
             return false;
         }
@@ -255,9 +255,13 @@ namespace hakc {
                     CallIsUsedAsPointer = true;
                 } else if(auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
                     if(BinOp->getOpcode() == BinaryOperator::Add) {
-                        auto *OtherOp = U.getUser()->getOperand((U.getOperandNo() + 1) % 2);
-                        auto *OtherOpDef = getDef(OtherOp, false, debug_output);
-                        if (OtherOpDef->getType()->isPointerTy()) {
+                        unsigned OpNum = (U.getOperandNo() + 1) % 2;
+                        auto *OtherOp = U.getUser()->getOperand(OpNum);
+                        if(debug) {
+                            CommonHAKCAnalysis::getWriter() << "Checking operator " << std::to_string(OpNum)
+                                                            << " of " << *BinOp << ": " << *OtherOp << "\n";
+                        }
+                        if (OtherOp->getType()->isPointerTy()) {
                             /* V is an integer (which could still be used as a pointer), but is used in an add operation
                              * that involves another pointer.  Adding two pointers together does not make sense, so V
                              * is a true integer and not a pointer.
