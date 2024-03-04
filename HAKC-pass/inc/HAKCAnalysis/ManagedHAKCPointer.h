@@ -142,8 +142,6 @@ namespace hakc {
 
         std::set<Instruction *> GetBaseDefinitionUsers();
 
-        static bool IsAuthenticatedUseNeedingAdditionalClassification(Use &U);
-
         static bool IsAuthenticatedVersionOfItself(Use &U);
 
         bool IsClonedUseNeedingAdditionalClassification(Use &U);

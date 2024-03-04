@@ -94,17 +94,6 @@ namespace hakc {
         }
         if (DefchainCache.find(v) != DefchainCache.end()) {
             auto CachedChain = DefchainCache[v];
-            if (debug) {
-                CommonHAKCAnalysis::getWriter() << "Returning cached chain for ";
-                v->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " containing "
-                                                << std::to_string(CachedChain.size()) << " links\n";
-                for (auto *Link: CachedChain) {
-                    CommonHAKCAnalysis::getWriter() << "\t";
-                    Link->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                }
-            }
             return CachedChain;
         }
 

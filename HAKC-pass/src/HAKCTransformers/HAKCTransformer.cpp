@@ -334,185 +334,83 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
      * If V is an argument, we determine V's argument index for the function.
      * The argument will have the same index in Target.
      */
-    size_t index = (size_t) -1;
-
-    for (size_t i = 0; i < Target->arg_size(); i++) {
-        if (I->getFunction()->getArg(i) == V) {
-            index = i;
+    Argument *TargetV = nullptr;
+    Type *BitcastType = nullptr;
+    User *BitcastUser = nullptr;
+    for (auto &Arg: I->getFunction()->args()) {
+        if (V == &Arg) {
+            TargetV = Target->getArg(Arg.getArgNo());
             break;
         }
     }
 
     /* not an argument, nothing to return */
-    if (index == (size_t) -1) {
+    if (!TargetV) {
         return nullptr;
     }
 
-    /*
-     * V was an argument.
-     * Get the argument from Target that has the same argument index.
-     */
-    Value *targetV = (Target->getArg(index));
+    std::set<Use *> WorkingList;
+    for (auto &TargetUse: TargetV->uses()) {
+        WorkingList.insert(&TargetUse);
+    }
 
-    bool bcoOperandDefOk = false;
+    while (!WorkingList.empty()) {
+        auto *CurrentUse = *WorkingList.begin();
+        auto *CurrentUser = CurrentUse->getUser();
+        WorkingList.erase(CurrentUse);
 
-    /*
-     * Only guarantee of a Function's BasicBlock iterator is that the entry block will be returned first.
-     *
-     * Get the entry block and then iterate over the Instructions in the block.
-     */
-    for (Function::iterator i = Target->begin(), e = Target->end(); i != e; ++i) {
-        BasicBlock *b = &*i;
-        for (BasicBlock::iterator bi = b->begin(), be = b->end(); bi != be; ++bi) {
-            /*
-             * Looking for BitCastOperators in the entry block.
-             * They may be a cast of the "void*" argument.
+        if (auto *BitCastOp = dyn_cast<BitCastOperator>(CurrentUser)) {
+            BitcastType = BitCastOp->getDestTy();
+            BitcastUser = CurrentUser;
+            break;
+        } else if (auto *BitCastI = dyn_cast<BitCastInst>(CurrentUser)) {
+            BitcastType = BitCastI->getDestTy();
+            BitcastUser = CurrentUser;
+            break;
+        } else if (auto *StoreI = dyn_cast<StoreInst>(CurrentUser)) {
+            /* This may be unoptimized code that does
+             *     %tmp     = alloca i8*
+             *                store i8* %arg, i8** %tmp
+             *     %voidarg = load i8*, i8** %tmp
+             *     %bcarg   = bitcast i8* %voidarg to %struct.type*
+             * instead of just directly bitcasting the argument
+             *
+             * the following code will only handle this case correctly in the event that
+             *   there is only the one level of indirection through memory
              */
-            if (BitCastOperator *bco = dyn_cast<BitCastOperator>(&*bi)) {
-                /* operand 0 is the value being casted */
-                Value *bcoOperand = (bco->getOperand(0));
-                /* dest type is the type that value gets casted to */
-                Type *bcoType = (bco->getDestTy());
-
-                if (bcoOperand == targetV) {
-                    //bcoOperandDefOk = true;// = targetV;
-                    //break;
-                    return bcoType;
-                }
-
-#if 0
-                /*
-                 * the original analysis was too simplistic
-                 * must follow back up def-use chain to def to see if the def was argument
-                 * follow it backward for an instruction that uses the argument
-                 *
-                 * this will work in the event that
-                 */
-                Value *bcoOperandDef = nullptr;
-                //CommonHAKCAnalysis::getWriter() << " " << *bcoOperandDef << "\n";
-                for (auto *deflink: HAKCAnalysis->findDefChain(bcoOperand, true, true)) {
-                    //CommonHAKCAnalysis::getWriter() << " " << *deflink << "\n";
-                    if(auto *instr = dyn_cast<Instruction>(deflink)) {
-                        unsigned operandCount = instr->getNumOperands();
-                        for (unsigned opIndex = 0; opIndex < operandCount; opIndex++) {
-                            //CommonHAKCAnalysis::getWriter() << "\t\t" << *instr->getOperand(opIndex) << "\n";
-                            if (instr->getOperand(opIndex) == targetV) {
-                                bcoOperandDef = instr->getOperand(opIndex);
-                                break;
-                            }
-                        }
-                        if(bcoOperandDef) {
-                            break;
-                        }
-                    }
-                }
-#endif
-                /*
-                 * first check failed, nothing in the def chain has the argument in it
-                 * this may be unoptimized code that does
-                 *     %tmp     = alloca i8*
-                 *                store i8* %arg, i8** %tmp
-                 *     %voidarg = load i8*, i8** %tmp
-                 *     %bcarg   = bitcast i8* %voidarg to %struct.type*
-                 * instead of just directly bitcasting the argument
-                 *
-                 * the following code will only handle this case correctly in the event that
-                 *   there is only the one level of indirection through memory
-                 */
-                if (!bcoOperandDefOk) {
-                    /* first, get the def for the bitcast operand */
-                    Value *actualOperandDef = HAKCAnalysis->getDef(bcoOperand, true, DebugIsActive());
-
-                    /*
-                     * if the def of the bitcast operand is:
-                     *   %n = alloca i8*
-                     * and the arg is:
-                     *   %arg
-                     * try to find a:
-                     *   load i8*, i8** %n
-                     * in the defChain that "starts" at the bitcast operand and "ends" at the def
-                     * somewhere between the def and the load should be a:
-                     *   store i8* %arg, i8** %n
-                     * if that store can be found:
-                     *   this is a found entry block void* arg -> struct* bitcast
-                     */
-                    if (auto *argPointerAlloca = dyn_cast<AllocaInst>(actualOperandDef)) {
-                        /*
-                         * if the bitcast operand def was alloca i8* (TODO check the type):
-                         *   try to find a load into the def in the bitcast operand defChain
-                         */
-                        LoadInst *loadArgFromDefInstr = nullptr;
-
-                        for (auto *deflink: HAKCAnalysis->findDefChain(bcoOperand, true, true)) {
-                            if (auto *instr = dyn_cast<LoadInst>(deflink)) {
-                                /*
-                                 * found a load in the defChain
-                                 */
-                                if (instr->getOperand(0) == dyn_cast<Value>(argPointerAlloca)) {
-                                    /*
-                                     * this is what we wanted to find:
-                                     *   a load into the bitcast operand's def
-                                     */
-                                    loadArgFromDefInstr = instr;
-                                    break;
+            if (CurrentUse->getOperandNo() != StoreInst::getPointerOperandIndex()) {
+                auto *StorePtrDef = HAKCAnalysis->getDef(StoreI->getPointerOperand(), false, DebugIsActive());
+                if (isa<AllocaInst>(StorePtrDef)) {
+                    for (auto *AllocaUser: StorePtrDef->users()) {
+                        if (isa<LoadInst>(AllocaUser)) {
+                            for (auto &LoadUse: AllocaUser->uses()) {
+                                if (isa<BitCastInst>(LoadUse.getUser()) || isa<BitCastOperator>(LoadUse.getUser())) {
+                                    WorkingList.insert(&LoadUse);
                                 }
                             }
                         }
-                        if (!loadArgFromDefInstr) {
-                            return nullptr;
-                        }
-
-                        /*
-                         * we know:
-                         *   the def of the bitcast operand as %n (def instr)
-                         *   the value %arg
-                         * we found:
-                         *   a load into %n (load instr)
-                         * we still need to find:
-                         *   a store of %arg into %n, between def instr and load instr
-                         */
-                        Instruction *actualOpDefInstr = dyn_cast<Instruction>(actualOperandDef);
-                        Instruction *next = actualOpDefInstr->getNextNode();
-                        /* search from first instruction after the def, until we reach the load */
-                        while (next != dyn_cast<Instruction>(loadArgFromDefInstr)) {
-                            if (auto *instr = dyn_cast<StoreInst>(next)) {
-                                /*
-                                 * we found a store between the def and the load
-                                 */
-                                if ((instr->getOperand(0) == targetV) &&
-                                    (instr->getOperand(1) == dyn_cast<Value>(argPointerAlloca))) {
-                                    /*
-                                     * this what we wanted to find:
-                                     *   a store of the function argument into the bitcast operand's def
-                                     */
-                                    bcoOperandDefOk = true;// = targetV;
-                                    break;
-                                }
-                            }
-                            next = next->getNextNode();
-                        }
                     }
-                }
-
-                /* This Bitcast is Operating on the argument from Target. */
-                if (bcoOperandDefOk) {// && bcoOperandDef == targetV) {
-                    //if (DebugIsActive()) {
-                    CommonHAKCAnalysis::getWriter() << "Target argument is being bitcast:\n";
-                    CommonHAKCAnalysis::getWriter() << " " << *targetV /* *bcoOperandDef*/ << "\n";
-                    CommonHAKCAnalysis::getWriter() << " " << *bcoType << "\n";
-                    //}
-
-                    /* Dest type is what will be used to create a Typed transfer. */
-                    return bcoType;
                 }
             }
         }
-        /* no bitcast found in first block, nothing to return */
-        return nullptr;
     }
 
-    /* control reaches end of non-void function, nothing to return */
-    return nullptr;
+    if (DebugIsActive()) {
+        CommonHAKCAnalysis::getWriter() << "Value ";
+        V->print(CommonHAKCAnalysis::getWriter());
+        if (BitcastType) {
+            CommonHAKCAnalysis::getWriter() << " is cast to ";
+            BitcastType->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " by Instruction ";
+            BitcastUser->print(CommonHAKCAnalysis::getWriter());
+        } else {
+            CommonHAKCAnalysis::getWriter() << " is not bitcast";
+        }
+        CommonHAKCAnalysis::getWriter() << " in function ";
+        Target->print(CommonHAKCAnalysis::getWriter());
+        CommonHAKCAnalysis::getWriter() << "\n";
+    }
+    return BitcastType;
 }
 
 /**
@@ -542,44 +440,39 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
         return SafePtr;
     }
 
-    uint64_t size = 0;
-
-    /*
-     * I am sorry about this code.
-     *
-     * I TRIED to find a way to go from "struct.mytype*" to "struct.mytype"
-     * through the LLVM API. The one thing I thought should work ("getPointerElementType")
-     * would always return "i8*". I gave up and put together this ugly hack.
-     */
-    std::string StructTypeName;
-    llvm::raw_string_ostream rso(StructTypeName);
-    TypeToUse->print(rso);
-
-    /* get rid of "%" at beginning, "*" at end */
-    StructTypeName = StructTypeName.substr(1, StructTypeName.length() - 2);
-
-    /* use StructTypeName to find StructType by name */
-    Type *bcoType = StructType::getTypeByName(HAKCIRBuilder.getContext(), llvm::StringRef(StructTypeName));
-    if (!bcoType) {
-        CommonHAKCAnalysis::getWriter() << "Could not get StructType by name for:\n" << StructTypeName;
-        CommonHAKCAnalysis::getWriter() << "\n";
-        throw std::exception();
+    if(TypeToUse->isPointerTy() && TypeToUse->getPointerElementType()->isPointerTy()) {
+        if(DebugIsActive()) {
+            CommonHAKCAnalysis::getWriter() << "TypeToUse ";
+            TypeToUse->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " is a pointer to a pointer.\n";
+            CommonHAKCAnalysis::getWriter() << "Adding transfer starting at ";
+            HAKCIRBuilder.GetInsertPoint()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " in function ";
+            HAKCIRBuilder.GetInsertBlock()->getParent()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
+        auto *FinalLocation = &*HAKCIRBuilder.GetInsertPoint();
+        auto *SafePtr = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
+        auto *Load = HAKCIRBuilder.CreateLoad(TypeToUse->getPointerElementType(), SafePtr);
+        CreateVoidCastCompartmentTransfer(Load,
+                                                           Load->getNextNonDebugInstruction(), Target,
+                                                           TypeToUse->getPointerElementType());
+        auto *FinalTransfer = CreateSizedCompartmentTransfer(HAKCPointer, FinalLocation,
+                                                             Target, true, HAKCIRBuilder.getInt64(64));
+        return FinalTransfer;
     }
+
+    uint64_t size = 64;
 
     /* the type has to be a struct */
-    auto *StructTy = dyn_cast<StructType>(bcoType);
-    if (!StructTy) {
-        CommonHAKCAnalysis::getWriter() << "Unexpected (non-struct) cast type:\n";
-        TypeToUse->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
-        throw std::exception();
-    }
-
-    auto *StructDITy = DebugInfoProcessor.findDiType(StructTy);
-    if (StructDITy) {
-        size = DebugInfoProcessor.getDITypeSizeInBits(StructDITy);
-    } else {
-        size = StructTy->getScalarSizeInBits();
+    auto *StructTy = dyn_cast<StructType>(TypeToUse->getPointerElementType());
+    if (StructTy) {
+        auto *StructDITy = DebugInfoProcessor.findDiType(StructTy);
+        if (StructDITy) {
+            size = DebugInfoProcessor.getDITypeSizeInBits(StructDITy);
+        } else {
+            size = StructTy->getScalarSizeInBits();
+        }
     }
 
     if (size == 0) {
@@ -596,38 +489,34 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
      * even if a custom transfer function doesn't exist for the struct type, we can do a
      * more accurate transfer than the previous void* single-byte transfer
      */
+    Instruction *Transfer;
+    if(DebugIsActive()) {
+        CommonHAKCAnalysis::getWriter() << "LLVM type: " << *TypeToUse << "\n";
+        CommonHAKCAnalysis::getWriter() << "size of type: " << size << "\n";
+    }
 
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
-        Instruction *customXfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer,
+        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer,
                                                                           HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
                                                                           HAKCPointer->getType(), TypeToUse);
 
         if (DebugIsActive()) {
-            CommonHAKCAnalysis::getWriter() << "Struct type name: " << StructTypeName << "\n";
-            CommonHAKCAnalysis::getWriter() << "LLVM type: " << *bcoType << "\n";
-            CommonHAKCAnalysis::getWriter() << "size of struct: " << size << "\n";
             CommonHAKCAnalysis::getWriter() << "custom xfer result:\n";
-            CommonHAKCAnalysis::getWriter() << *customXfer << "\n";
         }
-        return customXfer;
     } else {
         /* no custom transfer exists, give the next-most specific transfer possible, correctly-sized generic transfer */
-        Instruction *sizedXfer = CreateSizedCompartmentTransfer(HAKCPointer, I, Target, true,
+        Transfer = CreateSizedCompartmentTransfer(HAKCPointer, I, Target, true,
                                                                 HAKCIRBuilder.getInt64(size / BITS_PER_BYTE));
 
         if (DebugIsActive()) {
-            CommonHAKCAnalysis::getWriter() << "Struct type name: " << StructTypeName << "\n";
-            CommonHAKCAnalysis::getWriter() << "LLVM type: " << *bcoType << "\n";
-            CommonHAKCAnalysis::getWriter() << "size of struct: " << size << "\n";
             CommonHAKCAnalysis::getWriter() << "sized xfer result:\n";
-            CommonHAKCAnalysis::getWriter() << *sizedXfer << "\n";
         }
-        return sizedXfer;
     }
-
-    /* control reaches end of non-void function, this leads to a generic single-byte transfer being created for the void* */
-    return nullptr;
+    if (DebugIsActive()) {
+        CommonHAKCAnalysis::getWriter() << *Transfer << "\n";
+    }
+    return Transfer;
 }
 
 Instruction *hakc::HAKCTransformer::CreateCompartmentTransfer(Value *HAKCPointer,

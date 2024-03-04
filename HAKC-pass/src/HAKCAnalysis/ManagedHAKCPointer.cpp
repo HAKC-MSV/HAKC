@@ -140,15 +140,10 @@ namespace hakc {
                         isa<SExtInst>(UserP) ||
                         isa<IntToPtrInst>(UserP) ||
                         isa<PHINode>(UserP) ||
-                        isa<FreezeInst>(UserP);
+                        isa<FreezeInst>(UserP) ||
+                        isa<BinaryOperator>(UserP);
 
         return CloneUse;
-    }
-
-    bool ManagedHAKCPointer::IsAuthenticatedUseNeedingAdditionalClassification(Use &U) {
-        /* Bitwise ANDs are often used to mask pointers */
-        bool NeedsAdditionalClassification = isa<BinaryOperator>(U.getUser());
-        return NeedsAdditionalClassification;
     }
 
     bool ManagedHAKCPointer::IsClonedUseNeedingAdditionalClassification(Use &U) {
@@ -173,8 +168,7 @@ namespace hakc {
         bool UseAuthenticatedPointer = isa<CmpInst>(UserP) ||
                                        isa<LoadInst>(UserP) ||
                                        isa<SubOperator>(UserP) ||
-                                       isa<TruncInst>(UserP) ||
-                                       IsAuthenticatedUseNeedingAdditionalClassification(U);
+                                       isa<TruncInst>(UserP);
         if (auto *Call = dyn_cast<CallBase>(UserP)) {
             if (
                     Manager->GetFunctionAnalysis()->callIsSafeTransition(Call) ||
@@ -386,9 +380,6 @@ do{                                                                             
                 AddAuthenticatedUse(UPtr);
                 if (IsAuthenticatedVersionOfItself(U)) {
                     Manager->AddAuthenticatedPointer(UPtr->getUser(), UPtr->getUser(), DebugActive);
-                }
-                if (IsAuthenticatedUseNeedingAdditionalClassification(U)) {
-                    ClassifyAllUsesOfDefinition(User);
                 }
             } else if (UseShouldUtilizeSignedBasePointer(U)) {
                 if (DebugActive) {
