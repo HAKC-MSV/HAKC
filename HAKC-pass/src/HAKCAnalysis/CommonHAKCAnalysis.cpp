@@ -510,7 +510,6 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::FunctionIsComplexVariadic(Function *F) {
-        /* TODO: Support variadic functions */
         return F->isVarArg();
     }
 

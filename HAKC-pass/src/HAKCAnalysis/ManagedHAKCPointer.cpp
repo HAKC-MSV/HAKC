@@ -1031,6 +1031,10 @@ do{                                                                             
             if (ProtectedPointer == nullptr) {
                 auto *BaseToTransfer = dyn_cast<Instruction>(BaseDefinition);
 
+                if(DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "Creating Transfer of BaseDefinition " << *BaseDefinition
+                                                    << "\n";
+                }
                 auto *Transfer = Manager->GetFunctionAnalysis()->CreateMissingTransfer(BaseToTransfer);
                 SetProtectedPointer(Transfer);
             } else if (DebugActive) {

@@ -1419,7 +1419,7 @@ namespace hakc {
         if (!SetupHasRun) {
             setup();
         }
-        if (FunctionIsComplexVariadic(CurrentFunction) || !isCompartmentalizedFunction()) {
+        if (!isCompartmentalizedFunction()) {
             InstrumentKernelCode();
             return;
         }
