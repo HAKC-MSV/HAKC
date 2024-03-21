@@ -7,8 +7,16 @@
 import argparse
 import logging
 import os
-
+import subprocess
 import docker
+
+
+from gremlin_python import statics
+from gremlin_python.structure.graph import Graph
+from gremlin_python.process.graph_traversal import __
+from gremlin_python.driver.driver_remote_connection import DriverRemoteConnection
+from gremlin_python.process.anonymous_traversal import traversal
+
 
 logging_level_map = {
     "CRITICAL": logging.CRITICAL,
@@ -20,58 +28,62 @@ logging_level_map = {
 
 
 class HAKCDagStore:
-    def __init__(self, working_dir: str, logger: logging.Logger):
-        self.storage_backend = None
+    def __init__(self, docker_file: str, docker_output: str, logger: logging.Logger):
         self.logger = logger
+        self.docker_output_file = None
+        self.docker_process = None
+        self.gremlin_conn = None
+        if not os.path.exists(docker_file):
+            self.logger.error(f'Dockerfile {docker_file} does not exist!')
+            raise FileNotFoundError
 
-        self.storage_img_name = 'cassandra'
-        self.storage_img_tag = '5.0'
-        self.container_name = f'{self.storage_img_name}:{self.storage_img_tag}'
+        self.docker_file = os.path.abspath(docker_file)
+        self.docker_output_file_path = os.path.abspath(docker_output)
+        os.makedirs(os.path.dirname(self.docker_output_file_path), exist_ok=True)
+        self.docker_output_file = open(self.docker_output_file_path, 'w')
 
-        os.makedirs(working_dir, exist_ok=True)
-        self.working_dir = os.path.abspath(working_dir)
-
-        self.logger.info(f'Starting Docker')
-        self.client = docker.from_env()
-
-        self.logger.info(f'Pulling Docker Image {self.container_name}')
-        self.storage_image = self.client.images.pull(self.storage_img_name, tag=self.storage_img_tag)
-        self.logger.info(f'Finished retrieving Docker Image {self.container_name}')
-
-        storage_container_options = {
-            "detach": True,
-            "environment": ['CASSANDRA_START_RPC=true'],
-            "ports": {
-                9160: 9160,
-                9042: 9042,
-                7199: 7199,
-                7001: 7001,
-                7000: 7000
-            },
-            "name": f'jg-{self.storage_img_name}',
-            "working_dir": self.working_dir
-        }
-        self.logger.info(f'Starting {self.container_name} in directory {self.working_dir}')
-        self.storage_backend = self.client.containers.run(self.container_name, **storage_container_options)
-        self.logger.info(f'Container {self.container_name} (id: {str(self.storage_backend.short_id)}) started '
-                         f'successfully')
+        self.logger.info(f'Starting Docker from Docker file {self.docker_file}')
+        self.docker_watcher = docker.from_env()
+        running_containers = set(self.docker_watcher.containers.list(all=True))
+        self.docker_process = subprocess.Popen(['docker', 'compose', '-f', self.docker_file, 'up'],
+                                               stdout=self.docker_output_file, stderr=self.docker_output_file)
+        if self.docker_process.poll() is not None:
+            self.logger.error(f"Docker process has stopped!")
+            raise RuntimeError
+        self.docker_containers = [container for container in self.docker_watcher.containers.list(all=True) if container not in running_containers]
+        self.logger.info(f'Docker started {len(self.docker_containers)} containers')
+        self.gremlin_conn = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g')
+        self.graph = traversal().withRemote(self.gremlin_conn)
 
     def shutdown(self):
-        self.logger.info(f'HAKCDagStore shutting down')
-        if self.storage_backend is not None:
+        if self.docker_process is not None:
+            self.logger.info("HAKCDagStore is shutting down")
             try:
-                self.logger.info(f'Stopping Container {self.container_name} (id: {str(self.storage_backend.short_id)})')
-                self.storage_backend.stop()
-            except docker.errors.APIError as docker_error:
-                self.logger.error(f'Failed to stop Container {self.container_name}!')
-                self.logger.error(f'{str(docker_error)}')
+                self.docker_process.terminate()
+            except Exception as e:
+                self.logger.error(f'Error terminating Docker process: {e}')
+            self.docker_process = None
+
+        if self.docker_output_file is not None:
+            try:
+                self.docker_output_file.close()
+            except Exception as e:
+                self.logger.error(f'Error closing {self.docker_output_file_path}: {e}')
+            self.docker_output_file = None
+
+        if self.gremlin_conn is not None:
+            try:
+                self.gremlin_conn.close()
+            except Exception as e:
+                self.logger.error(f'Error closing gremlin connection: {e}')
+            self.gremlin_conn = None
 
     def __del__(self):
         self.shutdown()
 
 
 class HAKCDagSession:
-    def __init__(self, storage_working_dir: str, log_file: str, log_level: type(logging.DEBUG)):
+    def __init__(self, docker_file: str, docker_output_file_path: str, log_file: str, log_level: type(logging.DEBUG)):
         self.dag_store = None
 
         log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
@@ -85,11 +97,12 @@ class HAKCDagSession:
             file_handler.setFormatter(log_formatter)
             self.logger.addHandler(file_handler)
 
-        self.dag_store = HAKCDagStore(working_dir=storage_working_dir, logger=self.logger)
+        self.dag_store = HAKCDagStore(docker_file=docker_file, docker_output=docker_output_file_path,
+                                      logger=self.logger)
 
     def shutdown(self):
-        self.logger.info(f'HAKCDagSession shutting down')
         if self.dag_store is not None:
+            self.logger.info(f'HAKCDagSession shutting down')
             self.dag_store.shutdown()
             self.dag_store = None
 
@@ -105,21 +118,20 @@ def parse_log_level(level_string: str):
 
 
 def main():
-    default_path = os.path.join(os.curdir, 'hakc-jg-store')
     parser = argparse.ArgumentParser(description='HAKC DAG generation and manipulation')
-    parser.add_argument('-d', '--working-dir', default=str(default_path), dest='working_dir')
+    parser.add_argument('-f', '--docker-file', required=True, dest='docker_file')
     parser.add_argument('-l', '--log', default=None, dest='log_path')
+    parser.add_argument('-o', '--docker-output', default='docker.out', dest='docker_out')
     parser.add_argument('--log-level', required=False, dest='log_level', default=logging.INFO,
                         help='Log level to display, can be lower case', type=parse_log_level,
                         choices=sorted(logging_level_map.keys()))
 
     args = parser.parse_args()
 
-    dag_session = HAKCDagSession(storage_working_dir=args.working_dir,
+    dag_session = HAKCDagSession(docker_file=args.docker_file, docker_output_file_path=args.docker_out,
                                  log_file=args.log_path, log_level=args.log_level)
 
     dag_session.start()
-    dag_session.shutdown()
 
 
 if __name__ == '__main__':
