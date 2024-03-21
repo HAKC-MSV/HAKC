@@ -242,7 +242,7 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << " in function " << I->getFunction()->getName();
                         CommonHAKCAnalysis::getWriter() << " but authenticated pointer has not been created.\n";
                     }
-                    ManagedPtr->CreateBaseAuthenticatedPointer();
+                    ManagedPtr->SetPointerRefreshNeeded(true);
                 }
             }
             return Clone;
@@ -279,20 +279,28 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Base Pointer Authentication determination completed\n";
         }
 
-        for (auto &ManagedPtr: GetManagedPointers()) {
-            ManagedPtr->CreateBaseAuthenticatedPointer();
-            if (Debug && ManagedPtr->GetAuthenticatedPointer()) {
-                CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << ManagedPtr << ": ";
-                ManagedPtr->GetAuthenticatedPointer()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+        bool RefreshNeeded;
+        do {
+            RefreshNeeded = false;
+            for (auto &ManagedPtr: GetManagedPointers()) {
+                if(ManagedPtr->NeedsPointerReplacementRefresh()) {
+                    ManagedPtr->CreateBaseAuthenticatedPointer();
+                    if (Debug && ManagedPtr->GetAuthenticatedPointer()) {
+                        CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << ManagedPtr << ": ";
+                        ManagedPtr->GetAuthenticatedPointer()->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                    }
+                    ManagedPtr->CreatePointerUseClones();
+                    if (Debug) {
+                        CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for "
+                                                        << ManagedPtr
+                                                        << "\n";
+                    }
+                    ManagedPtr->SetPointerRefreshNeeded(false);
+                    RefreshNeeded = true;
+                }
             }
-            ManagedPtr->CreatePointerUseClones();
-            if (Debug) {
-                CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for "
-                                                << ManagedPtr
-                                                << "\n";
-            }
-        }
+        } while(RefreshNeeded);
     }
 
     Value *HAKCPointerManager::FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target) {

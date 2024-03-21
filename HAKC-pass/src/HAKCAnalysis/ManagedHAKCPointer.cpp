@@ -42,6 +42,7 @@ namespace hakc {
             Manager(Manager),
             BaseIsAuthenticated(false),
             ManuallyTransferred(false),
+            NeedsReplacementUpdates(true),
             AuthenticatedUses(),
             ProtectedUses(),
             CloneUses(),
@@ -176,8 +177,8 @@ namespace hakc {
                     Call->getCalledOperandUse().getOperandNo() == U.getOperandNo() ||
                     Call->getCalledFunction() == nullptr ||
                     Manager->GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction()) ||
-                    Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call)
-                    ) {
+                    Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call) ||
+                    Manager->GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call)) {
                 UseAuthenticatedPointer = true;
             }
         } else if (isa<StoreInst>(UserP)) {
@@ -329,7 +330,16 @@ do{                                                                             
 
     void ManagedHAKCPointer::AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr) {
         auto Copy = std::make_shared<ManagedHAKCPointerUse>(UPtr->getUser(), UPtr->getOperandNo());
-        AuthenticatedUses.insert(Copy);
+        bool found = false;
+        for(auto &UseP : AuthenticatedUses) {
+            if(UseP == UPtr) {
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            AuthenticatedUses.insert(Copy);
+        }
         Manager->AddAuthenticatedPointer(Copy->get(), nullptr, DebugActive);
     }
 
@@ -604,6 +614,18 @@ do{                                                                             
             auto *I = Manager->CreateAuthenticatedValue(PHI, DebugActive);
             if (I) {
                 SetAuthenticatedPointer(I);
+                for(auto &IncomingUse : PHI->incoming_values()) {
+                    auto ManagedPtr = Manager->GetManagedPointer(IncomingUse.get());
+                    if(ManagedPtr) {
+                        auto ManagedPtrUse = std::make_shared<ManagedHAKCPointerUse>(dyn_cast<User>(I), IncomingUse.getOperandNo());
+                        if(DebugActive) {
+                            CommonHAKCAnalysis::getWriter() << "Adding new Authenticated Use from newly created PHI: "
+                                                            << ManagedPtrUse << "\n";
+                        }
+                        ManagedPtr->AddAuthenticatedUse(ManagedPtrUse);
+                        ManagedPtr->SetPointerRefreshNeeded(true);
+                    }
+                }
             }
         } else {
             Value *I;
@@ -829,6 +851,13 @@ do{                                                                             
             }
             if (GetAuthenticatedUserCount() > 0 && !BaseIsAuthenticatedPointer()) {
                 auto *AuthenticatedVersion = Manager->FindAuthenticatedValue(CloneUse->getUser());
+                if(!AuthenticatedVersion) {
+                    CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated Version of "
+                                                    << *CloneUse->getUser() << " in\n";
+                    Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                    throw std::exception();
+                }
                 if (!Manager->ValueIsAuthenticatedPointer(AuthenticatedVersion)) {
                     auto *AuthenticatedUser = dyn_cast<User>(AuthenticatedVersion);
                     auto *Replacement = Manager->FindAuthenticatedValue(CloneUse->get());
@@ -1055,5 +1084,13 @@ do{                                                                             
 
     unsigned ManagedHAKCPointer::GetProtectedUserCount() {
         return ProtectedUses.size();
+    }
+
+    bool ManagedHAKCPointer::NeedsPointerReplacementRefresh() {
+        return NeedsReplacementUpdates;
+    }
+
+    void ManagedHAKCPointer::SetPointerRefreshNeeded(bool RefreshNeeded) {
+        NeedsReplacementUpdates = RefreshNeeded;
     }
 } // hakc

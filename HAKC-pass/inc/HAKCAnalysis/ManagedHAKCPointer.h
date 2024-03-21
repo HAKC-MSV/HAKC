@@ -100,6 +100,8 @@ namespace hakc {
 
         bool ManuallyTransferred;
 
+        bool NeedsReplacementUpdates;
+
         /**
          * Pointer uses and their replacements
          */
@@ -190,6 +192,10 @@ namespace hakc {
         bool BaseIsAuthenticatedPointer() const;
 
         bool DetermineIfBasePointerIsAuthenticated();
+
+        bool NeedsPointerReplacementRefresh();
+
+        void SetPointerRefreshNeeded(bool RefreshNeeded);
 
     private:
         void InitBaseDefinition(Value *Pointer);

@@ -258,7 +258,7 @@ namespace hakc {
 
         virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
-        virtual bool IsIntrinsicNeedingAuthentication(CallInst *Call);
+        virtual bool IsIntrinsicNeedingAuthentication(CallBase *Call);
 
         virtual bool IsIntrinsicsNeedingCloning(CallBase *Call);
 

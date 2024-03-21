@@ -375,7 +375,7 @@ namespace hakc {
         return (!isa<Function>(arg) && PointerShouldBeManaged(arg));
     }
 
-    bool HAKCFunctionAnalysis::IsIntrinsicNeedingAuthentication(CallInst *Call) {
+    bool HAKCFunctionAnalysis::IsIntrinsicNeedingAuthentication(CallBase *Call) {
         auto IntrinsicsNeedingAuth = GetIntrinsicsNeedingAuthenticatedArgs();
         return IsCallInIntrinsicSet(Call, IntrinsicsNeedingAuth);
     }
