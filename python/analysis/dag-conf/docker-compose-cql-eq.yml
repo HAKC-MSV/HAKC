@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: "3"
-
 services:
   janusgraph:
     image: docker.io/janusgraph/janusgraph:latest
@@ -22,6 +20,7 @@ services:
       JANUS_PROPS_TEMPLATE: cql-es
       janusgraph.storage.hostname: jce-cassandra
       janusgraph.index.search.hostname: jce-elastic
+      graph-replace-instance-if-exists: true
     ports:
       - "8182:8182"
     networks:
