@@ -1,0 +1,13 @@
+diff --git a/arch/arm64/mm/proc.S b/arch/arm64/mm/proc.S
+index d35c90d2e47a..1a28b03df89a 100644
+--- a/arch/arm64/mm/proc.S
++++ b/arch/arm64/mm/proc.S
+@@ -45,7 +45,7 @@
+ #define TCR_KASAN_SW_FLAGS 0
+ #endif
+ 
+-#ifdef CONFIG_KASAN_HW_TAGS
++#if defined(CONFIG_KASAN_HW_TAGS) || defined(CONFIG_HAKC_ARM_V9)
+ #define TCR_MTE_FLAGS SYS_TCR_EL1_TCMA1 | TCR_TBI1 | TCR_TBID1
+ #else
+ /*

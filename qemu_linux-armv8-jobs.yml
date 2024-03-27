@@ -1,0 +1,184 @@
+qemu_stage_linux_v6-armv8-memory_rosdemo_img-job:
+  stage: test_v6
+  needs:
+    - job: build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    - sudo losetup -f --show -P $RPI_IMG_FILE > partid
+    - sleep 1
+    - export QEMU_PARTID=`cat partid`
+    - sudo mount "$QEMU_PARTID""p2" /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo cp -r $MODULES_ROOT/lib/modules/6.6.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sleep 1
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo losetup -d $QEMU_PARTID
+    - sleep 1
+    - rm partid
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v6-armv8-memory_rosdemo-job:
+  stage: test_v6
+  needs:
+    - job: qemu_stage_linux_v6-armv8-memory_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    BOOT_KERNEL: "arch/arm64/boot/Image.gz"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-aarch64 -M virt,mte=off -m 4G -smp 1 -cpu max -kernel $BUILD_ROOT/$BOOT_KERNEL -drive if=none,file=$RPI_IMG_FILE,format=raw,id=hd -append 'root=/dev/vda2 rw noresume' -device virtio-blk-pci,drive=hd -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 15
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 10
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+# the following two lines vary depending on platform, more work is needed on scripting this
+    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 6.6 ARM V8 MEMORY ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v6-armv8-memory_rosdemo_img-job
+
+qemu_stage_linux_v6-armv8-btree_rosdemo_img-job:
+  stage: test2_v6
+  needs:
+    - job: qemu_test_linux_v6-armv8-memory_rosdemo-job
+    - job: build_linux_v6-armv8-btree_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    - sudo losetup -f --show -P $RPI_IMG_FILE > partid
+    - export QEMU_PARTID=`cat partid`
+    - sudo mount "$QEMU_PARTID""p2" /data/gitlab-runner/mnt/testing
+    - sudo cp -r $MODULES_ROOT/lib/modules/6.6.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sudo losetup -d $QEMU_PARTID
+    - rm partid
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - qemu_test_linux_v6-armv8-memory_rosdemo-job
+    - build_linux_v6-armv8-btree_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v6-armv8-btree_rosdemo-job:
+  stage: test2_v6
+  needs:
+    - job: qemu_stage_linux_v6-armv8-btree_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    BOOT_KERNEL: "arch/arm64/boot/Image.gz"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-aarch64 -M virt,mte=off -m 4G -smp 1 -cpu max -kernel $BUILD_ROOT/$BOOT_KERNEL -drive if=none,file=$RPI_IMG_FILE,format=raw,id=hd -append 'root=/dev/vda2 rw noresume' -device virtio-blk-pci,drive=hd -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 15
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 10
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+# the following two lines vary depending on platform, more work is needed on scripting this
+    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 6.6 ARM V8 BTREE ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v6-armv8-btree_rosdemo_img-job
+
+qemu_stage_linux_v5-armv8-memory_rosdemo_img-job:
+  stage: test_v5
+  needs:
+    # we don't want this to run until all of the HAKC 6 ARM test jobs have passed
+    - job: qemu_test_linux_v6-armv8-btree_rosdemo-job
+    - job: qemu_test_linux_v6-armv9_rosdemo-job
+    - job: build_linux_v5-armv8-memory_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    - sudo losetup -f --show -P $RPI_IMG_FILE > partid
+    - sleep 1
+    - export QEMU_PARTID=`cat partid`
+    - sudo mount "$QEMU_PARTID""p2" /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo cp -r $MODULES_ROOT/lib/modules/5.15.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sleep 1
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo losetup -d $QEMU_PARTID
+    - sleep 1
+    - rm partid
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - qemu_test_linux_v6-armv8-btree_rosdemo-job
+    - qemu_test_linux_v6-armv9_rosdemo-job
+    - build_linux_v5-armv8-memory_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v5-armv8-memory_rosdemo-job:
+  stage: test_v5
+  needs:
+    - job: qemu_stage_linux_v5-armv8-memory_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    BOOT_KERNEL: "arch/arm64/boot/Image.gz"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-aarch64 -M virt,mte=off -m 4G -smp 1 -cpu max -kernel $BUILD_ROOT/$BOOT_KERNEL -drive if=none,file=$RPI_IMG_FILE,format=raw,id=hd -append 'root=/dev/vda2 rw noresume' -device virtio-blk-pci,drive=hd -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 15
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 10
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+# the following two lines vary depending on platform, more work is needed on scripting this
+    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 5.15 ARM V8 ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v5-armv8-memory_rosdemo_img-job

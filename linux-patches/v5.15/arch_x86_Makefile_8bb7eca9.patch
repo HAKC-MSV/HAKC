@@ -1,0 +1,21 @@
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 7488cfbbd2f6..c9f51a1a6358 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -12,6 +12,16 @@ else
+         KBUILD_DEFCONFIG := $(ARCH)_defconfig
+ endif
+ 
++# HAKC: check for pass path var once at the very top
++ifeq ($(CONFIG_HAKC), y)
++ifeq ($(CONFIG_HAKC_PASS_PATH),"")
++$(error "HAKC_PASS_PATH is not set!")
++endif
++# the following two lines are common to all supported architectures
++KBUILD_CFLAGS += -fexperimental-new-pass-manager
++KBUILD_CFLAGS += -fpass-plugin=$(CONFIG_HAKC_PASS_PATH)
++endif
++
+ # For gcc stack alignment is specified with -mpreferred-stack-boundary,
+ # clang has the option -mstack-alignment for that purpose.
+ ifneq ($(call cc-option, -mpreferred-stack-boundary=4),)

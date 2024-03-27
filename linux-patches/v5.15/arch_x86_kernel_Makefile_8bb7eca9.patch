@@ -1,0 +1,10 @@
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index 8f4e8fa6ed75..d368a5c5d99d 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -157,3 +157,5 @@ ifeq ($(CONFIG_X86_64),y)
+ 	obj-$(CONFIG_MMCONF_FAM10H)	+= mmconf-fam10h_64.o
+ 	obj-y				+= vsmp_64.o
+ endif
++
++obj-$(CONFIG_HAKC_X86)  += hakc/
