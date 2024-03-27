@@ -1,8 +1,7 @@
-[submodule "linux"]
-	path = linux
-	url = git@github.mit.edu:inherently-secure/MTE-kernel.git
-	branch = main
 [submodule "llvm-project"]
 	path = llvm-project
 	url = https://github.com/llvm/llvm-project.git
 	branch = release/12.x
+[submodule "linux"]
+	path = linux
+	url = https://github.com/torvalds/linux.git

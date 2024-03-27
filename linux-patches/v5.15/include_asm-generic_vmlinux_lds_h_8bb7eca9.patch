@@ -1,0 +1,221 @@
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index f2984af2b85b..4e2f37cc64f9 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -217,6 +217,7 @@
+ #define FTRACE_EVENTS()	. = ALIGN(8);					\
+ 			__start_ftrace_events = .;			\
+ 			KEEP(*(_ftrace_events))				\
++			KEEP(*(.hakc.*_CLIQUE_ftrace_events))		\
+ 			__stop_ftrace_events = .;			\
+ 			__start_ftrace_eval_maps = .;			\
+ 			KEEP(*(_ftrace_eval_map))			\
+@@ -256,9 +257,10 @@
+ #endif
+ 
+ #ifdef CONFIG_SERIAL_EARLYCON
+-#define EARLYCON_TABLE() . = ALIGN(8);				\
+-			 __earlycon_table = .;			\
+-			 KEEP(*(__earlycon_table))		\
++#define EARLYCON_TABLE() . = ALIGN(8);					\
++			 __earlycon_table = .;				\
++			 KEEP(*(__earlycon_table))			\
++			 KEEP(*(.hakc.*_CLIQUE__earlycon_table))	\
+ 			 __earlycon_table_end = .;
+ #else
+ #define EARLYCON_TABLE()
+@@ -268,6 +270,7 @@
+ #define LSM_TABLE()	. = ALIGN(8);					\
+ 			__start_lsm_info = .;				\
+ 			KEEP(*(.lsm_info.init))				\
++			KEEP(*(.hakc.*_CLIQUE.lsm_info.init))		\
+ 			__end_lsm_info = .;
+ #define EARLY_LSM_TABLE()	. = ALIGN(8);				\
+ 			__start_early_lsm_info = .;			\
+@@ -286,6 +289,8 @@
+ 	. = ALIGN(8);							\
+ 	__##name##_of_table = .;					\
+ 	KEEP(*(__##name##_of_table))					\
++	KEEP(*(.hakc.*_CLIQUE__##name##_of_table))			\
++	KEEP(*(.hakc.*_CLIQUE__##name##_of_table_end))			\
+ 	KEEP(*(__##name##_of_table_end))
+ 
+ #define TIMER_OF_TABLES()	OF_TABLE(CONFIG_TIMER_OF, timer)
+@@ -300,6 +305,7 @@
+ 	. = ALIGN(8);							\
+ 	__##name##_acpi_probe_table = .;				\
+ 	KEEP(*(__##name##_acpi_probe_table))				\
++	KEEP(*(.hakc.*_CLIQUE__##name##_acpi_probe_table))		\
+ 	__##name##_acpi_probe_table_end = .;
+ #else
+ #define ACPI_PROBE_TABLE(name)
+@@ -310,6 +316,7 @@
+ 	. = ALIGN(8);							\
+ 	__##name##_thermal_table = .;					\
+ 	KEEP(*(__##name##_thermal_table))				\
++	KEEP(*(.hakc.*_CLIQUE__##name##_thermal_table))			\
+ 	__##name##_thermal_table_end = .;
+ #else
+ #define THERMAL_TABLE(name)
+@@ -338,6 +345,8 @@
+ 	*(.xiptext)							\
+ 	*(DATA_MAIN)							\
+ 	*(.ref.data)							\
++	*(.hakc.*_CLIQUE.ref.data)					\
++	*(.hakc.*_CLIQUE.data)						\
+ 	*(.data..shared_aligned) /* percpu related */			\
+ 	MEM_KEEP(init.data*)						\
+ 	MEM_KEEP(exit.data*)						\
+@@ -347,6 +356,7 @@
+ 	__end_once = .;							\
+ 	STRUCT_ALIGN();							\
+ 	*(__tracepoints)						\
++	*(.hakc.*_CLIQUE__tracepoints)					\
+ 	/* implement dynamic printk debug */				\
+ 	. = ALIGN(8);							\
+ 	__start___dyndbg = .;						\
+@@ -376,11 +386,13 @@
+ #define READ_MOSTLY_DATA(align)						\
+ 	. = ALIGN(align);						\
+ 	*(.data..read_mostly)						\
++	*(.hakc.*_CLIQUE.data..read_mostly)				\
+ 	. = ALIGN(align);
+ 
+ #define CACHELINE_ALIGNED_DATA(align)					\
+ 	. = ALIGN(align);						\
+-	*(.data..cacheline_aligned)
++	*(.data..cacheline_aligned)					\
++	*(.hakc.*_CLIQUE.data..cacheline_aligned)
+ 
+ #define INIT_TASK_DATA(align)						\
+ 	. = ALIGN(align);						\
+@@ -416,6 +428,7 @@
+ 	. = ALIGN(8);							\
+ 	__start_ro_after_init = .;					\
+ 	*(.data..ro_after_init)						\
++	*(.hakc.*_CLIQUE.data..ro_after_init)				\
+ 	JUMP_TABLE_DATA							\
+ 	STATIC_CALL_DATA						\
+ 	__end_ro_after_init = .;
+@@ -429,6 +442,7 @@
+ 	.rodata           : AT(ADDR(.rodata) - LOAD_OFFSET) {		\
+ 		__start_rodata = .;					\
+ 		*(.rodata) *(.rodata.*)					\
++		*(.hakc.*_CLIQUE.rodata) *(.hakc.*_CLIQUE.rodata.*)	\
+ 		SCHED_DATA						\
+ 		RO_AFTER_INIT_DATA	/* Read only after init */	\
+ 		. = ALIGN(8);						\
+@@ -436,6 +450,7 @@
+ 		KEEP(*(__tracepoints_ptrs)) /* Tracepoints: pointer array */ \
+ 		__stop___tracepoints_ptrs = .;				\
+ 		*(__tracepoints_strings)/* Tracepoints: strings */	\
++		*(.hakc.*_CLIQUE__tracepoints_strings)			\
+ 	}								\
+ 									\
+ 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
+@@ -525,13 +540,22 @@
+ 	__param : AT(ADDR(__param) - LOAD_OFFSET) {			\
+ 		__start___param = .;					\
+ 		KEEP(*(__param))					\
++		KEEP(*(.hakc.*_CLIQUE__param))				\
+ 		__stop___param = .;					\
+ 	}								\
+ 									\
++	/* Generated function pointers for module param HAKC contexts */\
++	__hakc_modparam_ctx_fp : AT(ADDR(__hakc_modparam_ctx_fp) - LOAD_OFFSET) {	\
++		__start___hakc_modparam_ctx_fp = .;			\
++		KEEP(*(.hakc.modparam_ctx_fp))				\
++		__stop___hakc_modparam_ctx_fp = .;			\
++	}								\
++									\
+ 	/* Built-in module versions. */					\
+ 	__modver : AT(ADDR(__modver) - LOAD_OFFSET) {			\
+ 		__start___modver = .;					\
+ 		KEEP(*(__modver))					\
++		KEEP(*(.hakc.*_CLIQUE__modver))				\
+ 		__stop___modver = .;					\
+ 	}								\
+ 									\
+@@ -584,6 +608,9 @@
+ 		NOINSTR_TEXT						\
+ 		*(.text..refcount)					\
+ 		*(.ref.text)						\
++		*(.hakc.*_CLIQUE.ref.text)				\
++		*(.hakc.*_CLIQUE.text)					\
++		*(.hakc.modparam_ctx.text)				\
+ 		*(.text.asan.* .text.tsan.*)				\
+ 		TEXT_CFI_JT						\
+ 	MEM_KEEP(init.text*)						\
+@@ -596,6 +623,7 @@
+ 		ALIGN_FUNCTION();					\
+ 		__sched_text_start = .;					\
+ 		*(.sched.text)						\
++		*(.hakc.*_CLIQUE.sched.text)				\
+ 		__sched_text_end = .;
+ 
+ /* spinlock.text is aling to function alignment to secure we have same
+@@ -628,6 +656,7 @@
+ 		ALIGN_FUNCTION();					\
+ 		__irqentry_text_start = .;				\
+ 		*(.irqentry.text)					\
++		*(.hakc.*_CLIQUE.irqentry.text)				\
+ 		__irqentry_text_end = .;
+ 
+ #define SOFTIRQENTRY_TEXT						\
+@@ -704,10 +733,12 @@
+ #define INIT_DATA							\
+ 	KEEP(*(SORT(___kentry+*)))					\
+ 	*(.init.data init.data.*)					\
++	*(.hakc.*_CLIQUE.init.data .hakc.*_CLIQUE.init.data.*)		\
+ 	MEM_DISCARD(init.data*)						\
+ 	KERNEL_CTORS()							\
+ 	MCOUNT_REC()							\
+ 	*(.init.rodata .init.rodata.*)					\
++	*(.hakc.*_CLIQUE.init.rodata .hakc.*_CLIQUE.init.rodata.*)	\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
+ 	KPROBE_BLACKLIST()						\
+@@ -732,6 +763,7 @@
+ #define INIT_TEXT							\
+ 	*(.init.text .init.text.*)					\
+ 	*(.text.startup)						\
++	*(.hakc.*_CLIQUE.init.text .hakc.*_CLIQUE.init.text.*)		\
+ 	MEM_DISCARD(init.text*)
+ 
+ #define EXIT_DATA							\
+@@ -744,10 +776,13 @@
+ #define EXIT_TEXT							\
+ 	*(.exit.text)							\
+ 	*(.text.exit)							\
++	*(.hakc.*_CLIQUE.exit.text)					\
++	*(.hakc.*_CLIQUE.text.exit)					\
+ 	MEM_DISCARD(exit.text)
+ 
+ #define EXIT_CALL							\
+-	*(.exitcall.exit)
++	*(.exitcall.exit)						\
++	*(.hakc.*_CLIQUE.exitcall.exit)
+ 
+ /*
+  * bss (Block Started by Symbol) - uninitialized data
+@@ -915,6 +950,7 @@
+ 		. = ALIGN(initsetup_align);				\
+ 		__setup_start = .;					\
+ 		KEEP(*(.init.setup))					\
++		KEEP(*(.hakc.*_CLIQUE.init.setup))			\
+ 		__setup_end = .;
+ 
+ #define INIT_CALLS_LEVEL(level)						\
+@@ -1048,9 +1084,12 @@
+ 	*(.data..percpu..page_aligned)					\
+ 	. = ALIGN(cacheline);						\
+ 	*(.data..percpu..read_mostly)					\
++	*(.hakc.*_CLIQUE.data..percpu..read_mostly)			\
+ 	. = ALIGN(cacheline);						\
+ 	*(.data..percpu)						\
++	*(.hakc.*_CLIQUE.data..percpu)					\
+ 	*(.data..percpu..shared_aligned)				\
++	*(.hakc.*_CLIQUE.data..percpu..shared_aligned)			\
+ 	PERCPU_DECRYPTED_SECTION					\
+ 	__per_cpu_end = .;
+ 

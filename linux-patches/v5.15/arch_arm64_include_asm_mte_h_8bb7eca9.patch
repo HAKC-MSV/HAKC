@@ -1,0 +1,22 @@
+diff --git a/arch/arm64/include/asm/mte.h b/arch/arm64/include/asm/mte.h
+index 02511650cffe..2d86a78e5adb 100644
+--- a/arch/arm64/include/asm/mte.h
++++ b/arch/arm64/include/asm/mte.h
+@@ -86,7 +86,7 @@ static inline int mte_ptrace_copy_tags(struct task_struct *child,
+ 
+ #endif /* CONFIG_ARM64_MTE */
+ 
+-#ifdef CONFIG_KASAN_HW_TAGS
++#if defined(CONFIG_KASAN_HW_TAGS) || defined(CONFIG_HAKC_ARM_V9)
+ /* Whether the MTE asynchronous mode is enabled. */
+ DECLARE_STATIC_KEY_FALSE(mte_async_mode);
+ 
+@@ -134,7 +134,7 @@ static inline void mte_check_tfsr_entry(void)
+ static inline void mte_check_tfsr_exit(void)
+ {
+ }
+-#endif /* CONFIG_KASAN_HW_TAGS */
++#endif /* CONFIG_KASAN_HW_TAGS || CONFIG_HAKC_ARM_V9 */
+ 
+ #endif /* __ASSEMBLY__ */
+ #endif /* __ASM_MTE_H  */
