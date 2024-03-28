@@ -1,0 +1,32 @@
+test_linux_pass-job:
+  stage: pre_test
+  needs:
+    - job: build_linux-armv8_pass-job
+    - job: build_linux-armv9_pass-job
+    - job: build_linux-x86_pass-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: manual
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Checking which clang to use"
+    - |
+      if [ -d "$CLANG_BUILD_PATH" ]; then
+        export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
+      else
+        export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
+      fi
+    - echo "Using $CLANG_PATH"
+    - cd HAKC-pass/tests
+    - ./run-tests.sh
+  artifacts:
+    paths:
+      - install
+  dependencies:
+    - build_linux-armv8_pass-job
+    - build_linux-armv9_pass-job
+    - build_linux-x86_pass-job

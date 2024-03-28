@@ -1,0 +1,16 @@
+diff --git a/arch/arm64/kernel/image-vars.h b/arch/arm64/kernel/image-vars.h
+index c96a9a0043bf..f19f4e179a23 100644
+--- a/arch/arm64/kernel/image-vars.h
++++ b/arch/arm64/kernel/image-vars.h
+@@ -49,6 +49,11 @@ __efistub__edata		= _edata;
+ __efistub_screen_info		= screen_info;
+ __efistub__ctype		= _ctype;
+ 
++#ifdef CONFIG_HAKC
++__efistub_get_hakc_address_color = get_hakc_address_color;
++__efistub_hakc_transfer_to_clique = hakc_transfer_to_clique;
++#endif
++
+ #endif
+ 
+ #ifdef CONFIG_KVM

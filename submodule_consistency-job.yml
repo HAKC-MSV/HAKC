@@ -1,0 +1,35 @@
+submodule_consistency-job:
+  stage: check
+  variables:
+    SUBMODULES_TO_TEST: linux llvm-project
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: manual
+  script:
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule deinit -f .
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update --init --recursive
+    - export LINUX_COMMIT_TO_CHECK="ffc253263a1375a65fa6c9f62a893e9767fbebfa"
+    - export LLVM_BRANCH_TO_CHECK="release/12.x"
+    - export COUNT=0
+    - |
+      for i in $SUBMODULES_TO_TEST
+      do
+        if [ $i == "llvm-project" ]
+        then
+          export COMPARISON=origin/$LLVM_BRANCH_TO_CHECK
+        else
+          export COMPARISON=$LINUX_COMMIT_TO_CHECK
+        fi
+        echo "Checking if $i is up to date with $COMPARISON"
+        cd $i
+        { git diff $COMPARISON --quiet && echo -e "\e[32m$i is up to date with $COMPARISON\e[0m"; } || { echo -e "\e[31m$i is not up to date with $COMPARISON\e[0m" && COUNT=$((COUNT + 1)); }
+        cd ..
+      done
+      if [ $COUNT -ne 0 ]; then
+        echo -e "\e[31mOne or more submodules is not up to date - to fix this run\e[0m `git submodule update --remote --merge`"
+      fi
+    - exit $COUNT
+  allow_failure: true # TODO - get rid of this once we've fixed it

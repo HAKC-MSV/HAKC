@@ -67,7 +67,23 @@ namespace hakc {
                 "arch/x86/kernel/paravirt.c",
                 "arch/x86/kernel/kvm.c",
                 "arch/x86/kernel/cpu/vmware.c",
-
+                /* pass crashes with these */
+		/* asm sideeffect something or other */
+		"fs/readdir.c",
+		"mm/maccess.c",
+		"net/core/scm.c",
+		"mm/gup.c",
+		"arch/x86/kernel/signal_64.c",
+		"arch/x86/kvm/x86.c",
+		"kernel/rseq.c",
+		/* undefined symbol bpf_dispatcher_nop_func */
+		"net/core/filter.c",
+		/*this breaks v5.15 build if it is commented out */
+		/*with it uncommented, KERNEL DOESNT BOOT WHEN COMPARTMENTALIZED */
+		/*the no-op common-kernel weak symbol version gets used :-( */
+		/*potentially this might work if the weak def (kernel entry common) source is also added */
+		"arch/x86/kernel/signal.c",
+		"kernel/entry/common.c",
         };
         return AddToSet(Paths, extras);
     }

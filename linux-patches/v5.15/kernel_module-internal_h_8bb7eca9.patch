@@ -1,0 +1,25 @@
+diff --git a/kernel/module-internal.h b/kernel/module-internal.h
+index 33783abc377b..93012c3d1040 100644
+--- a/kernel/module-internal.h
++++ b/kernel/module-internal.h
+@@ -8,6 +8,10 @@
+ #include <linux/elf.h>
+ #include <asm/module.h>
+ 
++#ifdef CONFIG_HAKC
++#include <linux/hakc/hakc.h>
++#endif
++
+ struct load_info {
+ 	const char *name;
+ 	/* pointer to module in temporary copy, freed at end of load_module() */
+@@ -25,6 +29,9 @@ struct load_info {
+ #endif
+ 	struct {
+ 		unsigned int sym, str, mod, vers, info, pcpu;
++#ifdef CONFIG_HAKC
++		unsigned int hakc_pcpu[HAKC_COLOR_COUNT];
++#endif
+ 	} index;
+ };
+ 

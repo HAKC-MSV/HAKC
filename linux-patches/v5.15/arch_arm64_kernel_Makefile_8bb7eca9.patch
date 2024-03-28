@@ -1,0 +1,11 @@
+diff --git a/arch/arm64/kernel/Makefile b/arch/arm64/kernel/Makefile
+index 3f1490bfb938..5475dff87991 100644
+--- a/arch/arm64/kernel/Makefile
++++ b/arch/arm64/kernel/Makefile
+@@ -81,3 +81,6 @@ extra-y					+= $(head-y) vmlinux.lds
+ ifeq ($(CONFIG_DEBUG_EFI),y)
+ AFLAGS_head.o += -DVMLINUX_PATH="\"$(realpath $(objtree)/vmlinux)\""
+ endif
++
++obj-$(CONFIG_HAKC_ARM_V8) += hakc/armv8/
++obj-$(CONFIG_HAKC_ARM_V9) += hakc/armv9/

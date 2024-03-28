@@ -1,0 +1,26 @@
+diff --git a/init/main.c b/init/main.c
+index 3c4054a95545..9994d9fa54d0 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -112,6 +112,10 @@
+ 
+ #include <kunit/test.h>
+ 
++#if IS_ENABLED(CONFIG_HAKC)
++#include <linux/hakc/hakc.h>
++#endif
++
+ static int kernel_init(void *);
+ 
+ extern void init_IRQ(void);
+@@ -690,6 +694,10 @@ noinline void __ref rest_init(void)
+ 	struct task_struct *tsk;
+ 	int pid;
+ 
++#if IS_ENABLED(CONFIG_HAKC_ARM_V8) || IS_ENABLED(CONFIG_HAKC_X86)
++	hakc_init_tags();
++#endif
++
+ 	rcu_scheduler_starting();
+ 	/*
+ 	 * We need to spawn init first so that it obtains pid 1, however

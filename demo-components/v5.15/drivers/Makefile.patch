@@ -1,0 +1,4 @@
+11a12,14
+> obj-y				+= rosdemo/
+> obj-y				+= tb-exploiter/
+> 
