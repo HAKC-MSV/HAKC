@@ -7,12 +7,12 @@
 import argparse
 import concurrent.futures
 import logging
+import multiprocessing as mp
 import os
 import subprocess
 import time
 from collections.abc import Mapping, Iterable
 from enum import Enum
-import multiprocessing as mp
 
 import docker
 import yaml
@@ -73,7 +73,7 @@ class JGDataType(Enum):
     Uuid = "UUID"
 
 
-class JGEdgeType(Enum):
+class JGEdgeLabel(Enum):
     DirectCall = 'direct-call'
     Uses = 'uses'
     IndirectCall = 'indirect-call'
@@ -127,6 +127,21 @@ class JGSchemaProperty(JGSchemaElement):
         return f'{self.name} [{self.data_type.value} {self.cardinality.value}]'
 
 
+class JGSchemaVertexLabel(JGSchemaElement):
+    def __init__(self, vertex_label: JGVertexLabel, mgmt_name=JGSchemaElement.get_default_management_name()):
+        super().__init__(vertex_label.value, mgmt_name)
+        self.vertex_label = vertex_label
+
+    def make_vertex_label_str(self) -> str:
+        return f'{self.mgmt_name}.makeVertexLabel(\'{self.name}\').make();'
+
+    def make_gremlin_str(self) -> str:
+        return self.make_vertex_label_str()
+
+    def __repr__(self):
+        return f'Vertex Label {self.name}'
+
+
 class JGSchemaEdgeLabel(JGSchemaElement):
     def __init__(self, name: str, edge_multiplicity: JGEdgeMultiplicity,
                  mgmt_name=JGSchemaElement.get_default_management_name()):
@@ -145,33 +160,41 @@ class JGSchemaEdgeLabel(JGSchemaElement):
 
 
 class JGPropertyIndex(JGSchemaElement):
-    def __init__(self, name: str, schema_property: JGSchemaProperty, is_vertex_index: bool = True):
-        super().__init__(name, schema_property.mgmt_name)
+    def __init__(self, name: str, schema_properties: list[JGSchemaProperty], is_vertex_index: bool = True):
+        super().__init__(name, schema_properties[0].mgmt_name)
         self.is_vertex_index = is_vertex_index
-        self.schema_property = schema_property
-        self.gremlin_var_name = schema_property.name.replace('-', '_')
+        self.schema_properties = schema_properties
 
     def make_index_str(self) -> str:
+        gremlin_ver_names = {schema_property: schema_property.name.replace('-', '_') for schema_property in
+                             self.schema_properties}
         index_cmds = [f'graph.tx().rollback();\n',
-                      f'{self.mgmt_name} = graph.openManagement();\n',
-                      f'{self.gremlin_var_name} = {self.mgmt_name}',
-                      f'.getPropertyKey(\'{self.schema_property.name}\');\n',
-                      f'{self.mgmt_name}.buildIndex(\'{self.name}\', ',
-                      f'{"Vertex" if self.is_vertex_index else "Edge"}.class)',
-                      f'.addKey({self.gremlin_var_name}).buildCompositeIndex();\n',
-                      f'{self.mgmt_name}.commit();\n',
-                      f'ManagementSystem.awaitGraphIndexStatus(graph, \'{self.name}\').call();\n',
-                      f'{self.mgmt_name} = graph.openManagement();\n',
-                      f'{self.mgmt_name}.updateIndex({self.mgmt_name}.getGraphIndex(\"{self.name}\"), '
-                      f'SchemaAction.REINDEX).get();\n',
-                      f'{self.mgmt_name}.commit();\n']
+                      f'{self.mgmt_name} = graph.openManagement();\n']
+
+        for schema_property in self.schema_properties:
+            index_cmds.append(f'{gremlin_ver_names[schema_property]} = {self.mgmt_name}')
+            index_cmds.append(f'.getPropertyKey(\'{schema_property.name}\');\n', )
+
+        index_cmds.append(f'{self.mgmt_name}.buildIndex(\'{self.name}\', ')
+        index_cmds.append(f'{"Vertex" if self.is_vertex_index else "Edge"}.class)')
+
+        for schema_property in self.schema_properties:
+            index_cmds.append(f'.addKey({gremlin_ver_names[schema_property]})')
+
+        index_cmds.append(f'.buildCompositeIndex();\n')
+        index_cmds.append(f'{self.mgmt_name}.commit();\n')
+        index_cmds.append(f'ManagementSystem.awaitGraphIndexStatus(graph, \'{self.name}\').call();\n')
+        index_cmds.append(f'{self.mgmt_name} = graph.openManagement();\n')
+        index_cmds.append(f'{self.mgmt_name}.updateIndex({self.mgmt_name}.getGraphIndex(\"{self.name}\"), ')
+        index_cmds.append(f'SchemaAction.REINDEX).get();\n')
+        index_cmds.append(f'{self.mgmt_name}.commit();\n')
         return "".join(index_cmds)
 
     def make_gremlin_str(self) -> str:
         return self.make_index_str()
 
     def __repr__(self):
-        return f'Index {self.name} for property {self.schema_property}'
+        return f'Index {self.name} for properties {self.schema_properties}'
 
 
 class HAKCDagStore:
@@ -221,6 +244,7 @@ class HAKCDagStore:
             if not all_containers_started:
                 time.sleep(5)
 
+        logger.info(f'Containers started successfully')
         self.connection = DriverRemoteConnection('ws://localhost:8182/gremlin', 'g',
                                                  message_serializer=GraphSONSerializersV3d0())
         self.gremlin_client = Client(self.connection.url, self.connection.traversal_source)
@@ -270,6 +294,7 @@ class HAKCDagStore:
         return result
 
     def create_schema(self):
+        logger.info(f'Creating schema')
         # There is no Python API for constructing the schema, so we must do this using Gremlin commands
         schema_commands = [f'{JGSchemaProperty.get_default_management_name()} = graph.openManagement();']
 
@@ -279,6 +304,8 @@ class HAKCDagStore:
             schema_commands.append(jg_property.make_property_str())
         for jg_edge_label in HAKCDagStore.edge_labels():
             schema_commands.append(jg_edge_label.make_edge_label_str())
+        for jg_vertex_label in HAKCDagStore.vertex_labels():
+            schema_commands.append(jg_vertex_label.make_vertex_label_str())
         schema_commands.append(f'{JGSchemaProperty.get_default_management_name()}.commit();')
         try:
             self._send_gremlin_cmd_str(schema_commands)
@@ -286,8 +313,10 @@ class HAKCDagStore:
             logger.error(f'Received error creating schema: {e}')
 
     def create_indices(self):
-        indices_to_create = [JGPropertyIndex('byNameComposite', HAKCDagStore.name_property()),
-                             JGPropertyIndex('byCompartmentIdComposite', HAKCDagStore.compartment_id_property())]
+        logger.info(f'Creating indices')
+        indices_to_create = [
+            JGPropertyIndex('byNameAndTypeComposite', [HAKCDagStore.name_property(), HAKCDagStore.type_property()]),
+            JGPropertyIndex('byCompartmentIdComposite', [HAKCDagStore.compartment_id_property()])]
 
         for index_to_create in indices_to_create:
             logger.debug(f'Creating {index_to_create}')
@@ -333,8 +362,16 @@ class HAKCDagStore:
         return set(HAKCDagStore.edge_label_map().values())
 
     @staticmethod
-    def edge_label_map() -> Mapping[JGEdgeType, JGSchemaEdgeLabel]:
-        return {EdgeType: JGSchemaEdgeLabel(EdgeType.value, JGEdgeMultiplicity.Simple) for EdgeType in JGEdgeType}
+    def vertex_labels() -> set[JGSchemaVertexLabel]:
+        return set(HAKCDagStore.vertex_label_map().values())
+
+    @staticmethod
+    def vertex_label_map() -> Mapping[JGVertexLabel, JGSchemaVertexLabel]:
+        return {VertexLabel: JGSchemaVertexLabel(VertexLabel) for VertexLabel in JGVertexLabel}
+
+    @staticmethod
+    def edge_label_map() -> Mapping[JGEdgeLabel, JGSchemaEdgeLabel]:
+        return {EdgeLabel: JGSchemaEdgeLabel(EdgeLabel.value, JGEdgeMultiplicity.Simple) for EdgeLabel in JGEdgeLabel}
 
     def add_vertex(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
                    check_for_existing: bool = True) -> int:
@@ -350,7 +387,7 @@ class HAKCDagStore:
 
     @staticmethod
     def _handle_properties(graph_element, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
-                           setting_properties: bool):
+                           setting_properties: bool, use_label_in_query: bool = False):
         for jg_property, property_value in properties.items():
             if property_value is None:
                 raise RuntimeError(f'Value for property `{jg_property}` is None')
@@ -368,13 +405,16 @@ class HAKCDagStore:
                     graph_element = graph_element.has(jg_property.name, within(*property_value))
                 else:
                     if jg_property == HAKCDagStore.label_property():
-                        graph_element = graph_element.has_label(property_value)
+                        if use_label_in_query:
+                            graph_element = graph_element.has_label(property_value)
                     else:
                         graph_element = graph_element.has(jg_property.name, property_value)
+
         return graph_element
 
-    def _search_properties(self, graph_element, properties: Mapping[JGSchemaProperty, int | str | float | Iterable]):
-        return self._handle_properties(graph_element, properties, False)
+    def _search_properties(self, graph_element, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
+                           use_label_in_query: bool = False):
+        return self._handle_properties(graph_element, properties, False, use_label_in_query)
 
     def _set_properties(self, graph_element, properties: Mapping[JGSchemaProperty, int | str | float | Iterable]):
         return self._handle_properties(graph_element, properties, True)
@@ -391,12 +431,11 @@ class HAKCDagStore:
             logger.error(f'Error setting vertex properties: {gremlin_error}')
             raise gremlin_error
         logger.debug(f'Finished adding vertex {self.graph_traversal.V(jg_vertex).next()}')
-        logger.debug(f'Number of vertices in g: {self.graph_traversal.V().count().next()}')
         return jg_vertex.id
 
-    def get_vertex_id(self, properties: Mapping[JGSchemaProperty, int | str | float]) -> int | None:
-        logger.debug(f'Getting vertex with properties {properties}')
-        vertex_set = self.get_vertex_ids(properties)
+    def get_vertex_id(self, properties: Mapping[JGSchemaProperty, int | str | float],
+                      use_label_in_query: bool = False) -> int | None:
+        vertex_set = self.get_vertex_ids(properties, use_label_in_query)
         if len(vertex_set) == 0:
             logger.debug(f'No vertex found with properties {properties}')
             return None
@@ -405,11 +444,21 @@ class HAKCDagStore:
         logger.debug(f'Found result {result}')
         return result
 
-    def get_vertex_ids(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable]) -> set[int]:
+    def get_vertex_ids(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
+                       use_label_in_query: bool = False) -> set[int]:
         logger.debug(f'Finding vertices with properties {properties}')
         vertex_traversal = self.graph_traversal.V()
-        vertex_traversal = self._search_properties(vertex_traversal, properties)
-        result_set = vertex_traversal.to_set()
+        vertex_traversal = self._search_properties(vertex_traversal, properties, use_label_in_query)
+        initial_results = vertex_traversal.to_set()
+        if HAKCDagStore.label_property() in properties and not use_label_in_query:
+            result_set = set()
+            label = properties[HAKCDagStore.label_property()]
+            for result in initial_results:
+                if result.label == label:
+                    result_set.add(result)
+        else:
+            result_set = initial_results
+
         logger.debug(f'Found {len(result_set)} results')
         ids_to_return = {result.id for result in result_set}
         return ids_to_return
@@ -472,10 +521,11 @@ class HAKCDagSession:
     def started(self) -> bool:
         return self.dag_store is not None
 
-    def get_vertex_ids(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable]) -> set[int]:
+    def get_vertex_ids(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
+                       use_label_in_query: bool = False) -> set[int]:
         if not self.started:
             raise HAKCSessionNotStartedError
-        return self.dag_store.get_vertex_ids(properties)
+        return self.dag_store.get_vertex_ids(properties, use_label_in_query)
 
     def add_vertex(self, properties: Mapping[JGSchemaProperty, int | str | float | Iterable],
                    check_for_existing: bool = True) -> int:
@@ -613,26 +663,27 @@ def populate_graph_from_yaml(filename: str, compartment_id: int):
             if type_name is None:
                 type_name = f'type_{accessed_type.get_type_hash()}'
 
-            properties = {HAKCDagStore.label_property(): JGVertexLabel.DataType.value,
-                          HAKCDagStore.name_property(): type_name,
-                          HAKCDagStore.type_property(): accessed_type.get_type_hash()
+            properties = {HAKCDagStore.name_property(): type_name,
+                          HAKCDagStore.type_property(): accessed_type.get_type_hash(),
+                          HAKCDagStore.label_property(): JGVertexLabel.DataType.value,
                           }
             jg_vertex = DAGSession.add_vertex(properties)
             type_vertices[accessed_type] = jg_vertex
 
         logger.debug(f'Finished adding types for {compartment_id}')
         logger.debug(f'Adding accessed symbols for {compartment_id}')
-        properties = {HAKCDagStore.label_property(): JGVertexLabel.Compartment.value,
-                      HAKCDagStore.compartment_id_property(): compartment_id}
-        compartment_vertex = DAGSession.add_vertex(properties, False)
+        properties = {HAKCDagStore.compartment_id_property(): compartment_id,
+                      HAKCDagStore.label_property(): JGVertexLabel.Compartment.value}
+        compartment_vertex = DAGSession.add_vertex(properties)
         for accessed_symbol in compartment.get_accessed_symbols():
-            properties = {HAKCDagStore.label_property(): JGVertexLabel.Symbol.value,
-                          HAKCDagStore.name_property(): accessed_symbol.get_name()}
+            properties = {HAKCDagStore.name_property(): accessed_symbol.get_name(),
+                          HAKCDagStore.type_property(): accessed_symbol.get_hash(),
+                          HAKCDagStore.label_property(): JGVertexLabel.Symbol.value}
             jg_vertex = DAGSession.add_vertex(properties)
             symbol_vertices[accessed_symbol] = jg_vertex
             DAGSession.add_edge(from_vertex=compartment_vertex,
                                 to_vertex=jg_vertex,
-                                edge_label=HAKCDagStore.edge_label_map()[JGEdgeType.InCompartment],
+                                edge_label=HAKCDagStore.edge_label_map()[JGEdgeLabel.InCompartment],
                                 properties={})
 
         logger.debug(f'Finished adding accessed symbols for {compartment_id}')
@@ -643,7 +694,7 @@ def populate_graph_from_yaml(filename: str, compartment_id: int):
                 if type_vertex is not None:
                     DAGSession.add_edge(from_vertex=type_vertex,
                                         to_vertex=symbol_vertex,
-                                        edge_label=HAKCDagStore.edge_label_map()[JGEdgeType.Uses],
+                                        edge_label=HAKCDagStore.edge_label_map()[JGEdgeLabel.Uses],
                                         properties={})
                 else:
                     logger.error(f'Could not find type vertex for {accessed_type}!')
@@ -660,6 +711,7 @@ def process_dag_files_multithreaded(filename_compartment_map: dict[int, str]):
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         logger.info(f'Starting DAG file processing using {max_workers} workers')
         while len(filename_compartment_map) > 0:
+            logger.info(f'Starting {len(filename_compartment_map)} jobs')
             futures = [
                 executor.submit(populate_graph_from_yaml, filename_compartment_map[compartment_id], compartment_id)
                 for compartment_id in filename_compartment_map.keys()]
