@@ -26,7 +26,7 @@ namespace hakc {
         friend class ManagedHAKCPointer;
 
     public:
-        explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis);
+        explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis, bool DebugActive);
 
         bool ManagePointer(Value *V);
 
@@ -122,7 +122,7 @@ namespace hakc {
 
         Value *CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
 
-        bool PointerIsEligibleForManagement(Value *Pointer;
+        bool PointerIsEligibleForManagement(Value *Pointer);
 
         bool CloneableManagedPointer(Value *V);
 

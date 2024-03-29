@@ -103,8 +103,6 @@ namespace hakc {
 
         bool ManuallyTransferred;
 
-        bool NeedsReplacementUpdates;
-
         unsigned ID;
 
         /**
@@ -115,18 +113,18 @@ namespace hakc {
         std::set<ManagedHAKCPointerUseP> CloneUses;
 
         /**
-         * Return the Authenticated version of Operand
-         * @param Operand
+         * Return the Authenticated version of Use
+         * @param Use
          * @return
          */
-        Value *CreateAuthenticatedValue(Value *Operand);
+        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP &Use);
 
         /**
-         * Return the Signed version of Operand
-         * @param Operand
+         * Return the Signed version of Use
+         * @param Use
          * @return
          */
-        Value *CreateProtectedValue(Value *Operand);
+        Value *CreateProtectedValue(ManagedHAKCPointerUseP &Use);
 
         void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
@@ -161,8 +159,6 @@ namespace hakc {
 
         void MaybeCreateMissingTransfer();
 
-        void InitializeUses();
-
         void RegisterManualHAKCTransfer(CallBase *CallI);
 
         unsigned GetAuthenticatedUserCount();
@@ -172,10 +168,6 @@ namespace hakc {
         bool BaseIsAuthenticatedPointer() const;
 
         bool DetermineIfBasePointerIsAuthenticated();
-
-        bool NeedsPointerReplacementRefresh() const;
-
-        void SetPointerRefreshNeeded(bool RefreshNeeded);
 
         unsigned GetID() const;
 
@@ -217,8 +209,10 @@ namespace hakc {
         }
 
         friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointer &ManagedPointer) {
-            os << "Managed Pointer " << std::to_string(ManagedPointer.GetID()) << "("
-               << *ManagedPointer.GetBaseDefinition() << ")";
+            os << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
+            if(ManagedPointer.GetBaseDefinition()) {
+                os << " [" << *ManagedPointer.GetBaseDefinition() << "  ]";
+            }
             return os;
         }
 

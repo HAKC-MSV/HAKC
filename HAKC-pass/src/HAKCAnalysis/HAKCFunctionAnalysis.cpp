@@ -12,7 +12,7 @@ namespace hakc {
 
     HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, bool debug)
             : CommonHAKCAnalysis(debug),
-              PointerManager(this),
+              PointerManager(this, debug),
               DTree(*F),
               CurrentFunction(F),
               SetupHasRun(false),
@@ -272,7 +272,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
             throw std::exception();
         }
-        if (PointerManager.ManagePointer(HAKCPointer, debug_output)) {
+        if (PointerManager.ManagePointer(HAKCPointer)) {
             auto ManagedPointer = PointerManager.GetManagedPointer(HAKCPointer);
             if (auto *PHII = dyn_cast<PHINode>(ManagedPointer->GetBaseDefinition())) {
                 if (debug_output) {
@@ -301,7 +301,7 @@ namespace hakc {
             getFunction().print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
-        PointerManager.CreateAuthenticatedPointersAndAllClones(debug_output);
+        PointerManager.CreateAuthenticatedPointersAndAllClones();
     }
 
     /**
@@ -314,7 +314,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-        PointerManager.TransformPointers(debug_output);
+        PointerManager.TransformPointers();
     }
 
     Value *HAKCFunctionAnalysis::AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location) {
@@ -1181,9 +1181,6 @@ namespace hakc {
             for (auto it = inst_begin(CurrentFunction); it != inst_end(CurrentFunction); ++it) {
                 Instruction *inst = &*it;
                 HandleInstruction(inst);
-            }
-            for (auto &ManagedPtr: PointerManager.GetManagedPointers()) {
-                ManagedPtr->InitializeUses();
             }
             SetupHasRun = true;
         } else if (debug_output) {
