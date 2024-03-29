@@ -13,65 +13,68 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Dominators.h"
 
-#include "HAKCPointerManager.h"
-
 namespace hakc {
     using namespace llvm;
+
+    class ManagedHAKCPointerUse;
+
+    using ManagedHAKCPointerUseP = std::shared_ptr<ManagedHAKCPointerUse>;
+
+    class ManagedHAKCPointer;
+
+    using ManagedHAKCPointerP = std::shared_ptr<ManagedHAKCPointer>;
+
+    class HAKCPointerManager;
 
     /**
      * Stores Instruction and Operand to change
      */
     class ManagedHAKCPointerUse {
     public:
-        ManagedHAKCPointerUse(User *UserP, unsigned OperandNo);
+        ManagedHAKCPointerUse(ManagedHAKCPointerP &P, User *User, unsigned OperandNo);
 
         User *getUser() const;
+
+        void setUser(User *U);
 
         unsigned getOperandNo() const;
 
         Value *get() const;
 
-        void setUser(User *U);
+        ManagedHAKCPointerP &getManagedPtr();
 
     protected:
+        ManagedHAKCPointerP &ManagedPtr;
         User *UserP;
         unsigned OperandNo;
 
     public:
-        friend bool operator==(const std::shared_ptr<ManagedHAKCPointerUse> &lhs, const Use &rhs) {
+        friend bool operator==(const ManagedHAKCPointerUseP &lhs, const Use &rhs) {
             return lhs->getUser() == rhs.getUser() && lhs->getOperandNo() == rhs.getOperandNo();
         }
 
-        friend bool operator!=(const std::shared_ptr<ManagedHAKCPointerUse> &lhs, const Use &rhs) {
+        friend bool operator!=(const ManagedHAKCPointerUseP &lhs, const Use &rhs) {
             return !(lhs == rhs);
         }
 
-        friend bool operator==(const Use &lhs, const std::shared_ptr<ManagedHAKCPointerUse> &rhs) {
+        friend bool operator==(const Use &lhs, const ManagedHAKCPointerUseP &rhs) {
             return (rhs == lhs);
         }
 
-        friend bool operator!=(const Use &lhs, const std::shared_ptr<ManagedHAKCPointerUse> &rhs) {
+        friend bool operator!=(const Use &lhs, const ManagedHAKCPointerUseP &rhs) {
             return !(lhs == rhs);
         }
 
-        friend bool operator==(const std::shared_ptr<ManagedHAKCPointerUse> &lhs, const
-        std::shared_ptr<ManagedHAKCPointerUse> &rhs) {
+        friend bool operator==(const ManagedHAKCPointerUseP &lhs, const ManagedHAKCPointerUseP &rhs) {
             return (lhs->getUser() == rhs->getUser()) && (lhs->getOperandNo() == rhs->getOperandNo());
         }
 
-        friend bool operator!=(const std::shared_ptr<ManagedHAKCPointerUse> &lhs, const
-        std::shared_ptr<ManagedHAKCPointerUse> &rhs) {
+        friend bool operator!=(const ManagedHAKCPointerUseP &lhs, const ManagedHAKCPointerUseP &rhs) {
             return !(lhs == rhs);
         }
 
-        friend raw_ostream &operator<<(raw_ostream &os, const std::shared_ptr<ManagedHAKCPointerUse> &HAKCPointerUse) {
-            os << "Argument " << std::to_string(HAKCPointerUse->getOperandNo()) << " of ";
-            HAKCPointerUse->UserP->print(os);
-            return os;
-        }
+        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUseP &HAKCPointerUse);
     };
-
-    using ManagedHAKCPointerUseP = std::shared_ptr<ManagedHAKCPointerUse>;
 
     /**
      * A single managed Pointer.  Contains the original definition of the pointer, an authenticated pointer suitable
@@ -102,15 +105,14 @@ namespace hakc {
 
         bool NeedsReplacementUpdates;
 
+        unsigned ID;
+
         /**
          * Pointer uses and their replacements
          */
         std::set<ManagedHAKCPointerUseP> AuthenticatedUses;
         std::set<ManagedHAKCPointerUseP> ProtectedUses;
         std::set<ManagedHAKCPointerUseP> CloneUses;
-        std::set<ManagedHAKCPointerUseP> AnalyzedUses;
-
-        void ClassifyAllUsesOfDefinition(Value *Def);
 
         /**
          * Return the Authenticated version of Operand
@@ -126,35 +128,13 @@ namespace hakc {
          */
         Value *CreateProtectedValue(Value *Operand);
 
-        bool UseShouldUtilizeAuthenticatedPointer(Use &U);
-
-        bool UseShouldBeCloned(Use &U);
-
-        bool UseShouldUtilizeSignedBasePointer(Use &U);
-
-        static bool UseShouldBeIgnored(Use &U);
-
-        bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
-
         void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
         void TransformClones();
 
         void CreatePointerReplacements();
 
-        std::set<Instruction *> GetBaseDefinitionUsers();
-
-        static bool IsAuthenticatedVersionOfItself(Use &U);
-
-        bool IsClonedUseNeedingAdditionalClassification(Use &U);
-
         bool ComputeBasePointerAuthenticated();
-
-        void AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr);
-
-        void AddProtectedUse(ManagedHAKCPointerUseP &UPtr);
-
-        void AddCloneUse(ManagedHAKCPointerUseP &UPtr);
 
         std::set<ManagedHAKCPointerUseP> GetAllUses();
 
@@ -163,7 +143,7 @@ namespace hakc {
         void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
     public:
-        ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, bool debug);
+        ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, unsigned ID);
 
         Value *GetBaseDefinition() const;
 
@@ -183,7 +163,7 @@ namespace hakc {
 
         void InitializeUses();
 
-        void RegisterManualHAKCTransfer(CallInst *CallI);
+        void RegisterManualHAKCTransfer(CallBase *CallI);
 
         unsigned GetAuthenticatedUserCount();
 
@@ -193,44 +173,57 @@ namespace hakc {
 
         bool DetermineIfBasePointerIsAuthenticated();
 
-        bool NeedsPointerReplacementRefresh();
+        bool NeedsPointerReplacementRefresh() const;
 
         void SetPointerRefreshNeeded(bool RefreshNeeded);
+
+        unsigned GetID() const;
+
+        void AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr);
+
+        void AddProtectedUse(ManagedHAKCPointerUseP &UPtr);
+
+        void AddCloneUse(ManagedHAKCPointerUseP &UPtr);
 
     private:
         void InitBaseDefinition(Value *Pointer);
 
+        void CheckPointerReplacement(Value *Old, Value *New, StringRef TypeName) const;
+
 
     public:
-        friend bool operator==(const std::shared_ptr<ManagedHAKCPointer> &lhs, Value *V) {
-            auto *Def = lhs->Manager->GetDef(V);
-            return lhs->GetBaseDefinition() == Def;
+        friend bool operator==(const ManagedHAKCPointerP &lhs, Value *V) {
+            return lhs->GetBaseDefinition() == V;
         }
 
-        friend bool operator!=(const std::shared_ptr<ManagedHAKCPointer> &lhs, Value *V) {
+        friend bool operator!=(const ManagedHAKCPointerP &lhs, Value *V) {
             return !(lhs == V);
         }
 
-        friend bool operator==(Value *V, const std::shared_ptr<ManagedHAKCPointer> &rhs) {
+        friend bool operator==(Value *V, const ManagedHAKCPointerP &rhs) {
             return (rhs == V);
         }
 
-        friend bool operator!=(Value *V, const std::shared_ptr<ManagedHAKCPointer> &rhs) {
+        friend bool operator!=(Value *V, const ManagedHAKCPointerP &rhs) {
             return !(V == rhs);
         }
 
-        friend bool operator==(const std::shared_ptr<ManagedHAKCPointer> &lhs, const
-        std::shared_ptr<ManagedHAKCPointer> &rhs) {
+        friend bool operator==(const ManagedHAKCPointerP &lhs, const ManagedHAKCPointerP &rhs) {
             return lhs->GetBaseDefinition() == rhs->GetBaseDefinition();
         }
 
-        friend bool operator!=(const std::shared_ptr<ManagedHAKCPointer> &lhs, const
-        std::shared_ptr<ManagedHAKCPointer> &rhs) {
+        friend bool operator!=(const ManagedHAKCPointerP &lhs, const ManagedHAKCPointerP &rhs) {
             return !(lhs == rhs);
         }
 
-        friend raw_ostream &operator<<(raw_ostream &os, const std::shared_ptr<ManagedHAKCPointer> &HAKCPointer) {
-            HAKCPointer->GetBaseDefinition()->print(os);
+        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointer &ManagedPointer) {
+            os << "Managed Pointer " << std::to_string(ManagedPointer.GetID()) << "("
+               << *ManagedPointer.GetBaseDefinition() << ")";
+            return os;
+        }
+
+        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerP &HAKCPointer) {
+            os << *HAKCPointer;
             return os;
         }
     };
