@@ -15,7 +15,8 @@ namespace hakc {
             DataAuthenticationsAdded(0),
             CodeAuthenticationsAdded(0),
             SafePointersAdded(0),
-            ClonesAdded(0) {
+            ClonesAdded(0),
+            IsCompartmentalized(false) {
     }
 
     bool HAKCPointerManager::PointerIsEligibleForManagement(Value *Pointer, bool Debug) {
@@ -283,7 +284,7 @@ namespace hakc {
         do {
             RefreshNeeded = false;
             for (auto &ManagedPtr: GetManagedPointers()) {
-                if(ManagedPtr->NeedsPointerReplacementRefresh()) {
+                if (ManagedPtr->NeedsPointerReplacementRefresh()) {
                     ManagedPtr->CreateBaseAuthenticatedPointer();
                     if (Debug && ManagedPtr->GetAuthenticatedPointer()) {
                         CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << ManagedPtr << ": ";
@@ -300,7 +301,7 @@ namespace hakc {
                     RefreshNeeded = true;
                 }
             }
-        } while(RefreshNeeded);
+        } while (RefreshNeeded);
     }
 
     Value *HAKCPointerManager::FindManagedValue(std::map<Value *, Value *> &Storage, Value *Target) {
@@ -387,6 +388,11 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << "\n";
                 }
                 Storage[Ptr] = Replacement;
+            } else {
+                if (Debug) {
+                    CommonHAKCAnalysis::getWriter() << "Tried to add null to " << StorageName
+                                                    << "Pointer Replacement for " << *Ptr << "\n";
+                }
             }
         }
     }
@@ -397,17 +403,20 @@ namespace hakc {
 
     void HAKCPointerManager::AddProtectedPointer(Value *Pointer, Value *Replacement, bool Debug) {
         if (!FunctionIsCompartmentalized()) {
+            if (Debug) {
+                CommonHAKCAnalysis::getWriter() << "Protected Pointer is not set for uncompartmentalized functions\n";
+            }
             return;
         }
         AddHAKCPointerReplacement(ProtectedValues, Pointer, Replacement, Debug);
     }
 
     void HAKCPointerManager::AddAuthenticatedPointer(Value *Ptr, Value *Replacement) {
-        AddAuthenticatedPointer(Ptr, Replacement, false);
+        AddAuthenticatedPointer(Ptr, Replacement, FunctionIsCompartmentalized());
     }
 
     void HAKCPointerManager::AddProtectedPointer(Value *Ptr, Value *Replacement) {
-        AddProtectedPointer(Ptr, Replacement, false);
+        AddProtectedPointer(Ptr, Replacement, FunctionIsCompartmentalized());
     }
 
     bool HAKCPointerManager::FunctionIsCompartmentalized() const {

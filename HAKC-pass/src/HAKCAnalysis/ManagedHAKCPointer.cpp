@@ -692,8 +692,8 @@ do{                                                                             
         }
 
         for (auto *V: ReplacementsToCreate) {
-            Value *AuthenticatedCopy = nullptr;
-            Value *ProtectedCopy = nullptr;
+            Value *AuthenticatedCopy;
+            Value *ProtectedCopy;
             if (CreateAuthenticatedCopies) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Creating authenticated copy of ";
@@ -1023,12 +1023,7 @@ do{                                                                             
                 CommonHAKCAnalysis::getWriter() << "Operand is Authenticated Pointer, returning ProtectedPointer\n";
             }
             return ProtectedPointer;
-        } /*else if (!BaseIsAuthenticatedPointer()) {
-            if(DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "Base is not Authenticated Pointer, returning Operand\n";
-            }
-            return Operand;
-        }*/
+        }
 
         auto Protected = Manager->CreateProtectedValue(Operand, DebugActive);
         if (!Protected) {
