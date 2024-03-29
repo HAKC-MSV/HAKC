@@ -137,7 +137,7 @@ namespace hakc {
 
         void ManageNewPointer(Value *V);
 
-        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP &ManagedPointer);
+        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP ManagedPointer);
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 

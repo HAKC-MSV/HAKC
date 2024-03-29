@@ -200,7 +200,7 @@ namespace hakc {
         return IsAuthenticatedVersion;
     }
 
-    void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP &ManagedPointer) {
+    void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP ManagedPointer) {
         for (auto &U: Definition->uses()) {
             auto *User = U.getUser();
             auto UPtr = std::make_shared<ManagedHAKCPointerUse>(ManagedPointer, User, U.getOperandNo());

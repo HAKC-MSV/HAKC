@@ -3,11 +3,13 @@
 //
 
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
+
+#include <utility>
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 
 namespace hakc {
-    ManagedHAKCPointerUse::ManagedHAKCPointerUse(ManagedHAKCPointerP &P, User *User, unsigned OperandNo) :
-            ManagedPtr(P),
+    ManagedHAKCPointerUse::ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo) :
+            ManagedPtr(std::move(P)),
             UserP(User),
             OperandNo(OperandNo) {
 

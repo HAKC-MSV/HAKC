@@ -31,7 +31,7 @@ namespace hakc {
      */
     class ManagedHAKCPointerUse {
     public:
-        ManagedHAKCPointerUse(ManagedHAKCPointerP &P, User *User, unsigned OperandNo);
+        ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo);
 
         User *getUser() const;
 
@@ -44,7 +44,7 @@ namespace hakc {
         ManagedHAKCPointerP &getManagedPtr();
 
     protected:
-        ManagedHAKCPointerP &ManagedPtr;
+        ManagedHAKCPointerP ManagedPtr;
         User *UserP;
         unsigned OperandNo;
 
@@ -211,7 +211,11 @@ namespace hakc {
         friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointer &ManagedPointer) {
             os << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
             if(ManagedPointer.GetBaseDefinition()) {
-                os << " [" << *ManagedPointer.GetBaseDefinition() << "  ]";
+                os << " [";
+                if(isa<Argument>(ManagedPointer.GetBaseDefinition())) {
+                    os << "  ";
+                }
+                os << *ManagedPointer.GetBaseDefinition() << "  ]";
             }
             return os;
         }
