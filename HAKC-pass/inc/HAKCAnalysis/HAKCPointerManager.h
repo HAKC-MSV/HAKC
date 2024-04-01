@@ -51,7 +51,7 @@ namespace hakc {
          * @param Debug
          * @return
          */
-        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP &Pointer);
+        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP &PointerUse);
 
         Value *CreateProtectedValue(ManagedHAKCPointerUseP &Pointer);
 
@@ -130,14 +130,14 @@ namespace hakc {
         AddHAKCPointerReplacement(std::map<ManagedHAKCPointerUseP, Value *> &Storage, ManagedHAKCPointerUseP &PtrUse,
                                   Value *Replacement);
 
-        static Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
+        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 
         bool
         ManagedPointerFinder(Value *V, std::function<bool(const ManagedHAKCPointerP &)> const &Search);
 
         void ManageNewPointer(Value *V);
 
-        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP ManagedPointer);
+        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP& ManagedPointer);
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 

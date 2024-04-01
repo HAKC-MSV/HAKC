@@ -112,6 +112,10 @@ namespace hakc {
                         isa<FreezeInst>(UserP) ||
                         isa<BinaryOperator>(UserP);
 
+        if(isa<SubOperator>(UserP)) {
+            CloneUse = false;
+        }
+
         return CloneUse;
     }
 
@@ -200,7 +204,7 @@ namespace hakc {
         return IsAuthenticatedVersion;
     }
 
-    void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP ManagedPointer) {
+    void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP& ManagedPointer) {
         for (auto &U: Definition->uses()) {
             auto *User = U.getUser();
             auto UPtr = std::make_shared<ManagedHAKCPointerUse>(ManagedPointer, User, U.getOperandNo());
@@ -407,6 +411,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Created Authenticated Copy of " << *I << ": " << *Clone << "\n";
             }
             AddAuthenticatedPointer(PointerUse, Clone);
+            AddProtectedPointer(PointerUse, I);
             return Clone;
         }
         return nullptr;
@@ -430,7 +435,7 @@ namespace hakc {
     Value *HAKCPointerManager::FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target) {
         for (auto &it: Storage) {
             if (it.first->get() == Target) {
-                return it.first->get();
+                return it.second;
             }
         }
 
@@ -439,11 +444,29 @@ namespace hakc {
 
 
     Value *HAKCPointerManager::FindAuthenticatedValue(Value *V) {
-        return FindManagedValue(AuthenticatedValues, V);
+        auto *AuthValue = FindManagedValue(AuthenticatedValues, V);
+        if(!AuthValue) {
+            for(auto &ManagedPtr : GetManagedPointers()) {
+                if(ManagedPtr->GetBaseDefinition() == V) {
+                    AuthValue = ManagedPtr->GetAuthenticatedPointer();
+                    break;
+                }
+            }
+        }
+        return AuthValue;
     }
 
     Value *HAKCPointerManager::FindProtectedValue(Value *V) {
-        return FindManagedValue(ProtectedValues, V);
+        auto *ProtValue = FindManagedValue(ProtectedValues, V);
+        if(!ProtValue) {
+            for(auto &ManagedPtr : GetManagedPointers()) {
+                if(ManagedPtr->GetBaseDefinition() == V) {
+                    ProtValue = ManagedPtr->GetProtectedPointer();
+                    break;
+                }
+            }
+        }
+        return ProtValue;
     }
 
     bool
