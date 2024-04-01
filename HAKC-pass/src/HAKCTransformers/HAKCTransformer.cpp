@@ -194,8 +194,7 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
             }
         }
 
-        auto *Initializer = ConstantArray::get(ArrayType::get(EntryTokenTy,
-                                                              Compartment->getTargets().size()), EntryTokenValues);
+        auto *Initializer = ConstantArray::get(ArrayType::get(EntryTokenTy, EntryTokenValues.size()), EntryTokenValues);
 
         EntryTokenArray = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(name, Initializer->getType()));
         EntryTokenArray->setConstant(true);
@@ -447,8 +446,8 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
         return SafePtr;
     }
 
-    if(TypeToUse->isPointerTy() && TypeToUse->getPointerElementType()->isPointerTy()) {
-        if(DebugIsActive()) {
+    if (TypeToUse->isPointerTy() && TypeToUse->getPointerElementType()->isPointerTy()) {
+        if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "TypeToUse ";
             TypeToUse->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " is a pointer to a pointer.\n";
@@ -462,8 +461,8 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
         auto *SafePtr = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
         auto *Load = HAKCIRBuilder.CreateLoad(TypeToUse->getPointerElementType(), SafePtr);
         CreateVoidCastCompartmentTransfer(Load,
-                                                           Load->getNextNonDebugInstruction(), Target,
-                                                           TypeToUse->getPointerElementType());
+                                          Load->getNextNonDebugInstruction(), Target,
+                                          TypeToUse->getPointerElementType());
         auto *FinalTransfer = CreateSizedCompartmentTransfer(HAKCPointer, FinalLocation,
                                                              Target, true, HAKCIRBuilder.getInt64(64));
         return FinalTransfer;
@@ -497,7 +496,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
      * more accurate transfer than the previous void* single-byte transfer
      */
     Instruction *Transfer;
-    if(DebugIsActive()) {
+    if (DebugIsActive()) {
         CommonHAKCAnalysis::getWriter() << "LLVM type: " << *TypeToUse << "\n";
         CommonHAKCAnalysis::getWriter() << "size of type: " << size << "\n";
     }
@@ -505,8 +504,8 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
         Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer,
-                                                                          HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
-                                                                          HAKCPointer->getType(), TypeToUse);
+                                                           HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
+                                                           HAKCPointer->getType(), TypeToUse);
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "custom xfer result:\n";
@@ -514,7 +513,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
     } else {
         /* no custom transfer exists, give the next-most specific transfer possible, correctly-sized generic transfer */
         Transfer = CreateSizedCompartmentTransfer(HAKCPointer, I, Target, true,
-                                                                HAKCIRBuilder.getInt64(size / BITS_PER_BYTE));
+                                                  HAKCIRBuilder.getInt64(size / BITS_PER_BYTE));
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "sized xfer result:\n";
