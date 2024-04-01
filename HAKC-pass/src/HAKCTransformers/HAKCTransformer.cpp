@@ -157,18 +157,26 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
             return EntryTokenArray;
         }
 
-        std::set<Constant *> EntryTokenValues;
-
-        for (auto &t: Compartment->getTargets()) {
-            Constant *EntryToken = GetEntryToken(t->getID());
-            EntryTokenValues.insert(EntryToken);
-        }
-        if (EntryTokenValues.empty()) {
+        auto Targets = Compartment->getTargets();
+        if (Targets.empty()) {
             CommonHAKCAnalysis::getWriter() << "No valid transitions exist for " << F->getName() << " in Compartment "
                                             << std::to_string(CompartmentID) << "\n";
             throw std::exception();
         }
-        EntryTokenValues.insert(GetEntryToken(CompartmentID));
+
+        SmallVector<Constant *> EntryTokenValues;
+        SmallVector<hakc_compartment_id_t> IDs;
+        IDs.push_back(CompartmentID);
+        for (auto &t: Targets) {
+            IDs.push_back(t->getID());
+        }
+        llvm::sort(IDs.begin(), IDs.end(),
+                   [](hakc_compartment_id_t LHS, hakc_compartment_id_t RHS) { return LHS < RHS; });
+
+        for (auto ID: IDs) {
+            Constant *EntryToken = GetEntryToken(ID);
+            EntryTokenValues.push_back(EntryToken);
+        }
 
         Type *EntryTokenTy = GetEntryTokenType(GetPointerAddrSpace(*EntryTokenValues.begin()));
 
@@ -185,10 +193,9 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
                 throw std::exception();
             }
         }
-        std::vector<Constant *> TokenArray(EntryTokenValues.begin(), EntryTokenValues.end());
 
         auto *Initializer = ConstantArray::get(ArrayType::get(EntryTokenTy,
-                                                              Compartment->getTargets().size()), TokenArray);
+                                                              Compartment->getTargets().size()), EntryTokenValues);
 
         EntryTokenArray = dyn_cast<GlobalVariable>(getModule().getOrInsertGlobal(name, Initializer->getType()));
         EntryTokenArray->setConstant(true);

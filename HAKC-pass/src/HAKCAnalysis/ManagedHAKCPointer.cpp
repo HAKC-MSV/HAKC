@@ -50,7 +50,7 @@ namespace hakc {
             BaseDefinition(nullptr),
             AuthenticatedPointer(nullptr),
             ProtectedPointer(nullptr),
-            DebugActive(Manager->FunctionIsCompartmentalized()),
+            DebugActive(Manager->DebugActive),
             Manager(Manager),
             BaseIsAuthenticated(false),
             ManuallyTransferred(false),
@@ -542,7 +542,7 @@ namespace hakc {
                 auto *AuthenticatedVersion = Manager->FindAuthenticatedValue(CloneUse->getUser());
                 if (!AuthenticatedVersion) {
                     CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated Version of "
-                                                    << *CloneUse->getUser() << " in\n";
+                                                    << *CloneUse->getUser() << " for " << *this << " in\n";
                     Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
                     CommonHAKCAnalysis::getWriter() << "\n";
                     throw std::exception();

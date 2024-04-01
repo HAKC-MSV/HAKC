@@ -586,6 +586,9 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
+        if(!F) {
+            return false;
+        }
         auto CompartmentID = getTransformer().getFunctionCompartmentID(F);
         return CommonHAKCAnalysis::IsKernelCompartment(CompartmentID);
     }

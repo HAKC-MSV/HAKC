@@ -133,7 +133,8 @@ namespace hakc {
                     Call->getCalledFunction() == nullptr ||
                     GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction()) ||
                     GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call) ||
-                    GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call)) {
+                    GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call) ||
+                    GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction())) {
                 UseAuthenticatedPointer = true;
             }
         } else if (isa<StoreInst>(UserP)) {
@@ -175,7 +176,8 @@ namespace hakc {
             if (!GetFunctionAnalysis()->callIsSafeTransition(Call) || Call->getCalledFunction() != nullptr) {
                 UseSignedPointer = true;
             } else if (Call->isInlineAsm() ||
-                       GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction())) {
+                       GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction()) ||
+                       GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction())) {
                 UseSignedPointer = false;
             }
         } else if (isa<AtomicRMWInst>(UserP)) {
@@ -402,6 +404,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Returning Authenticated Copy " << *AuthenticatedCopy << " for "
                                                 << *Pointer << "\n";
             }
+            AddAuthenticatedPointer(PointerUse, AuthenticatedCopy);
             return AuthenticatedCopy;
         }
 
