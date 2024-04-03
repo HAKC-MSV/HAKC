@@ -59,6 +59,12 @@ namespace hakc {
 
         Value *FindProtectedValue(Value *V);
 
+        Value *FindAuthenticatedValue(ManagedHAKCPointerUseP &PointerUse);
+
+        Value *FindProtectedValue(ManagedHAKCPointerUseP &PointerUse);
+
+        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, ManagedHAKCPointerUseP &PointerUse);
+
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
          * @param Debug
@@ -86,10 +92,6 @@ namespace hakc {
         void PrintProtectedValues() const;
 
         void PrintAuthenticatedValues() const;
-
-        bool ValueIsAuthenticatedPointer(Value *V);
-
-        bool ValueIsProtectedPointer(Value *V);
 
         bool FunctionIsCompartmentalized() const;
 
@@ -124,20 +126,15 @@ namespace hakc {
 
         bool PointerIsEligibleForManagement(Value *Pointer);
 
-        bool CloneableManagedPointer(Value *V);
-
         void
-        AddHAKCPointerReplacement(std::map<ManagedHAKCPointerUseP, Value *> &Storage, ManagedHAKCPointerUseP &PtrUse,
-                                  Value *Replacement);
+        AddHAKCPointerReplacement(ManagedHAKCPointerUseP PtrUse, Value *Replacement,
+                                  bool AddingAuthenticatedReplacements);
 
         Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 
-        bool
-        ManagedPointerFinder(Value *V, std::function<bool(const ManagedHAKCPointerP &)> const &Search);
-
         void ManageNewPointer(Value *V);
 
-        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP& ManagedPointer);
+        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP &ManagedPointer);
 
         bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
 
@@ -154,6 +151,8 @@ namespace hakc {
         static bool IsAuthenticatedVersionOfItself(Use &U);
 
         static void PrintManagedValues(const std::map<ManagedHAKCPointerUseP, Value *> &Storage);
+
+        Value *FindManagedPointerReplacement(Value *Target, bool ReturnAuthenticatedPointer);
 
     private:
         unsigned CurrentPointerID;

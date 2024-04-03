@@ -83,14 +83,14 @@ namespace hakc {
     void ManagedHAKCPointer::InitBaseDefinition(Value *Pointer) {
         BaseDefinition = Pointer;
 
-        if (isa<Argument>(BaseDefinition)) {
-            SetProtectedPointer(BaseDefinition);
-        }
+//        if (isa<Argument>(BaseDefinition)) {
+//            SetProtectedPointer(BaseDefinition);
+//        }
     }
 
     void ManagedHAKCPointer::CheckPointerReplacement(Value *Old, Value *New, StringRef TypeName) const {
         if (DebugActive) {
-            CommonHAKCAnalysis::getWriter() << "Setting " << TypeName << "Pointer of " << *this << " to be ";
+            CommonHAKCAnalysis::getWriter() << "Setting " << TypeName << " Pointer of " << *this << " to be ";
             if (New) {
                 CommonHAKCAnalysis::getWriter() << *New;
             } else {
@@ -114,11 +114,21 @@ namespace hakc {
     void ManagedHAKCPointer::SetProtectedPointer(Value *NewProtectedPointer) {
         CheckPointerReplacement(this->ProtectedPointer, NewProtectedPointer, "Protected");
         this->ProtectedPointer = NewProtectedPointer;
+        if (this->ProtectedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+            CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
+                                            << "\n";
+            throw std::exception();
+        }
     }
 
     void ManagedHAKCPointer::SetAuthenticatedPointer(Value *NewAuthenticatedPointer) {
         CheckPointerReplacement(this->AuthenticatedPointer, NewAuthenticatedPointer, "Authenticated");
         this->AuthenticatedPointer = NewAuthenticatedPointer;
+        if (this->AuthenticatedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+            CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
+                                            << "\n";
+            throw std::exception();
+        }
     }
 
     void ManagedHAKCPointer::RegisterManualHAKCTransfer(CallBase *CallI) {
@@ -142,23 +152,22 @@ namespace hakc {
             return;
         }
 
-        SetProtectedPointer(TransferTypeCast);
-        ManuallyTransferred = true;
-        if (!ProtectedPointer) {
-            CommonHAKCAnalysis::getWriter() << "Could not find correct ProtectedPointer Type cast from " << *CallI
-                                            << " to Type " << *BaseDefinition->getType() << "\n";
-            throw std::exception();
+        if (TransferTypeCast) {
+            SetProtectedPointer(TransferTypeCast);
+        } else {
+            SetProtectedPointer(CallI);
         }
+        ManuallyTransferred = true;
     }
 
-    void ManagedHAKCPointer::AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr) {
+    void ManagedHAKCPointer::AddAuthenticatedUse(ManagedHAKCPointerUseP UPtr) {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << *this << " adding Authenticated Use " << UPtr << "\n";
         }
         AuthenticatedUses.insert(UPtr);
     }
 
-    void ManagedHAKCPointer::AddProtectedUse(ManagedHAKCPointerUseP &UPtr) {
+    void ManagedHAKCPointer::AddProtectedUse(ManagedHAKCPointerUseP UPtr) {
         if (!Manager->FunctionIsCompartmentalized()) {
             return;
         }
@@ -168,7 +177,7 @@ namespace hakc {
         ProtectedUses.insert(UPtr);
     }
 
-    void ManagedHAKCPointer::AddCloneUse(ManagedHAKCPointerUseP &UPtr) {
+    void ManagedHAKCPointer::AddCloneUse(ManagedHAKCPointerUseP UPtr) {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << *this << " adding Clone Use " << UPtr << "\n";
         }
@@ -194,16 +203,32 @@ namespace hakc {
 
     bool ManagedHAKCPointer::DetermineIfBasePointerIsAuthenticated() {
         BaseIsAuthenticated = ComputeBasePointerAuthenticated();
-        if (BaseIsAuthenticated) {
-            SetAuthenticatedPointer(BaseDefinition);
-            for (auto UPtr: AuthenticatedUses) {
-                Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
+        return BaseIsAuthenticated;
+    }
+
+    bool ManagedHAKCPointer::AllIncomingValuesWillBeAuthenticated() {
+        bool AllValuesAuthenticated = false;
+        if (auto *PHI = dyn_cast<PHINode>(BaseDefinition)) {
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Checking incoming values of " << *this
+                                                << " for authenticated values\n";
             }
-            for (auto UPtr: CloneUses) {
-                Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
+            AllValuesAuthenticated = true;
+            for (auto &IncomingValue: PHI->incoming_values()) {
+                if (!Manager->ValueWillBeAuthenticated(IncomingValue.get())) {
+                    if (DebugActive) {
+                        CommonHAKCAnalysis::getWriter() << "Incoming Value " << *IncomingValue << " of " << *PHI
+                                                        << " is not authenticated\n";
+                    }
+                    AllValuesAuthenticated = false;
+                    break;
+                } else if (DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "Incoming Value " << *IncomingValue
+                                                    << " will be authenticated\n";
+                }
             }
         }
-        return BaseIsAuthenticated;
+        return AllValuesAuthenticated;
     }
 
     bool ManagedHAKCPointer::ComputeBasePointerAuthenticated() {
@@ -243,31 +268,13 @@ namespace hakc {
                 AlreadyAuthenticated = true;
             }
         } else if (auto *PHI = dyn_cast<PHINode>(BaseDefinition)) {
-            bool AllValuesAuthenticated = Manager->GetFunctionAnalysis()->IsPHIOfGlobalsOnly(PHI);
-            if (!AllValuesAuthenticated) {
-                if (DebugActive) {
-                    CommonHAKCAnalysis::getWriter() << "Checking incoming values of " << *this
-                                                    << " for authenticated values\n";
-                }
-                AllValuesAuthenticated = true;
-                for (auto &IncomingValue: PHI->incoming_values()) {
-                    if (!Manager->ValueWillBeAuthenticated(IncomingValue.get())) {
-                        if (DebugActive) {
-                            CommonHAKCAnalysis::getWriter() << "Incoming Value " << *IncomingValue << " of " << *PHI
-                                                            << " is not authenticated\n";
-                        }
-                        AllValuesAuthenticated = false;
-                        break;
-                    } else if (DebugActive) {
-                        CommonHAKCAnalysis::getWriter() << "Incoming Value " << *IncomingValue
-                                                        << " will be authenticated\n";
-                    }
-                }
-            }
-            if (AllValuesAuthenticated) {
+            bool AllValuesAuthenticated =
+                    Manager->GetFunctionAnalysis()->IsPHIOfGlobalsOnly(PHI) || AllIncomingValuesWillBeAuthenticated();
+            if (AllValuesAuthenticated && GetProtectedUserCount() == 0) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "All incoming Values of " << *PHI
-                                                    << " are authenticated, so use it as the authenticated pointer\n";
+                                                    << " are authenticated, and no protected uses are needed, "
+                                                    << "so use it as the authenticated pointer\n";
                 }
                 AlreadyAuthenticated = true;
             }
@@ -303,26 +310,54 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
         }
         DetermineIfBasePointerIsAuthenticated();
-
-        if (AuthenticatedPointer) {
+        if (GetAuthenticatedUserCount() == 0) {
             if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "AuthenticatedPointer already created\n";
+                CommonHAKCAnalysis::getWriter() << "No authenticated pointer uses of " << *this
+                                                << ", so authenticated pointer creation is not needed\n";
             }
             return;
         }
 
         if (BaseIsAuthenticatedPointer()) {
             if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "BaseDefinition of " << *this << " is the authenticated pointer\n";
+                CommonHAKCAnalysis::getWriter()
+                        << "The Base Definition is authenticated, so setting uses to be authenticated\n";
             }
-            SetAuthenticatedPointer(BaseDefinition);
+            if (AllIncomingValuesWillBeAuthenticated()) {
+                if (DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "All incoming values of " << *this
+                                                    << " will be authenticated, so use authenticated values\n";
+                }
+                auto *PHI = dyn_cast<PHINode>(BaseDefinition);
+                auto *PHICopy = Manager->CloneInstruction(PHI);
+                SetAuthenticatedPointer(PHICopy);
+            } else {
+                SetAuthenticatedPointer(BaseDefinition);
+            }
+            for (auto UPtr: AuthenticatedUses) {
+                Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
+            }
+            for (auto UPtr: CloneUses) {
+                Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
+            }
             return;
+        } else {
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter()
+                        << "The Base Definition is protected, so setting uses to be protected\n";
+            }
+            SetProtectedPointer(BaseDefinition);
+            for (auto UPtr: ProtectedUses) {
+                Manager->AddProtectedPointer(UPtr, UPtr->get());
+            }
+            for (auto UPtr: CloneUses) {
+                Manager->AddProtectedPointer(UPtr, UPtr->get());
+            }
         }
 
-        if (GetAuthenticatedUserCount() == 0) {
+        if (AuthenticatedPointer) {
             if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "No authenticated pointer uses of " << *this
-                                                << ", so creation is not needed\n";
+                CommonHAKCAnalysis::getWriter() << "AuthenticatedPointer already created\n";
             }
             return;
         }
@@ -337,7 +372,8 @@ namespace hakc {
         }
 
         if (DebugActive) {
-            CommonHAKCAnalysis::getWriter() << "Creating Base Authenticated Pointer of " << *this << " with Users\n";
+            CommonHAKCAnalysis::getWriter() << "Creating Base Authenticated Pointer of " << *this
+                                            << " with Users\n";
             for (auto &User: Users) {
                 CommonHAKCAnalysis::getWriter() << User << "\n";
             }
@@ -348,7 +384,8 @@ namespace hakc {
                 UserI.insert(I);
             }
         }
-        auto *AuthenticationInsertPoint = Manager->GetFunctionAnalysis()->FindUseInsertionPoint(BaseDefinition, UserI);
+        auto *AuthenticationInsertPoint = Manager->GetFunctionAnalysis()->FindUseInsertionPoint(BaseDefinition,
+                                                                                                UserI);
         if (Manager->GetFunctionAnalysis()->isIgnoredType(BaseDefinition->getType()) ||
             isa<CallInst>(BaseDefinition)) {
             /* Pointers from the kernel are handled in BaseIsAuthenticatedPointer above */
@@ -410,7 +447,7 @@ namespace hakc {
         for (auto Use: GetAllUses()) {
             Value *AuthenticatedCopy;
             Value *ProtectedCopy;
-            if (CreateAuthenticatedCopies) {
+            if (CreateAuthenticatedCopies && ProtectedUses.find(Use) == ProtectedUses.end()) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Creating authenticated copy of " << Use << "\n";
                 }
@@ -425,7 +462,7 @@ namespace hakc {
                 }
             }
 
-            if (CreateProtectedCopies) {
+            if (CreateProtectedCopies && AuthenticatedUses.find(Use) == AuthenticatedUses.end()) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Creating Protected copy of " << Use << "\n";
                 }
@@ -529,6 +566,37 @@ namespace hakc {
         }
     }
 
+    void ManagedHAKCPointer::SetUseOperand(User *U, Value *Replacement, ManagedHAKCPointerUseP &PointerUse,
+                                           bool IsAuthenticatedUse) {
+        if (DebugActive) {
+            CommonHAKCAnalysis::getWriter() << "Setting Operand " <<
+                                            std::to_string(PointerUse->getOperandNo()) << " of ";
+            if (IsAuthenticatedUse) {
+                CommonHAKCAnalysis::getWriter() << "Authenticated";
+            } else {
+                CommonHAKCAnalysis::getWriter() << "Protected";
+            }
+            CommonHAKCAnalysis::getWriter() << " User " << *U << " to be " << *Replacement << " in function "
+                                            << Manager->GetFunctionAnalysis()->getFunction().getName() << " for " << *this << "\n";
+        }
+
+        if (PointerUse->getUser()->getValueID() != U->getValueID()) {
+            if (isa<PHINode>(PointerUse->getUser())) {
+                if (DebugActive) {
+                    CommonHAKCAnalysis::getWriter() << "Not changing operand of PHI Replacement\n";
+                }
+                return;
+            }
+            CommonHAKCAnalysis::getWriter() << "Invalid PointerUse " << PointerUse << " for User "
+                                            << *U << " in function ";
+            Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
+            CommonHAKCAnalysis::getWriter() << " for " << *this << "\n";
+            throw std::exception();
+        }
+
+        U->setOperand(PointerUse->getOperandNo(), Replacement);
+    }
+
     void ManagedHAKCPointer::TransformClones() {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Transforming clones created for " << *this << "\n";
@@ -537,95 +605,69 @@ namespace hakc {
             }
         }
 
-        for (auto &CloneUse: CloneUses) {
+        for (auto CloneUse: CloneUses) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Handling Clone " << *CloneUse->getUser() << "\n";
             }
-            if (GetAuthenticatedUserCount() > 0 && !BaseIsAuthenticatedPointer()) {
+            if (GetAuthenticatedUserCount() > 0/* && !BaseIsAuthenticatedPointer()*/) {
                 auto *AuthenticatedVersion = Manager->FindAuthenticatedValue(CloneUse->getUser());
-                if (!AuthenticatedVersion) {
+                if (AuthenticatedVersion) {
+                    auto *AuthenticatedUser = dyn_cast<User>(AuthenticatedVersion);
+                    auto *Replacement = Manager->FindAuthenticatedValue(CloneUse);
+                    if (!Replacement) {
+                        CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated replacement of "
+                                                        << CloneUse << "\n";
+                        Manager->PrintAuthenticatedValues();
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                        Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                        throw std::exception();
+                    }
+                    if (!AuthenticatedUser) {
+                        CommonHAKCAnalysis::getWriter() << "AuthenticatedVersion is not a User: ";
+                        AuthenticatedVersion->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                        Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                        throw std::exception();
+                    }
+                    SetUseOperand(AuthenticatedUser, Replacement, CloneUse, true);
+                } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated Version of "
                                                     << *CloneUse->getUser() << " for " << *this << " in\n";
                     Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
                     CommonHAKCAnalysis::getWriter() << "\n";
-                    throw std::exception();
                 }
-                auto *AuthenticatedUser = dyn_cast<User>(AuthenticatedVersion);
-                auto *Replacement = Manager->FindAuthenticatedValue(CloneUse->get());
-                if (!Replacement) {
-                    CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated replacement of "
-                                                    << CloneUse << "\n";
-                    Manager->PrintAuthenticatedValues();
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                    Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                    throw std::exception();
-                }
-                if (!AuthenticatedUser) {
-                    CommonHAKCAnalysis::getWriter() << "AuthenticatedVersion is not a User: ";
-                    AuthenticatedVersion->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                    Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                    throw std::exception();
-                }
-
-                if (DebugActive) {
-                    CommonHAKCAnalysis::getWriter() << "Setting Operand " <<
-                                                    std::to_string(CloneUse->getOperandNo())
-                                                    << " of Authenticated User " << *AuthenticatedUser << " to be "
-                                                    << *Replacement << " in function "
-                                                    << Manager->GetFunctionAnalysis()->getFunction().getName()
-                                                    << "\n";
-                }
-                AuthenticatedUser->setOperand(CloneUse->getOperandNo(), Replacement);
             }
             if (GetProtectedUserCount() > 0) {
                 auto *ProtectedVersion = Manager->FindProtectedValue(CloneUse->getUser());
                 if (!ProtectedVersion) {
                     if (DebugActive) {
-                        CommonHAKCAnalysis::getWriter() << "No protected value created for ";
-                        CloneUse->getUser()->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "No protected value created for " << CloneUse << "\n";
                     }
                     continue;
                 }
-                if (!Manager->ValueIsProtectedPointer(ProtectedVersion)) {
-                    auto *ProtectedUser = dyn_cast<User>(ProtectedVersion);
-                    auto *Replacement = Manager->FindProtectedValue(CloneUse->get());
-                    if (!Replacement) {
-                        CommonHAKCAnalysis::getWriter() << "Unable to find Protected replacement of "
-                                                        << CloneUse << "\n";
-                        Manager->PrintProtectedValues();
-                        CommonHAKCAnalysis::getWriter() << "\n";
-                        Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
-                        throw std::exception();
-                    }
-                    if (!ProtectedUser) {
-                        CommonHAKCAnalysis::getWriter() << "ProtectedVersion is not a User: ";
-                        ProtectedVersion->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
-                        Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
-                        throw std::exception();
-                    }
-
-                    if (DebugActive) {
-                        CommonHAKCAnalysis::getWriter() << "Setting Operand " <<
-                                                        std::to_string(CloneUse->getOperandNo())
-                                                        << " of Protected User ";
-                        ProtectedUser->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " to be ";
-                        Replacement->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
-                    }
-                    ProtectedUser->setOperand(CloneUse->getOperandNo(), Replacement);
-                } else if (DebugActive) {
-                    CommonHAKCAnalysis::getWriter() << "ProtectedVersion ";
-                    ProtectedVersion->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " is a Managed Protected Pointer, so no change is needed\n";
+                auto *ProtectedUser = dyn_cast<User>(ProtectedVersion);
+                auto *Replacement = Manager->FindProtectedValue(CloneUse);
+                if (!Replacement) {
+                    CommonHAKCAnalysis::getWriter() << "Unable to find Protected replacement of "
+                                                    << CloneUse << "\n";
+                    Manager->PrintProtectedValues();
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                    Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                    throw std::exception();
                 }
+                if (!ProtectedUser) {
+                    CommonHAKCAnalysis::getWriter() << "ProtectedVersion is not a User: ";
+                    ProtectedVersion->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                    Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << "\n";
+                    throw std::exception();
+                }
+
+                SetUseOperand(ProtectedUser, Replacement, CloneUse, false);
             }
         }
     }
@@ -644,7 +686,7 @@ namespace hakc {
             }
         }
 
-        for (auto &Use: UseSet) {
+        for (auto Use: UseSet) {
             Value *Replacement;
             if (UseAuthenticatedValue) {
                 Replacement = Manager->FindAuthenticatedValue(Use->get());
@@ -665,13 +707,7 @@ namespace hakc {
                 throw std::exception();
             }
 
-            if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "Setting " << Use << " to be ";
-                Replacement->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
-            }
-
-            Use->getUser()->setOperand(Use->getOperandNo(), Replacement);
+            SetUseOperand(Use->getUser(), Replacement, Use, UseAuthenticatedValue);
         }
     }
 
@@ -680,6 +716,18 @@ namespace hakc {
         if (!Authenticated) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "CreateAuthenticatedValue returned null for " << Use << "\n";
+            }
+        } else {
+            auto *Pointer = Use->get();
+            for (auto PointerUse: AuthenticatedUses) {
+                if (PointerUse->get() == Pointer) {
+                    Manager->AddAuthenticatedPointer(PointerUse, Authenticated);
+                }
+            }
+            for (auto PointerUse: CloneUses) {
+                if (PointerUse->get() == Pointer) {
+                    Manager->AddAuthenticatedPointer(PointerUse, Authenticated);
+                }
             }
         }
 
@@ -691,6 +739,18 @@ namespace hakc {
         if (!Protected) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "CreateProtectedValue returned null for " << Use << "\n";
+            }
+        } else {
+            auto *Pointer = Use->get();
+            for (auto PointerUse: ProtectedUses) {
+                if (PointerUse->get() == Pointer) {
+                    Manager->AddProtectedPointer(PointerUse, Protected);
+                }
+            }
+            for (auto PointerUse: CloneUses) {
+                if (PointerUse->get() == Pointer) {
+                    Manager->AddProtectedPointer(PointerUse, Protected);
+                }
             }
         }
 
@@ -705,12 +765,13 @@ namespace hakc {
         if (GetProtectedUserCount() == 0) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "No protected pointer use of " << *this
-                                                << ", so creation is not needed\n";
+                                                << ", so transfer creation is not needed\n";
             }
             return;
         }
 
-        if (BaseDefinitionShouldBeTransferred()) {
+        auto BaseShouldBeTransferred = BaseDefinitionShouldBeTransferred();
+        if (BaseShouldBeTransferred) {
             if (ProtectedPointer == nullptr) {
                 auto *BaseToTransfer = dyn_cast<Instruction>(BaseDefinition);
 
@@ -724,7 +785,10 @@ namespace hakc {
                                                 << " because ProtectedPointer is already set to be "
                                                 << *ProtectedPointer << "\n";
             }
-        } else if (!BaseDefinitionShouldBeTransferred() && ProtectedPointer == nullptr) {
+        } else if (!ComputeBasePointerAuthenticated() && !ManuallyTransferred) {
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << *this << " base should not be transferred\n";
+            }
             SetProtectedPointer(BaseDefinition);
         }
     }

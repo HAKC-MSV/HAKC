@@ -1427,7 +1427,15 @@ namespace hakc {
 
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
-            for (auto &HAKCPointer: PointerManager.GetManagedPointers()) {
+            SmallVector<ManagedHAKCPointerP> SortedPointers;
+            auto ManagedPointers = PointerManager.GetManagedPointers();
+            SortedPointers.append(ManagedPointers.begin(), ManagedPointers.end());
+            llvm::sort(SortedPointers.begin(), SortedPointers.end(),
+                       [](const ManagedHAKCPointerP &LHS, const ManagedHAKCPointerP &RHS) {
+                           return LHS->GetID() < RHS->GetID();
+                       });
+
+            for (auto &HAKCPointer: SortedPointers) {
                 CommonHAKCAnalysis::getWriter() << HAKCPointer << "\n+++\n";
             }
         }

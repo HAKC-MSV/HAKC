@@ -140,6 +140,10 @@ namespace hakc {
 
         void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
+        void SetUseOperand(User *U, Value *Replacement, ManagedHAKCPointerUseP &PointerUse, bool IsAuthenticatedUse);
+
+        bool AllIncomingValuesWillBeAuthenticated();
+
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, unsigned ID);
 
@@ -171,11 +175,11 @@ namespace hakc {
 
         unsigned GetID() const;
 
-        void AddAuthenticatedUse(ManagedHAKCPointerUseP &UPtr);
+        void AddAuthenticatedUse(ManagedHAKCPointerUseP UPtr);
 
-        void AddProtectedUse(ManagedHAKCPointerUseP &UPtr);
+        void AddProtectedUse(ManagedHAKCPointerUseP UPtr);
 
-        void AddCloneUse(ManagedHAKCPointerUseP &UPtr);
+        void AddCloneUse(ManagedHAKCPointerUseP fixinUPtr);
 
     private:
         void InitBaseDefinition(Value *Pointer);
