@@ -249,6 +249,10 @@ namespace hakc {
                 if (PointerIsTransferred) {
                     AlreadyAuthenticated = PointerIsTransferred;
                 } else {
+                    if(DebugActive) {
+                        CommonHAKCAnalysis::getWriter() << "IsKernelFunction(" << Call->getCalledFunction()->getName() << ") = " << std::to_string(Manager->GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction())) << "\n";
+                        CommonHAKCAnalysis::getWriter() << "IsIntrinsicsNeedingCloning(" << *Call << ") = " << std::to_string(Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call)) << "\n";
+                    }
                     AlreadyAuthenticated = Manager->GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction()
                     ) || Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call);
                 }
@@ -341,7 +345,7 @@ namespace hakc {
                 Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
             }
             return;
-        } else {
+        } else if(!ProtectedPointer) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter()
                         << "The Base Definition is protected, so setting uses to be protected\n";
@@ -780,6 +784,16 @@ namespace hakc {
                 }
                 auto *Transfer = Manager->GetFunctionAnalysis()->CreateMissingTransfer(BaseToTransfer);
                 SetProtectedPointer(Transfer);
+                for(auto ProtectedUse : ProtectedUses) {
+                    if(ProtectedUse->get() == BaseToTransfer) {
+                        Manager->AddProtectedPointer(ProtectedUse, Transfer);
+                    }
+                }
+                for(auto CloneUse : CloneUses) {
+                    if(CloneUse->get() == BaseToTransfer) {
+                        Manager->AddProtectedPointer(CloneUse, Transfer);
+                    }
+                }
             } else if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Transfer not needed for " << *this
                                                 << " because ProtectedPointer is already set to be "

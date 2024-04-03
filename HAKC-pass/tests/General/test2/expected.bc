@@ -17,7 +17,7 @@ define dso_local void @HAKC_ORIG_init_data(%struct.data* %0) local_unnamed_addr 
   %5 = getelementptr inbounds %struct.data, %struct.data* %4, i64 0, i32 1, !dbg !23
   %6 = getelementptr inbounds %struct.data, %struct.data* %0, i64 0, i32 1, !dbg !23
   store i8* null, i8** %5, align 8, !dbg !24, !tbaa !25
-  %7 = getelementptr inbounds %struct.data, %struct.data* %4, i64 0, i32 0, !dbg !31
+  %7 = getelementptr inbounds %struct.data, %struct.data* %0, i64 0, i32 0, !dbg !31
   %8 = getelementptr inbounds %struct.data, %struct.data* %0, i64 0, i32 0, !dbg !31
   %9 = getelementptr inbounds %struct.data, %struct.data* %4, i64 0, i32 0, i32 0, !dbg !32
   %10 = getelementptr inbounds %struct.data, %struct.data* %0, i64 0, i32 0, i32 0, !dbg !32

@@ -28,9 +28,10 @@ define dso_local i32 @HAKC_ORIG_test(i32* %0) local_unnamed_addr #0 section ".ha
 
 12:                                               ; preds = %3, %9
   %13 = phi i32 [ 1, %9 ], [ %8, %3 ]
-  %14 = phi i32* [ %11, %9 ], [ %6, %3 ], !dbg !29
-  call void @llvm.dbg.value(metadata i32* %14, metadata !15, metadata !DIExpression()), !dbg !16
-  store i32 %13, i32* %14, align 4, !dbg !20, !tbaa !21
+  %14 = phi i32* [ %11, %9 ], [ %0, %3 ], !dbg !29
+  %15 = phi i32* [ %11, %9 ], [ %6, %3 ], !dbg !29
+  call void @llvm.dbg.value(metadata i32* %15, metadata !15, metadata !DIExpression()), !dbg !16
+  store i32 %13, i32* %15, align 4, !dbg !20, !tbaa !21
   ret i32 %13, !dbg !30
 }
 

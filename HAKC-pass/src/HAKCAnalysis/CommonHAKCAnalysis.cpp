@@ -253,11 +253,11 @@ namespace hakc {
             for (auto &U: V->uses()) {
                 if (isa<IntToPtrInst>(U.getUser())) {
                     CallIsUsedAsPointer = true;
-                } else if(auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
-                    if(BinOp->getOpcode() == BinaryOperator::Add) {
+                } else if (auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
+                    if (BinOp->getOpcode() == BinaryOperator::Add) {
                         unsigned OpNum = (U.getOperandNo() + 1) % 2;
                         auto *OtherOp = U.getUser()->getOperand(OpNum);
-                        if(debug) {
+                        if (debug) {
                             CommonHAKCAnalysis::getWriter() << "Checking operator " << std::to_string(OpNum)
                                                             << " of " << *BinOp << ": " << *OtherOp << "\n";
                         }
