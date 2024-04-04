@@ -148,7 +148,7 @@ namespace hakc {
 
         bool IsClonedUseNeedingAdditionalClassification(Use &U);
 
-        static bool IsAuthenticatedVersionOfItself(Use &U);
+//        static bool IsAuthenticatedVersionOfItself(Use &U);
 
         static void PrintManagedValues(const std::map<ManagedHAKCPointerUseP, Value *> &Storage);
 

@@ -111,7 +111,8 @@ namespace hakc {
                         isa<IntToPtrInst>(UserP) ||
                         isa<PHINode>(UserP) ||
                         isa<FreezeInst>(UserP) ||
-                        isa<BinaryOperator>(UserP);
+                        isa<BinaryOperator>(UserP) ||
+                        isa<TruncInst>(UserP);
 
         if (isa<SubOperator>(UserP)) {
             CloneUse = false;
@@ -124,8 +125,7 @@ namespace hakc {
         auto *UserP = U.getUser();
         bool UseAuthenticatedPointer = isa<CmpInst>(UserP) ||
                                        isa<LoadInst>(UserP) ||
-                                       isa<SubOperator>(UserP) ||
-                                       isa<TruncInst>(UserP);
+                                       isa<SubOperator>(UserP);
         if (auto *Call = dyn_cast<CallBase>(UserP)) {
             if (GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction())) {
                 UseAuthenticatedPointer = false;
@@ -150,6 +150,12 @@ namespace hakc {
         } else if (isa<AtomicRMWInst>(UserP)) {
             if (U.getOperandNo() == AtomicRMWInst::getPointerOperandIndex()) {
                 UseAuthenticatedPointer = true;
+            }
+        } else if(isa<ReturnInst>(UserP)) {
+            /* Returning pointers should be authenticated, but otherwise not, because, e.g., they might be the
+             * result of the subtraction of two pointers */
+            if(CommonHAKCAnalysis::IsPointerLikeType(UserP->getType())) {
+                UseAuthenticatedPointer = false;
             }
         }
         return UseAuthenticatedPointer;
@@ -186,6 +192,12 @@ namespace hakc {
             if (U.getOperandNo() != AtomicRMWInst::getPointerOperandIndex()) {
                 UseSignedPointer = true;
             }
+        } else if(isa<ReturnInst>(UserP)) {
+            /* Returning pointers should be authenticated, but otherwise not, because, e.g., they might be the
+             * result of the subtraction of two pointers */
+            if(CommonHAKCAnalysis::IsPointerLikeType(UserP->getType())) {
+                UseSignedPointer = true;
+            }
         }
 
         return UseSignedPointer;
@@ -199,13 +211,6 @@ namespace hakc {
         }
 
         return NeedsAdditionalClassification;
-    }
-
-    bool HAKCPointerManager::IsAuthenticatedVersionOfItself(Use &U) {
-        auto *UserP = U.getUser();
-        bool IsAuthenticatedVersion = isa<OverflowingBinaryOperator>(UserP) ||
-                                      isa<BinaryOperator>(UserP) || isa<TruncInst>(UserP);
-        return IsAuthenticatedVersion;
     }
 
     void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP &ManagedPointer) {
@@ -241,9 +246,6 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use authenticated Base Definition\n";
                 }
                 ManagedPointer->AddAuthenticatedUse(UPtr);
-                if (IsAuthenticatedVersionOfItself(U)) {
-                    AddAuthenticatedPointer(UPtr, UPtr->get());
-                }
             } else if (UseShouldUtilizeSignedBasePointer(U)) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << UPtr << " should use signed Base Definition\n";
