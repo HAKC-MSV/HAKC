@@ -520,6 +520,12 @@ namespace hakc {
         return ProtValue;
     }
 
+    void HAKCPointerManager::UpdateProtectedPHIUses(PHINode *AuthenticatedPHI, PHINode *ProtectedPHI) {
+        for(auto &ManagedPtr : GetManagedPointers()) {
+            ManagedPtr->UpdateProtectedPHIUses(AuthenticatedPHI, ProtectedPHI);
+        }
+    }
+
     void
     HAKCPointerManager::AddHAKCPointerReplacement(ManagedHAKCPointerUseP PtrUse, Value *Replacement,
                                                   bool AddingAuthenticatedReplacements) {

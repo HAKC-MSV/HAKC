@@ -97,6 +97,8 @@ namespace hakc {
 
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
+        void UpdateProtectedPHIUses(PHINode *AuthenticatedPHI, PHINode *ProtectedPHI);
+
     protected:
         /**
          * The set of pointers under management
@@ -126,9 +128,8 @@ namespace hakc {
 
         bool PointerIsEligibleForManagement(Value *Pointer);
 
-        void
-        AddHAKCPointerReplacement(ManagedHAKCPointerUseP PtrUse, Value *Replacement,
-                                  bool AddingAuthenticatedReplacements);
+        void AddHAKCPointerReplacement(ManagedHAKCPointerUseP PtrUse, Value *Replacement,
+                                       bool AddingAuthenticatedReplacements);
 
         Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 

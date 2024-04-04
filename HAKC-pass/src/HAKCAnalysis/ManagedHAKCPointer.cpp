@@ -82,10 +82,6 @@ namespace hakc {
 
     void ManagedHAKCPointer::InitBaseDefinition(Value *Pointer) {
         BaseDefinition = Pointer;
-
-//        if (isa<Argument>(BaseDefinition)) {
-//            SetProtectedPointer(BaseDefinition);
-//        }
     }
 
     void ManagedHAKCPointer::CheckPointerReplacement(Value *Old, Value *New, StringRef TypeName) const {
@@ -316,6 +312,28 @@ namespace hakc {
         return AlreadyAuthenticated;
     }
 
+    void ManagedHAKCPointer::UpdateProtectedPHIUses(PHINode *AuthenticatedPHI, PHINode *ProtectedPHI) {
+        bool AddedProtectedUse = false;
+        if(DebugActive) {
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
+        }
+        for (auto &CloneUse: CloneUses) {
+            if (CloneUse->getUser() == AuthenticatedPHI) {
+                auto ProtectedPHIUse = std::make_shared<ManagedHAKCPointerUse>(CloneUse->getManagedPtr(), ProtectedPHI,
+                                                                               CloneUse->getOperandNo());
+                AddProtectedUse(ProtectedPHIUse);
+                AddedProtectedUse = true;
+            }
+        }
+
+        if (AddedProtectedUse) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Protected PHI Use was added to " << *this << "\n";
+            }
+            MaybeCreateMissingTransfer();
+        }
+    }
+
     void ManagedHAKCPointer::CreateBaseAuthenticatedPointer() {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
@@ -340,9 +358,12 @@ namespace hakc {
                                                     << " will be authenticated, so use authenticated values\n";
                 }
                 auto *PHI = dyn_cast<PHINode>(BaseDefinition);
-                auto *PHICopy = Manager->CloneInstruction(PHI);
                 SetAuthenticatedPointer(PHI);
-                SetProtectedPointer(PHICopy);
+                if (GetProtectedUserCount()) {
+                    auto *PHICopy = Manager->CloneInstruction(PHI);
+                    SetProtectedPointer(PHICopy);
+                    Manager->UpdateProtectedPHIUses(PHI, dyn_cast<PHINode>(PHICopy));
+                }
             } else {
                 SetAuthenticatedPointer(BaseDefinition);
             }
@@ -779,8 +800,7 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::MaybeCreateMissingTransfer() {
-        auto BaseShouldBeTransferred = BaseDefinitionShouldBeTransferred();
-        if (GetProtectedUserCount() == 0 && !BaseShouldBeTransferred) {
+        if (GetProtectedUserCount() == 0 /*&& !BaseShouldBeTransferred*/) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "No protected pointer use of " << *this
                                                 << ", so transfer creation is not needed\n";
@@ -788,6 +808,14 @@ namespace hakc {
             return;
         }
 
+        if (DebugActive) {
+            CommonHAKCAnalysis::getWriter() << *this << " has the following protected uses:\n";
+            for (auto &ProtUse: ProtectedUses) {
+                CommonHAKCAnalysis::getWriter() << ProtUse << "\n";
+            }
+        }
+
+        auto BaseShouldBeTransferred = BaseDefinitionShouldBeTransferred();
         if (BaseShouldBeTransferred) {
             if (ProtectedPointer == nullptr) {
                 auto *BaseToTransfer = dyn_cast<Instruction>(BaseDefinition);

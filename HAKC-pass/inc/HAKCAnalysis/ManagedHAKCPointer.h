@@ -181,6 +181,8 @@ namespace hakc {
 
         void AddCloneUse(ManagedHAKCPointerUseP fixinUPtr);
 
+        void UpdateProtectedPHIUses(PHINode *AuthenticatedPHI, PHINode *ProtectedPHI);
+
     private:
         void InitBaseDefinition(Value *Pointer);
 
