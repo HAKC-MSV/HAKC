@@ -51,19 +51,19 @@ namespace hakc {
          * @param Debug
          * @return
          */
-        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP PointerUse);
+        Value *CreateAuthenticatedValue(const ManagedHAKCPointerUseP& PointerUse);
 
-        Value *CreateProtectedValue(ManagedHAKCPointerUseP PointerUse);
+        Value *CreateProtectedValue(const ManagedHAKCPointerUseP& PointerUse);
 
         Value *FindAuthenticatedValue(Value *V);
 
         Value *FindProtectedValue(Value *V);
 
-        Value *FindAuthenticatedValue(ManagedHAKCPointerUseP PointerUse);
+        Value *FindAuthenticatedValue(const ManagedHAKCPointerUseP& PointerUse);
 
-        Value *FindProtectedValue(ManagedHAKCPointerUseP PointerUse);
+        Value *FindProtectedValue(const ManagedHAKCPointerUseP& PointerUse);
 
-        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, ManagedHAKCPointerUseP PointerUse);
+        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, const ManagedHAKCPointerUseP& PointerUse);
 
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
@@ -73,9 +73,9 @@ namespace hakc {
 
         void TransformPointers();
 
-        void AddAuthenticatedPointer(ManagedHAKCPointerUseP PointerUse, Value *Replacement);
+        void AddAuthenticatedPointer(const ManagedHAKCPointerUseP& PointerUse, Value *Replacement);
 
-        void AddProtectedPointer(ManagedHAKCPointerUseP PointerUse, Value *Replacement);
+        void AddProtectedPointer(const ManagedHAKCPointerUseP& PointerUse, Value *Replacement);
 
         bool ValueWillBeAuthenticated(Value *V);
 
@@ -98,6 +98,8 @@ namespace hakc {
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
         void UpdateProtectedMultiUsers(User *AuthenticatedMultiUser, User *ProtectedMultiUser);
+
+        void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
 
     protected:
         /**
@@ -128,16 +130,16 @@ namespace hakc {
 
         bool PointerIsEligibleForManagement(Value *Pointer);
 
-        void AddHAKCPointerReplacement(ManagedHAKCPointerUseP PtrUse, Value *Replacement,
+        void AddHAKCPointerReplacement(const ManagedHAKCPointerUseP& PtrUse, Value *Replacement,
                                        bool AddingAuthenticatedReplacements);
 
         Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 
         void ManageNewPointer(Value *V);
 
-        void ClassifyAllUsesOfDefinition(Value *Definition, ManagedHAKCPointerP ManagedPointer);
+        void ClassifyAllUsesOfDefinition(Value *Definition, const ManagedHAKCPointerP& ManagedPointer);
 
-        bool UseIsAnalyzed(ManagedHAKCPointerUseP &UseP);
+        bool UseIsAnalyzed(const ManagedHAKCPointerUseP& UseP);
 
         static bool UseShouldBeIgnored(Use &U);
 

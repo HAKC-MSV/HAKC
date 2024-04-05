@@ -117,14 +117,14 @@ namespace hakc {
          * @param HAKCUse
          * @return
          */
-        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP HAKCUse);
+        Value *CreateAuthenticatedValue(const ManagedHAKCPointerUseP& HAKCUse);
 
         /**
          * Return the Signed version of HAKCUse
          * @param HAKCUse
          * @return
          */
-        Value *CreateProtectedValue(ManagedHAKCPointerUseP HAKCUse);
+        Value *CreateProtectedValue(const ManagedHAKCPointerUseP& HAKCUse);
 
         void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
@@ -140,7 +140,7 @@ namespace hakc {
 
         void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
-        void SetUseOperand(User *U, Value *Replacement, ManagedHAKCPointerUseP PointerUse, bool IsAuthenticatedUse);
+        void SetUseOperand(User *U, Value *Replacement, const ManagedHAKCPointerUseP& PointerUse, bool IsAuthenticatedUse);
 
         bool AllIncomingValuesWillBeAuthenticated();
 
@@ -175,11 +175,11 @@ namespace hakc {
 
         unsigned GetID() const;
 
-        void AddAuthenticatedUse(ManagedHAKCPointerUseP UPtr);
+        void AddAuthenticatedUse(const ManagedHAKCPointerUseP& UPtr);
 
-        void AddProtectedUse(ManagedHAKCPointerUseP UPtr);
+        void AddProtectedUse(const ManagedHAKCPointerUseP& UPtr);
 
-        void AddCloneUse(ManagedHAKCPointerUseP UPtr);
+        void AddCloneUse(const ManagedHAKCPointerUseP& UPtr);
 
         void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
 
