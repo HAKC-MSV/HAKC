@@ -302,11 +302,6 @@ namespace hakc {
                 }
                 AlreadyAuthenticated = true;
             }
-        } else if (auto *Load = dyn_cast<LoadInst>(BaseDefinition)) {
-            auto *LoadedPointer = Manager->GetDef(Load->getPointerOperand());
-            if (isa<AllocaInst>(LoadedPointer)) {
-                AlreadyAuthenticated = true;
-            }
         } else if (auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
             auto *LHS = Manager->GetDef(BinOp->getOperand(0));
             auto *RHS = Manager->GetDef(BinOp->getOperand(1));

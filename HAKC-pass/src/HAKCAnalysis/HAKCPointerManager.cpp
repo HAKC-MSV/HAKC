@@ -550,7 +550,7 @@ namespace hakc {
             throw std::exception();
         }
         if (DebugActive) {
-            CommonHAKCAnalysis::getWriter() << "Adding " << StorageName << "Pointer Replacement: " << *PtrUse << " -> ";
+            CommonHAKCAnalysis::getWriter() << "Adding " << StorageName << " Pointer Replacement: " << *PtrUse << " -> ";
             if (Replacement) {
                 CommonHAKCAnalysis::getWriter() << *Replacement;
             } else {
