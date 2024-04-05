@@ -56,6 +56,7 @@ namespace hakc {
                 Instruction::BinaryOps::Add,
                 Instruction::BinaryOps::Xor,
                 Instruction::BinaryOps::Sub,
+                Instruction::BinaryOps::And,
         };
     }
 
@@ -251,6 +252,10 @@ namespace hakc {
             /* Search for uses that determine if the call is considered a pointer or integer */
             for (auto &U: V->uses()) {
                 if (isa<IntToPtrInst>(U.getUser())) {
+                    if (debug) {
+                        CommonHAKCAnalysis::getWriter() << "User of " << *V << " is an inttoptr: " << *U.getUser()
+                                                        << "\n";
+                    }
                     CallIsUsedAsPointer = true;
                 } else if (auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
                     if (BinOp->getOpcode() == BinaryOperator::Add) {
@@ -589,7 +594,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
-        if(!F) {
+        if (!F) {
             return false;
         }
         auto CompartmentID = getTransformer().getFunctionCompartmentID(F);

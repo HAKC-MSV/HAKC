@@ -566,6 +566,9 @@ namespace hakc {
         }
 
         auto *ptr = getDef(U.get(), false, debug_output);
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def " << *ptr << " for " << *U.get() << "\n";
+        }
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
             if (debug_output) {
