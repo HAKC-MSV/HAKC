@@ -41,7 +41,7 @@ namespace hakc {
 
         Value *get() const;
 
-        ManagedHAKCPointerP &getManagedPtr();
+        ManagedHAKCPointerP getManagedPtr() const;
 
     protected:
         ManagedHAKCPointerP ManagedPtr;
@@ -49,31 +49,31 @@ namespace hakc {
         unsigned OperandNo;
 
     public:
-        friend bool operator==(const ManagedHAKCPointerUseP &lhs, const Use &rhs) {
-            return lhs->getUser() == rhs.getUser() && lhs->getOperandNo() == rhs.getOperandNo();
+        friend bool operator==(const ManagedHAKCPointerUse &lhs, const Use &rhs) {
+            return lhs.getUser() == rhs.getUser() && lhs.getOperandNo() == rhs.getOperandNo();
         }
 
-        friend bool operator!=(const ManagedHAKCPointerUseP &lhs, const Use &rhs) {
+        friend bool operator!=(const ManagedHAKCPointerUse &lhs, const Use &rhs) {
             return !(lhs == rhs);
         }
 
-        friend bool operator==(const Use &lhs, const ManagedHAKCPointerUseP &rhs) {
+        friend bool operator==(const Use &lhs, const ManagedHAKCPointerUse &rhs) {
             return (rhs == lhs);
         }
 
-        friend bool operator!=(const Use &lhs, const ManagedHAKCPointerUseP &rhs) {
+        friend bool operator!=(const Use &lhs, const ManagedHAKCPointerUse &rhs) {
             return !(lhs == rhs);
         }
 
-        friend bool operator==(const ManagedHAKCPointerUseP &lhs, const ManagedHAKCPointerUseP &rhs) {
-            return (lhs->getUser() == rhs->getUser()) && (lhs->getOperandNo() == rhs->getOperandNo());
+        friend bool operator==(const ManagedHAKCPointerUse &lhs, const ManagedHAKCPointerUse &rhs) {
+            return (lhs.getUser() == rhs.getUser()) && (lhs.getOperandNo() == rhs.getOperandNo());
         }
 
-        friend bool operator!=(const ManagedHAKCPointerUseP &lhs, const ManagedHAKCPointerUseP &rhs) {
+        friend bool operator!=(const ManagedHAKCPointerUse &lhs, const ManagedHAKCPointerUse &rhs) {
             return !(lhs == rhs);
         }
 
-        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUseP &HAKCPointerUse);
+        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUse &HAKCPointerUse);
     };
 
     /**
@@ -113,18 +113,18 @@ namespace hakc {
         std::set<ManagedHAKCPointerUseP> CloneUses;
 
         /**
-         * Return the Authenticated version of Use
-         * @param Use
+         * Return the Authenticated version of HAKCUse
+         * @param HAKCUse
          * @return
          */
-        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP &Use);
+        Value *CreateAuthenticatedValue(ManagedHAKCPointerUseP HAKCUse);
 
         /**
-         * Return the Signed version of Use
-         * @param Use
+         * Return the Signed version of HAKCUse
+         * @param HAKCUse
          * @return
          */
-        Value *CreateProtectedValue(ManagedHAKCPointerUseP &Use);
+        Value *CreateProtectedValue(ManagedHAKCPointerUseP HAKCUse);
 
         void TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet);
 
@@ -140,7 +140,7 @@ namespace hakc {
 
         void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
-        void SetUseOperand(User *U, Value *Replacement, ManagedHAKCPointerUseP &PointerUse, bool IsAuthenticatedUse);
+        void SetUseOperand(User *U, Value *Replacement, ManagedHAKCPointerUseP PointerUse, bool IsAuthenticatedUse);
 
         bool AllIncomingValuesWillBeAuthenticated();
 
@@ -179,9 +179,9 @@ namespace hakc {
 
         void AddProtectedUse(ManagedHAKCPointerUseP UPtr);
 
-        void AddCloneUse(ManagedHAKCPointerUseP fixinUPtr);
+        void AddCloneUse(ManagedHAKCPointerUseP UPtr);
 
-        void UpdateProtectedPHIUses(PHINode *AuthenticatedPHI, PHINode *ProtectedPHI);
+        void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
 
     private:
         void InitBaseDefinition(Value *Pointer);
@@ -190,27 +190,27 @@ namespace hakc {
 
 
     public:
-        friend bool operator==(const ManagedHAKCPointerP &lhs, Value *V) {
-            return lhs->GetBaseDefinition() == V;
+        friend bool operator==(const ManagedHAKCPointer &lhs, Value *V) {
+            return lhs.GetBaseDefinition() == V;
         }
 
-        friend bool operator!=(const ManagedHAKCPointerP &lhs, Value *V) {
+        friend bool operator!=(const ManagedHAKCPointer &lhs, Value *V) {
             return !(lhs == V);
         }
 
-        friend bool operator==(Value *V, const ManagedHAKCPointerP &rhs) {
+        friend bool operator==(Value *V, const ManagedHAKCPointer &rhs) {
             return (rhs == V);
         }
 
-        friend bool operator!=(Value *V, const ManagedHAKCPointerP &rhs) {
+        friend bool operator!=(Value *V, const ManagedHAKCPointer &rhs) {
             return !(V == rhs);
         }
 
-        friend bool operator==(const ManagedHAKCPointerP &lhs, const ManagedHAKCPointerP &rhs) {
-            return lhs->GetBaseDefinition() == rhs->GetBaseDefinition();
+        friend bool operator==(const ManagedHAKCPointer &lhs, const ManagedHAKCPointer &rhs) {
+            return lhs.GetBaseDefinition() == rhs.GetBaseDefinition();
         }
 
-        friend bool operator!=(const ManagedHAKCPointerP &lhs, const ManagedHAKCPointerP &rhs) {
+        friend bool operator!=(const ManagedHAKCPointer &lhs, const ManagedHAKCPointer &rhs) {
             return !(lhs == rhs);
         }
 
@@ -223,11 +223,6 @@ namespace hakc {
                 }
                 os << *ManagedPointer.GetBaseDefinition() << "  ]";
             }
-            return os;
-        }
-
-        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerP &HAKCPointer) {
-            os << *HAKCPointer;
             return os;
         }
     };

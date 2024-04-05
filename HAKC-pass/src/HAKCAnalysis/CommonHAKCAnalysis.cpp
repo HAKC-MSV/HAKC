@@ -340,6 +340,10 @@ namespace hakc {
                 AllocationFunctions.end());
     }
 
+    bool CommonHAKCAnalysis::IsMultiSSAUser(Value *V) {
+        return isa<PHINode>(V) || isa<SelectInst>(V);
+    }
+
     bool CommonHAKCAnalysis::valueHasAttribute(Value *V, Attribute::AttrKind Kind) {
         bool result = false;
         if (auto *gv = dyn_cast<GlobalVariable>(V)) {

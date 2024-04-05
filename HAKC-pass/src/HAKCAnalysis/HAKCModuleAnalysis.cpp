@@ -462,7 +462,11 @@ namespace hakc {
 
         moveGlobalsToPMCSection();
 
-        for (auto *F: AnalysisFunctions) {
+        SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
+        llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
+                   [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+
+        for (auto *F: SortedFunctions) {
             debug_output = (F->getName() == getHAKCDebugName());
             CompartmentalizeFunction(F);
         }

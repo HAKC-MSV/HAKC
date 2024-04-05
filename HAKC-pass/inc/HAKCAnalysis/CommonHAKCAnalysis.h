@@ -145,6 +145,8 @@ namespace hakc {
 
         static std::string GetModuleFullPath(Module &M);
 
+        static bool IsMultiSSAUser(Value *V);
+
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);
 

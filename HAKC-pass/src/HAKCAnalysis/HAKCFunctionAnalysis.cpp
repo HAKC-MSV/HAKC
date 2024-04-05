@@ -1268,7 +1268,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
             for (auto &HAKCPointer: PointerManager.GetManagedPointers()) {
-                CommonHAKCAnalysis::getWriter() << HAKCPointer << "\n+++\n";
+                CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
             }
             CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
         }
@@ -1350,8 +1350,8 @@ namespace hakc {
         }
     }
 
-    void HAKCFunctionAnalysis::ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value
-    *NewValue) {
+    void HAKCFunctionAnalysis::ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue,
+                                                         Value *NewValue) {
         auto *V = I->getOperand(ArgNo);
         Value *Replacement = nullptr;
         if (auto *Oper = dyn_cast<BitCastOperator>(V)) {
@@ -1436,7 +1436,7 @@ namespace hakc {
                        });
 
             for (auto &HAKCPointer: SortedPointers) {
-                CommonHAKCAnalysis::getWriter() << HAKCPointer << "\n+++\n";
+                CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
             }
         }
 
