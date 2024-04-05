@@ -194,24 +194,7 @@ namespace hakc {
 
                 auto *LHSDef = getDef(binOp->getOperand(0), false, debug);
                 auto *RHSDef = getDef(binOp->getOperand(1), false, debug);
-                if (!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
-                    if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of ";
-                        binOp->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " are constants\n";
-                    }
-                    /* We stop here */
-                    goto add_to_chain;
-                }
-                if (isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
-                    if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of ";
-                        binOp->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " are constants\n";
-                    }
-                    /* We stop here */
-                    goto add_to_chain;
-                } else if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
+                if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
                         binOp->getOperand(0)->print(CommonHAKCAnalysis::getWriter());
@@ -225,6 +208,22 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(1));
+                } else if (!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
+                    if (debug) {
+                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of ";
+                        binOp->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << " are constants\n";
+                    }
+                    /* We stop here */
+                    goto add_to_chain;
+                } else if (isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
+                    if (debug) {
+                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of ";
+                        binOp->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << " are constants\n";
+                    }
+                    /* We stop here */
+                    goto add_to_chain;
                 }
             }
             add_to_chain:

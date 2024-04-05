@@ -668,9 +668,9 @@ namespace hakc {
                 return;
             }
             CommonHAKCAnalysis::getWriter() << "Invalid PointerUse " << *PointerUse << " for User "
-                                            << *U << " in function ";
+                                            << *U << " of " << *this << " in function\n";
             Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
-            CommonHAKCAnalysis::getWriter() << " for " << *this << "\n";
+            CommonHAKCAnalysis::getWriter() << "\n";
             throw std::exception();
         }
 
