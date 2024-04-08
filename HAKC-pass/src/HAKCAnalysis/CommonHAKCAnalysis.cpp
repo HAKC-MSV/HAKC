@@ -57,6 +57,7 @@ namespace hakc {
                 Instruction::BinaryOps::Xor,
                 Instruction::BinaryOps::Sub,
                 Instruction::BinaryOps::And,
+                Instruction::BinaryOps::Or,
         };
     }
 
