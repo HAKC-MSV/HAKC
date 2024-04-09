@@ -7,6 +7,7 @@
 
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/Regex.h"
+#include "llvm/IR/DIBuilder.h"
 
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
@@ -447,6 +448,17 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << "Alias: ";
                         alias->print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
+                    }
+                    auto *OrigSP = F.getSubprogram();
+                    stripDebugInfo(*transferFunc);
+                    if (OrigSP) {
+                        DIBuilder DIB(*F.getParent(), false, OrigSP->getUnit());
+                        DISubprogram::DISPFlags SPFlags = DISubprogram::SPFlagDefinition |
+                                                          DISubprogram::SPFlagOptimized |
+                                                          DISubprogram::SPFlagLocalToUnit;
+                        auto NewSP = DIB.createFunction(OrigSP->getScope(), transferFunc->getName(), transferFunc->getName(),
+                                                        OrigSP->getFile(), 0, OrigSP->getType(), 0, DINode::FlagZero, SPFlags);
+                        transferFunc->setSubprogram(NewSP);
                     }
                 }
             } else if (debug_output) {

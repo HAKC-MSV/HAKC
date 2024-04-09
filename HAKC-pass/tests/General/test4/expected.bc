@@ -21,7 +21,7 @@ declare !dbg !22 dso_local i8* @hakc_transfer_to_clique(i8*, i64, i32, i32, i8 s
 declare void @llvm.dbg.value(metadata, metadata, metadata) #2
 
 ; Function Attrs: nounwind uwtable
-define dso_local i8* @HAKC_XFER_foo(%struct.data_struct* %0) local_unnamed_addr #0 section ".hakc.RED_CLIQUE.text" {
+define dso_local i8* @HAKC_XFER_foo(%struct.data_struct* %0) local_unnamed_addr #0 section ".hakc.RED_CLIQUE.text" !dbg !27 {
   %2 = bitcast %struct.data_struct* %0 to i8*
   %3 = call i32 @get_hakc_address_color(i8* %2)
   %4 = bitcast %struct.data_struct* %0 to i8*
@@ -73,3 +73,5 @@ attributes #3 = { nounwind }
 !24 = !{!10, !10, !25, !15, !15, !26}
 !25 = !DIBasicType(name: "long unsigned int", size: 64, encoding: DW_ATE_unsigned)
 !26 = !DIBasicType(name: "char", size: 8, encoding: DW_ATE_signed_char)
+!27 = distinct !DISubprogram(name: "HAKC_XFER_foo", linkageName: "HAKC_XFER_foo", scope: !1, file: !1, type: !8, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !0, retainedNodes: !28)
+!28 = <temporary!> !{}

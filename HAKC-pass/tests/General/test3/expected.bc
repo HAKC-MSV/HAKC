@@ -39,9 +39,9 @@ declare !dbg !32 dso_local i32 @bar(%struct.data_struct*) local_unnamed_addr #1
 declare void @llvm.dbg.value(metadata, metadata, metadata) #2
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_XFER_foo(%struct.data_struct* %0) local_unnamed_addr #0 {
-  %2 = call i32 @HAKC_ORIG_foo(%struct.data_struct* %0), !dbg !21
-  ret i32 %2, !dbg !21
+define dso_local i32 @HAKC_XFER_foo(%struct.data_struct* %0) local_unnamed_addr #0 !dbg !33 {
+  %2 = call i32 @HAKC_ORIG_foo(%struct.data_struct* %0)
+  ret i32 %2
 }
 
 attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
@@ -86,3 +86,5 @@ attributes #3 = { nounwind }
 !30 = !DILocation(line: 10, column: 9, scope: !22)
 !31 = !DILocation(line: 13, column: 1, scope: !7)
 !32 = !DISubprogram(name: "bar", scope: !1, file: !1, line: 5, type: !8, flags: DIFlagPrototyped, spFlags: DISPFlagOptimized, retainedNodes: !2)
+!33 = distinct !DISubprogram(name: "HAKC_XFER_foo", linkageName: "HAKC_XFER_foo", scope: !1, file: !1, type: !8, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !0, retainedNodes: !34)
+!34 = <temporary!> !{}

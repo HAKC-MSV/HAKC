@@ -30,16 +30,16 @@ declare void @llvm.dbg.value(metadata, metadata, metadata) #1
 declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nofree norecurse nounwind uwtable willreturn writeonly
-define dso_local void @HAKC_XFER_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" {
-  %2 = bitcast %struct.data* %0 to i8*, !dbg !23
-  %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !23
-  %4 = bitcast %struct.data* %0 to i8*, !dbg !23
-  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 16, i32 6, i32 241, i1 false), !dbg !23
-  %6 = bitcast i8* %5 to %struct.data*, !dbg !23
-  call void @HAKC_ORIG_init_data(%struct.data* %6), !dbg !23
-  %7 = bitcast %struct.data* %0 to i8*, !dbg !23
-  call void @hakc_color_address(i8* %7, i32 %3, i64 16), !dbg !23
-  ret void, !dbg !23
+define dso_local void @HAKC_XFER_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !36 {
+  %2 = bitcast %struct.data* %0 to i8*
+  %3 = call i32 @get_hakc_address_color(i8* %2)
+  %4 = bitcast %struct.data* %0 to i8*
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 16, i32 6, i32 241, i1 false)
+  %6 = bitcast i8* %5 to %struct.data*
+  call void @HAKC_ORIG_init_data(%struct.data* %6)
+  %7 = bitcast %struct.data* %0 to i8*
+  call void @hakc_color_address(i8* %7, i32 %3, i64 16)
+  ret void
 }
 
 declare i32 @get_hakc_address_color(i8*)
@@ -91,3 +91,5 @@ attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
 !33 = !DILocation(line: 12, column: 21, scope: !7)
 !34 = !{!26, !28, i64 0}
 !35 = !DILocation(line: 13, column: 1, scope: !7)
+!36 = distinct !DISubprogram(name: "HAKC_XFER_init_data", linkageName: "HAKC_XFER_init_data", scope: !1, file: !1, type: !8, spFlags: DISPFlagLocalToUnit | DISPFlagDefinition | DISPFlagOptimized, unit: !0, retainedNodes: !37)
+!37 = <temporary!> !{}
