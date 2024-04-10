@@ -21,14 +21,14 @@ define dso_local i32* @HAKC_ORIG_test(i32* %0) local_unnamed_addr #0 section ".h
 
 9:                                                ; preds = %1
   %10 = tail call i8* @allocate(i32 4) #3, !dbg !25
-  %11 = icmp ugt i8* %10, inttoptr (i64 281474976710655 to i8*), !dbg !25
-  %12 = ptrtoint i8* %10 to i64, !dbg !25
-  %13 = or i64 %12, -281474976710656, !dbg !25
-  %14 = inttoptr i64 %13 to i8*, !dbg !25
-  %15 = select i1 %11, i8* %14, i8* %10, !dbg !25
-  %16 = call i8* @hakc_transfer_to_clique(i8* %10, i64 1, i32 6, i32 241, i1 false), !dbg !25
-  %17 = bitcast i8* %15 to i32*, !dbg !27
-  %18 = bitcast i8* %16 to i32*, !dbg !27
+  %11 = call i8* @hakc_transfer_to_clique(i8* %10, i64 1, i32 6, i32 241, i1 false), !dbg !25
+  %12 = icmp ugt i8* %10, inttoptr (i64 281474976710655 to i8*), !dbg !27
+  %13 = ptrtoint i8* %10 to i64, !dbg !27
+  %14 = or i64 %13, -281474976710656, !dbg !27
+  %15 = inttoptr i64 %14 to i8*, !dbg !27
+  %16 = select i1 %12, i8* %15, i8* %10, !dbg !27
+  %17 = bitcast i8* %16 to i32*, !dbg !27
+  %18 = bitcast i8* %11 to i32*, !dbg !27
   %19 = bitcast i8* %10 to i32*, !dbg !27
   call void @llvm.dbg.value(metadata i32* %19, metadata !15, metadata !DIExpression()), !dbg !16
   store i32 0, i32* %17, align 4, !dbg !28, !tbaa !21
@@ -48,9 +48,9 @@ declare !dbg !31 dso_local i8* @allocate(i32) local_unnamed_addr #1
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
 declare void @llvm.dbg.value(metadata, metadata, metadata) #2
 
-declare i8* @hakc_transfer_to_clique(i8*, i64, i32, i32, i1)
-
 declare i8* @check_hakc_data_access(i8*, i32, i64)
+
+declare i8* @hakc_transfer_to_clique(i8*, i64, i32, i32, i1)
 
 ; Function Attrs: nounwind uwtable
 define dso_local i32* @HAKC_XFER_test(i32* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !35 {

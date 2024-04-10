@@ -301,6 +301,14 @@ namespace hakc {
         return ManagedPointers;
     }
 
+    void HAKCPointerManager::GetSortedPointers(SmallVector<ManagedHAKCPointerP> &SortedPointers) {
+        SortedPointers.append(ManagedPointers.begin(), ManagedPointers.end());
+        llvm::sort(SortedPointers.begin(), SortedPointers.end(),
+                   [](const ManagedHAKCPointerP &LHS, const ManagedHAKCPointerP &RHS) {
+                       return LHS->GetID() < RHS->GetID();
+                   });
+    }
+
     ManagedHAKCPointerP HAKCPointerManager::GetManagedPointer(Value *V) {
         auto *Def = GetDef(V);
         for (auto &ManagedPointer: ManagedPointers) {
@@ -404,14 +412,16 @@ namespace hakc {
     }
 
     void HAKCPointerManager::CreateAuthenticatedPointersAndAllClones() {
-        for (auto &ManagedPtr: GetManagedPointers()) {
+        SmallVector<ManagedHAKCPointerP> SortedPointers;
+        GetSortedPointers(SortedPointers);
+        for (auto &ManagedPtr: SortedPointers) {
             ManagedPtr->CreateBaseAuthenticatedPointer();
             if (DebugActive && ManagedPtr->GetAuthenticatedPointer()) {
                 CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << *ManagedPtr << ": "
                                                 << *ManagedPtr->GetAuthenticatedPointer() << "\n";
             }
         }
-        for (auto &ManagedPtr: GetManagedPointers()) {
+        for (auto &ManagedPtr: SortedPointers) {
             ManagedPtr->CreatePointerUseClones();
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Created Authenticated and Protected Copies for "
@@ -533,7 +543,9 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Invalid ProtectedMultiUser: " << *ProtectedMultiUser << "\n";
             throw std::exception();
         }
-        for (auto &ManagedPtr: GetManagedPointers()) {
+        SmallVector<ManagedHAKCPointerP> SortedPointers;
+        GetSortedPointers(SortedPointers);
+        for (auto &ManagedPtr: SortedPointers) {
             ManagedPtr->UpdateProtectedMultiValueUses(AuthenticatedMultiUser, ProtectedMultiUser);
         }
     }
@@ -678,7 +690,9 @@ namespace hakc {
     }
 
     void HAKCPointerManager::TransformPointers() {
-        for (auto &ManagedPointer: ManagedPointers) {
+        SmallVector<ManagedHAKCPointerP> SortedPointers;
+        GetSortedPointers(SortedPointers);
+        for (auto &ManagedPointer: SortedPointers) {
             ManagedPointer->TransformUses();
         }
     }

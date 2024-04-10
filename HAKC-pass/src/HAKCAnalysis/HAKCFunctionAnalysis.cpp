@@ -1271,12 +1271,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
             SmallVector<ManagedHAKCPointerP> SortedPointers;
-            auto ManagedPointers = PointerManager.GetManagedPointers();
-            SortedPointers.append(ManagedPointers.begin(), ManagedPointers.end());
-            llvm::sort(SortedPointers.begin(), SortedPointers.end(),
-                       [](const ManagedHAKCPointerP &LHS, const ManagedHAKCPointerP &RHS) {
-                           return LHS->GetID() < RHS->GetID();
-                       });
+            PointerManager.GetSortedPointers(SortedPointers);
 
             for (auto &HAKCPointer: SortedPointers) {
                 CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
@@ -1355,7 +1350,9 @@ namespace hakc {
             getFunction().print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
-        for (auto &HAKCPointer: PointerManager.GetManagedPointers()) {
+        SmallVector<ManagedHAKCPointerP> SortedPointers;
+        PointerManager.GetSortedPointers(SortedPointers);
+        for (auto &HAKCPointer: SortedPointers) {
             HAKCPointer->MaybeCreateMissingTransfer();
         }
     }
@@ -1438,12 +1435,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
             SmallVector<ManagedHAKCPointerP> SortedPointers;
-            auto ManagedPointers = PointerManager.GetManagedPointers();
-            SortedPointers.append(ManagedPointers.begin(), ManagedPointers.end());
-            llvm::sort(SortedPointers.begin(), SortedPointers.end(),
-                       [](const ManagedHAKCPointerP &LHS, const ManagedHAKCPointerP &RHS) {
-                           return LHS->GetID() < RHS->GetID();
-                       });
+            PointerManager.GetSortedPointers(SortedPointers);
 
             for (auto &HAKCPointer: SortedPointers) {
                 CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";

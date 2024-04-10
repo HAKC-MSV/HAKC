@@ -32,6 +32,8 @@ namespace hakc {
 
         std::set<ManagedHAKCPointerP> GetManagedPointers();
 
+        void GetSortedPointers(SmallVector<ManagedHAKCPointerP> &SortedPointers);
+
         HAKCFunctionAnalysis *GetFunctionAnalysis();
 
         /**
