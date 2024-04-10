@@ -25,7 +25,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
    -DCMAKE_C_COMPILER=/usr/bin/clang \
    -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
-   -DLLVM_TARGETS_TO_BUILD='X86;AArch64' \
+   -DLLVM_TARGETS_TO_BUILD='X86;AArch64;ARM' \
    -DLLVM_OPTIMIZED_TABLEGEN=True \
    -DLLVM_USE_LINKER=lld \
    -DLLVM_ENABLE_IDE=True \
@@ -162,4 +162,3 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    ```
 
 ## Run the kernel in QEMU
-
