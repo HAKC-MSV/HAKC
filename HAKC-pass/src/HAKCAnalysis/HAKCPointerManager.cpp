@@ -640,6 +640,18 @@ namespace hakc {
         }
     }
 
+    bool HAKCPointerManager::IsBaseAuthenticatedPointer(Value *V) {
+        if(!V) {
+            return false;
+        }
+
+        auto Search = [V](const ManagedHAKCPointerP& Pointer) {
+            return Pointer->GetAuthenticatedPointer() == V;
+        };
+
+        return std::any_of(ManagedPointers.begin(), ManagedPointers.end(), Search);
+    }
+
     bool HAKCPointerManager::FunctionIsCompartmentalized() const {
         return IsCompartmentalized;
     }

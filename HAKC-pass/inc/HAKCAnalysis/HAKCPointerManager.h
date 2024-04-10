@@ -103,6 +103,8 @@ namespace hakc {
 
         void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
 
+        bool IsBaseAuthenticatedPointer(Value *V);
+
     protected:
         /**
          * The set of pointers under management
