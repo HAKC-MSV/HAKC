@@ -65,7 +65,7 @@ namespace hakc {
 
         Value *FindProtectedValue(const ManagedHAKCPointerUseP& PointerUse);
 
-        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, const ManagedHAKCPointerUseP& PointerUse);
+        static Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, const ManagedHAKCPointerUseP& PointerUse);
 
         /**
          * Create authenticated versions of the ManagedHAKCPointer set
@@ -103,8 +103,6 @@ namespace hakc {
 
         void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
 
-        bool IsBaseAuthenticatedPointer(Value *V);
-
     protected:
         /**
          * The set of pointers under management
@@ -137,7 +135,7 @@ namespace hakc {
         void AddHAKCPointerReplacement(const ManagedHAKCPointerUseP& PtrUse, Value *Replacement,
                                        bool AddingAuthenticatedReplacements);
 
-        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
+        static Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 
         void ManageNewPointer(Value *V);
 

@@ -61,7 +61,7 @@ namespace hakc {
         };
     }
 
-    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet) {
+    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet) const {
         bool result = false;
         if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
             result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
@@ -321,13 +321,12 @@ namespace hakc {
  * #hakc_transfer_funcs, false otherwise
  * */
     bool CommonHAKCAnalysis::isHAKCFunction(Function *F) {
+        auto Search = [F](const hakc_function_def_t &Func) {
+            return Func->GetName() == F->getName();
+        };
+
         auto HAKCFunctions = GetHAKCFunctions();
-        for (auto HAKCDef: HAKCFunctions) {
-            if (HAKCDef->GetName() == F->getName()) {
-                return true;
-            }
-        }
-        return false;
+        return std::any_of(HAKCFunctions.begin(), HAKCFunctions.end(), Search);
     }
 
     /**
@@ -346,7 +345,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsMultiSSAUser(Value *V) {
-        return isa<PHINode>(V) || isa<SelectInst>(V);
+        return isa<PHINode>(V) || isa<SelectInst>(V) || isa<BinaryOperator>(V);
     }
 
     bool CommonHAKCAnalysis::valueHasAttribute(Value *V, Attribute::AttrKind Kind) {
@@ -425,7 +424,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::isFunctionStatic(Function *F) {
-        return F->isLocalLinkage(F->getLinkage()) || F->isDeclaration();
+        return Function::isLocalLinkage(F->getLinkage()) || F->isDeclaration();
     }
 
     bool CommonHAKCAnalysis::FunctionHasPointerArg(Function *F) {
@@ -480,9 +479,7 @@ namespace hakc {
 
     std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
         auto NoTransferFunctions = GetNoTransferFunctions();
-        if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX)) {
-            return F->getName().str();
-        } else if (NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
+        if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX) || NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
             return F->getName().str();
         }
         std::string name = OUTSIDE_TRANSFER_PREFIX.str();
@@ -646,12 +643,11 @@ namespace hakc {
         /* The compiler will sometimes rename functions when directed to, especially for
          * kernel modules, in order to facilitate general functionality.  However,
          * the debug symbols maintain the original name, so use that name if it is available */
-        StringRef Name = F->getName();
         if (F->getSubprogram() && !F->getSubprogram()->getName().empty()) {
-            Name = F->getSubprogram()->getName();
+            return F->getSubprogram()->getName();
         }
 
-        return Name;
+        return F->getName();
     }
 
     bool CommonHAKCAnalysis::IsStringType(Type *Ty) {

@@ -29,7 +29,7 @@ namespace hakc {
 
         bool isHAKCFunction(Function *F);
 
-        bool isFunctionStatic(Function *F);
+        static bool isFunctionStatic(Function *F);
 
         virtual bool isSafeTransitionFunction(Function *F);
 
@@ -141,7 +141,7 @@ namespace hakc {
 
         virtual std::set<Instruction::BinaryOps> GetPointerManipulatingBinaryOps();
 
-        bool IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet);
+        bool IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet) const;
 
         static std::string GetModuleFullPath(Module &M);
 

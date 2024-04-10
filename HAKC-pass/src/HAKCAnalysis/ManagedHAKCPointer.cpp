@@ -220,6 +220,9 @@ namespace hakc {
             } else if (auto *SelectI = dyn_cast<SelectInst>(BaseDefinition)) {
                 ValuesToCheck.insert(SelectI->getTrueValue());
                 ValuesToCheck.insert(SelectI->getFalseValue());
+            } else if(auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
+                ValuesToCheck.insert(BinOp->getOperand(0));
+                ValuesToCheck.insert(BinOp->getOperand(1));
             } else {
                 CommonHAKCAnalysis::getWriter() << "Unexpected MultiSSA User: " << *BaseDefinition << "\n";
                 throw std::exception();
@@ -275,9 +278,7 @@ namespace hakc {
             } else if (Call->isInlineAsm()) {
                 AlreadyAuthenticated = true;
             }
-        }
-
-        if (auto *SelectI = dyn_cast<SelectInst>(BaseDefinition)) {
+        } else if (auto *SelectI = dyn_cast<SelectInst>(BaseDefinition)) {
             auto IsTrueValidated = Manager->ValueWillBeAuthenticated(SelectI->getTrueValue());
             auto IsFalseValidated = Manager->ValueWillBeAuthenticated(SelectI->getFalseValue());
             if (IsTrueValidated && IsFalseValidated) {
@@ -305,15 +306,19 @@ namespace hakc {
         } else if (auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
             auto *LHS = Manager->GetDef(BinOp->getOperand(0));
             auto *RHS = Manager->GetDef(BinOp->getOperand(1));
-            AlreadyAuthenticated = isa<GlobalVariable>(LHS) || isa<GlobalVariable>(RHS);
+            bool HasGlobal = isa<GlobalVariable>(LHS) || isa<GlobalVariable>(RHS);
+            AlreadyAuthenticated = HasGlobal || AllIncomingValuesWillBeAuthenticated();
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Base Definition of " << *this << " is a BinaryOperator that ";
-                if (!AlreadyAuthenticated) {
+                if (!HasGlobal) {
                     CommonHAKCAnalysis::getWriter() << "does not use ";
                 } else {
                     CommonHAKCAnalysis::getWriter() << "uses ";
                 }
                 CommonHAKCAnalysis::getWriter() << "a GlobalVariable\n";
+                if(AlreadyAuthenticated) {
+                    CommonHAKCAnalysis::getWriter() << "But both values will be authenticated.\n";
+                }
             }
         }
 
@@ -468,12 +473,8 @@ namespace hakc {
             }
         } else {
             Value *I = nullptr;
-            if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction()) {
+            if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction() || isa<CallBase>(BaseDefinition)) {
                 I = Manager->CreateSafePointerAtLocation(BaseDefinition, AuthenticationInsertPoint);
-            } else if (isa<CallBase>(BaseDefinition)) {
-//                if(Manager->GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction())) {
-                I = Manager->CreateSafePointerAtLocation(BaseDefinition, AuthenticationInsertPoint);
-//                }
             }
 
             if (!I) {
@@ -658,14 +659,6 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << " User " << *U << " to be " << *Replacement << " in function "
                                             << Manager->GetFunctionAnalysis()->getFunction().getName() << " for "
                                             << *this << "\n";
-        }
-
-        if (Manager->IsBaseAuthenticatedPointer(U)) {
-            if (DebugActive) {
-                CommonHAKCAnalysis::getWriter()
-                        << "User is an authenticated pointer for a managed pointer, so no operand change will happen\n";
-            }
-            return;
         }
 
         if (PointerUse->getUser()->getValueID() != U->getValueID()) {
