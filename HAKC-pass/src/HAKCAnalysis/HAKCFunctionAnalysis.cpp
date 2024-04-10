@@ -1497,7 +1497,7 @@ namespace hakc {
         return false;
     }
 
-    unsigned HAKCFunctionAnalysis::GetCompartmentTransferCount() {
+    unsigned HAKCFunctionAnalysis::GetCompartmentTransferCount() const {
         return CompartmentTransferCount;
     }
 

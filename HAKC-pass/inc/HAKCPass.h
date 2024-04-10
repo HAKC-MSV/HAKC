@@ -9,9 +9,6 @@
 #ifndef PMC_HAKCPASS_H
 #define PMC_HAKCPASS_H
 
-#define MODULES_LIMIT 255
-#define MASK_COLOR_LIMIT 65535
-
 #include "HAKC-defs.h"
 
 #include "llvm/IR/Constants.h"

@@ -201,7 +201,7 @@ namespace hakc {
         if (kp_struct) {
             // the anonymous union that holds the Value we actually want
             // is the last element of the struct
-            int num_ops = kp_struct->getNumOperands();
+            auto num_ops = kp_struct->getNumOperands();
             Constant *last_op = kp_struct->getOperand(num_ops - 1);
 
             // this holds kp->arg
@@ -319,7 +319,7 @@ namespace hakc {
                                        FuncTy);
 
         auto *constc = dyn_cast<Constant>(c.getCallee());
-        Function *getctx = cast<Function>(constc);
+        auto *getctx = cast<Function>(constc);
         getctx->setCallingConv(CallingConv::C);
 
         // put "hakc_modparam_getctx_paramname" in a special text section in the module
@@ -400,12 +400,10 @@ namespace hakc {
         }
 
         // generate function pointer and place in modparam fp section
-        GlobalVariable *gcfp = new GlobalVariable(M,
-                                                  getctx->getType(),
-                                                  true, // const
-                                                  GlobalValue::ExternalLinkage,
-                                                  getctx,
-                                                  getctx->getName().str() + "_fp");
+        auto *gcfp = dyn_cast<GlobalVariable>(M.getOrInsertGlobal(getctx->getName().str() + "_fp", getctx->getType()));
+        gcfp->setConstant(true);
+        gcfp->setLinkage(GlobalValue::ExternalLinkage);
+        gcfp->setInitializer(getctx);
         gcfp->setSection(HAKC_MODPARAM_FUNCP_SECTION);
     }
 

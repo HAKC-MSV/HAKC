@@ -24,11 +24,11 @@ namespace hakc {
 
         void addTarget(std::shared_ptr<HAKCCompartment> &target);
 
-        hakc_compartment_id_t getID();
+        hakc_compartment_id_t getID() const;
 
-        hakc_access_token_t getEntryToken();
+        hakc_access_token_t getEntryToken() const;
 
-        hakc_access_token_t getAccessToken();
+        hakc_access_token_t getAccessToken() const;
 
         sym_color_t getColor();
 

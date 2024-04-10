@@ -342,7 +342,7 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
      */
     Argument *TargetV = nullptr;
     Type *BitcastType = nullptr;
-    User *BitcastUser = nullptr;
+    User *BitcastUser;
     for (auto &Arg: I->getFunction()->args()) {
         if (V == &Arg) {
             TargetV = Target->getArg(Arg.getArgNo());
@@ -711,7 +711,7 @@ Function *hakc::HAKCTransformer::CreateTransferToVariadic(CallInst *Call) {
     }
 
     if (!TransferFunction) {
-        auto TransferName = HAKCAnalysis->getVariadicTransferName(Target);
+        auto TransferName = CommonHAKCAnalysis::getVariadicTransferName(Target);
         TransferName += "_";
         TransferName += std::to_string(TargetTransferCount);
 
@@ -889,17 +889,11 @@ ConstantInt *hakc::HAKCTransformer::GetHAKCCompartmentValue(hakc_compartment_id_
     return HAKCIRBuilder.getIntN(COMPARTMENT_ID_BIT_LENGTH, CompartmentID);
 }
 
-void hakc::HAKCTransformer::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) {
-    return;
-}
+void hakc::HAKCTransformer::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) { }
 
-void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Function *TransferFunction, Value *Arg) {
-    return;
-}
+void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Function *TransferFunction, Value *Arg) { }
 
-void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) {
-    return;
-}
+void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) { }
 
 bool hakc::HAKCTransformer::FunctionIsExported(Function *F) {
     return false;

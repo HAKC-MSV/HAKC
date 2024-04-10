@@ -4,10 +4,12 @@
 
 #include "HAKCSymbol.h"
 
+#include <utility>
+
 namespace hakc {
     HAKCSymbol::HAKCSymbol(std::string sym_name, std::shared_ptr<HAKCCompartment> compartment,
                            std::shared_ptr<HAKCFile> file, bool is_global)
-            : name(sym_name), file(file), compartment(compartment), is_global(is_global) {
+            : name(std::move(sym_name)), file(std::move(file)), compartment(std::move(compartment)), is_global(is_global) {
     }
 
     StringRef HAKCSymbol::getName() {
@@ -18,7 +20,7 @@ namespace hakc {
         return compartment;
     }
 
-    bool HAKCSymbol::isGlobal() {
+    bool HAKCSymbol::isGlobal() const {
         return is_global;
     }
 

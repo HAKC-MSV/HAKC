@@ -32,7 +32,7 @@ namespace hakc {
 
         std::shared_ptr<HAKCFile> getFile();
 
-        bool isGlobal();
+        bool isGlobal() const;
 
         hakc_compartment_id_t getCompartmentID();
     };

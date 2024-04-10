@@ -163,7 +163,7 @@ namespace hakc {
         /* If F is used in a global variable */
         if (auto *gv = dyn_cast<GlobalVariable>(U.getUser())) {
             return gv->getSection() != ".discard.addressable";
-        } else if (isa<ConstantStruct>(U.getUser())) {
+        } else if (isa<ConstantStruct>(U.getUser()) || isa<SelectInst>(U.getUser())) {
             return true;
         } else if (auto *call = dyn_cast<CallInst>(U.getUser())) {
             for (auto &arg: call->args()) {
@@ -183,8 +183,6 @@ namespace hakc {
             }
         } else if (isa<ICmpInst>(U.getUser())) {
             return false;
-        } else if (isa<SelectInst>(U.getUser())) {
-            return true;
         } else if (auto *store = dyn_cast<StoreInst>(U.getUser())) {
             if (store->getValueOperand() == U.get()) {
                 return true;
@@ -297,7 +295,7 @@ namespace hakc {
         return CommonHAKCAnalysis::FunctionHasPointerArg(F);
     }
 
-    void HAKCModuleAnalysis::RegisterCustomTransfer(hakc_custom_transfer_def_t CustomTransfer) {
+    void HAKCModuleAnalysis::RegisterCustomTransfer(const hakc_custom_transfer_def_t& CustomTransfer) {
         if (CustomTransfer->GetFunction() == nullptr || CustomTransfer->GetType() == nullptr) {
             return;
         }
@@ -305,13 +303,13 @@ namespace hakc {
         CustomTransfers.push_back(CustomTransfer);
     }
 
-    void HAKCModuleAnalysis::RegisterHAKCTransfer(hakc_transfer_def_t Transfer) {
+    void HAKCModuleAnalysis::RegisterHAKCTransfer(const hakc_transfer_def_t& Transfer) {
         if (Transfer) {
             Transfers.insert(Transfer);
         }
     }
 
-    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(hakc_function_def_t HAKCFunction) {
+    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(const hakc_function_def_t& HAKCFunction) {
         if (HAKCFunction) {
             NonTransferHAKCFunctions.insert(HAKCFunction);
         }

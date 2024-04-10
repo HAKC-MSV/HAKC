@@ -18,11 +18,11 @@ namespace hakc {
         targets.insert(target);
     }
 
-    hakc_compartment_id_t HAKCCompartment::getID() {
+    hakc_compartment_id_t HAKCCompartment::getID() const {
         return id;
     }
 
-    hakc_access_token_t HAKCCompartment::getEntryToken() {
+    hakc_access_token_t HAKCCompartment::getEntryToken() const {
         return entry_token;
     }
 
@@ -34,7 +34,7 @@ namespace hakc {
         return color;
     }
 
-    hakc_access_token_t HAKCCompartment::getAccessToken() {
+    hakc_access_token_t HAKCCompartment::getAccessToken() const {
         return access_token;
     }
 }

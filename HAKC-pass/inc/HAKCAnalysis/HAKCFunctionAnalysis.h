@@ -264,7 +264,7 @@ namespace hakc {
 
         virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
 
-        unsigned GetCompartmentTransferCount();
+        unsigned GetCompartmentTransferCount() const;
 
         unsigned GetDataAuthenticationCount();
 
