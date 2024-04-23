@@ -339,6 +339,8 @@ namespace hakc {
             return;
         }
 
+        auto KeepExistingProtectedUses = !BaseDefinitionShouldBeTransferred();
+
         std::set<ManagedHAKCPointerUseP> CloneUsesToRemove;
         for (auto &CloneUse: CloneUses) {
             if (DebugActive) {
@@ -363,6 +365,12 @@ namespace hakc {
                 CloneUses.erase(CloneUse);
                 Manager->RemoveProtectedUse(CloneUse);
             }
+            if(KeepExistingProtectedUses) {
+                for (const auto &UPtr: ProtectedUses) {
+                    Manager->AddProtectedPointer(UPtr, UPtr->get());
+                }
+            }
+
             MaybeCreateMissingTransfer();
         }
     }
