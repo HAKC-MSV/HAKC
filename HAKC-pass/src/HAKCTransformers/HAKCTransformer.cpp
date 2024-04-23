@@ -745,12 +745,14 @@ Function *hakc::HAKCTransformer::PopulateTransferFunction(Function *Target, Func
 
     CreateBackwardArgumentTransfers(Target, TransferFunction);
 
-    if (!Target->getReturnType()->isVoidTy()) {
-        HAKCIRBuilder.CreateRet(TargetFunctionCall);
-    } else {
-        HAKCIRBuilder.CreateRetVoid();
+    if(!Target->doesNotReturn()) {
+        if (!Target->getReturnType()->isVoidTy()) {
+            HAKCIRBuilder.CreateRet(TargetFunctionCall);
+        } else {
+            HAKCIRBuilder.CreateRetVoid();
+        }
+        Unreachable->eraseFromParent();
     }
-    Unreachable->eraseFromParent();
 
     CreateTransferFunctionFinalize_Arch(Target, TransferFunction);
 
