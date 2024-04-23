@@ -79,6 +79,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -e CONFIG_HAKC \
    --set-str CONFIG_HAKC_PASS_PATH \
    $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
+   -d CONFIG_WERROR \
    -d CONFIG_HAKC_ALLOW_FAILED \
    -e CONFIG_HAKC_SIGN_PTR \
    -m CONFIG_ROSDEMO \
