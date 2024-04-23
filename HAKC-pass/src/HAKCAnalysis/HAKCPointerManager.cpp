@@ -213,13 +213,19 @@ namespace hakc {
         return NeedsAdditionalClassification;
     }
 
+    ManagedHAKCPointerUseP
+    HAKCPointerManager::CreateManagedPointerUse(const ManagedHAKCPointerP &ManagedPointer, User *U,
+                                                unsigned int OperandNo) {
+        return std::make_shared<ManagedHAKCPointerUse>(ManagedPointer, U, OperandNo, CurrentPointerUseID++);
+    }
+
     void HAKCPointerManager::ClassifyAllUsesOfDefinition(Value *Definition, const ManagedHAKCPointerP& ManagedPointer) {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Classifying uses of " << *Definition << "\n";
         }
         for (auto &U: Definition->uses()) {
             auto *User = U.getUser();
-            auto UPtr = std::make_shared<ManagedHAKCPointerUse>(ManagedPointer, User, U.getOperandNo());
+            auto UPtr = CreateManagedPointerUse(ManagedPointer, User, U.getOperandNo());
             if (UseIsAnalyzed(UPtr)) {
                 continue;
             }

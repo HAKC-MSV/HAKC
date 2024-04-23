@@ -157,8 +157,12 @@ namespace hakc {
 
         Value *FindManagedPointerReplacement(Value *Target, bool ReturnAuthenticatedPointer);
 
+        ManagedHAKCPointerUseP CreateManagedPointerUse(const ManagedHAKCPointerP& ManagedPointer, User *U,
+                                                       unsigned OperandNo);
+
     private:
         unsigned CurrentPointerID;
+        unsigned CurrentPointerUseID;
     };
 
 } // hakc

@@ -31,7 +31,7 @@ namespace hakc {
      */
     class ManagedHAKCPointerUse {
     public:
-        ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo);
+        ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo, unsigned ID);
 
         User *getUser() const;
 
@@ -43,10 +43,15 @@ namespace hakc {
 
         ManagedHAKCPointerP getManagedPtr() const;
 
+        unsigned getID() const;
+
+        static void SortUses(SmallVector<ManagedHAKCPointerUseP> &ManagedUses);
+
     protected:
         ManagedHAKCPointerP ManagedPtr;
         User *UserP;
         unsigned OperandNo;
+        unsigned ID;
 
     public:
         friend bool operator==(const ManagedHAKCPointerUse &lhs, const Use &rhs) {

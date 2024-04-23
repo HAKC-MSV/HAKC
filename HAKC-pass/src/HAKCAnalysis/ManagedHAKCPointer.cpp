@@ -8,10 +8,11 @@
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 
 namespace hakc {
-    ManagedHAKCPointerUse::ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo) :
+    ManagedHAKCPointerUse::ManagedHAKCPointerUse(ManagedHAKCPointerP P, User *User, unsigned OperandNo, unsigned ID) :
             ManagedPtr(std::move(P)),
             UserP(User),
-            OperandNo(OperandNo) {
+            OperandNo(OperandNo),
+            ID(ID) {
 
     }
 
@@ -37,6 +38,15 @@ namespace hakc {
 
     ManagedHAKCPointerP ManagedHAKCPointerUse::getManagedPtr() const {
         return ManagedPtr;
+    }
+
+    unsigned ManagedHAKCPointerUse::getID() const {
+        return ID;
+    }
+
+    void ManagedHAKCPointerUse::SortUses(SmallVector<ManagedHAKCPointerUseP> &ManagedUses) {
+        llvm::sort(ManagedUses.begin(), ManagedUses.end(),
+                   [](const ManagedHAKCPointerUseP &LHS, const ManagedHAKCPointerUseP &RHS) { return LHS->getID() < RHS->getID(); });
     }
 
     raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUse &HAKCPointerUse) {
@@ -341,19 +351,19 @@ namespace hakc {
 
         auto KeepExistingProtectedUses = !BaseDefinitionShouldBeTransferred();
 
-        std::set<ManagedHAKCPointerUseP> CloneUsesToRemove;
+        SmallVector<ManagedHAKCPointerUseP> CloneUsesToRemove;
         for (auto &CloneUse: CloneUses) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Comparing " << *CloneUse << " with " << *AuthenticatedMultiValueUser
                                                 << "\n";
             }
             if (CloneUse->getUser() == AuthenticatedMultiValueUser) {
-                auto ProtectedUse = std::make_shared<ManagedHAKCPointerUse>(CloneUse->getManagedPtr(),
+                auto ProtectedUse = Manager->CreateManagedPointerUse(CloneUse->getManagedPtr(),
                                                                             ProtectedMultiValueUser,
                                                                             CloneUse->getOperandNo());
                 AddProtectedUse(ProtectedUse);
                 AddAuthenticatedUse(CloneUse);
-                CloneUsesToRemove.insert(CloneUse);
+                CloneUsesToRemove.push_back(CloneUse);
             }
         }
 
@@ -361,12 +371,16 @@ namespace hakc {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Protected PHI Use was added to " << *this << "\n";
             }
+
+            ManagedHAKCPointerUse::SortUses(CloneUsesToRemove);
             for (auto &CloneUse: CloneUsesToRemove) {
                 CloneUses.erase(CloneUse);
                 Manager->RemoveProtectedUse(CloneUse);
             }
             if(KeepExistingProtectedUses) {
-                for (const auto &UPtr: ProtectedUses) {
+                SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
+                ManagedHAKCPointerUse::SortUses(SortedUses);
+                for (const auto &UPtr: SortedUses) {
                     Manager->AddProtectedPointer(UPtr, UPtr->get());
                 }
             }
@@ -412,10 +426,10 @@ namespace hakc {
             } else {
                 SetAuthenticatedPointer(BaseDefinition);
             }
-            for (const auto &UPtr: AuthenticatedUses) {
-                Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
-            }
-            for (const auto &UPtr: CloneUses) {
+            SmallVector<ManagedHAKCPointerUseP> SortedUses(AuthenticatedUses.begin(), AuthenticatedUses.end());
+            SortedUses.append(CloneUses.begin(), CloneUses.end());
+            ManagedHAKCPointerUse::SortUses(SortedUses);
+            for (const auto &UPtr: SortedUses) {
                 Manager->AddAuthenticatedPointer(UPtr, UPtr->get());
             }
             return;
@@ -431,10 +445,10 @@ namespace hakc {
                             << "to be protected\n";
                 }
                 SetProtectedPointer(BaseDefinition);
-                for (const auto &UPtr: ProtectedUses) {
-                    Manager->AddProtectedPointer(UPtr, UPtr->get());
-                }
-                for (const auto &UPtr: CloneUses) {
+                SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
+                SortedUses.append(CloneUses.begin(), CloneUses.end());
+                ManagedHAKCPointerUse::SortUses(SortedUses);
+                for (const auto &UPtr: SortedUses) {
                     Manager->AddProtectedPointer(UPtr, UPtr->get());
                 }
             } else if (DebugActive) {
@@ -694,7 +708,9 @@ namespace hakc {
             }
         }
 
-        for (const auto &CloneUse: CloneUses) {
+        SmallVector<ManagedHAKCPointerUseP> SortedUses(CloneUses.begin(), CloneUses.end());
+        ManagedHAKCPointerUse::SortUses(SortedUses);
+        for (const auto &CloneUse: SortedUses) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Handling Clone " << *CloneUse->getUser() << "\n";
             }
@@ -767,15 +783,17 @@ namespace hakc {
         StringRef ReplacementSource = UseAuthenticatedValue ? "Authenticated" :
                                       "Protected";
 
+        SmallVector<ManagedHAKCPointerUseP> SortedUses(UseSet.begin(), UseSet.end());
+        ManagedHAKCPointerUse::SortUses(SortedUses);
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Replacing the following operands with "
                                             << ReplacementSource << " values\n";
-            for (auto &Use: UseSet) {
+            for (auto &Use: SortedUses) {
                 CommonHAKCAnalysis::getWriter() << "\t" << *Use << "\n";
             }
         }
 
-        for (const auto &Use: UseSet) {
+        for (const auto &Use: SortedUses) {
             Value *Replacement;
             if (UseAuthenticatedValue) {
                 Replacement = Manager->FindAuthenticatedValue(Use->get());
@@ -808,12 +826,11 @@ namespace hakc {
             }
         } else {
             auto *Pointer = HAKCUse->get();
-            for (const auto &PointerUse: AuthenticatedUses) {
-                if (PointerUse->get() == Pointer) {
-                    Manager->AddAuthenticatedPointer(PointerUse, Authenticated);
-                }
-            }
-            for (const auto &PointerUse: CloneUses) {
+            SmallVector<ManagedHAKCPointerUseP> SortedUses(AuthenticatedUses.begin(), AuthenticatedUses.end());
+            SortedUses.append(CloneUses.begin(), CloneUses.end());
+            ManagedHAKCPointerUse::SortUses(SortedUses);
+
+            for (const auto &PointerUse: SortedUses) {
                 if (PointerUse->get() == Pointer) {
                     Manager->AddAuthenticatedPointer(PointerUse, Authenticated);
                 }
@@ -831,12 +848,10 @@ namespace hakc {
             }
         } else {
             auto *Pointer = HAKCUse->get();
-            for (const auto &PointerUse: ProtectedUses) {
-                if (PointerUse->get() == Pointer) {
-                    Manager->AddProtectedPointer(PointerUse, Protected);
-                }
-            }
-            for (const auto &PointerUse: CloneUses) {
+            SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
+            SortedUses.append(CloneUses.begin(), CloneUses.end());
+            ManagedHAKCPointerUse::SortUses(SortedUses);
+            for (const auto &PointerUse: SortedUses) {
                 if (PointerUse->get() == Pointer) {
                     Manager->AddProtectedPointer(PointerUse, Protected);
                 }
@@ -872,14 +887,12 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << "Created Transfer " << *Transfer << "\n";
                 }
                 SetProtectedPointer(Transfer);
-                for (const auto &ProtectedUse: ProtectedUses) {
+                SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
+                SortedUses.append(CloneUses.begin(), CloneUses.end());
+                ManagedHAKCPointerUse::SortUses(SortedUses);
+                for (const auto &ProtectedUse: SortedUses) {
                     if (ProtectedUse->get() == BaseToTransfer) {
                         Manager->AddProtectedPointer(ProtectedUse, Transfer);
-                    }
-                }
-                for (const auto &CloneUse: CloneUses) {
-                    if (CloneUse->get() == BaseToTransfer) {
-                        Manager->AddProtectedPointer(CloneUse, Transfer);
                     }
                 }
             } else if (DebugActive) {
