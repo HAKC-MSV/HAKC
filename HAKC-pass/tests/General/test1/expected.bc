@@ -60,15 +60,15 @@ declare i8* @check_hakc_code_access(i8*, i32, i64, %HAKCEntryToken*, i64)
 
 ; Function Attrs: nounwind uwtable
 define dso_local i32 @HAKC_XFER_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !46 {
-  %2 = bitcast %struct.data_struct2* %0 to i8*
-  %3 = call i32 @get_hakc_address_color(i8* %2)
-  %4 = bitcast %struct.data_struct2* %0 to i8*
-  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 6, i32 241, i1 false)
-  %6 = bitcast i8* %5 to %struct.data_struct2*
-  %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6)
-  %8 = bitcast %struct.data_struct2* %0 to i8*
-  call void @hakc_color_address(i8* %8, i32 %3, i64 8)
-  ret i32 %7
+  %2 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !43
+  %4 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 6, i32 241, i1 false), !dbg !43
+  %6 = bitcast i8* %5 to %struct.data_struct2*, !dbg !43
+  %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6), !dbg !43
+  %8 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  call void @hakc_color_address(i8* %8, i32 %3, i64 8), !dbg !43
+  ret i32 %7, !dbg !43
 }
 
 declare i32 @get_hakc_address_color(i8*)

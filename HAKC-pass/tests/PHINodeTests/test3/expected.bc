@@ -307,22 +307,22 @@ declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nofree nounwind uwtable
 define dso_local i32 @HAKC_XFER___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %0, %struct.gfn_to_hva_cache* nocapture %1, i64 %2, i64 %3) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !331 {
-  %5 = bitcast %struct.kvm_memslots* %0 to i8*
-  %6 = call i32 @get_hakc_address_color(i8* %5)
-  %7 = bitcast %struct.kvm_memslots* %0 to i8*
-  %8 = call i8* @hakc_transfer_to_clique(i8* %7, i64 32, i32 6, i32 241, i1 false)
-  %9 = bitcast i8* %8 to %struct.kvm_memslots*
-  %10 = bitcast %struct.gfn_to_hva_cache* %1 to i8*
-  %11 = call i32 @get_hakc_address_color(i8* %10)
-  %12 = bitcast %struct.gfn_to_hva_cache* %1 to i8*
-  %13 = call i8* @hakc_transfer_to_clique(i8* %12, i64 40, i32 6, i32 241, i1 false)
-  %14 = bitcast i8* %13 to %struct.gfn_to_hva_cache*
-  %15 = call i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %9, %struct.gfn_to_hva_cache* %14, i64 %2, i64 %3)
-  %16 = bitcast %struct.kvm_memslots* %0 to i8*
-  call void @hakc_color_address(i8* %16, i32 %6, i64 32)
-  %17 = bitcast %struct.gfn_to_hva_cache* %1 to i8*
-  call void @hakc_color_address(i8* %17, i32 %11, i64 40)
-  ret i32 %15
+  %5 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95
+  %6 = call i32 @get_hakc_address_color(i8* %5), !dbg !95
+  %7 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95
+  %8 = call i8* @hakc_transfer_to_clique(i8* %7, i64 32, i32 6, i32 241, i1 false), !dbg !95
+  %9 = bitcast i8* %8 to %struct.kvm_memslots*, !dbg !95
+  %10 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
+  %11 = call i32 @get_hakc_address_color(i8* %10), !dbg !95
+  %12 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
+  %13 = call i8* @hakc_transfer_to_clique(i8* %12, i64 40, i32 6, i32 241, i1 false), !dbg !95
+  %14 = bitcast i8* %13 to %struct.gfn_to_hva_cache*, !dbg !95
+  %15 = call i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %9, %struct.gfn_to_hva_cache* %14, i64 %2, i64 %3), !dbg !95
+  %16 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95
+  call void @hakc_color_address(i8* %16, i32 %6, i64 32), !dbg !95
+  %17 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
+  call void @hakc_color_address(i8* %17, i32 %11, i64 40), !dbg !95
+  ret i32 %15, !dbg !95
 }
 
 declare i32 @get_hakc_address_color(i8*)

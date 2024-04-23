@@ -448,7 +448,6 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     auto *OrigSP = F.getSubprogram();
-                    stripDebugInfo(*transferFunc);
                     if (OrigSP) {
                         DIBuilder DIB(*F.getParent(), false, OrigSP->getUnit());
                         DISubprogram::DISPFlags SPFlags = DISubprogram::SPFlagDefinition |
