@@ -1,0 +1,22 @@
+COMPARTMENTS:
+  - CLIQUES:
+      - ACCESS_TOKEN: 393218
+        COLOR: GREEN_CLIQUE
+    ENTRY_TOKEN: 393218
+    ID: 6
+    TARGETS:
+      - 7
+  - CLIQUES:
+      - ACCESS_TOKEN: 458756
+        COLOR: RED_CLIQUE
+    ENTRY_TOKEN: 458756
+    ID: 0
+    TARGETS:
+FILES:
+  - GUID: 0
+    PATH: test.c
+    SYMBOLS:
+      - CLIQUE: GREEN_CLIQUE
+        COMPARTMENT: 6
+        NAME: __kvm_gfn_to_hva_cache_init
+        IS_GLOBAL: true
