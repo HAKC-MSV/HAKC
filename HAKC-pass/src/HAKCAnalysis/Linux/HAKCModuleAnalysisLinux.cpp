@@ -16,6 +16,7 @@
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_us_data.h"
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_scsi_device.h"
+#include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_file_ops.h"
 
 namespace hakc {
     HAKCModuleAnalysisLinux::HAKCModuleAnalysisLinux(Module &M) :
@@ -43,6 +44,9 @@ namespace hakc {
 
         HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_scsi_device, M,
                              CommonHAKCAnalysis::getCompartmentStorageSizeInBits()));
+
+//        HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_file_ops, M,
+//                             CommonHAKCAnalysis::getCompartmentStorageSizeInBits()));
 
         HAKC_TRANSFER(HAKCCompartmentTransferName(), 2, 3);
         HAKC_TRANSFER(HAKCPerCPUCompartmentTransferName(), 2, 3);
