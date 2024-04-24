@@ -480,6 +480,7 @@ namespace hakc {
                 {"create_workqueue",       simpleStaticSize<320>},
                 {"device_create",          simpleStaticSize<6144 / 8>},
                 {"__class_create",         simpleStaticSize<960 / 8>},
+                {"__vmalloc",              simpleArgumentSize<0>},
         };
     }
 

@@ -46,7 +46,9 @@ namespace hakc {
 
     void ManagedHAKCPointerUse::SortUses(SmallVector<ManagedHAKCPointerUseP> &ManagedUses) {
         llvm::sort(ManagedUses.begin(), ManagedUses.end(),
-                   [](const ManagedHAKCPointerUseP &LHS, const ManagedHAKCPointerUseP &RHS) { return LHS->getID() < RHS->getID(); });
+                   [](const ManagedHAKCPointerUseP &LHS, const ManagedHAKCPointerUseP &RHS) {
+                       return LHS->getID() < RHS->getID();
+                   });
     }
 
     raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUse &HAKCPointerUse) {
@@ -112,7 +114,8 @@ namespace hakc {
             } else {
                 CommonHAKCAnalysis::getWriter() << "nullptr";
             }
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << " in function "
+                                            << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
             throw std::exception();
         }
     }
@@ -230,7 +233,7 @@ namespace hakc {
             } else if (auto *SelectI = dyn_cast<SelectInst>(BaseDefinition)) {
                 ValuesToCheck.insert(SelectI->getTrueValue());
                 ValuesToCheck.insert(SelectI->getFalseValue());
-            } else if(auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
+            } else if (auto *BinOp = dyn_cast<BinaryOperator>(BaseDefinition)) {
                 ValuesToCheck.insert(BinOp->getOperand(0));
                 ValuesToCheck.insert(BinOp->getOperand(1));
             } else {
@@ -326,7 +329,7 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << "uses ";
                 }
                 CommonHAKCAnalysis::getWriter() << "a GlobalVariable\n";
-                if(AlreadyAuthenticated) {
+                if (AlreadyAuthenticated) {
                     CommonHAKCAnalysis::getWriter() << "But both values will be authenticated.\n";
                 }
             }
@@ -359,8 +362,8 @@ namespace hakc {
             }
             if (CloneUse->getUser() == AuthenticatedMultiValueUser) {
                 auto ProtectedUse = Manager->CreateManagedPointerUse(CloneUse->getManagedPtr(),
-                                                                            ProtectedMultiValueUser,
-                                                                            CloneUse->getOperandNo());
+                                                                     ProtectedMultiValueUser,
+                                                                     CloneUse->getOperandNo());
                 AddProtectedUse(ProtectedUse);
                 AddAuthenticatedUse(CloneUse);
                 CloneUsesToRemove.push_back(CloneUse);
@@ -377,7 +380,7 @@ namespace hakc {
                 CloneUses.erase(CloneUse);
                 Manager->RemoveProtectedUse(CloneUse);
             }
-            if(KeepExistingProtectedUses) {
+            if (KeepExistingProtectedUses) {
                 SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
                 ManagedHAKCPointerUse::SortUses(SortedUses);
                 for (const auto &UPtr: SortedUses) {
@@ -414,7 +417,7 @@ namespace hakc {
                 }
                 auto *MultivalueUser = dyn_cast<User>(BaseDefinition);
                 SetAuthenticatedPointer(MultivalueUser);
-                if (GetProtectedUserCount() > 0) {
+                if (GetProtectedUserCount() > 0 && !ManuallyTransferred) {
                     if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "A protected version of " << *BaseDefinition
                                                         << " is needed\n";
@@ -444,7 +447,9 @@ namespace hakc {
                             << "The Base Definition should not be transferred,  so setting uses "
                             << "to be protected\n";
                 }
-                SetProtectedPointer(BaseDefinition);
+                if(!ManuallyTransferred) {
+                    SetProtectedPointer(BaseDefinition);
+                }
                 SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
                 SortedUses.append(CloneUses.begin(), CloneUses.end());
                 ManagedHAKCPointerUse::SortUses(SortedUses);
