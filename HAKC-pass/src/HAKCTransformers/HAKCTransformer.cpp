@@ -235,13 +235,40 @@ CallInst *hakc::HAKCTransformer::CreateCall(StringRef name, Type *RetTy, ArrayRe
         CommonHAKCAnalysis::getWriter() << "\n";
         throw std::exception();
     }
-    return HAKCIRBuilder.CreateCall(Func, Args);
+    auto *Call = HAKCIRBuilder.CreateCall(Func, Args);
+
+    /* The LLVM function checker throws an error when an inline-able function with debug info contains a function
+    * call with no debug information.  So try to set the appropriate debug info for this transfer */
+    if(!Call->getDebugLoc()) {
+        auto *I = &*HAKCIRBuilder.GetInsertPoint();
+        if (I->getDebugLoc()) {
+            Call->setDebugLoc(I->getDebugLoc());
+        } else {
+            /* Use the closest debug info to I */
+            bool PastI = false;
+            for (auto BBI = I->getParent()->begin(), BBE = I->getParent()->end(); BBI != BBE; ++BBI) {
+                if (BBI->getDebugLoc()) {
+                    Call->setDebugLoc(BBI->getDebugLoc());
+                }
+                if (&*BBI == I) {
+                    PastI = true;
+                }
+                if (PastI && Call->getDebugLoc()) {
+                    break;
+                }
+            }
+        }
+    }
+
+
+    return Call;
 }
 
 Instruction *
 hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData,
                                                       ConstantInt *Size) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
+    Instruction *Transfer;
     if (TargetIsKernel(Target)) {
         auto *V = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
         auto *SafePtr = dyn_cast<Instruction>(V);
@@ -255,10 +282,12 @@ hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instru
     }
 
     if (HAKCPointerHasCustomTransfer(HAKCPointer)) {
-        return CreateCustomTransfer(HAKCPointer, Target, IsData, Size);
+        Transfer = CreateCustomTransfer(HAKCPointer, Target, IsData, Size);
     } else {
-        return CreateDefaultTransfer(HAKCPointer, Target, IsData, Size);
+        Transfer = CreateDefaultTransfer(HAKCPointer, Target, IsData, Size);
     }
+
+    return Transfer;
 }
 
 Instruction *
@@ -745,7 +774,7 @@ Function *hakc::HAKCTransformer::PopulateTransferFunction(Function *Target, Func
 
     CreateBackwardArgumentTransfers(Target, TransferFunction);
 
-    if(!Target->doesNotReturn()) {
+    if (!Target->doesNotReturn()) {
         if (!Target->getReturnType()->isVoidTy()) {
             HAKCIRBuilder.CreateRet(TargetFunctionCall);
         } else {
@@ -891,11 +920,11 @@ ConstantInt *hakc::HAKCTransformer::GetHAKCCompartmentValue(hakc_compartment_id_
     return HAKCIRBuilder.getIntN(COMPARTMENT_ID_BIT_LENGTH, CompartmentID);
 }
 
-void hakc::HAKCTransformer::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) { }
+void hakc::HAKCTransformer::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) {}
 
-void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Function *TransferFunction, Value *Arg) { }
+void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Function *TransferFunction, Value *Arg) {}
 
-void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) { }
+void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) {}
 
 bool hakc::HAKCTransformer::FunctionIsExported(Function *F) {
     return false;
