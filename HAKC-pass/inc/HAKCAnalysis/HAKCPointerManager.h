@@ -160,6 +160,8 @@ namespace hakc {
         ManagedHAKCPointerUseP CreateManagedPointerUse(const ManagedHAKCPointerP& ManagedPointer, User *U,
                                                        unsigned OperandNo);
 
+        bool IsConstantExprUsedInKernelCall(User *U);
+
     private:
         unsigned CurrentPointerID;
         unsigned CurrentPointerUseID;

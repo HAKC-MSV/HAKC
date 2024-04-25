@@ -291,7 +291,7 @@ namespace hakc {
     bool HAKCFunctionAnalysisCheriBSDCheri::PointerIsAuthenticated_Arch(Value *Pointer) {
         if (auto *IntrinsicI = dyn_cast<IntrinsicInst>(Pointer)) {
             auto *IntrinsicArg = HAKCFunctionAnalysis::getDef(IntrinsicI->getOperand(0), false, debug_output);
-            if (isa<GlobalVariable>(IntrinsicArg) || isa<AllocaInst>(IntrinsicArg)) {
+            if (isa<AllocaInst>(IntrinsicArg)) {
                 return true;
             }
         }

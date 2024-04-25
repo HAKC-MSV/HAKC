@@ -19,6 +19,19 @@ namespace hakc {
 
     class HAKCPointerManager;
 
+    template<unsigned ArgNo>
+    llvm::Value* CallArgumentSize(llvm::Value *Call) {
+        if(auto *CallB = dyn_cast<CallBase>(Call)) {
+            auto *ArgTy = CallB->getArgOperand(ArgNo)->getType();
+            auto Size = CallB->getFunction()->getParent()->getDataLayout().getTypeStoreSize(ArgTy);
+            if(Size > 0) {
+                return ConstantInt::get(IntegerType::getInt64Ty(CallB->getContext()), Size);
+            }
+        }
+
+        return nullptr;
+    }
+
     template<unsigned argNo>
     llvm::Value *simpleArgumentSize(llvm::Value *allocation) {
         if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
@@ -235,6 +248,8 @@ namespace hakc {
         std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() override;
 
         std::set<StringRef> GetIgnoredTypes() override;
+
+        std::set<StringRef> GetIgnoredGlobals() override;
 
         std::set<hakc_function_def_t> GetHAKCFunctions() override;
 

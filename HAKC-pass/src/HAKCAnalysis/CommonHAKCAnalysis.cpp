@@ -83,6 +83,28 @@ namespace hakc {
         return result;
     }
 
+    bool CommonHAKCAnalysis::IsConstantUsedInGlobal(Value *V) {
+        bool Result = false;
+        if(auto *Const = dyn_cast<Constant>(V)) {
+            auto Search = [](User *U) {
+                return isa<GlobalVariable>(U);
+            };
+
+            Result = std::any_of(Const->user_begin(), Const->user_end(), Search);
+        }
+        return Result;
+    }
+
+    void CommonHAKCAnalysis::PrettyPrintValue(Value *V, raw_ostream &os) {
+        if(auto *F = dyn_cast<Function>(V)) {
+            os << "Function " << F->getName();
+        } else if(auto *GV = dyn_cast<GlobalVariable>(V)) {
+            os << "Global " << GV->getName();
+        } else {
+            os << *V;
+        }
+    }
+
     /**
      * @brief Computes the definition chain from an arbitrary value to its source definition
      * @param v
@@ -102,7 +124,7 @@ namespace hakc {
 
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Getting Def Chain for ";
-            v->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::PrettyPrintValue(v, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
@@ -116,15 +138,13 @@ namespace hakc {
                 auto CachedChain = DefchainCache[curr];
                 if (debug) {
                     CommonHAKCAnalysis::getWriter() << "Adding cached chain for ";
-                    curr->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " containing "
-                                                    << std::to_string(CachedChain.size()) << " links\n";
+                    CommonHAKCAnalysis::PrettyPrintValue(curr, CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::getWriter() << " containing " << std::to_string(CachedChain.size())
+                                                    << " links\n";
                 }
                 for (auto *Link: CachedChain) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "\t";
-                        Link->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "\t" << *Link << "\n";
                     }
                     def_chain.push_back(Link);
                 }
@@ -133,9 +153,7 @@ namespace hakc {
 
             if (auto *gep = dyn_cast<GetElementPtrInst>(curr)) {
                 if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer ";
-                    gep->getPointerOperand()->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer " << *gep->getPointerOperand() << "\n";
                 }
                 working_list.insert(gep->getPointerOperand());
             } else if (auto *BitCastI = dyn_cast<BitCastInst>(curr)) {
@@ -147,9 +165,7 @@ namespace hakc {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding Arg "
                                                         << std::to_string(TransferDef->GetSignedPtrIdx())
-                                                        << " of HAKC Transfer ";
-                        call->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                                                        << " of HAKC Transfer " << *call << "\n";
                     }
                     working_list.insert(call->getArgOperand(TransferDef->GetSignedPtrIdx()));
                 } else if (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic()) {
@@ -161,9 +177,7 @@ namespace hakc {
                     auto BitshiftIntrinsics = GetBitshiftIntrinsics();
                     if (IsCallInIntrinsicSet(call, BitshiftIntrinsics)) {
                         if (debug) {
-                            CommonHAKCAnalysis::getWriter() << "Adding argument 0 of ";
-                            call->print(CommonHAKCAnalysis::getWriter());
-                            CommonHAKCAnalysis::getWriter() << "\n";
+                            CommonHAKCAnalysis::getWriter() << "Adding argument 0 of " << *call << "\n";
                         }
                         working_list.insert(call->getArgOperand(0));
                     }
@@ -187,9 +201,7 @@ namespace hakc {
                 auto PointerBinOps = GetPointerManipulatingBinaryOps();
                 if (PointerBinOps.find(binOp->getOpcode()) == PointerBinOps.end()) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "BinaryOperator ";
-                        binOp->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " is not a pointer manipulating binary operation\n";
+                        CommonHAKCAnalysis::getWriter() << "BinaryOperator " << *binOp << " is not a pointer manipulating binary operation\n";
                     }
                     goto add_to_chain;
                 }
@@ -199,30 +211,26 @@ namespace hakc {
                 if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
-                        binOp->getOperand(0)->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::PrettyPrintValue(binOp->getOperand(0), CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
                 } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef, debug)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand ";
-                        binOp->getOperand(1)->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::PrettyPrintValue(binOp->getOperand(1), CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                     }
                     working_list.insert(binOp->getOperand(1));
                 } else if (!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of ";
-                        binOp->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " are constants\n";
+                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of " << *binOp << " are constants\n";
                     }
                     /* We stop here */
                     goto add_to_chain;
                 } else if (isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of ";
-                        binOp->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " are constants\n";
+                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of " << *binOp << " are constants\n";
                     }
                     /* We stop here */
                     goto add_to_chain;
@@ -235,7 +243,7 @@ namespace hakc {
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << std::to_string(def_chain.size())
                                             << " for ";
-            v->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::PrettyPrintValue(v, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
         DefchainCache[v] = def_chain;
@@ -405,6 +413,16 @@ namespace hakc {
         }
 
         return false;
+    }
+
+    bool CommonHAKCAnalysis::IsIgnoredGlobal(Value *V) {
+        bool Result = false;
+        if(auto *GV = dyn_cast<GlobalValue>(V)) {
+            auto IgnoredGlobals = GetIgnoredGlobals();
+            Result = IgnoredGlobals.find(GV->getName()) != IgnoredGlobals.end();
+        }
+
+        return Result;
     }
 
     bool CommonHAKCAnalysis::isKernelUserPointer(Use &U) {
@@ -612,6 +630,11 @@ namespace hakc {
             Existing.insert(NewAddition);
         }
 
+        return Existing;
+    }
+
+    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, const std::set<StringRef>& NewAdditions) {
+        Existing.insert(NewAdditions.begin(), NewAdditions.end());
         return Existing;
     }
 

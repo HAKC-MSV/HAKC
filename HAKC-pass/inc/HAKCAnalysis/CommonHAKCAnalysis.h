@@ -49,6 +49,8 @@ namespace hakc {
 
         static std::set<StringRef> AddToSet(std::set<StringRef> Existing, ArrayRef<StringRef> NewAdditions);
 
+        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef>& NewAdditions);
+
         virtual bool ValueIsUsedAsPointer(Value *V, bool debug);
 
     public:
@@ -125,6 +127,8 @@ namespace hakc {
 
         bool isIgnoredType(Type *Ty);
 
+        bool IsIgnoredGlobal(Value *V);
+
         bool FunctionsAreInSameCompartment(Function *F, Function *G);
 
         bool callIsSafeTransition(CallBase *call);
@@ -146,6 +150,10 @@ namespace hakc {
         static std::string GetModuleFullPath(Module &M);
 
         static bool IsMultiSSAUser(Value *V);
+
+        static bool IsConstantUsedInGlobal(Value *V);
+
+        static void PrettyPrintValue(Value *V, raw_ostream &os);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

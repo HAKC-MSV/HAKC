@@ -66,6 +66,7 @@ namespace hakc {
             Manager(Manager),
             BaseIsAuthenticated(false),
             ManuallyTransferred(false),
+            PurposefullyIgnored(false),
             ID(ID),
             AuthenticatedUses(),
             ProtectedUses(),
@@ -94,6 +95,16 @@ namespace hakc {
 
     void ManagedHAKCPointer::InitBaseDefinition(Value *Pointer) {
         BaseDefinition = Pointer;
+        PurposefullyIgnored = Manager->GetFunctionAnalysis()->IsIgnoredGlobal(BaseDefinition);
+
+        if(PurposefullyIgnored) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::PrettyPrintValue(BaseDefinition, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " is purposefully ignored\n";
+            }
+            SetProtectedPointer(BaseDefinition);
+            SetAuthenticatedPointer(BaseDefinition);
+        }
     }
 
     void ManagedHAKCPointer::CheckPointerReplacement(Value *Old, Value *New, StringRef TypeName) const {
@@ -123,26 +134,33 @@ namespace hakc {
     void ManagedHAKCPointer::SetProtectedPointer(Value *NewProtectedPointer) {
         CheckPointerReplacement(this->ProtectedPointer, NewProtectedPointer, "Protected");
         this->ProtectedPointer = NewProtectedPointer;
-        if (this->ProtectedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
-            CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
-                                            << " in function "
-                                            << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
-            throw std::exception();
+        if(!PurposefullyIgnored) {
+            if (this->ProtectedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+                CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
+                                                << " in function "
+                                                << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
+                throw std::exception();
+            }
         }
     }
 
     void ManagedHAKCPointer::SetAuthenticatedPointer(Value *NewAuthenticatedPointer) {
         CheckPointerReplacement(this->AuthenticatedPointer, NewAuthenticatedPointer, "Authenticated");
         this->AuthenticatedPointer = NewAuthenticatedPointer;
-        if (this->AuthenticatedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
-            CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
-                                            << " in function "
-                                            << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
-            throw std::exception();
+        if(!PurposefullyIgnored) {
+            if (this->AuthenticatedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+                CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
+                                                << " in function "
+                                                << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
+                throw std::exception();
+            }
         }
     }
 
     void ManagedHAKCPointer::RegisterManualHAKCTransfer(CallBase *CallI) {
+        if(PurposefullyIgnored) {
+            return;
+        }
         if (!Manager->GetFunctionAnalysis()->IsHAKCTransferFunction(CallI->getCalledFunction())) {
             CallI->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " is not a HAKC Transfer function!\n";
@@ -179,9 +197,9 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::AddProtectedUse(const ManagedHAKCPointerUseP &UPtr) {
-        if (!Manager->FunctionIsCompartmentalized()) {
-            return;
-        }
+//        if (!Manager->FunctionIsCompartmentalized()) {
+//            return;
+//        }
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << *this << " adding Protected Use " << *UPtr << "\n";
         }
@@ -258,9 +276,12 @@ namespace hakc {
     }
 
     bool ManagedHAKCPointer::ComputeBasePointerAuthenticated() {
+        if(PurposefullyIgnored) {
+            return true;
+        }
+
         // stack pointers are the "authenticated" pointer
-        bool AlreadyAuthenticated = isa<AllocaInst>(BaseDefinition) ||
-                                    isa<GlobalVariable>(BaseDefinition);
+        bool AlreadyAuthenticated = isa<AllocaInst>(BaseDefinition) || isa<GlobalObject>(BaseDefinition);
         if (auto *Call = dyn_cast<CallInst>(BaseDefinition)) {
             if (Call->getCalledFunction()) {
                 auto *Callee = Call->getCalledFunction();
@@ -396,6 +417,13 @@ namespace hakc {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
         }
+        if(PurposefullyIgnored) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << *this << " is purposefully ignored\n";
+            }
+            return;
+        }
+
         DetermineIfBasePointerIsAuthenticated();
         if (GetAuthenticatedUserCount() == 0) {
             if (DebugActive) {
@@ -622,7 +650,7 @@ namespace hakc {
     }
 
     bool ManagedHAKCPointer::BaseDefinitionShouldBeTransferred() {
-        if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction() || ManuallyTransferred) {
+        if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction() || ManuallyTransferred || PurposefullyIgnored) {
             return false;
         }
 
@@ -675,6 +703,11 @@ namespace hakc {
 
     void ManagedHAKCPointer::SetUseOperand(User *U, Value *Replacement, const ManagedHAKCPointerUseP &PointerUse,
                                            bool IsAuthenticatedUse) {
+        if(PurposefullyIgnored) {
+            CommonHAKCAnalysis::getWriter() << "Trying to set operand of purposefully ignored pointer " << *this << "\n";
+            throw std::exception();
+        }
+
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Setting Operand " <<
                                             std::to_string(PointerUse->getOperandNo()) << " of ";
@@ -706,6 +739,13 @@ namespace hakc {
     }
 
     void ManagedHAKCPointer::TransformClones() {
+        if(PurposefullyIgnored) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Not transforming clones since " << *this << " is purposefully ignored\n";
+            }
+            return;
+        }
+
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Transforming clones created for " << *this << "\n";
             for (auto &CloneUse: CloneUses) {
@@ -784,6 +824,13 @@ namespace hakc {
 
     void
     ManagedHAKCPointer::TransformUseSet(std::set<ManagedHAKCPointerUseP> &UseSet) {
+        if(PurposefullyIgnored) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Not transforming uses since " << *this << " is purposefully ignored\n";
+            }
+            return;
+        }
+
         bool UseAuthenticatedValue = (&UseSet == &AuthenticatedUses);
         StringRef ReplacementSource = UseAuthenticatedValue ? "Authenticated" :
                                       "Protected";
@@ -824,6 +871,10 @@ namespace hakc {
     }
 
     Value *ManagedHAKCPointer::CreateAuthenticatedValue(const ManagedHAKCPointerUseP &HAKCUse) {
+        if(PurposefullyIgnored) {
+            return HAKCUse->get();
+        }
+
         auto Authenticated = Manager->CreateAuthenticatedValue(HAKCUse);
         if (!Authenticated) {
             if (DebugActive) {
@@ -846,6 +897,10 @@ namespace hakc {
     }
 
     Value *ManagedHAKCPointer::CreateProtectedValue(const ManagedHAKCPointerUseP &HAKCUse) {
+        if(PurposefullyIgnored) {
+            return HAKCUse->get();
+        }
+
         auto Protected = Manager->CreateProtectedValue(HAKCUse);
         if (!Protected) {
             if (DebugActive) {
@@ -869,6 +924,13 @@ namespace hakc {
     void ManagedHAKCPointer::MaybeCreateMissingTransfer() {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
+        }
+
+        if(PurposefullyIgnored) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << *this << " is purposefully ignored\n";
+            }
+            return;
         }
 
         if (GetProtectedUserCount() == 0) {

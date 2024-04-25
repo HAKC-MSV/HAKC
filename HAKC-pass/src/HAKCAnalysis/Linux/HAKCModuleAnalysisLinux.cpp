@@ -481,13 +481,17 @@ namespace hakc {
                 {"device_create",          simpleStaticSize<6144 / 8>},
                 {"__class_create",         simpleStaticSize<960 / 8>},
                 {"__vmalloc",              simpleArgumentSize<0>},
+                {"alloc_chrdev_region",    CallArgumentSize<0>},
         };
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinux::GetIgnoredGlobals() {
-        return {
+        std::set<StringRef> GlobalsToIgnore = {
                 "kmalloc_caches",
+                "current",
         };
+        auto ExistingIgnoredGlobals = CommonHAKCAnalysis::GetIgnoredGlobals();
+        return AddToSet(GlobalsToIgnore, ExistingIgnoredGlobals);
     }
 
     bool HAKCModuleAnalysisLinux::valueIsReadonlyPtr(Value *value) {

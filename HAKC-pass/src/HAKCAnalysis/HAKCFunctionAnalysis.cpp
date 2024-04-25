@@ -409,6 +409,10 @@ namespace hakc {
         return getModuleAnalysis().GetIgnoredTypes();
     }
 
+    std::set<StringRef> HAKCFunctionAnalysis::GetIgnoredGlobals() {
+        return getModuleAnalysis().GetIgnoredGlobals();
+    }
+
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs() {
         return {
                 Intrinsic::IndependentIntrinsics::memcpy,
@@ -559,22 +563,24 @@ namespace hakc {
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for ";
-            U.get()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::PrettyPrintValue(U.get(), CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " from ";
-            U.getUser()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::PrettyPrintValue(U.getUser(), CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
         auto *ptr = getDef(U.get(), false, debug_output);
-        if(debug_output) {
-            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def " << *ptr << " for " << *U.get() << "\n";
+        if (debug_output) {
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def ";
+            CommonHAKCAnalysis::PrettyPrintValue(ptr, CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " for ";
+            CommonHAKCAnalysis::PrettyPrintValue(U.get(), CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
         }
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Value ";
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is a CallInst\n";
+                CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a CallInst\n";
             }
 
             bool IsInline = call->isInlineAsm();
@@ -583,10 +589,10 @@ namespace hakc {
                 if (debug_output) {
                     if (IsInline) {
                         CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
-                    } else if (IsManualSafe) {
-                        CommonHAKCAnalysis::getWriter() << "Value ";
-                        ptr->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " is a manual safe pointer\n";
+                    }
+
+                    if (IsManualSafe) {
+                        CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a manual safe pointer\n";
                     }
                 }
                 /* These are usually the result of reading a register value */
@@ -609,85 +615,83 @@ namespace hakc {
                 }
                 return false;
             }
-        } else if (isa<Constant>(ptr)) {
+        } else if (auto *ConstExpr = dyn_cast<ConstantExpr>(ptr)) {
+            if (ConstExpr->isCast()) {
+                auto *Operand = getDef(ConstExpr->getOperand(0), false, debug_output);
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << *ConstExpr << " operand def is " << *Operand << "\n";
+                }
+                if (isa<ConstantInt>(Operand)) {
+                    if (debug_output) {
+                        CommonHAKCAnalysis::getWriter() << "ConstExpr is from ConstantInt\n";
+                    }
+                    return false;
+                }
+            }
+        } else if (isa<Constant>(ptr) && ptr->getType()->isIntegerTy()) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is a constant\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is a constant int\n";
             }
             return false;
         } else if (!CommonHAKCAnalysis::IsPointerLikeType(ptr->getType()) &&
                    !ptr->getType()->isArrayTy() && !isa<PtrToIntInst>(ptr)) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is not a pointer, array, or pointer to int cast\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is not a pointer, array, or pointer to int cast\n";
             }
             return false;
         } else if (isa<ConstantPointerNull>(ptr)) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is a constant null pointer\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is a constant null pointer\n";
             }
             return false;
-        } else if (isa<GlobalValue>(ptr)) {
+        } /*else if (isa<GlobalValue>(ptr)) {
             if (debug_output) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " is a GlobalValue\n";
             }
             return false;
-        } else if (IsPHIOfGlobalsOnly(ptr)) {
+        }*/ else if (IsPHIOfGlobalsOnly(ptr)) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is a PHINode of Globals\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is a PHINode of Globals\n";
             }
             return false;
         } else if (isKernelUserPointer(ptr)) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is a Kernel pointer from user space\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is a Kernel pointer from user space\n";
             }
             return false;
         } else if (isa<LoadInst>(U.getUser())) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is used in a LoadInst\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is used in a LoadInst\n";
             }
             return true;
         } else if (isa<StoreInst>(U.getUser())) {
             if (U.getOperandNo() == StoreInst::getPointerOperandIndex()) {
                 if (debug_output) {
-                    ptr->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " is used in a StoreInst\n";
+                    CommonHAKCAnalysis::getWriter() << *ptr << " is used in a StoreInst\n";
                 }
                 return true;
             }
         } else if (isa<UndefValue>(ptr)) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is an undef value\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " is an undef value\n";
             }
             return false;
         } else if (auto *CallI = dyn_cast<CallInst>(U.getUser())) {
             if (CallI->isInlineAsm()) {
                 if (debug_output) {
-                    ptr->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " is used in inline assembly\n";
+                    CommonHAKCAnalysis::getWriter() << *ptr << " is used in inline assembly\n";
                 }
                 return ValueIsUsedAsPointer(U.get(), debug_output);
             }
         } else if (!ptr->getType()->isPointerTy()) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " Type is not a pointer: ";
-                ptr->getType()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " Type is not a pointer: " << *ptr->getType() << "\n";
             }
             return false;
         } else if (ptr->getType()->isPointerTy()) {
             if (debug_output) {
-                ptr->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " Type is a pointer: ";
-                ptr->getType()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+                CommonHAKCAnalysis::getWriter() << *ptr << " Type is a pointer: " << *ptr->getType() << "\n";
             }
             return true;
         }
@@ -708,19 +712,13 @@ namespace hakc {
             }
             if (!registerUse) {
                 if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "Using ";
-                    use->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " instead of ";
-                    definition->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Using " << *use << " instead of " << *definition << "\n";
                 }
                 definition = use.get();
             }
         }
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Checking if ";
-            use->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " should be registered\n";
+            CommonHAKCAnalysis::getWriter() << "Checking if " << *use << " should be registered\n";
         }
 
         if (PointerShouldBeManaged(use)) {
@@ -729,13 +727,9 @@ namespace hakc {
 
                 if (is_percpu_ptr) {
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: ";
-                        use->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\nDef chain:\n";
+                        CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: " << *use << "\nDef chain:\n";
                         for (auto *v: findDefChain(use.get(), false, debug_output)) {
-                            CommonHAKCAnalysis::getWriter() << "\t";
-                            v->print(CommonHAKCAnalysis::getWriter());
-                            CommonHAKCAnalysis::getWriter() << "\n";
+                            CommonHAKCAnalysis::getWriter() << "\t" << *v << "\n";
                         }
                     }
                     definition = use.get();
@@ -744,26 +738,14 @@ namespace hakc {
             AddManagedPointer(definition);
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Definition ";
-                if (auto *f = dyn_cast<Function>(definition)) {
-                    CommonHAKCAnalysis::getWriter() << f->getName() << " ";
-                } else {
-                    definition->print(CommonHAKCAnalysis::getWriter());
-                }
-                CommonHAKCAnalysis::getWriter() << " from ";
-                use.getUser()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " is registered\n";
+                CommonHAKCAnalysis::PrettyPrintValue(definition, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " from " << *use.getUser() << " is registered\n";
             }
         } else {
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Definition ";
-                if (auto *f = dyn_cast<Function>(definition)) {
-                    CommonHAKCAnalysis::getWriter() << f->getName() << " ";
-                } else {
-                    definition->print(CommonHAKCAnalysis::getWriter());
-                }
-                CommonHAKCAnalysis::getWriter() << " from ";
-                use.getUser()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " should not be checked\n";
+                CommonHAKCAnalysis::PrettyPrintValue(definition, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " from " << *use.getUser() << " should not be checked\n";
             }
         }
     }
@@ -776,7 +758,7 @@ namespace hakc {
         auto *def = CommonHAKCAnalysis::getDef(V, followLoad, debug);
         if (!def) {
             CommonHAKCAnalysis::getWriter() << "Could not find definition for ";
-            V->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::PrettyPrintValue(V, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
             throw std::exception();
         }
@@ -789,11 +771,8 @@ namespace hakc {
          */
     void HAKCFunctionAnalysis::handleLoad(LoadInst *load) {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Handling ";
-            load->getOperandUse(LoadInst::getPointerOperandIndex())->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " from Load ";
-            load->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Handling " << *load->getOperandUse(LoadInst::getPointerOperandIndex())
+                                            << " from Load " << *load << "\n";
         }
         RegisterPointerDereference(
                 load->getOperandUse(LoadInst::getPointerOperandIndex()));
@@ -839,9 +818,7 @@ namespace hakc {
          */
     void HAKCFunctionAnalysis::handleComparison(CmpInst *compare) {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Checking comparison ";
-            compare->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Checking comparison " << *compare << "\n";
         }
 
         MaybeAddCompareToDirectUsers(compare);
@@ -1107,6 +1084,7 @@ namespace hakc {
                             CommonHAKCAnalysis::getWriter() << "\n";
                         }
                         GlobalArgumentUses[glob].insert(call);
+                        RegisterPointerDereference(arg);
                     } else if (debug_output) {
                         CommonHAKCAnalysis::getWriter() << "Global " << glob->getName()
                                                         << " should not be transferred to ";
@@ -1116,8 +1094,7 @@ namespace hakc {
                 } else if (auto *phiNode = dyn_cast<PHINode>(def)) {
                     for (auto &val: phiNode->incoming_values()) {
                         Value *valDef = getDef(val.get(), false, debug_output);
-                        if (auto *globVal = dyn_cast<GlobalValue>(
-                                valDef)) {
+                        if (auto *globVal = dyn_cast<GlobalValue>(valDef)) {
                             if (globalShouldBeTransferred(val)) {
                                 if (debug_output) {
                                     CommonHAKCAnalysis::getWriter() << "Global " << globVal->getName()

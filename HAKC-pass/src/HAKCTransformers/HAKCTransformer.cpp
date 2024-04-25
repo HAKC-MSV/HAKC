@@ -848,21 +848,23 @@ ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(Value *V) {
         VTy = VTy->getPointerElementType();
     }
 
-    if (auto *StructTy = dyn_cast<StructType>(VTy)) {
-        auto *StructDITy = DebugInfoProcessor.findDiType(StructTy);
-        if (StructDITy) {
-            size = DebugInfoProcessor.getDITypeSizeInBits(StructDITy);
-        } else {
-            size = StructTy->getScalarSizeInBits();
-        }
-    } else if (auto *IntegerTy = dyn_cast<IntegerType>(VTy)) {
-        size = IntegerTy->getBitWidth();
-    } else if (isa<PointerType>(VTy)) {
-        size = CommonHAKCAnalysis::getCompartmentStorageSizeInBits();
-    }
+//    if (auto *StructTy = dyn_cast<StructType>(VTy)) {
+//        auto *StructDITy = DebugInfoProcessor.findDiType(StructTy);
+//        if (StructDITy) {
+//            size = DebugInfoProcessor.getDITypeSizeInBits(StructDITy);
+//        } else {
+//            size = StructTy->getScalarSizeInBits();
+//        }
+//    } else if (auto *IntegerTy = dyn_cast<IntegerType>(VTy)) {
+//        size = IntegerTy->getBitWidth();
+//    } else if (isa<PointerType>(VTy)) {
+//        size = CommonHAKCAnalysis::getCompartmentStorageSizeInBits();
+//    }
+    size = getModule().getDataLayout().getTypeStoreSize(VTy);
 
     if (size > 0) {
-        return HAKCIRBuilder.getInt64(size / BITS_PER_BYTE);
+        return HAKCIRBuilder.getInt64(size);
+//        return HAKCIRBuilder.getInt64(size / BITS_PER_BYTE);
     } else {
         return nullptr;
     }
