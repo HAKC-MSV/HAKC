@@ -294,7 +294,11 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Unexpected use of " << *UPtr << " --- ";
                 CommonHAKCAnalysis::PrettyPrintValue(UPtr->get(), CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " --- with " << *ManagedPointer << " in \n";
-                GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                if(!isa<Argument>(UPtr->getUser()) && !isa<Instruction>(UPtr->getUser())) {
+                    GetFunctionAnalysis()->getFunction().getParent()->print(CommonHAKCAnalysis::getWriter(), nullptr);
+                } else {
+                    GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
+                }
                 CommonHAKCAnalysis::getWriter() << "\n";
                 throw std::exception();
             }
@@ -611,20 +615,22 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
-        auto *OtherStorageReplacement = FindManagedValue(OtherStorage, PtrUse);
-        if (OtherStorageReplacement) {
-            if (OtherStorageReplacement == Replacement) {
-                StringRef OtherStorageName = AddingAuthenticatedReplacements ? "Protected" : "Authenticated";
-                CommonHAKCAnalysis::getWriter() << StorageName << " replacement ";
-                if (Replacement) {
-                    CommonHAKCAnalysis::getWriter() << *Replacement;
-                } else {
-                    CommonHAKCAnalysis::getWriter() << "nullptr";
+        if(!PtrUse->getManagedPtr()->PointerSetsCanBeEqual()) {
+            auto *OtherStorageReplacement = FindManagedValue(OtherStorage, PtrUse);
+            if (OtherStorageReplacement) {
+                if (OtherStorageReplacement == Replacement) {
+                    StringRef OtherStorageName = AddingAuthenticatedReplacements ? "Protected" : "Authenticated";
+                    CommonHAKCAnalysis::getWriter() << StorageName << " replacement ";
+                    if (Replacement) {
+                        CommonHAKCAnalysis::getWriter() << *Replacement;
+                    } else {
+                        CommonHAKCAnalysis::getWriter() << "nullptr";
+                    }
+                    CommonHAKCAnalysis::getWriter() << " for " << *PtrUse << " matches " << OtherStorageName
+                                                    << " replacement in function "
+                                                    << GetFunctionAnalysis()->getFunction().getName() << "\n";
+                    throw std::exception();
                 }
-                CommonHAKCAnalysis::getWriter() << " for " << *PtrUse << " matches " << OtherStorageName
-                                                << " replacement in function "
-                                                << GetFunctionAnalysis()->getFunction().getName() << "\n";
-                throw std::exception();
             }
         }
 

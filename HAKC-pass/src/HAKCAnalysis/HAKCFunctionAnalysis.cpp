@@ -1136,7 +1136,9 @@ namespace hakc {
          * @brief Sets the function section to the correct PMC ELF section
          */
     void HAKCFunctionAnalysis::relocateFunctionSection() {
-        getFunction().setSection(getHAKCFunctionSectionName());
+        if(isCompartmentalizedFunction()) {
+            getFunction().setSection(getHAKCFunctionSectionName());
+        }
     }
 
     std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName() {
@@ -1233,7 +1235,11 @@ namespace hakc {
         }
     }
 
-    void HAKCFunctionAnalysis::InstrumentKernelCode() {
+    void HAKCFunctionAnalysis::AddInstrumentation(bool RelocateSection) {
+        if (isOutsideTransferFunc(&getFunction())) {
+            throw std::exception();
+        }
+
         debug_output = getFunction().getName() == getHAKCDebugName();
         if (!SetupHasRun) {
             if (debug_output) {
@@ -1256,17 +1262,28 @@ namespace hakc {
         }
 
         if (modifiedFunction()) {
-            if (!CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
-                if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "---- createAllAuthenticatedPointers ----\n";
-                }
-                createAllAuthenticatedPointers();
-                if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                    CommonHAKCAnalysis::getWriter() << "----- transformPointerDereferences ------\n";
-                }
-                transformPointerDereferences();
+            if(RelocateSection) {
+                relocateFunctionSection();
             }
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "---- createMissingTransfers ----\n";
+            }
+            createMissingTransfers();
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+                CommonHAKCAnalysis::getWriter() << "----- UpdateHAKCFunctionParameters ------\n";
+            }
+            UpdateHAKCFunctionParameters();
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+                CommonHAKCAnalysis::getWriter() << "---- createAllAuthenticatedPointers ----\n";
+            }
+            createAllAuthenticatedPointers();
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
+                CommonHAKCAnalysis::getWriter() << "----- transformPointerDereferences ------\n";
+            }
+            transformPointerDereferences();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter() << "- ReplaceDirectFunctionUsesWithTransfers -\n";
@@ -1276,6 +1293,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
             }
             if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter()
                         << "------ CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls -----\n";
             }
@@ -1296,6 +1314,10 @@ namespace hakc {
         } else if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Function " << getFunction().getName() << " unmodified\n";
         }
+    }
+
+    void HAKCFunctionAnalysis::InstrumentKernelCode() {
+        AddInstrumentation(false);
     }
 
     Instruction *HAKCFunctionAnalysis::CreateMissingTransfer(Instruction *PointerNeedingTransfer) {
@@ -1397,77 +1419,12 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::InstrumentCompartmentalizedCode() {
-        if (!SetupHasRun) {
-            setup();
-        }
         if (!isCompartmentalizedFunction()) {
             InstrumentKernelCode();
             return;
         }
 
-        if (isOutsideTransferFunc(&getFunction())) {
-            throw std::exception();
-        }
-
-        if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
-            SmallVector<ManagedHAKCPointerP> SortedPointers;
-            PointerManager.GetSortedPointers(SortedPointers);
-
-            for (auto &HAKCPointer: SortedPointers) {
-                CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
-            }
-        }
-
-        if (modifiedFunction()) {
-            relocateFunctionSection();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "---- createMissingTransfers ----\n";
-            }
-            createMissingTransfers();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "----- UpdateHAKCFunctionParameters ------\n";
-            }
-            UpdateHAKCFunctionParameters();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "---- createAllAuthenticatedPointers ----\n";
-            }
-            createAllAuthenticatedPointers();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "----- transformPointerDereferences ------\n";
-            }
-            transformPointerDereferences();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter() << "- ReplaceDirectFunctionUsesWithTransfers -\n";
-            }
-            ReplaceDirectFunctionUsesWithTransfers();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-            }
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-                CommonHAKCAnalysis::getWriter()
-                        << "------ CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls -----\n";
-            }
-            CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls();
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
-            }
-
-            if (debug_output) {
-                getFunction().print(CommonHAKCAnalysis::getWriter());
-            }
-
-            if (llvm::verifyFunction(getFunction(), &CommonHAKCAnalysis::getWriter())) {
-                CommonHAKCAnalysis::getWriter() << "Compartmentalization created a faulty function\n";
-                getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
-                throw std::exception();
-            }
-        }
+        AddInstrumentation(true);
     }
 
     bool HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Value *Pointer) {

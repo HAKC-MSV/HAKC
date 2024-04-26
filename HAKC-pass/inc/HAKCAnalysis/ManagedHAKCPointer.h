@@ -154,6 +154,10 @@ namespace hakc {
 
         bool AllIncomingValuesWillBeAuthenticated();
 
+        bool PointerSetsShouldBeEqual();
+
+        void SetPointerSetsToBeEqual();
+
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, unsigned ID);
 
@@ -192,6 +196,8 @@ namespace hakc {
         void AddCloneUse(const ManagedHAKCPointerUseP &UPtr);
 
         void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
+
+        bool PointerSetsCanBeEqual();
 
     private:
         void InitBaseDefinition(Value *Pointer);

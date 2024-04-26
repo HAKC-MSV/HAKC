@@ -87,10 +87,10 @@ namespace hakc {
         bool Result = false;
         if(auto *Const = dyn_cast<Constant>(V)) {
             auto Search = [](User *U) {
-                return isa<GlobalVariable>(U);
+                return isa<GlobalVariable>(U) || CommonHAKCAnalysis::IsConstantUsedInGlobal(U);
             };
 
-            Result = std::any_of(Const->user_begin(), Const->user_end(), Search);
+            Result = llvm::any_of(Const->users(), Search);
         }
         return Result;
     }

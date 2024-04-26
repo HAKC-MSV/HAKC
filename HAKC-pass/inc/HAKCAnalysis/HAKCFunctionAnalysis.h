@@ -226,6 +226,8 @@ namespace hakc {
         virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
                                                        hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
+        void AddInstrumentation(bool RelocateSection);
+
     public:
         HAKCFunctionAnalysis(Function *F, bool debug);
 
