@@ -64,16 +64,16 @@ define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots
   %37 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 2, !dbg !129
   %38 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 2, !dbg !129
   store i64 -1, i64* %37, align 8, !dbg !131, !tbaa !132
-  br label %151, !dbg !133
+  br label %154, !dbg !133
 
-39:                                               ; preds = %125
-  call void @llvm.dbg.value(metadata i64 %140, metadata !80, metadata !DIExpression()), !dbg !84
-  %40 = icmp ugt i64 %140, %9, !dbg !134
-  br i1 %40, label %141, label %41, !dbg !128, !llvm.loop !135
+39:                                               ; preds = %126
+  call void @llvm.dbg.value(metadata i64 %143, metadata !80, metadata !DIExpression()), !dbg !84
+  %40 = icmp ugt i64 %143, %9, !dbg !134
+  br i1 %40, label %144, label %41, !dbg !128, !llvm.loop !135
 
 41:                                               ; preds = %22, %39
   %42 = phi i32 [ %31, %22 ], [ %113, %39 ], !dbg !103
-  %43 = phi i64 [ %6, %22 ], [ %140, %39 ]
+  %43 = phi i64 [ %6, %22 ], [ %143, %39 ]
   call void @llvm.dbg.value(metadata i64 %43, metadata !80, metadata !DIExpression()), !dbg !84
   call void @llvm.dbg.value(metadata %struct.kvm_memslots* %0, metadata !116, metadata !DIExpression()), !dbg !138
   call void @llvm.dbg.value(metadata i64 %43, metadata !117, metadata !DIExpression()), !dbg !138
@@ -210,14 +210,14 @@ define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots
   call void @llvm.dbg.value(metadata i64 undef, metadata !261, metadata !DIExpression()), !dbg !264
   call void @llvm.dbg.value(metadata i64* undef, metadata !262, metadata !DIExpression()), !dbg !264
   call void @llvm.dbg.value(metadata i8 1, metadata !263, metadata !DIExpression()), !dbg !264
-  br label %123, !dbg !266
+  br label %124, !dbg !266
 
 111:                                              ; preds = %109, %62
   %112 = phi i64 [ %101, %109 ], [ %60, %62 ]
   %113 = phi i32 [ %82, %109 ], [ %42, %62 ]
-  %114 = phi %struct.kvm_memory_slot* [ %98, %109 ], [ %57, %62 ], !dbg !138
-  %115 = phi %struct.kvm_memory_slot* [ %97, %109 ], [ %56, %62 ], !dbg !138
-  store %struct.kvm_memory_slot* %114, %struct.kvm_memory_slot** %27, align 8, !dbg !244, !tbaa !245
+  %114 = phi %struct.kvm_memory_slot* [ %97, %109 ], [ %56, %62 ], !dbg !138
+  %115 = phi %struct.kvm_memory_slot* [ %98, %109 ], [ %57, %62 ], !dbg !138
+  store %struct.kvm_memory_slot* %115, %struct.kvm_memory_slot** %27, align 8, !dbg !244, !tbaa !245
   call void @llvm.dbg.value(metadata %struct.kvm_memory_slot* %115, metadata !246, metadata !DIExpression()), !dbg !254
   call void @llvm.dbg.value(metadata i64 %43, metadata !252, metadata !DIExpression()), !dbg !254
   call void @llvm.dbg.value(metadata i64* undef, metadata !253, metadata !DIExpression()), !dbg !254
@@ -225,79 +225,82 @@ define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots
   call void @llvm.dbg.value(metadata i64 %43, metadata !261, metadata !DIExpression()), !dbg !264
   call void @llvm.dbg.value(metadata i64* undef, metadata !262, metadata !DIExpression()), !dbg !264
   call void @llvm.dbg.value(metadata i8 1, metadata !263, metadata !DIExpression()), !dbg !264
-  %116 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 5, !dbg !268
-  %117 = load i32, i32* %116, align 8, !dbg !268, !tbaa !269
-  %118 = and i32 %117, 65536, !dbg !270
-  %119 = icmp eq i32 %118, 0, !dbg !270
-  br i1 %119, label %120, label %123, !dbg !271
+  %116 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %114, i64 0, i32 5, !dbg !268
+  %117 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 5, !dbg !268
+  %118 = load i32, i32* %116, align 8, !dbg !268, !tbaa !269
+  %119 = and i32 %118, 65536, !dbg !270
+  %120 = icmp eq i32 %119, 0, !dbg !270
+  br i1 %120, label %121, label %124, !dbg !271
 
-120:                                              ; preds = %111
-  %121 = and i32 %117, 2, !dbg !272
-  %122 = icmp eq i32 %121, 0, !dbg !272
-  br i1 %122, label %125, label %123, !dbg !274
+121:                                              ; preds = %111
+  %122 = and i32 %118, 2, !dbg !272
+  %123 = icmp eq i32 %122, 0, !dbg !272
+  br i1 %123, label %126, label %124, !dbg !274
 
-123:                                              ; preds = %111, %120, %110
-  %124 = phi i64 [ -131391639519232, %110 ], [ -131391639519232, %111 ], [ -131391639515136, %120 ]
-  store i64 %124, i64* %29, align 8, !dbg !275, !tbaa !132
-  call void @llvm.dbg.value(metadata i64 %138, metadata !276, metadata !DIExpression()), !dbg !281
-  br label %151, !dbg !284
+124:                                              ; preds = %111, %121, %110
+  %125 = phi i64 [ -131391639519232, %110 ], [ -131391639519232, %111 ], [ -131391639515136, %121 ]
+  store i64 %125, i64* %29, align 8, !dbg !275, !tbaa !132
+  call void @llvm.dbg.value(metadata i64 %141, metadata !276, metadata !DIExpression()), !dbg !281
+  br label %154, !dbg !284
 
-125:                                              ; preds = %120
-  %126 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 1, !dbg !285
-  %127 = load i64, i64* %126, align 8, !dbg !285, !tbaa !179
+126:                                              ; preds = %121
+  %127 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %114, i64 0, i32 1, !dbg !285
+  %128 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 1, !dbg !285
+  %129 = load i64, i64* %127, align 8, !dbg !285, !tbaa !179
   call void @llvm.dbg.value(metadata %struct.kvm_memory_slot* %115, metadata !287, metadata !DIExpression()), !dbg !301
   call void @llvm.dbg.value(metadata i64 %43, metadata !294, metadata !DIExpression()), !dbg !301
-  %128 = sub i64 %43, %112, !dbg !303
-  call void @llvm.dbg.value(metadata i64 %128, metadata !295, metadata !DIExpression()), !dbg !301
-  call void @llvm.dbg.value(metadata i64 %128, metadata !296, metadata !DIExpression()), !dbg !304
-  call void @llvm.dbg.value(metadata i64 %127, metadata !298, metadata !DIExpression()), !dbg !304
-  call void @llvm.dbg.value(metadata i64 %128, metadata !159, metadata !DIExpression()), !dbg !305
-  call void @llvm.dbg.value(metadata i64 %127, metadata !164, metadata !DIExpression()), !dbg !305
-  %129 = xor i64 %128, -1, !dbg !307
-  %130 = add i64 %127, %129, !dbg !307
-  %131 = or i64 %130, %128, !dbg !308
-  %132 = ashr i64 %131, 63, !dbg !309
-  %133 = xor i64 %132, -1, !dbg !309
-  call void @llvm.dbg.value(metadata i64 %133, metadata !300, metadata !DIExpression()), !dbg !304
-  %134 = and i64 %128, %133, !dbg !310
-  call void @llvm.dbg.value(metadata i64 %134, metadata !295, metadata !DIExpression()), !dbg !301
-  %135 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 4, !dbg !311
-  %136 = load i64, i64* %135, align 8, !dbg !311, !tbaa !312
-  %137 = shl i64 %134, 12, !dbg !313
-  %138 = add i64 %137, %136, !dbg !314
-  store i64 %138, i64* %29, align 8, !dbg !275, !tbaa !132
-  call void @llvm.dbg.value(metadata i64 %138, metadata !276, metadata !DIExpression()), !dbg !281
-  %139 = icmp ult i64 %138, -131391639519232, !dbg !315
+  %130 = sub i64 %43, %112, !dbg !303
+  call void @llvm.dbg.value(metadata i64 %130, metadata !295, metadata !DIExpression()), !dbg !301
+  call void @llvm.dbg.value(metadata i64 %130, metadata !296, metadata !DIExpression()), !dbg !304
+  call void @llvm.dbg.value(metadata i64 %129, metadata !298, metadata !DIExpression()), !dbg !304
+  call void @llvm.dbg.value(metadata i64 %130, metadata !159, metadata !DIExpression()), !dbg !305
+  call void @llvm.dbg.value(metadata i64 %129, metadata !164, metadata !DIExpression()), !dbg !305
+  %131 = xor i64 %130, -1, !dbg !307
+  %132 = add i64 %129, %131, !dbg !307
+  %133 = or i64 %132, %130, !dbg !308
+  %134 = ashr i64 %133, 63, !dbg !309
+  %135 = xor i64 %134, -1, !dbg !309
+  call void @llvm.dbg.value(metadata i64 %135, metadata !300, metadata !DIExpression()), !dbg !304
+  %136 = and i64 %130, %135, !dbg !310
+  call void @llvm.dbg.value(metadata i64 %136, metadata !295, metadata !DIExpression()), !dbg !301
+  %137 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %114, i64 0, i32 4, !dbg !311
+  %138 = getelementptr inbounds %struct.kvm_memory_slot, %struct.kvm_memory_slot* %115, i64 0, i32 4, !dbg !311
+  %139 = load i64, i64* %137, align 8, !dbg !311, !tbaa !312
+  %140 = shl i64 %136, 12, !dbg !313
+  %141 = add i64 %140, %139, !dbg !314
+  store i64 %141, i64* %29, align 8, !dbg !275, !tbaa !132
+  call void @llvm.dbg.value(metadata i64 %141, metadata !276, metadata !DIExpression()), !dbg !281
+  %142 = icmp ult i64 %141, -131391639519232, !dbg !315
   call void @llvm.dbg.value(metadata i64 undef, metadata !83, metadata !DIExpression()), !dbg !84
-  %140 = add i64 %112, %127, !dbg !316
-  call void @llvm.dbg.value(metadata i64 %140, metadata !80, metadata !DIExpression()), !dbg !84
-  br i1 %139, label %39, label %151, !dbg !284
+  %143 = add i64 %112, %129, !dbg !316
+  call void @llvm.dbg.value(metadata i64 %143, metadata !80, metadata !DIExpression()), !dbg !84
+  br i1 %142, label %39, label %154, !dbg !284
 
-141:                                              ; preds = %39
-  %142 = icmp eq i64 %9, %6, !dbg !317
-  br i1 %142, label %143, label %145, !dbg !319
+144:                                              ; preds = %39
+  %145 = icmp eq i64 %9, %6, !dbg !317
+  br i1 %145, label %146, label %148, !dbg !319
 
-143:                                              ; preds = %141
-  %144 = add i64 %138, %5, !dbg !320
-  store i64 %144, i64* %29, align 8, !dbg !320, !tbaa !132
-  br label %146, !dbg !321
+146:                                              ; preds = %144
+  %147 = add i64 %141, %5, !dbg !320
+  store i64 %147, i64* %29, align 8, !dbg !320, !tbaa !132
+  br label %149, !dbg !321
 
-145:                                              ; preds = %141
+148:                                              ; preds = %144
   store %struct.kvm_memory_slot* null, %struct.kvm_memory_slot** %27, align 8, !dbg !322, !tbaa !245
-  br label %146
+  br label %149
 
-146:                                              ; preds = %145, %143
-  %147 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 1, !dbg !323
-  %148 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 1, !dbg !323
-  store i64 %2, i64* %147, align 8, !dbg !324, !tbaa !325
-  %149 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 3, !dbg !326
-  %150 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 3, !dbg !326
-  store i64 %3, i64* %149, align 8, !dbg !327, !tbaa !328
-  br label %151, !dbg !329
+149:                                              ; preds = %148, %146
+  %150 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 1, !dbg !323
+  %151 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 1, !dbg !323
+  store i64 %2, i64* %150, align 8, !dbg !324, !tbaa !325
+  %152 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 3, !dbg !326
+  %153 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 3, !dbg !326
+  store i64 %3, i64* %152, align 8, !dbg !327, !tbaa !328
+  br label %154, !dbg !329
 
-151:                                              ; preds = %125, %123, %146, %36
-  %152 = phi i32 [ -22, %36 ], [ 0, %146 ], [ -14, %123 ], [ -14, %125 ], !dbg !84
-  ret i32 %152, !dbg !330
+154:                                              ; preds = %126, %124, %149, %36
+  %155 = phi i32 [ -22, %36 ], [ 0, %149 ], [ -14, %124 ], [ -14, %126 ], !dbg !84
+  ret i32 %155, !dbg !330
 }
 
 ; Function Attrs: nofree nosync nounwind readnone speculatable willreturn

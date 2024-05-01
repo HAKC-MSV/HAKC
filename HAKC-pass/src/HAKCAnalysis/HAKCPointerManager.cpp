@@ -569,7 +569,7 @@ namespace hakc {
         auto *AuthValue = FindManagedValue(AuthenticatedValues, PointerUse);
         if (!AuthValue) {
             if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated Managed Value for " << *PointerUse
+                CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated Managed Value for PointerUse " << *PointerUse
                                                 << "\n";
             }
             AuthValue = FindManagedPointerReplacement(PointerUse->get(), true);
