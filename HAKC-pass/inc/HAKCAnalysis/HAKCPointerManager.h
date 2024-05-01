@@ -73,6 +73,8 @@ namespace hakc {
          */
         void CreateAuthenticatedPointersAndAllClones();
 
+        void CreateAllTransfers();
+
         void TransformPointers();
 
         void AddAuthenticatedPointer(const ManagedHAKCPointerUseP& PointerUse, Value *Replacement);
@@ -99,9 +101,9 @@ namespace hakc {
 
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
-        void UpdateProtectedMultiUsers(User *AuthenticatedMultiUser, User *ProtectedMultiUser);
+//        void UpdateProtectedMultiUsers(User *AuthenticatedMultiUser, User *ProtectedMultiUser);
 
-        void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
+//        void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
 
     protected:
         /**
@@ -111,6 +113,7 @@ namespace hakc {
 
         std::map<ManagedHAKCPointerUseP, Value *> AuthenticatedValues;
         std::map<ManagedHAKCPointerUseP, Value *> ProtectedValues;
+        std::map<Instruction *, Instruction *> Clones;
 
         std::set<ManagedHAKCPointerUseP> AnalyzedUses;
 
@@ -119,7 +122,7 @@ namespace hakc {
         unsigned DataAuthenticationsAdded;
         unsigned CodeAuthenticationsAdded;
         unsigned SafePointersAdded;
-        unsigned ClonesAdded;
+//        unsigned ClonesAdded;
 
         bool IsCompartmentalized;
         bool DebugActive;
@@ -135,7 +138,7 @@ namespace hakc {
         void AddHAKCPointerReplacement(const ManagedHAKCPointerUseP& PtrUse, Value *Replacement,
                                        bool AddingAuthenticatedReplacements);
 
-        static Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
+        Value *FindManagedValue(std::map<ManagedHAKCPointerUseP, Value *> &Storage, Value *Target);
 
         void ManageNewPointer(Value *V);
 

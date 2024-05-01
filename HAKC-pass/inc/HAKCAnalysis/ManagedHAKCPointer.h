@@ -152,11 +152,19 @@ namespace hakc {
         void
         SetUseOperand(User *U, Value *Replacement, const ManagedHAKCPointerUseP &PointerUse, bool IsAuthenticatedUse);
 
+        bool AllIncomingValuesAreAuthenticated();
+
         bool AllIncomingValuesWillBeAuthenticated();
+
+        std::set<Value*> GetAllIncomingValues();
 
         bool PointerSetsShouldBeEqual();
 
         void SetPointerSetsToBeEqual();
+
+        bool UseIsManagedAndHasUsers(const ManagedHAKCPointerUseP &PointerUse, bool CountAuthenticatedUsers);
+
+        bool ValueIsManagedAndHasUsers(Value *V, bool CountAuthenticatedUsers);
 
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, unsigned ID);
@@ -175,7 +183,7 @@ namespace hakc {
 
         void TransformUses();
 
-        void MaybeCreateMissingTransfer();
+        void MaybeCreateProtectedPointer();
 
         void RegisterManualHAKCTransfer(CallBase *CallI);
 
@@ -195,9 +203,11 @@ namespace hakc {
 
         void AddCloneUse(const ManagedHAKCPointerUseP &UPtr);
 
-        void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
+//        void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
 
         bool PointerSetsCanBeEqual();
+
+        void UpdateUserCounts();
 
     private:
         void InitBaseDefinition(Value *Pointer);

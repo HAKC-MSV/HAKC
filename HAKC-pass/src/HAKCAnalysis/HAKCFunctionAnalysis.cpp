@@ -1349,11 +1349,7 @@ namespace hakc {
             getFunction().print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
-        SmallVector<ManagedHAKCPointerP> SortedPointers;
-        PointerManager.GetSortedPointers(SortedPointers);
-        for (auto &HAKCPointer: SortedPointers) {
-            HAKCPointer->MaybeCreateMissingTransfer();
-        }
+        PointerManager.CreateAllTransfers();
     }
 
     void HAKCFunctionAnalysis::ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue,
