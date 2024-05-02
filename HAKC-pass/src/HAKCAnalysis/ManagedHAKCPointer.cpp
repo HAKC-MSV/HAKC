@@ -574,16 +574,10 @@ namespace hakc {
         }
         std::set<Instruction *> UserI;
 
-        for (auto &User: Users) {
-            if (auto *I = dyn_cast<Instruction>(User->getUser())) {
+        for (auto *User: BaseDefinition->users()) {
+            if (auto *I = dyn_cast<Instruction>(User)) {
                 if(I->getFunction() == &Manager->GetFunctionAnalysis()->getFunction()) {
                     UserI.insert(I);
-                }
-                if(CommonHAKCAnalysis::IsMultiSSAUser(I)) {
-                    auto ManagedPtr = Manager->GetManagedPointer(I);
-                    if(ManagedPtr && ManagedPtr->IsAuthenticatedIsCopyOfBase()) {
-                        UserI.insert(dyn_cast<Instruction>(ManagedPtr->GetAuthenticatedPointer()));
-                    }
                 }
             }
         }
