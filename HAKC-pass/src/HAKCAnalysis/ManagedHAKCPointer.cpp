@@ -68,6 +68,7 @@ namespace hakc {
             BaseIsAuthenticated(false),
             ManuallyTransferred(false),
             PurposefullyIgnored(false),
+            AuthenticatedIsCopyOfBase(false),
             ID(ID),
             AuthenticatedUses(),
             ProtectedUses(),
@@ -223,6 +224,10 @@ namespace hakc {
 
     bool ManagedHAKCPointer::BaseIsAuthenticatedPointer() const {
         return BaseIsAuthenticated;
+    }
+
+    bool ManagedHAKCPointer::IsAuthenticatedIsCopyOfBase() const {
+        return AuthenticatedIsCopyOfBase;
     }
 
     bool ManagedHAKCPointer::DetermineIfBasePointerIsAuthenticated() {
@@ -480,6 +485,31 @@ namespace hakc {
         }
     }
 
+    void ManagedHAKCPointer::MaybeCreateBaseCopyPointer() {
+        if (DebugActive) {
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
+        }
+
+        /* Note these checks come from CreateBaseAuthenticatedPointer */
+        if(PointerSetsShouldBeEqual() || GetAuthenticatedUserCount() == 0 || BaseIsAuthenticatedPointer()) {
+            return;
+        }
+
+        bool AllIncomingHaveAuthenticatedVersions =
+                CommonHAKCAnalysis::IsMultiSSAUser(BaseDefinition) && AllIncomingValuesWillBeAuthenticated();
+        if (AllIncomingHaveAuthenticatedVersions) {
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "All incoming values will have authenticated versions\n";
+            }
+
+            auto BaseCopy = Manager->CloneInstruction(dyn_cast<Instruction>(BaseDefinition));
+            SetAuthenticatedPointer(BaseCopy);
+            AuthenticatedIsCopyOfBase = true;
+            return;
+        }
+
+    }
+
     void ManagedHAKCPointer::CreateBaseAuthenticatedPointer() {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " called for " << *this << "\n";
@@ -519,18 +549,6 @@ namespace hakc {
             return;
         }
 
-        bool AllIncomingHaveAuthenticatedVersions =
-                CommonHAKCAnalysis::IsMultiSSAUser(BaseDefinition) && AllIncomingValuesWillBeAuthenticated();
-        if (AllIncomingHaveAuthenticatedVersions) {
-            if (DebugActive) {
-                CommonHAKCAnalysis::getWriter() << "All incoming values will have authenticated versions\n";
-            }
-
-            auto BaseCopy = Manager->CloneInstruction(dyn_cast<Instruction>(BaseDefinition));
-            SetAuthenticatedPointer(BaseCopy);
-            return;
-        }
-
         if (AuthenticatedPointer) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "AuthenticatedPointer already created\n";
@@ -555,9 +573,18 @@ namespace hakc {
             }
         }
         std::set<Instruction *> UserI;
+
         for (auto &User: Users) {
             if (auto *I = dyn_cast<Instruction>(User->getUser())) {
-                UserI.insert(I);
+                if(I->getFunction() == &Manager->GetFunctionAnalysis()->getFunction()) {
+                    UserI.insert(I);
+                }
+                if(CommonHAKCAnalysis::IsMultiSSAUser(I)) {
+                    auto ManagedPtr = Manager->GetManagedPointer(I);
+                    if(ManagedPtr && ManagedPtr->IsAuthenticatedIsCopyOfBase()) {
+                        UserI.insert(dyn_cast<Instruction>(ManagedPtr->GetAuthenticatedPointer()));
+                    }
+                }
             }
         }
         auto *AuthenticationInsertPoint = Manager->GetFunctionAnalysis()->FindUseInsertionPoint(BaseDefinition,

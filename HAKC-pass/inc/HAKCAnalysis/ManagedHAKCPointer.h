@@ -112,6 +112,8 @@ namespace hakc {
 
         bool PurposefullyIgnored;
 
+        bool AuthenticatedIsCopyOfBase;
+
         unsigned ID;
 
         /**
@@ -185,6 +187,8 @@ namespace hakc {
 
         void MaybeCreateProtectedPointer();
 
+        void MaybeCreateBaseCopyPointer();
+
         void RegisterManualHAKCTransfer(CallBase *CallI);
 
         unsigned GetAuthenticatedUserCount();
@@ -192,6 +196,8 @@ namespace hakc {
         unsigned GetProtectedUserCount();
 
         bool BaseIsAuthenticatedPointer() const;
+
+        bool IsAuthenticatedIsCopyOfBase() const;
 
         bool DetermineIfBasePointerIsAuthenticated();
 
