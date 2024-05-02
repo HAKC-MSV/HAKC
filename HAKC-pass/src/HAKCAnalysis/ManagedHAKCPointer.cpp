@@ -276,6 +276,10 @@ namespace hakc {
             AllValuesAuthenticated = true;
             auto ValuesToCheck = GetAllIncomingValues();
             for (auto *ValueToCheck: ValuesToCheck) {
+                if(isa<GlobalValue>(ValueToCheck)) {
+                    continue;
+                }
+
                 auto ManagedPtr = Manager->GetManagedPointer(ValueToCheck);
                 if (ManagedPtr) {
                     if (*ManagedPtr == *this || ManagedPtr->BaseIsAuthenticatedPointer()) {
@@ -676,8 +680,6 @@ namespace hakc {
                                                         << "\n";
                         throw std::exception();
                     }
-                } else {
-                    Manager->AddAuthenticatedPointer(SortedUse, SortedUse->get());
                 }
             } else {
                 if (CreateAuthenticatedCopies) {
@@ -694,8 +696,6 @@ namespace hakc {
                         CommonHAKCAnalysis::getWriter() << "Could not find Protected Value for " << *SortedUse << "\n";
                         throw std::exception();
                     }
-                } else {
-                    Manager->AddProtectedPointer(SortedUse, SortedUse->get());
                 }
             }
         }
