@@ -685,11 +685,7 @@ namespace hakc {
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Adding " << StorageName << " Pointer Replacement: " << *PtrUse
                                             << " -> ";
-            if (Replacement) {
-                CommonHAKCAnalysis::getWriter() << *Replacement;
-            } else {
-                CommonHAKCAnalysis::getWriter() << "nullptr";
-            }
+            CommonHAKCAnalysis::PrettyPrintValue(Replacement, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";
         }
 
@@ -699,11 +695,7 @@ namespace hakc {
                 if (OtherStorageReplacement == Replacement) {
                     StringRef OtherStorageName = AddingAuthenticatedReplacements ? "Protected" : "Authenticated";
                     CommonHAKCAnalysis::getWriter() << StorageName << " replacement ";
-                    if (Replacement) {
-                        CommonHAKCAnalysis::getWriter() << *Replacement;
-                    } else {
-                        CommonHAKCAnalysis::getWriter() << "nullptr";
-                    }
+                    CommonHAKCAnalysis::PrettyPrintValue(Replacement, CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << " for " << *PtrUse << " matches " << OtherStorageName
                                                     << " replacement in function\n";
                     GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
@@ -721,9 +713,11 @@ namespace hakc {
             StorageToUse[PtrUse] = Replacement;
         } else {
             if (Replacement && ExistingPointer != Replacement) {
-                CommonHAKCAnalysis::getWriter() << "Trying to replace existing " << StorageName << " Replacement "
-                                                << *ExistingPointer << " with " << *Replacement << " for " << *PtrUse
-                                                << "\n";
+                CommonHAKCAnalysis::getWriter() << "Trying to replace existing " << StorageName << " Replacement ";
+                CommonHAKCAnalysis::PrettyPrintValue(ExistingPointer, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " with ";
+                CommonHAKCAnalysis::PrettyPrintValue(Replacement, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << " for " << *PtrUse << "\n";
                 GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
                 throw std::exception();

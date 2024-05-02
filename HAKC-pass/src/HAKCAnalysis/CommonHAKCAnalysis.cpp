@@ -96,7 +96,9 @@ namespace hakc {
     }
 
     void CommonHAKCAnalysis::PrettyPrintValue(Value *V, raw_ostream &os) {
-        if(auto *F = dyn_cast<Function>(V)) {
+        if(V == nullptr) {
+            os << "!!nullptr!!";
+        } else if(auto *F = dyn_cast<Function>(V)) {
             os << "Function " << F->getName();
         } else if(auto *GV = dyn_cast<GlobalVariable>(V)) {
             os << "Global " << GV->getName();
