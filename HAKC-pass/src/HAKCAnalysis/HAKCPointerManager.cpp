@@ -131,7 +131,7 @@ namespace hakc {
                     UseShouldBeIgnored = true;
                 }
             } else {
-                UseShouldBeIgnored = true;
+                UseShouldBeIgnored = !isa<Argument>(Def);
             }
         }
 
