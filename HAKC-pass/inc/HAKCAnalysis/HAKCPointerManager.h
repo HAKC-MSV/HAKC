@@ -101,10 +101,6 @@ namespace hakc {
 
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
-//        void UpdateProtectedMultiUsers(User *AuthenticatedMultiUser, User *ProtectedMultiUser);
-
-//        void RemoveProtectedUse(const ManagedHAKCPointerUseP &ProtectedUse);
-
     protected:
         /**
          * The set of pointers under management
@@ -122,7 +118,6 @@ namespace hakc {
         unsigned DataAuthenticationsAdded;
         unsigned CodeAuthenticationsAdded;
         unsigned SafePointersAdded;
-//        unsigned ClonesAdded;
 
         bool IsCompartmentalized;
         bool DebugActive;
@@ -146,7 +141,7 @@ namespace hakc {
 
         bool UseIsAnalyzed(const ManagedHAKCPointerUseP& UseP);
 
-        static bool UseShouldBeIgnored(Use &U);
+        bool UseShouldBeIgnored(Use &U);
 
         static bool UseShouldBeCloned(Use &U);
 

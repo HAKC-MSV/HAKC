@@ -319,7 +319,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, F
 
     auto *CompartmentIDValue = GetHAKCCompartmentValue(CompartmentID);
     auto *IsCodeValue = HAKCIRBuilder.getInt1(!IsData);
-    auto *OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
+    auto *OperandCast = HAKCIRBuilder.CreateBitCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
     SmallVector<Value*> Args = {
             OperandCast, CompartmentIDValue, IsCodeValue
     };

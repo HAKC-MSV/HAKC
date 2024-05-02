@@ -463,7 +463,7 @@ namespace hakc {
         auto BaseShouldBeTransferred = BaseDefinitionShouldBeTransferred();
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "The Base Definition of " << *this << " is ";
-            if(BaseIsAuthenticatedPointer()) {
+            if (BaseIsAuthenticatedPointer()) {
                 CommonHAKCAnalysis::getWriter() << "authenticated ";
             } else {
                 CommonHAKCAnalysis::getWriter() << "protected ";
@@ -475,21 +475,21 @@ namespace hakc {
         }
 
         Value *ProtectedValue = nullptr;
-        if(!BaseIsAuthenticatedPointer() && !BaseShouldBeTransferred && !ManuallyTransferred) {
+        if (!BaseIsAuthenticatedPointer() && !BaseShouldBeTransferred && !ManuallyTransferred) {
             ProtectedValue = BaseDefinition;
-        } else if(ManuallyTransferred) {
+        } else if (ManuallyTransferred) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Transfer not needed for " << *this
                                                 << " because ProtectedPointer is already set to be "
                                                 << *ProtectedPointer << "\n";
             }
             ProtectedValue = ProtectedPointer;
-        } else if(BaseShouldBeTransferred) {
+        } else if (BaseShouldBeTransferred) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Creating Transfer of BaseDefinition of " << *this << "\n";
             }
 
-            if(auto *GV = dyn_cast<GlobalVariable>(BaseDefinition)) {
+            if (auto *GV = dyn_cast<GlobalVariable>(BaseDefinition)) {
                 ProtectedValue = Manager->GetFunctionAnalysis()->SignGlobalPointerWithColor(GV);
             } else {
                 ProtectedValue = Manager->GetFunctionAnalysis()->CreateMissingTransfer(
@@ -497,17 +497,17 @@ namespace hakc {
             }
         }
 
-        if(!ProtectedValue && GetProtectedUserCount() > 0) {
+        if (!ProtectedValue && GetProtectedUserCount() > 0) {
             CommonHAKCAnalysis::getWriter() << "The protected pointer of " << *this << " is ";
             CommonHAKCAnalysis::PrettyPrintValue(ProtectedPointer, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " but is not manually transferred\n";
             throw std::exception();
         }
 
-        if(ProtectedValue) {
+        if (ProtectedValue) {
             SetProtectedPointer(ProtectedValue);
             SmallVector<ManagedHAKCPointerUseP> SortedUses(ProtectedUses.begin(), ProtectedUses.end());
-            if(!BaseIsAuthenticatedPointer() || ManuallyTransferred) {
+            if (!BaseIsAuthenticatedPointer() || ManuallyTransferred) {
                 SortedUses.append(CloneUses.begin(), CloneUses.end());
             }
             ManagedHAKCPointerUse::SortUses(SortedUses);
@@ -844,7 +844,11 @@ namespace hakc {
             } else {
                 CommonHAKCAnalysis::getWriter() << "Protected";
             }
-            CommonHAKCAnalysis::getWriter() << " User " << *U << " to be " << *Replacement << " in function "
+            CommonHAKCAnalysis::getWriter() << " User ";
+            CommonHAKCAnalysis::PrettyPrintValue(U, CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " to be ";
+            CommonHAKCAnalysis::PrettyPrintValue(Replacement, CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " in function "
                                             << Manager->GetFunctionAnalysis()->getFunction().getName() << " for "
                                             << *this << "\n";
         }
@@ -956,7 +960,7 @@ namespace hakc {
                     }
                     if (!AuthenticatedUser) {
                         CommonHAKCAnalysis::getWriter() << "AuthenticatedVersion is not a User: ";
-                        AuthenticatedVersion->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::PrettyPrintValue(AuthenticatedVersion, CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
                         Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << "\n";
@@ -999,7 +1003,7 @@ namespace hakc {
                 }
                 if (!ProtectedUser) {
                     CommonHAKCAnalysis::getWriter() << "ProtectedVersion is not a User: ";
-                    ProtectedVersion->print(CommonHAKCAnalysis::getWriter());
+                    CommonHAKCAnalysis::PrettyPrintValue(ProtectedVersion, CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << "\n";
                     Manager->GetFunctionAnalysis()->getFunction().print(CommonHAKCAnalysis::getWriter());
                     CommonHAKCAnalysis::getWriter() << "\n";

@@ -1136,7 +1136,7 @@ namespace hakc {
          * @brief Sets the function section to the correct PMC ELF section
          */
     void HAKCFunctionAnalysis::relocateFunctionSection() {
-        if(isCompartmentalizedFunction()) {
+        if (isCompartmentalizedFunction()) {
             getFunction().setSection(getHAKCFunctionSectionName());
         }
     }
@@ -1262,7 +1262,7 @@ namespace hakc {
         }
 
         if (modifiedFunction()) {
-            if(RelocateSection) {
+            if (RelocateSection) {
                 relocateFunctionSection();
             }
             if (debug_output) {
@@ -1307,8 +1307,9 @@ namespace hakc {
             }
 
             if (llvm::verifyFunction(getFunction(), &CommonHAKCAnalysis::getWriter())) {
-                CommonHAKCAnalysis::getWriter() << "Compartmentalization created a faulty function\n";
-                getFunction().print(CommonHAKCAnalysis::getWriter(), nullptr);
+                CommonHAKCAnalysis::getWriter() << "Compartmentalization created a faulty function "
+                                                << getFunction().getName() << "\n";
+                getModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
                 throw std::exception();
             }
         } else if (debug_output) {
@@ -1347,7 +1348,7 @@ namespace hakc {
         std::set<Instruction *> UserInstructions;
         for (auto *U: GlobalVar->users()) {
             if (auto *I = dyn_cast<Instruction>(U)) {
-                if(I->getFunction() == &getFunction()) {
+                if (I->getFunction() == &getFunction()) {
                     UserInstructions.insert(I);
                 }
             }
