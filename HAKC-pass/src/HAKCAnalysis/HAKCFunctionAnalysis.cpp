@@ -1344,7 +1344,7 @@ namespace hakc {
                                           InsertionPoint, Size);
     }
 
-    Instruction *HAKCFunctionAnalysis::SignGlobalPointerWithColor(GlobalVariable *GlobalVar) {
+    Instruction *HAKCFunctionAnalysis::SignGlobalPointerWithColor(GlobalValue *GlobalVar) {
         std::set<Instruction *> UserInstructions;
         for (auto *U: GlobalVar->users()) {
             if (auto *I = dyn_cast<Instruction>(U)) {
@@ -1355,7 +1355,7 @@ namespace hakc {
         }
 
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer().CreateSignWithColor(GlobalVar, InsertionPoint, &getFunction(), true);
+        return getTransformer().CreateSignWithColor(GlobalVar, InsertionPoint, &getFunction(), !isa<Function>(GlobalVar));
     }
 
     void HAKCFunctionAnalysis::createMissingTransfers() {

@@ -488,7 +488,7 @@ namespace hakc {
     std::set<StringRef> HAKCModuleAnalysisLinux::GetIgnoredGlobals() {
         std::set<StringRef> GlobalsToIgnore = {
                 "kmalloc_caches",
-                "current",
+                "current_task",
         };
         auto ExistingIgnoredGlobals = CommonHAKCAnalysis::GetIgnoredGlobals();
         return AddToSet(GlobalsToIgnore, ExistingIgnoredGlobals);

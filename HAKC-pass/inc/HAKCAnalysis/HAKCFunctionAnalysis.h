@@ -273,7 +273,7 @@ namespace hakc {
 
         Instruction *CreateMissingTransfer(Instruction *PointerNeedingTransfer);
 
-        virtual Instruction *SignGlobalPointerWithColor(GlobalVariable *GlobalVar);
+        virtual Instruction *SignGlobalPointerWithColor(GlobalValue *GlobalVar);
 
         virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 

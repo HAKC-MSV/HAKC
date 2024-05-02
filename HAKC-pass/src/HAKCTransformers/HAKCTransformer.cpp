@@ -311,8 +311,8 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, F
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
 
     hakc_compartment_id_t CompartmentID;
-    if(auto *GV = dyn_cast<GlobalVariable>(HAKCPointer)) {
-        CompartmentID = getGlobalCompartmentID(GV);
+    if(auto *GV = dyn_cast<GlobalValue>(HAKCPointer)) {
+        CompartmentID = getSymbolCompartmentID(GV);
     } else {
         CompartmentID = getFunctionCompartmentID(Target);
     }

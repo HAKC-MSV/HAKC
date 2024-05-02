@@ -203,8 +203,6 @@ namespace hakc {
 
         void AddCloneUse(const ManagedHAKCPointerUseP &UPtr);
 
-//        void UpdateProtectedMultiValueUses(User *AuthenticatedMultiUse, User *ProtectedPHI);
-
         bool PointerSetsCanBeEqual();
 
         void UpdateUserCounts();
