@@ -104,6 +104,17 @@ namespace hakc {
 
 
         /**
+         * Create a signed pointer using the color of HAKCPointer
+         * @param HAKCPointer
+         * @param I
+         * @param Target
+         * @param IsData
+         * @return
+         */
+        virtual Instruction *CreateSignWithColor(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData);
+
+
+        /**
          * Create a Outside Transfer Function
          * @param F
          * @return
@@ -209,6 +220,8 @@ namespace hakc {
          * @return
          */
         virtual CallInst *CreateCall(StringRef name, Type *RetTy, ArrayRef<Value *> Args);
+
+        virtual Instruction *CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value*> Args, Value *ValueToTypeMatch);
 
         /**
          * Gets or inserts the GlobalVariable containing the list of valid targets from the Compartment F belongs to

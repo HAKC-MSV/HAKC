@@ -239,7 +239,7 @@ CallInst *hakc::HAKCTransformer::CreateCall(StringRef name, Type *RetTy, ArrayRe
 
     /* The LLVM function checker throws an error when an inline-able function with debug info contains a function
     * call with no debug information.  So try to set the appropriate debug info for this transfer */
-    if(!Call->getDebugLoc()) {
+    if (!Call->getDebugLoc()) {
         auto *I = &*HAKCIRBuilder.GetInsertPoint();
         if (I->getDebugLoc()) {
             Call->setDebugLoc(I->getDebugLoc());
@@ -305,6 +305,29 @@ hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, Function *Target
     return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetCompartment, HAKCPointer, Size, IsData);
 }
 
+Instruction *
+hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData) {
+    ValidateHAKCPointerAndLocation(HAKCPointer, I);
+    auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
+
+    hakc_compartment_id_t CompartmentID;
+    if(auto *GV = dyn_cast<GlobalVariable>(HAKCPointer)) {
+        CompartmentID = getGlobalCompartmentID(GV);
+    } else {
+        CompartmentID = getFunctionCompartmentID(Target);
+    }
+
+    auto *CompartmentIDValue = GetHAKCCompartmentValue(CompartmentID);
+    auto *IsCodeValue = HAKCIRBuilder.getInt1(!IsData);
+    auto *OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
+    SmallVector<Value*> Args = {
+            OperandCast, CompartmentIDValue, IsCodeValue
+    };
+
+    return CreateCallWithResultCast(HAKCAnalysis->HAKCSignWithColorName(), HAKCAuthenticationRetType(AddrSpace),
+                                    Args, HAKCPointer);
+}
+
 bool hakc::HAKCTransformer::HAKCPointerHasCustomTransfer(Value *HAKCPointer) {
     return GetCustomTransferFunction(HAKCPointer) != nullptr;
 }
@@ -335,26 +358,30 @@ hakc::HAKCTransformer::CreateDefaultTransfer(Value *HAKCPointer,
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
     bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer);
 
-    CallInst *TransferCall;
+    StringRef FunctionToCall;
     if (IsPerCPU) {
-        TransferCall = CreateCall(HAKCAnalysis->HAKCPerCPUCompartmentTransferName(), HAKCAuthenticationRetType
-                                          (AddrSpace),
-                                  FullArgSet);
+        FunctionToCall = HAKCAnalysis->HAKCPerCPUCompartmentTransferName();
     } else {
-        TransferCall = CreateCall(HAKCAnalysis->HAKCCompartmentTransferName(), HAKCAuthenticationRetType(AddrSpace),
-                                  FullArgSet);
+        FunctionToCall = HAKCAnalysis->HAKCCompartmentTransferName();
     }
 
+    return CreateCallWithResultCast(FunctionToCall, HAKCAuthenticationRetType(AddrSpace), FullArgSet, HAKCPointer);
+}
+
+Instruction *
+hakc::HAKCTransformer::CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch) {
+    auto *Call = CreateCall(Name, RetTy, Args);
+
     Value *ResultCast;
-    if (isa<PtrToIntInst>(HAKCPointer) || HAKCPointer->getType()->isIntegerTy()) {
-        ResultCast = HAKCIRBuilder.CreatePtrToInt(TransferCall, HAKCPointer->getType());
+    if (isa<PtrToIntInst>(ValueToTypeMatch) || ValueToTypeMatch->getType()->isIntegerTy()) {
+        ResultCast = HAKCIRBuilder.CreatePtrToInt(Call, ValueToTypeMatch->getType());
     } else {
-        ResultCast = HAKCIRBuilder.CreateBitCast(TransferCall, HAKCPointer->getType());
+        ResultCast = HAKCIRBuilder.CreateBitCast(Call, ValueToTypeMatch->getType());
     }
 
     auto *Result = dyn_cast<Instruction>(ResultCast);
     if (!Result) {
-        Result = TransferCall;
+        Result = Call;
     }
 
     return Result;

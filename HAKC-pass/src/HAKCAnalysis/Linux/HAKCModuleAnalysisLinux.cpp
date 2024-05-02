@@ -45,12 +45,12 @@ namespace hakc {
         HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_scsi_device, M,
                              CommonHAKCAnalysis::getCompartmentStorageSizeInBits()));
 
-//        HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_file_ops, M,
-//                             CommonHAKCAnalysis::getCompartmentStorageSizeInBits()));
+        HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_file_ops, M,
+                             CommonHAKCAnalysis::getCompartmentStorageSizeInBits()));
 
         HAKC_TRANSFER(HAKCCompartmentTransferName(), 2, 3);
         HAKC_TRANSFER(HAKCPerCPUCompartmentTransferName(), 2, 3);
-        HAKC_TRANSFER("hakc_sign_pointer_with_color", 1, -1);
+        HAKC_TRANSFER(HAKCSignWithColorName(), 1, -1);
         HAKC_TRANSFER("hakc_sign_pointer", 1, 2);
 
         /* TODO: Make these custom transfer functions */

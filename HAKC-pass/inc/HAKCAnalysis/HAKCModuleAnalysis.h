@@ -126,6 +126,8 @@ namespace hakc {
 
         virtual StringRef HAKCPerCPUCompartmentTransferName();
 
+        virtual StringRef HAKCSignWithColorName();
+
         virtual StringRef HAKCEntryTokenName();
 
         virtual Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy);

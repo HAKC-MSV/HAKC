@@ -550,6 +550,10 @@ namespace hakc {
         return "hakc_transfer_to_clique";
     }
 
+    StringRef HAKCModuleAnalysis::HAKCSignWithColorName() {
+        return "hakc_sign_pointer_with_color";
+    }
+
     StringRef hakc::HAKCModuleAnalysis::HAKCPerCPUCompartmentTransferName() {
         return "hakc_transfer_percpu_to_clique";
     }

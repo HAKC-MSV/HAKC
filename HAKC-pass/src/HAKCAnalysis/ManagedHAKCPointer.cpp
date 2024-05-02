@@ -488,8 +488,13 @@ namespace hakc {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Creating Transfer of BaseDefinition of " << *this << "\n";
             }
-            ProtectedValue = Manager->GetFunctionAnalysis()->CreateMissingTransfer(
-                    dyn_cast<Instruction>(BaseDefinition));
+
+            if(auto *GV = dyn_cast<GlobalVariable>(BaseDefinition)) {
+                ProtectedValue = Manager->GetFunctionAnalysis()->SignGlobalPointerWithColor(GV);
+            } else {
+                ProtectedValue = Manager->GetFunctionAnalysis()->CreateMissingTransfer(
+                        dyn_cast<Instruction>(BaseDefinition));
+            }
         }
 
         if(!ProtectedValue && GetProtectedUserCount() > 0) {

@@ -273,6 +273,8 @@ namespace hakc {
 
         Instruction *CreateMissingTransfer(Instruction *PointerNeedingTransfer);
 
+        virtual Instruction *SignGlobalPointerWithColor(GlobalVariable *GlobalVar);
+
         virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
         virtual bool IsIntrinsicNeedingAuthentication(CallBase *Call);
