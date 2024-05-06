@@ -23,7 +23,7 @@ namespace hakc {
         StringRef extras[] = {
                 /* below are problematic files from x86 that lead to undefined transfer function symbols */
                 /* kvm instruction emulation */
-                "arch/x86/kvm/emulate.c",
+//                "arch/x86/kvm/emulate.c",
                 /* idt */
                 "arch/x86/kernel/idt.c",
                 /* irq */
@@ -36,9 +36,9 @@ namespace hakc {
                 "arch/x86/net/bpf_jit_comp.c",
                 "arch/x86/kernel/x86_init.c",
                 "arch/x86/kernel/pci-swiotlb.c",
-                "arch/x86/kernel/acpi/boot.c"
+                "arch/x86/kernel/acpi/boot.c",
                 /* Hypervisor related sources */
-                "arch/x86/xen/apic.c",
+/*                "arch/x86/xen/apic.c",
                 "arch/x86/xen/efi.c",
                 "arch/x86/xen/enlighten_hvm.c",
                 "arch/x86/xen/enlighten.c",
@@ -63,27 +63,27 @@ namespace hakc {
                 "arch/x86/xen/time.c",
                 "arch/x86/xen/trace.c",
                 "arch/x86/xen/vga.c",
-                "arch/x86/xen/xen-asm.c",
-                "arch/x86/kernel/paravirt.c",
-                "arch/x86/kernel/kvm.c",
-                "arch/x86/kernel/cpu/vmware.c",
+                "arch/x86/xen/xen-asm.c",*/
+//                "arch/x86/kernel/paravirt.c",
+//                "arch/x86/kernel/kvm.c",
+//                "arch/x86/kernel/cpu/vmware.c",
                 /* pass crashes with these */
-		/* asm sideeffect something or other */
-		"fs/readdir.c",
-		"mm/maccess.c",
-		"net/core/scm.c",
-		"mm/gup.c",
-		"arch/x86/kernel/signal_64.c",
-		"arch/x86/kvm/x86.c",
-		"kernel/rseq.c",
-		/* undefined symbol bpf_dispatcher_nop_func */
-		"net/core/filter.c",
-		/*this breaks v5.15 build if it is commented out */
-		/*with it uncommented, KERNEL DOESNT BOOT WHEN COMPARTMENTALIZED */
-		/*the no-op common-kernel weak symbol version gets used :-( */
-		/*potentially this might work if the weak def (kernel entry common) source is also added */
-		"arch/x86/kernel/signal.c",
-		"kernel/entry/common.c",
+                /* asm sideeffect something or other */
+//                "fs/readdir.c",
+//                "mm/maccess.c",
+                "net/core/scm.c",
+                "mm/gup.c",
+                "arch/x86/kernel/signal_64.c",
+//                "arch/x86/kvm/x86.c",
+                "kernel/rseq.c",
+                /* undefined symbol bpf_dispatcher_nop_func */
+                "net/core/filter.c",
+                /*this breaks v5.15 build if it is commented out */
+                /*with it uncommented, KERNEL DOESNT BOOT WHEN COMPARTMENTALIZED */
+                /*the no-op common-kernel weak symbol version gets used :-( */
+                /*potentially this might work if the weak def (kernel entry common) source is also added */
+                "arch/x86/kernel/signal.c",
+                "kernel/entry/common.c",
         };
         return AddToSet(Paths, extras);
     }
