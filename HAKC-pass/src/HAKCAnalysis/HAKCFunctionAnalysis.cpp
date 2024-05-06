@@ -1355,7 +1355,8 @@ namespace hakc {
         }
 
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer().CreateSignWithColor(GlobalVar, InsertionPoint, &getFunction(), !isa<Function>(GlobalVar));
+        return getTransformer().CreateSignWithColor(GlobalVar, InsertionPoint, &getFunction(),
+                                                    !isa<Function>(GlobalVar));
     }
 
     void HAKCFunctionAnalysis::createMissingTransfers() {

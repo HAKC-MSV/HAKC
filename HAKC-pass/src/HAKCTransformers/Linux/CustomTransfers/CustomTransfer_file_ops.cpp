@@ -6,7 +6,8 @@
 
 namespace hakc {
     CustomTransfer_file_ops::CustomTransfer_file_ops(Module &M, unsigned CompartmentStorageSizeInBits) :
-            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.file_operations", "hakc_transfer_file_ops",
+            SingleFunctionCustomTransfer(M, CompartmentStorageSizeInBits, "struct.file_operations",
+                                         "hakc_transfer_file_ops",
                                          nullptr,
                                          {
                                                  nullptr,

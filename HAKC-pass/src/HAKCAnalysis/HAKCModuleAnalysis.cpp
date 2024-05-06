@@ -295,7 +295,7 @@ namespace hakc {
         return CommonHAKCAnalysis::FunctionHasPointerArg(F);
     }
 
-    void HAKCModuleAnalysis::RegisterCustomTransfer(const hakc_custom_transfer_def_t& CustomTransfer) {
+    void HAKCModuleAnalysis::RegisterCustomTransfer(const hakc_custom_transfer_def_t &CustomTransfer) {
         if (CustomTransfer->GetFunction() == nullptr || CustomTransfer->GetType() == nullptr) {
             return;
         }
@@ -303,13 +303,13 @@ namespace hakc {
         CustomTransfers.push_back(CustomTransfer);
     }
 
-    void HAKCModuleAnalysis::RegisterHAKCTransfer(const hakc_transfer_def_t& Transfer) {
+    void HAKCModuleAnalysis::RegisterHAKCTransfer(const hakc_transfer_def_t &Transfer) {
         if (Transfer) {
             Transfers.insert(Transfer);
         }
     }
 
-    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(const hakc_function_def_t& HAKCFunction) {
+    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(const hakc_function_def_t &HAKCFunction) {
         if (HAKCFunction) {
             NonTransferHAKCFunctions.insert(HAKCFunction);
         }
@@ -453,8 +453,10 @@ namespace hakc {
                         DISubprogram::DISPFlags SPFlags = DISubprogram::SPFlagDefinition |
                                                           DISubprogram::SPFlagOptimized |
                                                           DISubprogram::SPFlagLocalToUnit;
-                        auto NewSP = DIB.createFunction(OrigSP->getScope(), transferFunc->getName(), transferFunc->getName(),
-                                                        OrigSP->getFile(), 0, OrigSP->getType(), 0, DINode::FlagZero, SPFlags);
+                        auto NewSP = DIB.createFunction(OrigSP->getScope(), transferFunc->getName(),
+                                                        transferFunc->getName(),
+                                                        OrigSP->getFile(), 0, OrigSP->getType(), 0, DINode::FlagZero,
+                                                        SPFlags);
                         transferFunc->setSubprogram(NewSP);
                     }
                 }

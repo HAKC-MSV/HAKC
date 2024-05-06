@@ -49,7 +49,7 @@ namespace hakc {
 
         static std::set<StringRef> AddToSet(std::set<StringRef> Existing, ArrayRef<StringRef> NewAdditions);
 
-        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef>& NewAdditions);
+        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions);
 
         virtual bool ValueIsUsedAsPointer(Value *V, bool debug);
 

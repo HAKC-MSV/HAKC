@@ -281,7 +281,7 @@ namespace hakc {
             AllValuesAuthenticated = true;
             auto ValuesToCheck = GetAllIncomingValues();
             for (auto *ValueToCheck: ValuesToCheck) {
-                if(isa<GlobalValue>(ValueToCheck)) {
+                if (isa<GlobalValue>(ValueToCheck)) {
                     continue;
                 }
 
@@ -478,7 +478,7 @@ namespace hakc {
             for (const auto &ProtectedUse: SortedUses) {
                 if (ProtectedUse->get() == BaseDefinition) {
                     Manager->AddProtectedPointer(ProtectedUse, ProtectedValue);
-                } else if(ReplaceCloneUses) {
+                } else if (ReplaceCloneUses) {
                     Manager->AddProtectedPointer(ProtectedUse, ProtectedUse->get());
                 }
             }
@@ -491,7 +491,7 @@ namespace hakc {
         }
 
         /* Note these checks come from CreateBaseAuthenticatedPointer */
-        if(PointerSetsShouldBeEqual() || GetAuthenticatedUserCount() == 0 || BaseIsAuthenticatedPointer()) {
+        if (PointerSetsShouldBeEqual() || GetAuthenticatedUserCount() == 0 || BaseIsAuthenticatedPointer()) {
             return;
         }
 
@@ -576,7 +576,7 @@ namespace hakc {
 
         for (auto *User: BaseDefinition->users()) {
             if (auto *I = dyn_cast<Instruction>(User)) {
-                if(I->getFunction() == &Manager->GetFunctionAnalysis()->getFunction()) {
+                if (I->getFunction() == &Manager->GetFunctionAnalysis()->getFunction()) {
                     UserI.insert(I);
                 }
             }

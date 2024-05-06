@@ -311,7 +311,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, F
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
 
     hakc_compartment_id_t CompartmentID;
-    if(auto *GV = dyn_cast<GlobalValue>(HAKCPointer)) {
+    if (auto *GV = dyn_cast<GlobalValue>(HAKCPointer)) {
         CompartmentID = getSymbolCompartmentID(GV);
     } else {
         CompartmentID = getFunctionCompartmentID(Target);
@@ -320,7 +320,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, F
     auto *CompartmentIDValue = GetHAKCCompartmentValue(CompartmentID);
     auto *IsCodeValue = HAKCIRBuilder.getInt1(!IsData);
     auto *OperandCast = HAKCIRBuilder.CreateBitCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
-    SmallVector<Value*> Args = {
+    SmallVector<Value *> Args = {
             OperandCast, CompartmentIDValue, IsCodeValue
     };
 
@@ -369,7 +369,8 @@ hakc::HAKCTransformer::CreateDefaultTransfer(Value *HAKCPointer,
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch) {
+hakc::HAKCTransformer::CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args,
+                                                Value *ValueToTypeMatch) {
     auto *Call = CreateCall(Name, RetTy, Args);
 
     Value *ResultCast;

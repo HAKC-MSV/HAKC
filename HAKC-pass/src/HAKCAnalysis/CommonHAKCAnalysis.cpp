@@ -85,7 +85,7 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::IsConstantUsedInGlobal(Value *V) {
         bool Result = false;
-        if(auto *Const = dyn_cast<Constant>(V)) {
+        if (auto *Const = dyn_cast<Constant>(V)) {
             auto Search = [](User *U) {
                 return isa<GlobalVariable>(U) || CommonHAKCAnalysis::IsConstantUsedInGlobal(U);
             };
@@ -96,11 +96,11 @@ namespace hakc {
     }
 
     void CommonHAKCAnalysis::PrettyPrintValue(Value *V, raw_ostream &os) {
-        if(V == nullptr) {
+        if (V == nullptr) {
             os << "!!nullptr!!";
-        } else if(auto *F = dyn_cast<Function>(V)) {
+        } else if (auto *F = dyn_cast<Function>(V)) {
             os << "Function " << F->getName();
-        } else if(auto *GV = dyn_cast<GlobalVariable>(V)) {
+        } else if (auto *GV = dyn_cast<GlobalVariable>(V)) {
             os << "Global " << GV->getName();
         } else {
             os << *V;
@@ -155,7 +155,8 @@ namespace hakc {
 
             if (auto *gep = dyn_cast<GetElementPtrInst>(curr)) {
                 if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer " << *gep->getPointerOperand() << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer " << *gep->getPointerOperand()
+                                                    << "\n";
                 }
                 working_list.insert(gep->getPointerOperand());
             } else if (auto *BitCastI = dyn_cast<BitCastInst>(curr)) {
@@ -203,7 +204,8 @@ namespace hakc {
                 auto PointerBinOps = GetPointerManipulatingBinaryOps();
                 if (PointerBinOps.find(binOp->getOpcode()) == PointerBinOps.end()) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "BinaryOperator " << *binOp << " is not a pointer manipulating binary operation\n";
+                        CommonHAKCAnalysis::getWriter() << "BinaryOperator " << *binOp
+                                                        << " is not a pointer manipulating binary operation\n";
                     }
                     goto add_to_chain;
                 }
@@ -419,7 +421,7 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::IsIgnoredGlobal(Value *V) {
         bool Result = false;
-        if(auto *GV = dyn_cast<GlobalValue>(V)) {
+        if (auto *GV = dyn_cast<GlobalValue>(V)) {
             auto IgnoredGlobals = GetIgnoredGlobals();
             Result = IgnoredGlobals.find(GV->getName()) != IgnoredGlobals.end();
         }
@@ -499,7 +501,8 @@ namespace hakc {
 
     std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
         auto NoTransferFunctions = GetNoTransferFunctions();
-        if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX) || NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
+        if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX) ||
+            NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
             return F->getName().str();
         }
         std::string name = OUTSIDE_TRANSFER_PREFIX.str();
@@ -635,7 +638,8 @@ namespace hakc {
         return Existing;
     }
 
-    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, const std::set<StringRef>& NewAdditions) {
+    std::set<StringRef>
+    CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions) {
         Existing.insert(NewAdditions.begin(), NewAdditions.end());
         return Existing;
     }

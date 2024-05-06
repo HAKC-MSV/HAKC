@@ -221,7 +221,8 @@ namespace hakc {
          */
         virtual CallInst *CreateCall(StringRef name, Type *RetTy, ArrayRef<Value *> Args);
 
-        virtual Instruction *CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value*> Args, Value *ValueToTypeMatch);
+        virtual Instruction *
+        CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
 
         /**
          * Gets or inserts the GlobalVariable containing the list of valid targets from the Compartment F belongs to

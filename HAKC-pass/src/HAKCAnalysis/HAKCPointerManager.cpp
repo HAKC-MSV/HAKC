@@ -538,7 +538,7 @@ namespace hakc {
         SmallVector<ManagedHAKCPointerP> SortedPointers;
         GetSortedPointers(SortedPointers);
 
-        for(auto &ManagedPtr : SortedPointers) {
+        for (auto &ManagedPtr: SortedPointers) {
             /* Guarantee that auth and protected pointers get placed correctly */
             ManagedPtr->MaybeCreateBaseCopyPointer();
         }

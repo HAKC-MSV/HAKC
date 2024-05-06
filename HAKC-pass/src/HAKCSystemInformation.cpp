@@ -229,7 +229,7 @@ namespace hakc {
         return ModuleContainsCompartmentalizedSymbols;
     }
 
-    bool HAKCSystemInformation::SymbolIsInScope(const std::shared_ptr<HAKCSymbol>& Symbol, const DIScope *Scope) {
+    bool HAKCSystemInformation::SymbolIsInScope(const std::shared_ptr<HAKCSymbol> &Symbol, const DIScope *Scope) {
         std::string ScopeFile;
         if (sys::path::is_relative(Scope->getFilename())) {
             ScopeFile = Scope->getDirectory().str();

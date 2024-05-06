@@ -429,7 +429,7 @@ namespace hakc {
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinux::GetSeparateNamespacePaths() {
-        return  { };
+        return {};
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinux::GetHAKCSourcePaths() {

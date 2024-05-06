@@ -53,11 +53,11 @@ namespace hakc {
 
         virtual void addTransferFunctions();
 
-        void RegisterCustomTransfer(const hakc_custom_transfer_def_t& CustomTransfer);
+        void RegisterCustomTransfer(const hakc_custom_transfer_def_t &CustomTransfer);
 
-        void RegisterHAKCTransfer(const hakc_transfer_def_t& Transfer);
+        void RegisterHAKCTransfer(const hakc_transfer_def_t &Transfer);
 
-        void RegisterNonTransferHAKCFunction(const hakc_function_def_t& HAKCFunction);
+        void RegisterNonTransferHAKCFunction(const hakc_function_def_t &HAKCFunction);
 
         virtual bool FunctionNeedsAnalysis(Function *F);
 

@@ -20,11 +20,11 @@ namespace hakc {
     class HAKCPointerManager;
 
     template<unsigned ArgNo>
-    llvm::Value* CallArgumentSize(llvm::Value *Call) {
-        if(auto *CallB = dyn_cast<CallBase>(Call)) {
+    llvm::Value *CallArgumentSize(llvm::Value *Call) {
+        if (auto *CallB = dyn_cast<CallBase>(Call)) {
             auto *ArgTy = CallB->getArgOperand(ArgNo)->getType();
             auto Size = CallB->getFunction()->getParent()->getDataLayout().getTypeStoreSize(ArgTy);
-            if(Size > 0) {
+            if (Size > 0) {
                 return ConstantInt::get(IntegerType::getInt64Ty(CallB->getContext()), Size);
             }
         }

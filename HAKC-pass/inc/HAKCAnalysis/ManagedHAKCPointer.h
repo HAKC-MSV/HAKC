@@ -158,7 +158,7 @@ namespace hakc {
 
         bool AllIncomingValuesWillBeAuthenticated();
 
-        std::set<Value*> GetAllIncomingValues();
+        std::set<Value *> GetAllIncomingValues();
 
         bool PointerSetsShouldBeEqual();
 
