@@ -429,14 +429,7 @@ namespace hakc {
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinux::GetSeparateNamespacePaths() {
-        return {
-                "drivers/firmware/efi/libstub/fdt.c",
-                /* These don't have separate namespaces, but they use pointers
-                 * in crazy ways, and until a better way is found, just
-                 * ignore them. */
-                "lib/idr.c",
-                "lib/xarray.c",
-        };
+        return  { };
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinux::GetHAKCSourcePaths() {

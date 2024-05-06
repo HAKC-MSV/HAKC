@@ -15,30 +15,30 @@ target triple = "x86_64-unknown-linux-gnu"
 define dso_local i32 @HAKC_ORIG_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
   %2 = alloca %struct.data_struct, align 4
   call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
-  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
-  br i1 %3, label %17, label %4, !dbg !29
+  %3 = bitcast %struct.data_struct2* %0 to i8*, !dbg !28
+  %4 = call i8* @check_hakc_data_access(i8* %3, i32 6, i64 393218), !dbg !28
+  %5 = bitcast i8* %4 to %struct.data_struct2*, !dbg !28
+  %6 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %6, label %17, label %7, !dbg !29
 
-4:                                                ; preds = %1
-  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
-  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !30
+7:                                                ; preds = %1
+  %8 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
   call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
-  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
-  store i32 0, i32* %6, align 4, !dbg !33, !tbaa !34
-  %7 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
-  %8 = call i8* @check_hakc_data_access(i8* %7, i32 6, i64 393218), !dbg !39
-  %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !39
-  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %9, i64 0, i32 0, !dbg !39
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %5, i64 0, i32 0, !dbg !39
   %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %10, align 8, !dbg !39, !tbaa !40
   %13 = bitcast i32 (%struct.data_struct*)* %12 to i8*, !dbg !43
   %14 = call i8* @check_hakc_code_access(i8* %13, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([2 x %HAKCEntryToken], [2 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 2), !dbg !43
   %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !43
   %16 = call i32 %15(%struct.data_struct* nonnull %2) #3, !dbg !43
-  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
   br label %17
 
-17:                                               ; preds = %1, %4
-  %18 = phi i32 [ %16, %4 ], [ 0, %1 ], !dbg !27
+17:                                               ; preds = %1, %7
+  %18 = phi i32 [ %16, %7 ], [ 0, %1 ], !dbg !27
   ret i32 %18, !dbg !45
 }
 
