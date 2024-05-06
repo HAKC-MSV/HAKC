@@ -12,12 +12,7 @@ namespace hakc {
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinuxArm::GetSeparateNamespacePaths() {
-        auto Paths = HAKCModuleAnalysisLinux::GetSeparateNamespacePaths();
-        StringRef extras[] = {
-                "arch/arm64/kvm/hyp/",
-                "arch/arm64/kernel/vdso/",
-        };
-        return AddToSet(Paths, extras);
+        return HAKCModuleAnalysisLinux::GetSeparateNamespacePaths();
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinuxArm::GetNoTransferFunctions() {
