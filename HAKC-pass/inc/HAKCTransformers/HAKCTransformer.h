@@ -66,7 +66,7 @@ namespace hakc {
          */
         virtual Instruction *CreateCompartmentTransfer(Value *HAKCPointer,
                                                        Instruction *I,
-                                                       Function *Target,
+                                                       GlobalValue *Target,
                                                        bool IsData);
 
         /**
@@ -89,7 +89,7 @@ namespace hakc {
          */
         virtual Instruction *CreateSizedCompartmentTransfer(Value *HAKCPointer,
                                                             Instruction *I,
-                                                            Function *Target,
+                                                            GlobalValue *Target,
                                                             bool IsData,
                                                             ConstantInt *Size);
 
@@ -111,7 +111,7 @@ namespace hakc {
          * @param IsData
          * @return
          */
-        virtual Instruction *CreateSignWithColor(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData);
+        virtual Instruction *CreateSignWithColor(Value *HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
 
 
         /**
@@ -189,6 +189,8 @@ namespace hakc {
          * @return
          */
         virtual GlobalVariable *AddCompartmentMetadataEntry(hakc_compartment_id_t CompartmentID);
+
+        virtual Function *PopulateGlobalTransfer(Function *GlobalTransfer, GlobalVariable *GlobalVar);
 
     protected:
         IRBuilder<> HAKCIRBuilder;
@@ -271,7 +273,7 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, Function *Target, bool IsData,
+        virtual std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
                                                              ConstantInt *Size) = 0;
 
 
@@ -284,7 +286,7 @@ namespace hakc {
          * @return
          */
         virtual Instruction *CreateDefaultTransfer(Value *HAKCPointer,
-                                                   Function *Target,
+                                                   GlobalValue *Target,
                                                    bool IsData,
                                                    ConstantInt *Size);
 
@@ -297,7 +299,7 @@ namespace hakc {
          * @return
          */
         virtual Instruction *CreateCustomTransfer(Value *HAKCPointer,
-                                                  Function *Target,
+                                                  GlobalValue *Target,
                                                   bool IsData,
                                                   ConstantInt *Size);
 
@@ -326,7 +328,9 @@ namespace hakc {
 
         virtual void CreateBackwardArgumentTransfers(Function *Target, Function *TransferFunction);
 
-        virtual bool TargetIsKernel(Function *Target);
+        virtual bool TargetIsKernel(GlobalValue *Target);
+
+        virtual void TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer, GlobalValue *GlobalVar);
 
         virtual bool DebugIsActive();
 
@@ -335,9 +339,11 @@ namespace hakc {
         virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(Type *HAKCType);
 
         virtual Instruction *
-        CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, Type *TypeToUse);
+        CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, GlobalValue *Target, Type *TypeToUse);
 
         virtual bool NoKernelTransfers(Function *Target);
+
+        void InitNewFunction(Function *F, StringRef EntryBlockName);
     };
 }
 

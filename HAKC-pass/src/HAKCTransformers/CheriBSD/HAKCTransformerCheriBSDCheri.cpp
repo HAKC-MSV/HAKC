@@ -344,7 +344,7 @@ namespace hakc {
     }
 
     std::vector<Value *> HAKCTransformerCheriBSDCheri::CreateArgumentsWithCompartment(Value *HAKCPointer,
-                                                                                      Function *Target) {
+                                                                                      GlobalValue *Target) {
         Value *HAKCPointerBitCast;
 
         unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
@@ -398,13 +398,13 @@ namespace hakc {
     }
 
     std::vector<Value *>
-    HAKCTransformerCheriBSDCheri::CreateTransferArguments(Value *HAKCPointer, Function *Target,
+    HAKCTransformerCheriBSDCheri::CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target,
                                                           bool IsData, ConstantInt *Size) {
         return CreateArgumentsWithCompartment(HAKCPointer, Target);
     }
 
     Instruction *
-    HAKCTransformerCheriBSDCheri::CreateCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target,
+    HAKCTransformerCheriBSDCheri::CreateCompartmentTransfer(Value *HAKCPointer, Instruction *I, GlobalValue *Target,
                                                             bool IsData) {
         ValidateHAKCPointerAndLocation(HAKCPointer, I);
         return CreateSizedCompartmentTransfer(HAKCPointer, I, Target, IsData, nullptr);

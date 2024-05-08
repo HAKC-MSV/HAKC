@@ -61,6 +61,16 @@ namespace hakc {
 
         virtual bool FunctionNeedsAnalysis(Function *F);
 
+        virtual Function* CreateInitTransfer(GlobalVariable *GlobalVar);
+
+        virtual StringRef GlobalInitTransferPrefix() const;
+
+        virtual StringRef GlobalInitTransferSectionName() const;
+
+        virtual std::string GlobalVariableROSectionName(GlobalVariable *GlobalVar);
+
+        virtual void PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar);
+
         std::set<Function *> AnalysisFunctions;
 
     private:
@@ -139,6 +149,8 @@ namespace hakc {
         virtual void generateModuleParamGetCtxFunction(GlobalVariable *GV) = 0;
 
         virtual void transferModuleParams() = 0;
+
+        virtual void CreateInitGlobalMemberTransfers();
 
         Module &GetModule();
     };

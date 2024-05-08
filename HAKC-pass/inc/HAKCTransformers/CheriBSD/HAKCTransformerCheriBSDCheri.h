@@ -26,7 +26,7 @@ namespace hakc {
 
         Instruction *CreateCompartmentTransfer(Value *HAKCPointer,
                                                Instruction *I,
-                                               Function *Target,
+                                               GlobalValue *Target,
                                                bool IsData) override;
 
         LoadInst *GetFunctionCapabilityLoad(Function *F);
@@ -57,13 +57,13 @@ namespace hakc {
 
         virtual Type *GetCapabilityType();
 
-        std::vector<Value *> CreateArgumentsWithCompartment(Value *HAKCPointer, Function *Target);
+        std::vector<Value *> CreateArgumentsWithCompartment(Value *HAKCPointer, GlobalValue *Target);
 
         std::vector<Value *> CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) override;
 
         std::vector<Value *> CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) override;
 
-        std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, Function *Target, bool IsData,
+        std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
                                                      ConstantInt *Size) override;
 
         GlobalValue *GetAccessCapability(hakc_compartment_id_t CompartmentID);

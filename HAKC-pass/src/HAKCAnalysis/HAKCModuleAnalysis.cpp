@@ -484,6 +484,95 @@ namespace hakc {
         addCompartmentMetadata();
 
         transferModuleParams();
+
+        CreateInitGlobalMemberTransfers();
+    }
+
+    void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers() {
+        std::set<GlobalVariable*> GlobalsToModifyDuringInit;
+        for(auto &GV : M.getGlobalList()) {
+            if(GV.hasInitializer()) {
+                auto CompartmentID = getTransformer().getGlobalCompartmentID(&GV);
+                if(!IsKernelCompartment(CompartmentID)) {
+                    GlobalsToModifyDuringInit.insert(&GV);
+                }
+            }
+        }
+
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Creating Init transfer functions for " << std::to_string(GlobalsToModifyDuringInit.size()) << " globals:\n";
+            for(auto *GlobToTransfer : GlobalsToModifyDuringInit) {
+                CommonHAKCAnalysis::getWriter() << GlobToTransfer->getName() << "\n";
+            }
+        }
+
+        for(auto *GlobToTransfer : GlobalsToModifyDuringInit) {
+            auto *InitTransfer = CreateInitTransfer(GlobToTransfer);
+            if(debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Created InitTransfer " << InitTransfer->getName() << "\n";
+            }
+        }
+    }
+
+    StringRef HAKCModuleAnalysis::GlobalInitTransferPrefix() const {
+        return "hakc_glob_init_xfer_";
+    }
+
+
+    Function* HAKCModuleAnalysis::CreateInitTransfer(GlobalVariable *GlobalVar) {
+        if(!GlobalVar->hasInitializer()) {
+            CommonHAKCAnalysis::PrettyPrintValue(GlobalVar, CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " has no initializer\n";
+            throw std::exception();
+        }
+
+        SmallString<128> FunctionName = GlobalInitTransferPrefix();
+
+        for(auto letter : GlobalVar->getName()) {
+            if(letter != '@') {
+                FunctionName += letter;
+            }
+        }
+
+        auto *GlobalTransferTy = FunctionType::get(Type::getVoidTy(M.getContext()), {});
+        auto *GlobalInitFunc = GetFunctionByName(FunctionName, GlobalTransferTy);
+        if(!GlobalInitFunc) {
+            CommonHAKCAnalysis::getWriter() << "Could not get Global Transfer function " << FunctionName << "\n";
+            throw std::exception();
+        }
+
+        if(!GlobalInitFunc->empty()) {
+            PopulateGlobalInitTransferFunc(GlobalInitFunc, GlobalVar);
+        }
+
+        return GlobalInitFunc;
+    }
+
+    StringRef HAKCModuleAnalysis::GlobalInitTransferSectionName() const {
+        return ".hakc.global_init";
+    }
+
+    std::string HAKCModuleAnalysis::GlobalVariableROSectionName(GlobalVariable *GlobalVar) {
+        auto CompartmentID = getTransformer().getGlobalCompartmentID(GlobalVar);
+        std::string SectionName = ".hakc.";
+        SectionName += std::to_string(CompartmentID);
+        SectionName += ".ro_data";
+
+        return SectionName;
+    }
+
+    void HAKCModuleAnalysis::PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar) {
+        GlobTransfer->setSection(GlobalInitTransferSectionName());
+        if(!GlobTransfer->empty()) {
+            return;
+        }
+
+        if(GlobalVar->isConstant()) {
+            GlobalVar->setConstant(false);
+            GlobalVar->setSection(GlobalVariableROSectionName(GlobalVar));
+        }
+
+        getTransformer().PopulateGlobalTransfer(GlobTransfer, GlobalVar);
     }
 
     void HAKCModuleAnalysis::addCompartmentMetadata() {

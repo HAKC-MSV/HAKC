@@ -615,10 +615,23 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
-        if (!F) {
+        return IsKernelSymbol(F);
+    }
+
+    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV) {
+        if(!GV) {
             return false;
         }
-        auto CompartmentID = getTransformer().getFunctionCompartmentID(F);
+
+        hakc_compartment_id_t CompartmentID;
+        if(auto *F = dyn_cast<Function>(GV)) {
+            CompartmentID = getTransformer().getFunctionCompartmentID(F);
+        } else if(auto *GlobVar = dyn_cast<GlobalVariable>(GV)) {
+            CompartmentID = getTransformer().getGlobalCompartmentID(GlobVar);
+        } else {
+            return false;
+        }
+
         return CommonHAKCAnalysis::IsKernelCompartment(CompartmentID);
     }
 

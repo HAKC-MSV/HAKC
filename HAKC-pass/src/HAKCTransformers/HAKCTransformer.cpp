@@ -265,7 +265,8 @@ CallInst *hakc::HAKCTransformer::CreateCall(StringRef name, Type *RetTy, ArrayRe
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData,
+hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instruction *I, GlobalValue *Target,
+                                                      bool IsData,
                                                       ConstantInt *Size) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
     Instruction *Transfer;
@@ -291,7 +292,7 @@ hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instru
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, Function *Target, bool IsData,
+hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, GlobalValue *Target, bool IsData,
                                             ConstantInt *Size) {
     auto CustomTransfer = GetCustomTransferFunction(HAKCPointer);
     if (!CustomTransfer) {
@@ -306,7 +307,7 @@ hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, Function *Target
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, Function *Target, bool IsData) {
+hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
 
@@ -314,7 +315,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, F
     if (auto *GV = dyn_cast<GlobalValue>(HAKCPointer)) {
         CompartmentID = getSymbolCompartmentID(GV);
     } else {
-        CompartmentID = getFunctionCompartmentID(Target);
+        CompartmentID = getSymbolCompartmentID(Target);
     }
 
     auto *CompartmentIDValue = GetHAKCCompartmentValue(CompartmentID);
@@ -352,7 +353,7 @@ std::shared_ptr<hakc::HAKCCustomTransfer> hakc::HAKCTransformer::GetCustomTransf
 
 Instruction *
 hakc::HAKCTransformer::CreateDefaultTransfer(Value *HAKCPointer,
-                                             Function *Target,
+                                             GlobalValue *Target,
                                              bool IsData, ConstantInt *Size) {
     auto FullArgSet = CreateTransferArguments(HAKCPointer, Target, IsData, Size);
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
@@ -486,7 +487,7 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
  * and generate a call to the custom function instead of "hakc_transfer_to_clique".
  */
 Instruction *
-hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, Function *Target,
+hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Instruction *I, GlobalValue *Target,
                                                          Type *TypeToUse) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
 
@@ -584,7 +585,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
 
 Instruction *hakc::HAKCTransformer::CreateCompartmentTransfer(Value *HAKCPointer,
                                                               Instruction *I,
-                                                              Function *Target,
+                                                              GlobalValue *Target,
                                                               bool IsData) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
 
@@ -595,7 +596,7 @@ Instruction *hakc::HAKCTransformer::CreateCompartmentTransfer(Value *HAKCPointer
      * I don't think this is the only case where that happens, so we do another check.
      * Only care about data transfer.
      */
-    if (ObjectSize == HAKCIRBuilder.getInt64(1) && IsData) {
+    if (ObjectSize == HAKCIRBuilder.getInt64(1) && IsData && isa<Function>(Target)) {
         /*
          * TODO
          *
@@ -633,7 +634,7 @@ Instruction *hakc::HAKCTransformer::CreateCompartmentTransfer(Value *HAKCPointer
          */
 
         /* look for a bitcast from i8* to a struct type in the entry basic block of Target */
-        Type *EntryCastType = FindEntryBitcast(HAKCPointer, I, Target);
+        Type *EntryCastType = FindEntryBitcast(HAKCPointer, I, dyn_cast<Function>(Target));
         /*
          * If a bitcast is found in entry block, Target takes HAKCPointer as "void*" but
          * immediately uses it as if it some other type.
@@ -781,18 +782,83 @@ Function *hakc::HAKCTransformer::CreateTransferToVariadic(CallInst *Call) {
     return TransferFunction;
 }
 
-Function *hakc::HAKCTransformer::PopulateTransferFunction(Function *Target, Function *TransferFunction) {
-    if (!TransferFunction->empty()) {
-        return TransferFunction;
+void hakc::HAKCTransformer::TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer,
+                                                  GlobalValue *GlobalVar) {
+    for (auto &Member: ConstStruct->operands()) {
+        if (auto *ConstStr = dyn_cast<ConstantStruct>(Member.get())) {
+            TransferStructMembers(ConstStr, GlobalTransfer, GlobalVar);
+            continue;
+        }
+
+        if (CommonHAKCAnalysis::IsPointerLikeType(Member->getType())) {
+            Value *Transfer = nullptr;
+            Value *GEP = nullptr;
+            GlobalValue *Target = GlobalVar;
+            if (auto *Func = dyn_cast<Function>(Member.get())) {
+                Target = Func;
+            }
+
+            if (!TargetIsKernel(Target)) {
+                GEP = HAKCIRBuilder.CreateStructGEP(Member->getType(), ConstStruct, Member.getOperandNo());
+                Transfer = CreateCompartmentTransfer(Member.get(), GlobalTransfer->getEntryBlock().getTerminator(),
+                                                     Target, !isa<Function>(Target));
+                HAKCIRBuilder.CreateStore(Transfer, GEP);
+            }
+        }
+    }
+}
+
+Function *hakc::HAKCTransformer::PopulateGlobalTransfer(Function *GlobalTransfer, GlobalVariable *GlobalVar) {
+    if (!GlobalTransfer->empty()) {
+        return GlobalTransfer;
     }
 
-    BasicBlock *EntryBB = BasicBlock::Create(getModule().getContext(), "HAKCTransferEntry", TransferFunction);
-    if (EntryBB != &TransferFunction->getEntryBlock()) {
+    InitNewFunction(GlobalTransfer, "HAKCGlobalTransferEntry");
+    auto *VoidRet = HAKCIRBuilder.CreateRetVoid();
+    HAKCIRBuilder.SetInsertPoint(VoidRet);
+
+    if (GlobalVar->hasInitializer()) {
+        if (auto *InitStruct = dyn_cast<ConstantStruct>(GlobalVar->getInitializer())) {
+            TransferStructMembers(InitStruct, GlobalTransfer, GlobalVar);
+        } else if (CommonHAKCAnalysis::IsPointerLikeType(GlobalVar->getInitializer()->getType())) {
+            GlobalValue *Target = GlobalVar;
+            if (auto *FuncPtr = dyn_cast<Function>(GlobalVar->getInitializer())) {
+                Target = FuncPtr;
+            }
+
+            if (!TargetIsKernel(Target)) {
+                auto *Transfer = CreateCompartmentTransfer(GlobalVar->getInitializer(), VoidRet, Target,
+                                                           !isa<Function>(Target));
+                HAKCIRBuilder.CreateStore(Transfer, GlobalVar);
+            }
+        }
+
+    }
+
+    return GlobalTransfer;
+}
+
+void hakc::HAKCTransformer::InitNewFunction(Function *F, StringRef EntryBlockName) {
+    if (!F->empty()) {
+        return;
+    }
+
+    auto *EntryBB = BasicBlock::Create(getModule().getContext(), EntryBlockName, F);
+    if (EntryBB != &F->getEntryBlock()) {
         CommonHAKCAnalysis::getWriter() << "Invalid Entry BasicBlock created\n";
         throw std::exception();
     }
 
     HAKCIRBuilder.SetInsertPoint(EntryBB);
+}
+
+Function *hakc::HAKCTransformer::PopulateTransferFunction(Function *Target, Function *TransferFunction) {
+    if (!TransferFunction->empty()) {
+        return TransferFunction;
+    }
+
+    InitNewFunction(TransferFunction, "HAKCTransferEntry");
+
     // Create a temporary terminator
     auto *Unreachable = HAKCIRBuilder.CreateUnreachable();
     HAKCIRBuilder.SetInsertPoint(Unreachable);
@@ -800,9 +866,8 @@ Function *hakc::HAKCTransformer::PopulateTransferFunction(Function *Target, Func
     auto TransferredArguments = CreateForwardArgumentTransfers(Target, TransferFunction);
     CallInst *TargetFunctionCall = HAKCIRBuilder.CreateCall(Target, TransferredArguments);
 
-    CreateBackwardArgumentTransfers(Target, TransferFunction);
-
     if (!Target->doesNotReturn()) {
+        CreateBackwardArgumentTransfers(Target, TransferFunction);
         if (!Target->getReturnType()->isVoidTy()) {
             HAKCIRBuilder.CreateRet(TargetFunctionCall);
         } else {
@@ -942,8 +1007,8 @@ ConstantInt *hakc::HAKCTransformer::GetDefaultObjectSize() {
     return getInt64(1);
 }
 
-bool hakc::HAKCTransformer::TargetIsKernel(Function *Target) {
-    return HAKCAnalysis->IsKernelFunction(Target);
+bool hakc::HAKCTransformer::TargetIsKernel(GlobalValue *Target) {
+    return HAKCAnalysis->IsKernelSymbol(Target);
 }
 
 ConstantInt *hakc::HAKCTransformer::GetHAKCCompartmentValue(hakc_compartment_id_t CompartmentID) {

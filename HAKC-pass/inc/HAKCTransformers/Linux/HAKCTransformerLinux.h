@@ -54,7 +54,7 @@ namespace hakc {
 
         std::vector<Value *> CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) override;
 
-        std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, Function *Target, bool IsData,
+        std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
                                                      ConstantInt *Size) override;
 
         ConstantInt *GetColorValue(sym_color_t Color);

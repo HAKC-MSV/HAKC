@@ -295,7 +295,7 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateCodeAuthArguments(Value *
     };
 }
 
-std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *HAKCPointer, Function *Target,
+std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target,
                                                                          bool IsData,
                                                                          ConstantInt *Size) {
     std::vector<Value *> FullArgSet;

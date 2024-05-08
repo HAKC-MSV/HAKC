@@ -123,6 +123,8 @@ namespace hakc {
 
         static bool isRegisterRead(Value *v);
 
+        bool IsKernelSymbol(GlobalValue *GV);
+
         bool IsKernelFunction(Function *F);
 
         bool isIgnoredType(Type *Ty);
