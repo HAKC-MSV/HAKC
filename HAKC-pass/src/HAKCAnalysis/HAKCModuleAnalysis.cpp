@@ -491,13 +491,19 @@ namespace hakc {
 
     bool HAKCModuleAnalysis::ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct) {
         bool Result = false;
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "TransferIsNeeded Checking " << *ConstStruct << "\n";
+        }
         for (auto &Member: ConstStruct->operands()) {
             auto *Def = getDef(Member.get(), false, debug_output);
+            if(debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Checking struct member " << *Member << " with Def " << *Def << "\n";
+            }
             if (isa<ConstantPointerNull>(Def)) {
                 continue;
             }
             if (auto *GlobalVal = dyn_cast<GlobalValue>(Def)) {
-                Result = IsKernelSymbol(GlobalVal);
+                Result = !IsKernelSymbol(GlobalVal);
             } else if (auto *StructMember = dyn_cast<ConstantStruct>(Def)) {
                 Result = ConstantStructTransferIsNeeded(StructMember);
             }
@@ -507,20 +513,24 @@ namespace hakc {
             }
         }
 
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " Result: " << std::to_string(Result) << "\n";
+        }
         return Result;
     }
 
     bool HAKCModuleAnalysis::TransferIsNeeded(GlobalVariable *GlobalVar) {
-        auto CompartmentID = getTransformer().getGlobalCompartmentID(GlobalVar);
-        bool Result = GlobalVar->hasInitializer() && !IsKernelCompartment(CompartmentID);
+        bool Result = GlobalVar->hasInitializer() && !IsKernelSymbol(GlobalVar);
         if (Result) {
             if (auto *ConstStruct = dyn_cast<ConstantStruct>(GlobalVar->getInitializer())) {
                 Result = ConstantStructTransferIsNeeded(ConstStruct);
-            } else if (!IsPointerLikeType(GlobalVar->getInitializer()->getType())) {
+            } else {
                 if (auto *GlobalVal = dyn_cast<GlobalValue>(GlobalVar->getInitializer())) {
                     Result = !IsKernelSymbol(GlobalVal);
+                } else if(isa<ConstantPointerNull>(GlobalVar->getInitializer())) {
+                    Result = false;
                 } else {
-                    Result = !isa<ConstantPointerNull>(GlobalVar->getInitializer());
+                    Result = IsPointerLikeType(GlobalVar->getInitializer()->getType());
                 }
             }
         }
