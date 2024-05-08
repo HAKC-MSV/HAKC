@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <tuple>
+#include <llvm/IR/Verifier.h>
 
 #include "llvm/IR/InstIterator.h"
 #include "llvm/Support/Regex.h"
@@ -59,7 +60,7 @@ namespace hakc {
         * @brief Moves all global values to the specified HAKC ELF section
         */
     void HAKCModuleAnalysis::moveGlobalsToPMCSection() {
-        std::set<GlobalVariable *> globalsToChange;
+        std::set < GlobalVariable * > globalsToChange;
 
         for (auto *pGlobal: globalsToChange) {
             auto &global = *pGlobal;
@@ -205,7 +206,7 @@ namespace hakc {
     bool in_debug = false;
 
     bool useEscapes(Use &U) {
-        std::set<Value *> examined;
+        std::set < Value * > examined;
         bool escapes = _useEscapes(U, examined);
         if (in_debug) {
             CommonHAKCAnalysis::getWriter() << "Use ";
@@ -315,8 +316,8 @@ namespace hakc {
         }
     }
 
-    std::set<hakc_function_def_t> HAKCModuleAnalysis::GetHAKCFunctions() {
-        std::set<hakc_function_def_t> AllFunctions;
+    std::set <hakc_function_def_t> HAKCModuleAnalysis::GetHAKCFunctions() {
+        std::set <hakc_function_def_t> AllFunctions;
         for (auto &p: NonTransferHAKCFunctions) {
             AllFunctions.insert(p);
         }
@@ -326,8 +327,8 @@ namespace hakc {
         return AllFunctions;
     }
 
-    std::set<hakc_transfer_def_t> HAKCModuleAnalysis::GetHAKCTransferFunctions() {
-        std::set<hakc_transfer_def_t> TransferFunctions;
+    std::set <hakc_transfer_def_t> HAKCModuleAnalysis::GetHAKCTransferFunctions() {
+        std::set <hakc_transfer_def_t> TransferFunctions;
         for (auto &p: Transfers) {
             TransferFunctions.insert(p);
         }
@@ -337,8 +338,8 @@ namespace hakc {
         return TransferFunctions;
     }
 
-    std::set<hakc_custom_transfer_def_t> HAKCModuleAnalysis::GetHAKCCustomTransferFunctions() {
-        std::set<hakc_custom_transfer_def_t> TransferFunctions;
+    std::set <hakc_custom_transfer_def_t> HAKCModuleAnalysis::GetHAKCCustomTransferFunctions() {
+        std::set <hakc_custom_transfer_def_t> TransferFunctions;
         for (auto &p: CustomTransfers) {
             TransferFunctions.insert(p);
         }
@@ -346,7 +347,7 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::addTransferFunctions() {
-        std::vector<Function *> FuncsNeedingTransfers;
+        std::vector < Function * > FuncsNeedingTransfers;
         for (auto &F: getModule().getFunctionList()) {
             if (functionIsTransferCandidate(&F)) {
                 FuncsNeedingTransfers.push_back(&F);
@@ -356,8 +357,8 @@ namespace hakc {
             Function &F = *Funcp;
             debug_output = (F.getName() == getHAKCDebugName());
             if (!isOutsideTransferFunc(&F) && functionEscapes(&F)) {
-                std::vector<Value *> arguments;
-                std::vector<std::tuple<Value *, CallInst *, Value *>> argsToRestore;
+                std::vector < Value * > arguments;
+                std::vector <std::tuple<Value *, CallInst *, Value *>> argsToRestore;
                 Function *transferFunc = nullptr;
 
                 if (!CommonHAKCAnalysis::FunctionHasPointerArg(&F)) {
@@ -473,7 +474,7 @@ namespace hakc {
 
         moveGlobalsToPMCSection();
 
-        SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
+        SmallVector < Function * > SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
         llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
                    [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
 
@@ -488,27 +489,64 @@ namespace hakc {
         CreateInitGlobalMemberTransfers();
     }
 
-    void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers() {
-        std::set<GlobalVariable*> GlobalsToModifyDuringInit;
-        for(auto &GV : M.getGlobalList()) {
-            if(GV.hasInitializer()) {
-                auto CompartmentID = getTransformer().getGlobalCompartmentID(&GV);
-                if(!IsKernelCompartment(CompartmentID)) {
-                    GlobalsToModifyDuringInit.insert(&GV);
+    bool HAKCModuleAnalysis::ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct) {
+        bool Result = false;
+        for (auto &Member: ConstStruct->operands()) {
+            auto *Def = getDef(Member.get(), false, debug_output);
+            if (isa<ConstantPointerNull>(Def)) {
+                continue;
+            }
+            if (auto *GlobalVal = dyn_cast<GlobalValue>(Def)) {
+                Result = IsKernelSymbol(GlobalVal);
+            } else if (auto *StructMember = dyn_cast<ConstantStruct>(Def)) {
+                Result = ConstantStructTransferIsNeeded(StructMember);
+            }
+
+            if (Result) {
+                break;
+            }
+        }
+
+        return Result;
+    }
+
+    bool HAKCModuleAnalysis::TransferIsNeeded(GlobalVariable *GlobalVar) {
+        auto CompartmentID = getTransformer().getGlobalCompartmentID(GlobalVar);
+        bool Result = GlobalVar->hasInitializer() && !IsKernelCompartment(CompartmentID);
+        if (Result) {
+            if (auto *ConstStruct = dyn_cast<ConstantStruct>(GlobalVar->getInitializer())) {
+                Result = ConstantStructTransferIsNeeded(ConstStruct);
+            } else if (!IsPointerLikeType(GlobalVar->getInitializer()->getType())) {
+                if (auto *GlobalVal = dyn_cast<GlobalValue>(GlobalVar->getInitializer())) {
+                    Result = !IsKernelSymbol(GlobalVal);
+                } else {
+                    Result = !isa<ConstantPointerNull>(GlobalVar->getInitializer());
                 }
             }
         }
 
-        if(debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Creating Init transfer functions for " << std::to_string(GlobalsToModifyDuringInit.size()) << " globals:\n";
-            for(auto *GlobToTransfer : GlobalsToModifyDuringInit) {
+        return Result;
+    }
+
+    void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers() {
+        std::set < GlobalVariable * > GlobalsToModifyDuringInit;
+        for (auto &GV: M.getGlobalList()) {
+            if (TransferIsNeeded(&GV)) {
+                GlobalsToModifyDuringInit.insert(&GV);
+            }
+        }
+
+        if (debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Creating Init transfer functions for "
+                                            << std::to_string(GlobalsToModifyDuringInit.size()) << " globals:\n";
+            for (auto *GlobToTransfer: GlobalsToModifyDuringInit) {
                 CommonHAKCAnalysis::getWriter() << GlobToTransfer->getName() << "\n";
             }
         }
 
-        for(auto *GlobToTransfer : GlobalsToModifyDuringInit) {
+        for (auto *GlobToTransfer: GlobalsToModifyDuringInit) {
             auto *InitTransfer = CreateInitTransfer(GlobToTransfer);
-            if(debug_output) {
+            if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Created InitTransfer " << InitTransfer->getName() << "\n";
             }
         }
@@ -519,8 +557,8 @@ namespace hakc {
     }
 
 
-    Function* HAKCModuleAnalysis::CreateInitTransfer(GlobalVariable *GlobalVar) {
-        if(!GlobalVar->hasInitializer()) {
+    Function *HAKCModuleAnalysis::CreateInitTransfer(GlobalVariable *GlobalVar) {
+        if (!GlobalVar->hasInitializer()) {
             CommonHAKCAnalysis::PrettyPrintValue(GlobalVar, CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << " has no initializer\n";
             throw std::exception();
@@ -528,20 +566,20 @@ namespace hakc {
 
         SmallString<128> FunctionName = GlobalInitTransferPrefix();
 
-        for(auto letter : GlobalVar->getName()) {
-            if(letter != '@') {
+        for (auto letter: GlobalVar->getName()) {
+            if (letter != '@') {
                 FunctionName += letter;
             }
         }
 
         auto *GlobalTransferTy = FunctionType::get(Type::getVoidTy(M.getContext()), {});
         auto *GlobalInitFunc = GetFunctionByName(FunctionName, GlobalTransferTy);
-        if(!GlobalInitFunc) {
+        if (!GlobalInitFunc) {
             CommonHAKCAnalysis::getWriter() << "Could not get Global Transfer function " << FunctionName << "\n";
             throw std::exception();
         }
 
-        if(!GlobalInitFunc->empty()) {
+        if (GlobalInitFunc->empty()) {
             PopulateGlobalInitTransferFunc(GlobalInitFunc, GlobalVar);
         }
 
@@ -563,16 +601,22 @@ namespace hakc {
 
     void HAKCModuleAnalysis::PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar) {
         GlobTransfer->setSection(GlobalInitTransferSectionName());
-        if(!GlobTransfer->empty()) {
+        if (!GlobTransfer->empty()) {
             return;
         }
 
-        if(GlobalVar->isConstant()) {
+        if (GlobalVar->isConstant()) {
             GlobalVar->setConstant(false);
             GlobalVar->setSection(GlobalVariableROSectionName(GlobalVar));
         }
 
         getTransformer().PopulateGlobalTransfer(GlobTransfer, GlobalVar);
+        if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter())) {
+            CommonHAKCAnalysis::getWriter() << "Faulty Global Transfer function "
+                                            << GlobTransfer->getName() << "\n";
+            getModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
+            throw std::exception();
+        }
     }
 
     void HAKCModuleAnalysis::addCompartmentMetadata() {
@@ -610,8 +654,8 @@ namespace hakc {
         delete functionAnalysis;
     }
 
-    std::set<StringRef> HAKCModuleAnalysis::GetSafeTransitionFunctions() {
-        std::set<StringRef> base =
+    std::set <StringRef> HAKCModuleAnalysis::GetSafeTransitionFunctions() {
+        std::set <StringRef> base =
                 {
                         "strlen",
                         "strnlen",

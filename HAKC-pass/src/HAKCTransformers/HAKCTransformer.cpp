@@ -785,22 +785,22 @@ Function *hakc::HAKCTransformer::CreateTransferToVariadic(CallInst *Call) {
 void hakc::HAKCTransformer::TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer,
                                                   GlobalValue *GlobalVar) {
     for (auto &Member: ConstStruct->operands()) {
-        if (auto *ConstStr = dyn_cast<ConstantStruct>(Member.get())) {
-            TransferStructMembers(ConstStr, GlobalTransfer, GlobalVar);
+        if (auto *StructMember = dyn_cast<ConstantStruct>(Member.get())) {
+            TransferStructMembers(StructMember, GlobalTransfer, GlobalVar);
             continue;
         }
 
         if (CommonHAKCAnalysis::IsPointerLikeType(Member->getType())) {
-            Value *Transfer = nullptr;
-            Value *GEP = nullptr;
+            Value *Transfer, *GEP, *Load;
             GlobalValue *Target = GlobalVar;
-            if (auto *Func = dyn_cast<Function>(Member.get())) {
-                Target = Func;
+            if (auto *GlobalMember = dyn_cast<GlobalValue>(Member.get())) {
+                Target = GlobalMember;
             }
 
             if (!TargetIsKernel(Target)) {
-                GEP = HAKCIRBuilder.CreateStructGEP(Member->getType(), ConstStruct, Member.getOperandNo());
-                Transfer = CreateCompartmentTransfer(Member.get(), GlobalTransfer->getEntryBlock().getTerminator(),
+                GEP = HAKCIRBuilder.CreateStructGEP(GlobalVar->getValueType(), GlobalVar, Member.getOperandNo());
+                Load = HAKCIRBuilder.CreateLoad(Member->getType(), GEP);
+                Transfer = CreateCompartmentTransfer(Load, GlobalTransfer->getEntryBlock().getTerminator(),
                                                      Target, !isa<Function>(Target));
                 HAKCIRBuilder.CreateStore(Transfer, GEP);
             }

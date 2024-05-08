@@ -28,6 +28,7 @@ namespace hakc {
         bool moduleModified;
         std::set<int64_t> used_compartments;
         Module &M;
+        std::set<Function *> AnalysisFunctions;
 
         explicit HAKCModuleAnalysis(Module &M);
 
@@ -71,7 +72,9 @@ namespace hakc {
 
         virtual void PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar);
 
-        std::set<Function *> AnalysisFunctions;
+        virtual bool TransferIsNeeded(GlobalVariable *GlobalVar);
+
+        virtual bool ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct);
 
     private:
         std::shared_ptr<HAKCTransformer> transformer;
