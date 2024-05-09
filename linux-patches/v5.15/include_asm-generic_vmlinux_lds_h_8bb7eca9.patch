@@ -1,5 +1,5 @@
 diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index f2984af2b85b..4e2f37cc64f9 100644
+index f2984af2b85b..5db781a6812f 100644
 --- a/include/asm-generic/vmlinux.lds.h
 +++ b/include/asm-generic/vmlinux.lds.h
 @@ -217,6 +217,7 @@
@@ -93,7 +93,7 @@ index f2984af2b85b..4e2f37cc64f9 100644
  	. = ALIGN(8);							\
  	__start_ro_after_init = .;					\
  	*(.data..ro_after_init)						\
-+	*(.hakc.*_CLIQUE.data..ro_after_init)				\
++	*(.hakc.*.data..ro_after_init)				\
  	JUMP_TABLE_DATA							\
  	STATIC_CALL_DATA						\
  	__end_ro_after_init = .;
@@ -179,7 +179,7 @@ index f2984af2b85b..4e2f37cc64f9 100644
  #define INIT_TEXT							\
  	*(.init.text .init.text.*)					\
  	*(.text.startup)						\
-+	*(.hakc.*_CLIQUE.init.text .hakc.*_CLIQUE.init.text.*)		\
++	*(.hakc.*_CLIQUE.init.text .hakc.*_CLIQUE.init.text.*) \
  	MEM_DISCARD(init.text*)
  
  #define EXIT_DATA							\
@@ -218,4 +218,16 @@ index f2984af2b85b..4e2f37cc64f9 100644
 +	*(.hakc.*_CLIQUE.data..percpu..shared_aligned)			\
  	PERCPU_DECRYPTED_SECTION					\
  	__per_cpu_end = .;
+ 
+@@ -1140,7 +1179,10 @@
+ 	. = ALIGN(inittext_align);					\
+ 	.init.text : AT(ADDR(.init.text) - LOAD_OFFSET) {		\
+ 		_sinittext = .;						\
+-		INIT_TEXT						\
++		INIT_TEXT                                  \
++        _s_hakc_init_global = .;             \
++        *(.hakc.global_init)                 \
++        _e_hakc_init_global = .;             \
+ 		_einittext = .;						\
+ 	}
  
