@@ -39,7 +39,7 @@ build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job:
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update
     - echo "returning to $ROOT_ROOT after patching"
     - cd scripts/patch-generation
-    - ./apply_patches.sh
+    - ./apply_v66_patches.sh
     - cd $ROOT_ROOT/linux
     - echo "Building kernel"
     - export PATH=$CLANG_PATH/bin:$PATH
