@@ -26,6 +26,7 @@ namespace hakc {
         std::set<std::shared_ptr<HAKCSymbol>> symbols;
         bool ModuleContainsCompartmentalizedSymbols;
         DebugInfoFinder DebugInfo;
+        bool DebugActive;
 
         std::set<std::shared_ptr<HAKCCompartment>> getCompartments(hakc_compartment_id_t ID);
 
@@ -33,10 +34,10 @@ namespace hakc {
 
         void DetectCompartmentalization();
 
-        static bool SymbolIsInScope(const std::shared_ptr<HAKCSymbol> &Symbol, const DIScope *Scope);
+        bool SymbolIsInScope(const std::shared_ptr<HAKCSymbol> &Symbol, const DIScope *Scope);
 
     public:
-        HAKCSystemInformation(Module &M);
+        explicit HAKCSystemInformation(Module &M);
 
         std::set<std::shared_ptr<HAKCSymbol>> getSymbols(StringRef name);
 
@@ -49,6 +50,8 @@ namespace hakc {
         hakc_access_token_t getEntryToken(hakc_compartment_id_t CompartmentID);
 
         bool ContainsCompartmentalizedSymbols() const;
+
+        void SetDebugActive(bool ActiveDebug);
 
     };
 

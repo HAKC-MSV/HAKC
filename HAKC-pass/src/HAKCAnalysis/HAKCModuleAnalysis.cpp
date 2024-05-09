@@ -19,6 +19,7 @@ namespace hakc {
     HAKCModuleAnalysis::HAKCModuleAnalysis(Module &M)
             : CommonHAKCAnalysis(false),
               moduleModified(false),
+              IsCompartmentalizedAndContainsDebugName(false),
               M(M),
               AnalysisFunctions(),
               transformer(nullptr),
@@ -234,6 +235,11 @@ namespace hakc {
         }
 
         addTransferFunctions();
+        if(IsCompartmentalizedAndContainsDebugName) {
+            CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n";
+            M.print(CommonHAKCAnalysis::getWriter(), nullptr);
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
     }
 
     void HAKCModuleAnalysis::removeSignatures() {
@@ -480,6 +486,9 @@ namespace hakc {
 
         for (auto *F: SortedFunctions) {
             debug_output = (F->getName() == getHAKCDebugName());
+            if(debug_output) {
+                IsCompartmentalizedAndContainsDebugName = true;
+            }
             CompartmentalizeFunction(F);
         }
         addCompartmentMetadata();
@@ -591,6 +600,11 @@ namespace hakc {
 
         if (GlobalInitFunc->empty()) {
             PopulateGlobalInitTransferFunc(GlobalInitFunc, GlobalVar);
+            if(debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Finished Populating Global Init Transfer\n";
+                GlobalInitFunc->print(CommonHAKCAnalysis::getWriter(), nullptr);
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
         }
 
         return GlobalInitFunc;
@@ -610,6 +624,10 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar) {
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Populating Global Init Transfer Function " << GlobTransfer->getName() << "\n";
+        }
+
         GlobTransfer->setSection(GlobalInitTransferSectionName());
         if (!GlobTransfer->empty()) {
             return;
@@ -620,7 +638,10 @@ namespace hakc {
             GlobalVar->setSection(GlobalVariableROSectionName(GlobalVar));
         }
 
-        getTransformer().PopulateGlobalTransfer(GlobTransfer, GlobalVar);
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Starting Global Init Population\n";
+        }
+        getTransformer().PopulateGlobalTransfer(GlobTransfer, GlobalVar, debug_output);
         if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter())) {
             CommonHAKCAnalysis::getWriter() << "Faulty Global Transfer function "
                                             << GlobTransfer->getName() << "\n";
@@ -650,6 +671,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Compartmentalizing " << F->getName() << "\n";
         }
+        getTransformer().getSystemInformation().SetDebugActive(debug_output);
         auto compartment = getTransformer().getFunctionCompartmentID(F);
         registerUsedCompartment(compartment);
 
@@ -661,6 +683,11 @@ namespace hakc {
         totalDataChecks += functionAnalysis->GetDataAuthenticationCount();
         totalTransfers += functionAnalysis->GetCompartmentTransferCount();
 
+        if(debug_output) {
+            CommonHAKCAnalysis::getWriter() << "Finished Compartmentalizing " << F->getName() << "\n";
+        }
+
+        getTransformer().getSystemInformation().SetDebugActive(false);
         delete functionAnalysis;
     }
 

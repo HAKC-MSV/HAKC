@@ -115,14 +115,10 @@ namespace hakc {
                     break;
                 }
             }
-        } else if (CommonHAKCAnalysis::IsConstantUsedInGlobal(UserP)) {
-            UseShouldBeIgnored = true;
-        } else if (isa<BlockAddress>(UserP)) {
-            UseShouldBeIgnored = true;
-        } else if (isa<GlobalVariable>(UserP)) {
-            /* Globals are handled elsewhere */
-            UseShouldBeIgnored = true;
-        } else if (isa<GlobalAlias>(UserP)) {
+        } else if (CommonHAKCAnalysis::IsConstantUsedInGlobal(UserP) ||
+                   isa<BlockAddress>(UserP) ||
+                   isa<GlobalVariable>(UserP) ||
+                   isa<GlobalAlias>(UserP)) {
             UseShouldBeIgnored = true;
         } else if (auto *Op = dyn_cast<Operator>(UserP)) {
             auto *Def = GetDef(Op);

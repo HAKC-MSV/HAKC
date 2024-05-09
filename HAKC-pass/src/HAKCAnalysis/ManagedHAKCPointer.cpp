@@ -194,6 +194,11 @@ namespace hakc {
 
     void ManagedHAKCPointer::AddProtectedUse(const ManagedHAKCPointerUseP &UPtr) {
         if (!Manager->FunctionIsCompartmentalized()) {
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << *this << " is not managing proctected uses since "
+                                                << Manager->GetFunctionAnalysis()->getFunction().getName()
+                                                << " is not compartmentalized\n";
+            }
             return;
         }
         if (DebugActive) {

@@ -32,4 +32,10 @@ namespace hakc {
     hakc_compartment_id_t HAKCSymbol::getCompartmentID() {
         return getCompartment()->getID();
     }
+
+    raw_ostream &operator<<(raw_ostream &os, const std::shared_ptr<HAKCSymbol> &HAKCSymbolP) {
+        os << "HAKCSymbol " << HAKCSymbolP->getName() << " [" << std::to_string(HAKCSymbolP->getCompartmentID())
+           << "] from " << HAKCSymbolP->getFile()->GetPath();
+        return os;
+    }
 }

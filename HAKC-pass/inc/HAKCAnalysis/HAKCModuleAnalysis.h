@@ -26,6 +26,7 @@ namespace hakc {
     class HAKCModuleAnalysis : public CommonHAKCAnalysis {
     protected:
         bool moduleModified;
+        bool IsCompartmentalizedAndContainsDebugName;
         std::set<int64_t> used_compartments;
         Module &M;
         std::set<Function *> AnalysisFunctions;

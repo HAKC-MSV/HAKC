@@ -1158,6 +1158,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Running setup for " << getFunction().getName() << "\n";
                 getFunction().print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
+                CommonHAKCAnalysis::getWriter() << "CompartmentID = " << std::to_string(getTransformer().getFunctionCompartmentID(CurrentFunction)) << "\n";
             }
             PointerManager.SetFunctionIsCompartmentalized(IsCompartmentalizedFunction(CurrentFunction));
             for (auto it = inst_begin(CurrentFunction); it != inst_end(CurrentFunction); ++it) {

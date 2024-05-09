@@ -104,7 +104,8 @@ namespace hakc {
                                                               compartments(),
                                                               symbols(),
                                                               ModuleContainsCompartmentalizedSymbols(false),
-                                                              DebugInfo() {
+                                                              DebugInfo(),
+                                                              DebugActive(false) {
         YamlInformation yi;
 
         auto yaml_file = getCompartmentYamlPath();
@@ -231,6 +232,10 @@ namespace hakc {
 
     bool HAKCSystemInformation::SymbolIsInScope(const std::shared_ptr<HAKCSymbol> &Symbol, const DIScope *Scope) {
         std::string ScopeFile;
+        if(DebugActive) {
+            CommonHAKCAnalysis::getWriter() << "Checking if " << Symbol << " is in Scope with " << *Scope << "\n";
+        }
+
         if (sys::path::is_relative(Scope->getFilename())) {
             ScopeFile = Scope->getDirectory().str();
             if (!Scope->getDirectory().endswith(llvm::sys::path::get_separator())) {
@@ -258,10 +263,19 @@ namespace hakc {
         if (auto *Func = dyn_cast<Function>(GV)) {
             Name = CommonHAKCAnalysis::GetFunctionName(Func);
         }
+        if(DebugActive) {
+            CommonHAKCAnalysis::getWriter() << "Getting Symbol named " << Name << "\n";
+        }
         auto Symbols = getSymbols(Name);
         if (Symbols.empty()) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "No symbols found\n";
+            }
             return nullptr;
         } else if (Symbols.size() == 1) {
+            if(DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Found one symbol " << *Symbols.begin() << "\n";
+            }
             return *Symbols.begin();
         }
         for (auto Symbol: Symbols) {
@@ -290,6 +304,10 @@ namespace hakc {
             }
         }
         return result;
+    }
+
+    void HAKCSystemInformation::SetDebugActive(bool ActiveDebug) {
+        this->DebugActive = ActiveDebug;
     }
 
     std::string HAKCSystemInformation::getColorStringFromValue(ConstantInt *color) {

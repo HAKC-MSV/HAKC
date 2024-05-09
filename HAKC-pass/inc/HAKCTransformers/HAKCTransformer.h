@@ -190,7 +190,7 @@ namespace hakc {
          */
         virtual GlobalVariable *AddCompartmentMetadataEntry(hakc_compartment_id_t CompartmentID);
 
-        virtual Function *PopulateGlobalTransfer(Function *GlobalTransfer, GlobalVariable *GlobalVar);
+        virtual Function *PopulateGlobalTransfer(Function *GlobalTransfer, GlobalVariable *GlobalVar, bool Debug);
 
     protected:
         IRBuilder<> HAKCIRBuilder;
@@ -330,7 +330,9 @@ namespace hakc {
 
         virtual bool TargetIsKernel(GlobalValue *Target);
 
-        virtual void TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer, GlobalValue *GlobalVar);
+        virtual void TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer, GlobalValue *GlobalVar, bool Debug);
+
+        virtual bool TransferShouldBeCreated(Value *V, GlobalValue *Target);
 
         virtual bool DebugIsActive();
 
