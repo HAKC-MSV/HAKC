@@ -61,6 +61,9 @@ namespace hakc {
         HAKC_FUNCTION("hakc_record_common");
         HAKC_FUNCTION("hakc_transfer_to_destination");
         HAKC_FUNCTION("hakc_restore_original");
+
+        HAKC_FUNCTION("hakc_init_kernel_globals");
+        HAKC_FUNCTION("hakc_init_globals");
     }
 
     ConstantInt *HAKCModuleAnalysisLinux::getFunctionColor(Function *F) {
@@ -443,6 +446,7 @@ namespace hakc {
                 /* transfer function sources that aren't in hakc_common.c */
                 "fs/fuse/transfer.c",
                 "drivers/usb/storage/transfer.c",
+                "kernel/hakc/hakc_global_init.c",
         };
     }
 

@@ -69,6 +69,8 @@ namespace hakc {
 
         virtual StringRef GlobalInitTransferSectionName() const;
 
+        virtual StringRef GlobalInitTransferPointerSectionName() const;
+
         virtual std::string GlobalVariableROSectionName(GlobalVariable *GlobalVar);
 
         virtual void PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar);
