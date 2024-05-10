@@ -12,7 +12,7 @@ new_files=("./arch/arm64/configs/hakc_armv8_defconfig" "./arch/arm64/configs/hak
 "./arch/x86/kernel/hakc/Makefile" "./arch/x86/kernel/hakc/hakc_ni.c"
 "./include/linux/hakc/hakc.h" "./include/linux/hakc/hakc-defs.h" "./kernel/Kconfig.hakc"
 "./kernel/hakc/Makefile" "./kernel/hakc/hakc_common.c" "./kernel/hakc/hakc_noarch_tag_btree.c"
-"./kernel/hakc/hakc_noarch_tag_memory.c")
+"./kernel/hakc/hakc_noarch_tag_memory.c" "./kernel/hakc/hakc_global_init.c" "./include/linux/hakc/hakc-globals.h")
 
 cd $source_dir
 

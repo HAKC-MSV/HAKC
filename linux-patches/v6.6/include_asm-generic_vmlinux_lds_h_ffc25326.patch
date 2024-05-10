@@ -1,5 +1,5 @@
 diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 67d8dd2f1bde..382f178e86e7 100644
+index 67d8dd2f1bde..c7b4ab33a3c3 100644
 --- a/include/asm-generic/vmlinux.lds.h
 +++ b/include/asm-generic/vmlinux.lds.h
 @@ -195,6 +195,7 @@
@@ -112,7 +112,7 @@ index 67d8dd2f1bde..382f178e86e7 100644
  		__irqentry_text_end = .;
  
  #define SOFTIRQENTRY_TEXT						\
-@@ -681,10 +703,12 @@
+@@ -681,10 +703,17 @@
  #define INIT_DATA							\
  	KEEP(*(SORT(___kentry+*)))					\
  	*(.init.data .init.data.*)					\
@@ -121,19 +121,25 @@ index 67d8dd2f1bde..382f178e86e7 100644
  	KERNEL_CTORS()							\
  	MCOUNT_REC()							\
  	*(.init.rodata .init.rodata.*)					\
-+	*(.hakc.*_CLIQUE.init.rodata)					\
++	*(.hakc.*_CLIQUE.init.rodata)  \
++    . = ALIGN(8);                    \
++    _s_hakc_init_global = .;                        \
++    *(.hakc.global_init.data)                       \
++    _e_hakc_init_global = .;                        \
++    . = ALIGN(8);                    \
  	FTRACE_EVENTS()							\
  	TRACE_SYSCALLS()						\
  	KPROBE_BLACKLIST()						\
-@@ -708,6 +732,7 @@
+@@ -708,6 +737,8 @@
  #define INIT_TEXT							\
  	*(.init.text .init.text.*)					\
  	*(.text.startup)						\
-+	*(.hakc.*_CLIQUE.init.text)					\
++	*(.hakc.*_CLIQUE.init.text)    \
++    *(.hakc.glob_init.text)                    \
  	MEM_DISCARD(init.text*)
  
  #define EXIT_DATA							\
-@@ -720,10 +745,13 @@
+@@ -720,10 +751,13 @@
  #define EXIT_TEXT							\
  	*(.exit.text)							\
  	*(.text.exit)							\
@@ -148,7 +154,7 @@ index 67d8dd2f1bde..382f178e86e7 100644
  
  /*
   * bss (Block Started by Symbol) - uninitialized data
-@@ -1037,9 +1065,11 @@
+@@ -1037,9 +1071,11 @@
  	*(.data..percpu..page_aligned)					\
  	. = ALIGN(cacheline);						\
  	*(.data..percpu..read_mostly)					\
@@ -160,3 +166,47 @@ index 67d8dd2f1bde..382f178e86e7 100644
  	PERCPU_DECRYPTED_SECTION					\
  	__per_cpu_end = .;
  
+@@ -1125,21 +1161,32 @@
+ 	}								\
+ 	BUG_TABLE							\
+ 
++#if IS_ENABLED(CONFIG_HAKC)
+ #define INIT_TEXT_SECTION(inittext_align)				\
+-	. = ALIGN(inittext_align);					\
+-	.init.text : AT(ADDR(.init.text) - LOAD_OFFSET) {		\
+-		_sinittext = .;						\
+-		INIT_TEXT						\
+-		_einittext = .;						\
++	. = ALIGN(inittext_align);					        \
++	.init.text : AT(ADDR(.init.text) - LOAD_OFFSET) {	\
++		_sinittext = .;						            \
++		INIT_TEXT                                       \
++        *(.hakc.glob_init.text)                         \
++		_einittext = .;						            \
+ 	}
++#else
++#define INIT_TEXT_SECTION(inittext_align)				\
++	. = ALIGN(inittext_align);					        \
++	.init.text : AT(ADDR(.init.text) - LOAD_OFFSET) {	\
++		_sinittext = .;						            \
++		INIT_TEXT                                       \
++		_einittext = .;						            \
++	}
++#endif
+ 
+ #define INIT_DATA_SECTION(initsetup_align)				\
+-	.init.data : AT(ADDR(.init.data) - LOAD_OFFSET) {		\
+-		INIT_DATA						\
+-		INIT_SETUP(initsetup_align)				\
+-		INIT_CALLS						\
+-		CON_INITCALL						\
+-		INIT_RAM_FS						\
++	.init.data : AT(ADDR(.init.data) - LOAD_OFFSET) {	\
++		INIT_DATA						                \
++		INIT_SETUP(initsetup_align)				        \
++		INIT_CALLS						                \
++		CON_INITCALL						            \
++		INIT_RAM_FS						                \
+ 	}
+ 
+ #define BSS_SECTION(sbss_align, bss_align, stop_align)			\

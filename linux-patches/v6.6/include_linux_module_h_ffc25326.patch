@@ -1,19 +1,20 @@
 diff --git a/include/linux/module.h b/include/linux/module.h
-index a98e188cf37b..5df82bf4d4e7 100644
+index a98e188cf37b..a21dee889ca8 100644
 --- a/include/linux/module.h
 +++ b/include/linux/module.h
-@@ -32,6 +32,10 @@
+@@ -32,6 +32,11 @@
  #include <linux/percpu.h>
  #include <asm/module.h>
  
 +#ifdef CONFIG_HAKC
 +#include <linux/hakc/hakc.h>
++#include <linux/hakc/hakc-globals.h>
 +#endif
 +
  #define MODULE_NAME_LEN MAX_PARAM_PREFIX_LEN
  
  struct modversion_info {
-@@ -489,8 +493,16 @@ struct module {
+@@ -489,8 +494,16 @@ struct module {
  
  #ifdef CONFIG_SMP
  	/* Per-cpu data. */
@@ -30,7 +31,7 @@ index a98e188cf37b..5df82bf4d4e7 100644
  #endif
  	void *noinstr_text_start;
  	unsigned int noinstr_text_size;
-@@ -583,6 +595,16 @@ struct module {
+@@ -583,6 +596,19 @@ struct module {
  #ifdef CONFIG_DYNAMIC_DEBUG_CORE
  	struct _ddebug_info dyndbg_info;
  #endif
@@ -43,6 +44,9 @@ index a98e188cf37b..5df82bf4d4e7 100644
 +	/* Functions to get HAKC context for module parameters. */
 +	getctx_fp *hakc_modparam_getctx_fp;
 +	unsigned int num_hakc_modparam_getctx_fp;
++
++    hakc_global_init_fp *hakc_global_inits;
++    unsigned int num_hakc_global_inits;
 +#endif
  } ____cacheline_aligned __randomize_layout;
  #ifndef MODULE_ARCH_INIT

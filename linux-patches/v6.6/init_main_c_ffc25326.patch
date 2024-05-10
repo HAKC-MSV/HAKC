@@ -1,5 +1,5 @@
 diff --git a/init/main.c b/init/main.c
-index 436d73261810..c206167a3e9c 100644
+index 436d73261810..7d5a365f29d3 100644
 --- a/init/main.c
 +++ b/init/main.c
 @@ -101,6 +101,10 @@
@@ -18,7 +18,7 @@ index 436d73261810..c206167a3e9c 100644
  	int pid;
  
 +#if IS_ENABLED(CONFIG_HAKC_ARM_V8) || IS_ENABLED(CONFIG_HAKC_X86)
-+	hakc_init_tags();
++	initialize_hakc();
 +#endif
 +
  	rcu_scheduler_starting();

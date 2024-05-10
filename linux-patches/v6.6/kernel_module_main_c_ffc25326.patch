@@ -1,5 +1,5 @@
 diff --git a/kernel/module/main.c b/kernel/module/main.c
-index 98fedfdb8db5..a0e607e9a90a 100644
+index 98fedfdb8db5..e054e435eabc 100644
 --- a/kernel/module/main.c
 +++ b/kernel/module/main.c
 @@ -1,4 +1,4 @@
@@ -8,19 +8,20 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  /*
   * Copyright (C) 2002 Richard Henderson
   * Copyright (C) 2001 Rusty Russell, 2002, 2010 Rusty Russell IBM.
-@@ -60,6 +60,11 @@
+@@ -60,6 +60,12 @@
  #include <uapi/linux/module.h>
  #include "internal.h"
  
 +#if IS_ENABLED(CONFIG_HAKC)
 +#include <linux/hakc/hakc-defs.h>
 +#include <linux/hakc/hakc.h>
++#include <linux/hakc/hakc-globals.h>
 +#endif
 +
  #define CREATE_TRACE_POINTS
  #include <trace/events/module.h>
  
-@@ -369,11 +374,73 @@ struct module *find_module(const char *name)
+@@ -369,11 +375,73 @@ struct module *find_module(const char *name)
  
  static inline void __percpu *mod_percpu(struct module *mod)
  {
@@ -29,8 +30,8 @@ index 98fedfdb8db5..a0e607e9a90a 100644
 +#else
  	return mod->percpu;
 +#endif
-+}
-+
+ }
+ 
 +#if IS_ENABLED(CONFIG_HAKC)
 +static int percpu_modalloc_shdr(struct module *mod, Elf_Shdr *pcpusec,
 +				unsigned int *size, void *__percpu *pcpu)
@@ -61,9 +62,9 @@ index 98fedfdb8db5..a0e607e9a90a 100644
 +	}
 +	*size = alloc_size;
 +	return 0;
- }
++}
 +#endif
- 
++
  static int percpu_modalloc(struct module *mod, struct load_info *info)
  {
 +#if IS_ENABLED(CONFIG_HAKC)
@@ -94,7 +95,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	Elf_Shdr *pcpusec = &info->sechdrs[info->index.pcpu];
  	unsigned long align = pcpusec->sh_addralign;
  
-@@ -394,11 +461,20 @@ static int percpu_modalloc(struct module *mod, struct load_info *info)
+@@ -394,11 +462,20 @@ static int percpu_modalloc(struct module *mod, struct load_info *info)
  	}
  	mod->percpu_size = pcpusec->sh_size;
  	return 0;
@@ -115,7 +116,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  }
  
  static unsigned int find_pcpusec(struct load_info *info)
-@@ -406,17 +482,75 @@ static unsigned int find_pcpusec(struct load_info *info)
+@@ -406,17 +483,75 @@ static unsigned int find_pcpusec(struct load_info *info)
  	return find_sec(info, ".data..percpu");
  }
  
@@ -191,7 +192,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	struct module *mod;
  	unsigned int cpu;
  
-@@ -446,6 +580,7 @@ bool __is_module_percpu_address(unsigned long addr, unsigned long *can_addr)
+@@ -446,6 +581,7 @@ bool __is_module_percpu_address(unsigned long addr, unsigned long *can_addr)
  
  	preempt_enable();
  	return false;
@@ -199,7 +200,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  }
  
  /**
-@@ -1369,6 +1504,9 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+@@ -1369,6 +1505,9 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
  	Elf_Shdr *symsec = &info->sechdrs[info->index.sym];
  	Elf_Sym *sym = (void *)symsec->sh_addr;
  	unsigned long secbase;
@@ -209,7 +210,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	unsigned int i;
  	int ret = 0;
  	const struct kernel_symbol *ksym;
-@@ -1425,8 +1563,24 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+@@ -1425,8 +1564,24 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
  			/* Divert to percpu allocation if a percpu var. */
  			if (sym[i].st_shndx == info->index.pcpu)
  				secbase = (unsigned long)mod_percpu(mod);
@@ -235,7 +236,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  			sym[i].st_value += secbase;
  			break;
  		}
-@@ -1669,6 +1823,9 @@ static int validate_section_offset(struct load_info *info, Elf_Shdr *shdr)
+@@ -1669,6 +1824,9 @@ static int validate_section_offset(struct load_info *info, Elf_Shdr *shdr)
  static int elf_validity_cache_copy(struct load_info *info, int flags)
  {
  	unsigned int i;
@@ -245,7 +246,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	Elf_Shdr *shdr, *strhdr;
  	int err;
  	unsigned int num_mod_secs = 0, mod_idx;
-@@ -1892,7 +2049,13 @@ static int elf_validity_cache_copy(struct load_info *info, int flags)
+@@ -1892,7 +2050,13 @@ static int elf_validity_cache_copy(struct load_info *info, int flags)
  		info->index.vers = find_sec(info, "__versions");
  
  	info->index.pcpu = find_pcpusec(info);
@@ -260,11 +261,19 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	return 0;
  
  no_exec:
-@@ -2128,6 +2291,35 @@ static int find_module_sections(struct module *mod, struct load_info *info)
+@@ -2128,6 +2292,43 @@ static int find_module_sections(struct module *mod, struct load_info *info)
  	}
  #endif
  
 +#if IS_ENABLED(CONFIG_HAKC)
++    mod->hakc_global_inits = section_objs(info,
++                                          ".hakc.global_init.data",
++                                          sizeof(*mod->hakc_global_inits),
++                                          &mod->num_hakc_global_inits);
++    if(!mod->hakc_global_inits) {
++        mod->num_hakc_global_inits = 0;
++    }
++
 +	/*
 +	 * linker scripts take care of getting the actual new functions from
 +	 * .hakc.modparam_ctx.text loaded
@@ -296,7 +305,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	mod->noinstr_text_start = section_objs(info, ".noinstr.text", 1,
  						&mod->noinstr_text_size);
  
-@@ -2279,6 +2471,21 @@ static int move_module(struct module *mod, struct load_info *info)
+@@ -2279,6 +2480,21 @@ static int move_module(struct module *mod, struct load_info *info)
  			}
  			memcpy(dest, (void *)shdr->sh_addr, shdr->sh_size);
  		}
@@ -318,7 +327,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  		/*
  		 * Update the userspace copy's ELF section address to point to
  		 * our newly allocated memory as a pure convenience so that
-@@ -2336,6 +2543,21 @@ int __weak module_frob_arch_sections(Elf_Ehdr *hdr,
+@@ -2336,6 +2552,21 @@ int __weak module_frob_arch_sections(Elf_Ehdr *hdr,
  				     char *secstrings,
  				     struct module *mod)
  {
@@ -340,7 +349,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	return 0;
  }
  
-@@ -2365,6 +2587,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+@@ -2365,6 +2596,10 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
  	struct module *mod;
  	unsigned int ndx;
  	int err;
@@ -351,7 +360,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  
  	/* Allow arches to frob section contents and sizes.  */
  	err = module_frob_arch_sections(info->hdr, info->sechdrs,
-@@ -2379,7 +2605,15 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+@@ -2379,7 +2614,15 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
  
  	/* We will do a special allocation for per-cpu sections later. */
  	info->sechdrs[info->index.pcpu].sh_flags &= ~(unsigned long)SHF_ALLOC;
@@ -368,7 +377,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	/*
  	 * Mark ro_after_init section with SHF_RO_AFTER_INIT so that
  	 * layout_sections() can put it in the right place.
-@@ -2388,6 +2622,14 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
+@@ -2388,6 +2631,14 @@ static struct module *layout_and_allocate(struct load_info *info, int flags)
  	ndx = find_sec(info, ".data..ro_after_init");
  	if (ndx)
  		info->sechdrs[ndx].sh_flags |= SHF_RO_AFTER_INIT;
@@ -383,7 +392,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	/*
  	 * Mark the __jump_table section as ro_after_init as well: these data
  	 * structures are never modified, with the exception of entries that
-@@ -2435,12 +2677,26 @@ int __weak module_finalize(const Elf_Ehdr *hdr,
+@@ -2435,12 +2686,26 @@ int __weak module_finalize(const Elf_Ehdr *hdr,
  
  static int post_relocation(struct module *mod, const struct load_info *info)
  {
@@ -410,7 +419,20 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  
  	/* Setup kallsyms-specific fields. */
  	add_kallsyms(mod, info);
-@@ -2821,6 +3077,11 @@ static int early_mod_check(struct load_info *info, int flags)
+@@ -2458,6 +2723,12 @@ static void do_mod_ctors(struct module *mod)
+ 	for (i = 0; i < mod->num_ctors; i++)
+ 		mod->ctors[i]();
+ #endif
++
++#if IS_ENABLED(CONFIG_HAKC)
++    if(mod->num_hakc_global_inits > 0) {
++        hakc_init_globals(mod->num_hakc_global_inits, mod->hakc_global_inits);
++    }
++#endif
+ }
+ 
+ /* For freeing module_init on success, in case kallsyms traversing */
+@@ -2821,6 +3092,11 @@ static int early_mod_check(struct load_info *info, int flags)
  	return err;
  }
  
@@ -422,7 +444,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  /*
   * Allocate and load the module: note that size of section 0 is always
   * zero, and we rely on this for optional sections.
-@@ -2832,6 +3093,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
+@@ -2832,6 +3108,7 @@ static int load_module(struct load_info *info, const char __user *uargs,
  	bool module_allocated = false;
  	long err = 0;
  	char *after_dashes;
@@ -430,7 +452,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  
  	/*
  	 * Do the signature check (if any) first. All that
-@@ -2947,6 +3209,54 @@ static int load_module(struct load_info *info, const char __user *uargs,
+@@ -2947,6 +3224,54 @@ static int load_module(struct load_info *info, const char __user *uargs,
  	if (err)
  		goto bug_cleanup;
  
@@ -485,7 +507,7 @@ index 98fedfdb8db5..a0e607e9a90a 100644
  	mod->async_probe_requested = async_probe;
  
  	/* Module is ready to execute: parsing args may do that. */
-@@ -2978,7 +3288,23 @@ static int load_module(struct load_info *info, const char __user *uargs,
+@@ -2978,7 +3303,23 @@ static int load_module(struct load_info *info, const char __user *uargs,
  	/* Done! */
  	trace_module_load(mod);
  
