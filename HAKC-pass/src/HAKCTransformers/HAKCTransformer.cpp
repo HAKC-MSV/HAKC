@@ -789,33 +789,38 @@ void hakc::HAKCTransformer::TransferStructMembers(ConstantStruct *ConstStruct, F
     }
 
     for (auto &Member: ConstStruct->operands()) {
+        GlobalValue *Target = GlobalVar;
+        if (auto *GlobalMember = dyn_cast<GlobalValue>(Member.get())) {
+            Target = GlobalMember;
+        }
+        if (!TransferShouldBeCreated(Member.get(), Target)) {
+            if(Debug) {
+                CommonHAKCAnalysis::getWriter() << "No transfer of member " << std::to_string(Member.getOperandNo()) << " to ";
+                CommonHAKCAnalysis::PrettyPrintValue(Target, CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
+            }
+            continue;
+        }
+
         if (auto *StructMember = dyn_cast<ConstantStruct>(Member.get())) {
             TransferStructMembers(StructMember, GlobalTransfer, GlobalVar, Debug);
-            continue;
-        } else if (isa<ConstantPointerNull>(Member.get())) {
             continue;
         }
 
         if (CommonHAKCAnalysis::IsPointerLikeType(Member->getType())) {
             Value *Transfer, *GEP, *Load;
-            GlobalValue *Target = GlobalVar;
-            if (auto *GlobalMember = dyn_cast<GlobalValue>(Member.get())) {
-                Target = GlobalMember;
-            }
 
-            if (TransferShouldBeCreated(Member.get(), Target)) {
-                if (Debug) {
-                    CommonHAKCAnalysis::getWriter() << "Creating Transfer of Member "
-                                                    << std::to_string(Member.getOperandNo()) << " ";
-                    CommonHAKCAnalysis::PrettyPrintValue(Member.get(), CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
-                }
-                GEP = HAKCIRBuilder.CreateStructGEP(GlobalVar->getValueType(), GlobalVar, Member.getOperandNo());
-                Load = HAKCIRBuilder.CreateLoad(Member->getType(), GEP);
-                Transfer = CreateCompartmentTransfer(Load, GlobalTransfer->getEntryBlock().getTerminator(),
-                                                     Target, !isa<Function>(Member.get()));
-                HAKCIRBuilder.CreateStore(Transfer, GEP);
+            if (Debug) {
+                CommonHAKCAnalysis::getWriter() << "Creating Transfer of Member "
+                                                << std::to_string(Member.getOperandNo()) << " ";
+                CommonHAKCAnalysis::PrettyPrintValue(Member.get(), CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << "\n";
             }
+            GEP = HAKCIRBuilder.CreateStructGEP(GlobalVar->getValueType(), GlobalVar, Member.getOperandNo());
+            Load = HAKCIRBuilder.CreateLoad(Member->getType(), GEP);
+            Transfer = CreateCompartmentTransfer(Load, GlobalTransfer->getEntryBlock().getTerminator(),
+                                                 Target, !isa<Function>(Member.get()));
+            HAKCIRBuilder.CreateStore(Transfer, GEP);
         }
     }
 }
@@ -825,6 +830,10 @@ bool hakc::HAKCTransformer::TransferShouldBeCreated(Value *V, GlobalValue *Targe
                           CommonHAKCAnalysis::IsPointerLikeType(V->getType());
     if (auto *I = dyn_cast<ConstantInt>(V)) {
         CreateTransfer = !I->equalsInt(0) && !I->isMinusOne();
+    }
+
+    if (HAKCAnalysis->isIgnoredType(V->getType())) {
+        CreateTransfer = false;
     }
 
     return CreateTransfer;

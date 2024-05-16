@@ -522,6 +522,8 @@ namespace hakc {
 
                 "struct.atomic_s",
 
+                "struct.atomic64_t",
+
 //                "struct.kmem_cache",
 
 //                "struct.page",

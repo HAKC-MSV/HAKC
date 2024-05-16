@@ -648,7 +648,7 @@ namespace hakc {
         }
         getTransformer().PopulateGlobalTransfer(GlobTransfer, GlobalVar, debug_output);
         if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter())) {
-            CommonHAKCAnalysis::getWriter() << "Faulty Global Transfer function "
+            CommonHAKCAnalysis::getWriter() << "\nFaulty Global Transfer function "
                                             << GlobTransfer->getName() << "\n";
             getModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
             throw std::exception();
