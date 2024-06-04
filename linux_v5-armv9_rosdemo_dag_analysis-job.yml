@@ -3,6 +3,7 @@ linux_v5-armv9_rosdemo_dag_analysis-job:
   needs:
     - job: build_linux_v5-armv9_kernel_dag-job
   rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH

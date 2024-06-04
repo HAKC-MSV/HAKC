@@ -5,6 +5,7 @@ build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job:
     - job: build_linux_v6-armv8_kernel_dag-job
     - job: linux_v6-armv8_rosdemo_dag_adjustment-job
   rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH

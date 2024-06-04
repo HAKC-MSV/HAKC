@@ -4,6 +4,7 @@ build_linux_v6-armv8_kernel_dag-job:
     - job: build_linux-armv8_pass-job
     - job: test_linux_pass-job
   rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
     - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
