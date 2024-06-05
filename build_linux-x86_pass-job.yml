@@ -17,7 +17,7 @@ build_linux-x86_pass-job:
     - export BUILD_TYPE="linux-x86"
     - echo "Checking which clang to use"
     - |
-      if [ -d "$CLANG_BUILD_PATH" ]; then
+      if [ -d "$CLANG_BUILD_PATH" ] && [ ! -z "$CI_COMMIT_BRANCH" ]; then
         export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
       else
         export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)

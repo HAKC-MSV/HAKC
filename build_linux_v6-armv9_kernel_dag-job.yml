@@ -18,7 +18,7 @@ build_linux_v6-armv9_kernel_dag-job:
     - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
     - echo "Checking which clang to use"
     - |
-      if [ -d "$CLANG_BUILD_PATH" ]; then
+      if [ -d "$CLANG_BUILD_PATH" ] && [ ! -z "$CI_COMMIT_BRANCH" ]; then
         export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
       else
         export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
