@@ -3,7 +3,7 @@ build_linux-x86_pass-job:
   needs:
     - job: submodule_consistency-job
     - job: build_llvm-job
-      optional: true
+#      optional: true
   rules:
     - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
