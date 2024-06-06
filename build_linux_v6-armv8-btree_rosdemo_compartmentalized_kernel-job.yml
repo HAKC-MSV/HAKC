@@ -49,7 +49,7 @@ build_linux_v6-armv8-btree_rosdemo_compartmentalized_kernel-job:
     - |
       env HAKC_ANALYSIS=compartmentalize \
       HAKC_COMPARTMENT_PATH=$(realpath ../$HAKC_DAG_ROOT/hakc-compartments.yml) \
-      HAKC_SOURCE_PATH=$PWD \
+      HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux) \
       HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
       make \
       ARCH=arm64 \

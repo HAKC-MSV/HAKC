@@ -50,7 +50,7 @@ build_linux_v5-armv9_kernel_dag-job:
     - |
       env HAKC_ANALYSIS=dag \
       HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
-      HAKC_SOURCE_PATH=$PWD \
+      HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux) \
       HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
       make \
       ARCH=arm64 \

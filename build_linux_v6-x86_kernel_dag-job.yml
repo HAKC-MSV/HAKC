@@ -45,6 +45,8 @@ build_linux_v6-x86_kernel_dag-job:
     - |
       env HAKC_ANALYSIS=dag \
       HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
+      HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux) \
+      HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
       make \
       LLVM=1 \
       O=$(realpath ../build-$BUILD_TYPE) \
@@ -119,7 +121,7 @@ build_linux_v6-x86_kernel_dag-job:
     - |
       env HAKC_ANALYSIS=dag \
       HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
-      HAKC_SOURCE_PATH=$PWD \
+      HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux) \
       HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
       make \
       LLVM=1 \
