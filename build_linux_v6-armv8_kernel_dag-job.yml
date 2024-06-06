@@ -42,7 +42,8 @@ build_linux_v6-armv8_kernel_dag-job:
     - cd $ROOT_ROOT/linux
     - echo "Building kernel"
     - export PATH=$CLANG_PATH/bin:$PATH
-    - echo "HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux)"
+    - export HAKC_SOURCE_PATH="$(realpath $ROOT_ROOT/linux)"
+    - echo $HAKC_SOURCE_PATH
     - |
       env HAKC_ANALYSIS=dag \
       HAKC_DAG_ANALYSIS_ROOT=$(realpath ../$HAKC_DAG_ROOT) \
