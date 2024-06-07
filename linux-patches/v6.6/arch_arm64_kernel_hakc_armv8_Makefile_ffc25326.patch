@@ -1,0 +1,7 @@
+diff --git a/arch/arm64/kernel/hakc/armv8/Makefile b/arch/arm64/kernel/hakc/armv8/Makefile
+new file mode 100644
+index 000000000000..5ecad017e0c2
+--- /dev/null
++++ b/arch/arm64/kernel/hakc/armv8/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_HAKC_ARM_V8) += hakc_neon.o

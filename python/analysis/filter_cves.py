@@ -21,10 +21,8 @@ def main():
                 for cpematch in node['cpe_match']:
                     if cpematch['cpe23Uri'].lower().find('linux_kernel') \
                             >= 0:
-                        print("{}\t{}".format(
-                            cve['cve']['CVE_data_meta']['ID'],
-                              cve['cve']['description'][
-                                  'description_data'][0]['value']))
+                        description = cve['cve']['description']['description_data'][0]['value'].replace("\t", "    ").replace("\n", "    ")
+                        print(f"{cve['cve']['CVE_data_meta']['ID']}\t{description}")
                         break
 
 

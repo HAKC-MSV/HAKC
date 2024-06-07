@@ -1,0 +1,18 @@
+diff --git a/drivers/rosdemo/Kconfig b/drivers/rosdemo/Kconfig
+new file mode 100644
+index 000000000000..8009e4fe18ad
+--- /dev/null
++++ b/drivers/rosdemo/Kconfig
+@@ -0,0 +1,12 @@
++# SPDX-License-Identifier: GPL-2.0-only
++#
++# ROSDEMO configuration.
++#
++
++config ROSDEMO
++	tristate "ROS Demo malicious driver"
++	depends on PCI
++	help
++	  Set this to M for the purposefully buggy ROS kernel module.
++	  DO NOT INCLUDE IN ANY PATCH!
++

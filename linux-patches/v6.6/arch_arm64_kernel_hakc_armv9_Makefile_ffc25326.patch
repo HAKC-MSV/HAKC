@@ -1,0 +1,7 @@
+diff --git a/arch/arm64/kernel/hakc/armv9/Makefile b/arch/arm64/kernel/hakc/armv9/Makefile
+new file mode 100644
+index 000000000000..a74ef69ce694
+--- /dev/null
++++ b/arch/arm64/kernel/hakc/armv9/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_HAKC_ARM_V9) += hakc_pac_mte.o
