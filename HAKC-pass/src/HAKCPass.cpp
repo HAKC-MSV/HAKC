@@ -85,7 +85,7 @@ namespace hakc {
         }
         raw_fd_ostream out(Path, err);
         if (!err) {
-            typeIdentifier.outputTypes(out);
+            typeIdentifier.OutputYAML(out);
             out.close();
         } else {
             CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";

@@ -201,7 +201,7 @@ namespace hakc {
         /* Remove consts and member tags but keep pointer tags (so can't use unwrapDIType) */
         if (auto *diDerivedType1 = dyn_cast<DIDerivedType>(diType)) {
             if (diType->getTag() != dwarf::DW_TAG_pointer_type) {
-                return isPointerToAnonStructOrUnion(diDerivedType1->getBaseType());
+                return diDerivedType1->getBaseType() && isPointerToAnonStructOrUnion(diDerivedType1->getBaseType());
             }
         }
         if (diType->getTag() == dwarf::DW_TAG_pointer_type) {

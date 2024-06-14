@@ -6,50 +6,48 @@
 #define HAKC_HAKCTYPEINFO_H
 
 #include "HAKCTypeIdentifier/HAKCInfo.h"
-#include "llvm/IR/DebugInfo.h"
-#include "HAKCTypeIdentifier.h"
+
+#include <map>
+#include <llvm/IR/DebugInfoMetadata.h>
 
 namespace hakc {
-    class HAKCTypeIdentifier;
 
     class HAKCTypeInfo : public HAKCInfo {
     public:
-        HAKCTypeInfo(const DIType *DiType, Type *Ty, HAKCTypeIdentifier &identifier);
-
-        HAKCTypeInfo(Type *Ty, HAKCTypeIdentifier &identifier);
-
+        HAKCTypeInfo(StringRef Name, bool DebugActive);
         virtual ~HAKCTypeInfo() = default;
 
-        virtual std::string getTypeStringRepresentation() override;
+        void AddMember(const std::shared_ptr<HAKCTypeInfo>& TypeUse, unsigned BitOffset);
 
-        virtual std::string getYaml() override;
+        std::string GetYaml() override;
 
-        virtual std::string getName() override;
+        void SetSizeInBits(unsigned Size);
+        unsigned GetSizeInBits();
 
-        std::set<GlobalObject *> getUsers();
-
-        void addUser(GlobalObject *User);
-
-        void addSubmemberEscape(std::string escaper, int64_t memberOffset);
-
-        const DIType *getDiType();
-
-        Type *getType();
-
-        virtual std::string getHash() override;
-
-        static std::string hashType(Type *Ty);
-
-        static std::string getTypeString(Type *Ty);
+        const DIType* GetDbgType();
+        void SetDbgType(const DIType* DbgType);
 
     protected:
-        std::set<GlobalObject *> users;
-        Type *Ty;
-        const DIType *DiType;
-        std::set<std::pair<std::string, int64_t>> escapingOffsets;
-        std::string name;
+        std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;
+        unsigned SizeInBits;
+        const DIType* DbgType;
 
-        const DIType *getBaseType(const DIType *diType);
+    public:
+        friend bool operator==(const HAKCTypeInfo &lhs, const HAKCTypeInfo &rhs) {
+            return lhs.GetName() == rhs.GetName();
+        }
+
+        friend bool operator!=(const HAKCTypeInfo &lhs, const HAKCTypeInfo &rhs) {
+            return !(lhs == rhs);
+        }
+
+        friend bool operator==(const std::shared_ptr<HAKCTypeInfo> &lhs, const std::shared_ptr<HAKCTypeInfo> &rhs) {
+            return *lhs == *rhs;
+        }
+
+        friend bool operator!=(const std::shared_ptr<HAKCTypeInfo> &lhs, const std::shared_ptr<HAKCTypeInfo> &rhs) {
+            return !(*lhs == *rhs);
+        }
     };
 
 } // hakc

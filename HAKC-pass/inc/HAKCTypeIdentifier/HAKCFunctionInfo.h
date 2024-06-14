@@ -5,28 +5,22 @@
 #ifndef HAKC_HAKCFUNCTIONINFO_H
 #define HAKC_HAKCFUNCTIONINFO_H
 
-#include "llvm/IR/Instructions.h"
-#include "HAKCGlobalInfo.h"
+#include "HAKCSymbolInfo.h"
+#include "llvm/IR/Function.h"
 
 using namespace llvm;
 
 namespace hakc {
 
-    class HAKCTypeIdentifier;
-
-    class HAKCFunctionInfo : public HAKCGlobalInfo {
+    class HAKCFunctionInfo : public HAKCSymbolInfo {
     public:
-        HAKCFunctionInfo(Function *F, HAKCTypeIdentifier &identifier);
-
-        void addEscapingMemberOffset(CallInst *call);
-
-        void addCall(CallInst *call);
-
-        std::string getYaml() override;
+        HAKCFunctionInfo(StringRef Name, bool DebugActive);
+        void SetFunction(Function *F);
+        Function* GetFunction();
 
     protected:
-        std::set<std::pair<std::string, std::string>> indirectCalls;
-        std::set<std::string> directCalls;
+        std::set<std::shared_ptr<HAKCSymbolInfo>> DirectCalls;
+        std::set<std::shared_ptr<HAKCTypeInfo>> IndirectCalls;
     };
 
 } // hakc
