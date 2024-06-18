@@ -20,14 +20,17 @@ namespace hakc {
         void AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo>& Symbol);
 
         std::string GetYaml() override;
+        std::string GetYamlHeader(unsigned Indents = 4);
+
+        GlobalObject* GetGlobalObj();
 
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
         std::set<std::shared_ptr<HAKCSymbolInfo>> UsedSymbols;
         GlobalObject *GlobalObj;
+        DIType *DbgType;
 
         void SetGlobalObj(GlobalObject *GlobalObj);
-        GlobalObject* GetGlobalObj();
     };
 }
 

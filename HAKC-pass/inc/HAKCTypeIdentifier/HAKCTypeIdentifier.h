@@ -82,7 +82,6 @@ namespace hakc {
 //
 //        std::string combineTokens(std::set<std::pair<std::string, std::string>> &tokens);
 //
-        bool DiTypeShouldBeAnalyzed(const DIType *diType);
         std::shared_ptr<HAKCTypeInfo> HandleType(const DIType *type);
         std::shared_ptr<HAKCTypeInfo> FindType(const DIType *type);
         void AddTypeMapping(const DIType* type, const std::shared_ptr<HAKCTypeInfo>& HAKCType);
@@ -101,8 +100,13 @@ namespace hakc {
         unsigned GetAnonymousID(const DIType* type);
         bool LLVMTypeMappingSanityCheck(const DIType *type, Type *Ty);
         std::string ConstructStructName(StructType *StructTy);
+        std::shared_ptr<hakc::HAKCSymbolInfo> AddUnmappedGlobal(GlobalObject *GlobalObj);
+        std::shared_ptr<hakc::HAKCFunctionInfo> AddUnmappedFunction(Function *F);
+        void AddUsedGlobals(std::set<GlobalObject*> &GlobalObjects, const std::shared_ptr<hakc::HAKCSymbolInfo>& UserSymbol);
 
-        std::shared_ptr<HAKCSymbolInfo> FindSymbol(Value *V);
+        std::shared_ptr<HAKCSymbolInfo> FindSymbol(Value *V, bool SearchUnmapped = false);
+        std::shared_ptr<HAKCFunctionInfo> FindFunction(Function *F, bool SearchUnmapped = false);
+        std::shared_ptr<HAKCTypeInfo> FindCalledFunctionType(FunctionType *FunctionTy);
 
     protected:
         std::map<const DIType*, std::shared_ptr<HAKCTypeInfo>> types;
@@ -110,6 +114,8 @@ namespace hakc {
         std::map<const DISubprogram*, std::shared_ptr<HAKCFunctionInfo>> functions;
         std::map<std::shared_ptr<HAKCTypeInfo>, std::set<Type*>> LLVMTypeMapping;
         std::map<const DIType*, unsigned> AnonymousNumberMapping;
+        std::set<std::shared_ptr<HAKCGlobalInfo>> UnmappedGlobals;
+        std::set<std::shared_ptr<HAKCFunctionInfo>> UnmappedFunctions;
         unsigned CurrentAnonID;
     };
 

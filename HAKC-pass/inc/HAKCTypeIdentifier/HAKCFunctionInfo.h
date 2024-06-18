@@ -17,9 +17,13 @@ namespace hakc {
         HAKCFunctionInfo(StringRef Name, bool DebugActive);
         void SetFunction(Function *F);
         Function* GetFunction();
+        void AddDirectCall(const std::shared_ptr<HAKCFunctionInfo>& DirectCall);
+        void AddIndirectCall(const std::shared_ptr<HAKCTypeInfo>& HAKCType);
+
+        std::string GetYaml() override;
 
     protected:
-        std::set<std::shared_ptr<HAKCSymbolInfo>> DirectCalls;
+        std::set<std::shared_ptr<HAKCFunctionInfo>> DirectCalls;
         std::set<std::shared_ptr<HAKCTypeInfo>> IndirectCalls;
     };
 

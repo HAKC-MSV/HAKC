@@ -394,11 +394,11 @@ static std::string UNKNOWN_ORIGIN = "unknown-origin";
 //    }
 //}
 //
-bool hakc::HAKCTypeIdentifier::DiTypeShouldBeAnalyzed(const DIType *diType) {
-    return !isAnonStructOrUnion(diType) &&
-           !isArrayOfAnonStructsOrUnions(diType) &&
-           !isPointerToAnonStructOrUnion(diType);
-}
+//bool hakc::HAKCTypeIdentifier::DiTypeShouldBeAnalyzed(const DIType *diType) {
+//    return !isAnonStructOrUnion(diType) &&
+//           !isArrayOfAnonStructsOrUnions(diType) &&
+//           !isPointerToAnonStructOrUnion(diType);
+//}
 //
 //bool hakc::HAKCTypeIdentifier::GlobalShouldBeSkipped(GlobalVariable *GV) {
 //    bool result = (GV->getNumUses() == 0 && !GV->hasExternalLinkage()) ||
@@ -770,6 +770,12 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
         }
         return nullptr;
     }
+    if (CommonHAKCAnalysis::isOutsideTransferFunc(F) || F->isIntrinsic()) {
+        if (debug) {
+            CommonHAKCAnalysis::getWriter() << SubProg->getName() << " is a HAKC Transfer function\n";
+        }
+        return nullptr;
+    }
     auto DIGVTy = FindType(SubProg->getType());
     if (!DIGVTy) {
         M.print(CommonHAKCAnalysis::getWriter(), nullptr);
@@ -821,9 +827,67 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
             auto MemberDef = AnalysisHelper->getDef(Op.get(), false, debug);
             if (auto *GlobalMember = dyn_cast<GlobalObject>(MemberDef)) {
                 GlobalSet.insert(GlobalMember);
-            } else {
-                FindAllGlobalsUsed(MemberDef, GlobalSet);
             }
+        }
+    }
+}
+
+std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFunction(Function *F) {
+    for (auto UnmappedFunc: UnmappedFunctions) {
+        if (UnmappedFunc->GetFunction() == F) {
+            return UnmappedFunc;
+        }
+    }
+    if (debug) {
+        CommonHAKCAnalysis::getWriter() << "Adding unmapped Function " << F->getName() << "\n";
+    }
+    auto FuncInfo = std::make_shared<HAKCFunctionInfo>(F->getName(), debug);
+    FuncInfo->SetFunction(F);
+    UnmappedFunctions.insert(FuncInfo);
+    return FuncInfo;
+}
+
+std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGlobal(GlobalObject *GlobalObj) {
+    if (CommonHAKCAnalysis::IsStringType(GlobalObj->getValueType())) {
+        return nullptr;
+    }
+    if (auto *F = dyn_cast<Function>(GlobalObj)) {
+        return AddUnmappedFunction(F);
+    } else if (auto *GV = dyn_cast<GlobalVariable>(GlobalObj)) {
+        for (auto UnmappedGlobal: UnmappedGlobals) {
+            if (UnmappedGlobal->GetGlobalVariable() == GV) {
+                return UnmappedGlobal;
+            }
+        }
+        if (debug) {
+            CommonHAKCAnalysis::getWriter() << "Adding unmapped Global Variable " << GV->getName() << "\n";
+        }
+        auto GlobalInfo = std::make_shared<HAKCGlobalInfo>(GlobalObj->getName(), debug);
+        GlobalInfo->SetGlobalVariable(GV);
+        UnmappedGlobals.insert(GlobalInfo);
+        return GlobalInfo;
+    } else {
+        CommonHAKCAnalysis::getWriter() << "Unsupported GlobalObj: " << *GlobalObj << "\n";
+        throw std::exception();
+    }
+}
+
+void hakc::HAKCTypeIdentifier::AddUsedGlobals(std::set<GlobalObject *> &GlobalObjects,
+                                              const std::shared_ptr<hakc::HAKCSymbolInfo> &UserSymbol) {
+    for (auto *UsedGlobal: GlobalObjects) {
+        auto Symbol = FindSymbol(UsedGlobal);
+        if (!Symbol) {
+            if (debug) {
+                CommonHAKCAnalysis::getWriter() << "\nGlobal " << UsedGlobal->getName() << " is used in "
+                                                << UserSymbol->GetGlobalObj()->getName()
+                                                << " but the Symbol could not be found\n";
+            }
+            Symbol = AddUnmappedGlobal(UsedGlobal);
+        } else if (debug) {
+            CommonHAKCAnalysis::getWriter() << "Found Symbol " << Symbol->GetName() << "\n";
+        }
+        if (Symbol) {
+            UserSymbol->AddSymbolUse(Symbol);
         }
     }
 }
@@ -838,20 +902,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInGlobals() {
             }
             std::set<GlobalObject *> GlobalsUsed;
             FindAllGlobalsUsed(GV->getInitializer(), GlobalsUsed);
-            for (auto *UsedGlobal: GlobalsUsed) {
-                auto Symbol = FindSymbol(UsedGlobal);
-                if (!Symbol) {
-                    if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "\nGlobal " << UsedGlobal->getName() << " is used in " << *GV
-                                                        << " but the Symbol could not be found\n";
-                    }
-                    continue;
-                }
-                if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Found Symbol " << Symbol->GetName() << "\n";
-                }
-                it.second->AddSymbolUse(Symbol);
-            }
+            AddUsedGlobals(GlobalsUsed, it.second);
         }
     }
 }
@@ -866,34 +917,96 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
         std::set<GlobalObject *> GlobalsUsed;
         for (auto InstIt = inst_begin(F); InstIt != inst_end(F); ++InstIt) {
             auto *I = &(*InstIt);
-            FindAllGlobalsUsed(I, GlobalsUsed);
-        }
-        for (auto *UsedGlobal: GlobalsUsed) {
-            auto Symbol = FindSymbol(UsedGlobal);
-            if (!Symbol) {
-                if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "\nGlobal " << UsedGlobal->getName() << " is used in function "
-                                                    << F->getName() << " but the Symbol could not be found\n";
-                }
+            if (I->isDebugOrPseudoInst() || isa<IntrinsicInst>(I)) {
                 continue;
             }
-            if (debug) {
-                CommonHAKCAnalysis::getWriter() << "Found Symbol " << Symbol->GetName() << "\n";
+            FindAllGlobalsUsed(I, GlobalsUsed);
+            if (auto *Call = dyn_cast<CallInst>(I)) {
+                if (Call->getCalledFunction()) {
+                    auto FoundFunction = FindFunction(Call->getCalledFunction(), true);
+                    if (!FoundFunction) {
+                        if (debug) {
+                            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for Function "
+                                                            << Call->getCalledFunction()->getName() << "\n";
+                        }
+                        FoundFunction = AddUnmappedFunction(Call->getCalledFunction());
+                    }
+                    it.second->AddDirectCall(FoundFunction);
+                } else if(Call->isIndirectCall()) {
+                    auto *FunctionTy = dyn_cast<FunctionType>(
+                            Call->getCalledOperand()->getType()->getPointerElementType());
+                    auto HAKCType = FindCalledFunctionType(FunctionTy);
+                    if (!HAKCType) {
+                        CommonHAKCAnalysis::getWriter() << "Could not find called HAKCType for " << *Call
+                                                        << " in Function " << F->getName() << "\n";
+                        throw std::exception();
+                    }
+                    it.second->AddIndirectCall(HAKCType);
+                }
             }
-            it.second->AddSymbolUse(Symbol);
         }
+        AddUsedGlobals(GlobalsUsed, it.second);
     }
 }
 
-std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::FindSymbol(Value *V) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindCalledFunctionType(FunctionType *FunctionTy) {
+    if (!FunctionTy) {
+        CommonHAKCAnalysis::getWriter() << "Trying to find null FunctionTy\n";
+        throw std::exception();
+    }
+    auto Search = [FunctionTy](Type *Ty) {
+        return Ty == FunctionTy;
+    };
+
+    for (auto &it: LLVMTypeMapping) {
+        if (std::any_of(
+                it.second.begin(), it.second.end(), Search
+        )) {
+            return it.first;
+        }
+    }
+
+    return nullptr;
+}
+
+std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::FindFunction(Function *F, bool SearchUnmapped) {
+    for (auto &it: functions) {
+        if (it.second->GetFunction() == F) {
+            return it.second;
+        }
+    }
+    if (SearchUnmapped) {
+        for (auto UnmappedFunction: UnmappedFunctions) {
+            if (UnmappedFunction->GetFunction() == F) {
+                return UnmappedFunction;
+            }
+        }
+    }
+    return nullptr;
+}
+
+std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::FindSymbol(Value *V, bool SearchUnmapped) {
     for (auto &it: globals) {
         if (it.second->GetGlobalVariable() == V) {
             return it.second;
         }
     }
-    for (auto &it: functions) {
-        if (it.second->GetFunction() == V) {
-            return it.second;
+    if (auto *F = dyn_cast<Function>(V)) {
+        auto FoundFunction = FindFunction(F, SearchUnmapped);
+        if (FoundFunction) {
+            return FoundFunction;
+        }
+    }
+    if (SearchUnmapped) {
+        for (auto UnmappedGlobal: UnmappedGlobals) {
+            if (UnmappedGlobal->GetGlobalVariable() == V) {
+                return UnmappedGlobal;
+            }
+        }
+        for (auto UnmappedFunction: UnmappedFunctions) {
+            if (UnmappedFunction->GetFunction() == V) {
+                return UnmappedFunction;
+            }
         }
     }
     return nullptr;
@@ -1103,7 +1216,7 @@ hakc::HAKCTypeIdentifier::HAKCTypeIdentifier(Module &M, CommonHAKCAnalysis *Anal
     FinalizeTypes();
 
     FindUsesInGlobals();
-//    FindUsesInFunctions();
+    FindUsesInFunctions();
 //    for (auto &Global: M.getGlobalList()) {
 //        debug = (Global.getName() == CommonHAKCAnalysis::getHAKCDebugName());
 //        if (GlobalShouldBeSkipped(&Global)) {
@@ -1360,54 +1473,39 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
     out << GetTransformedPath(RealPath);
     out << "\n";
 
-    out << "types:\n";
-    for (auto &it: types) {
-        out << *it.second << "\n";
-    }
-    out << "symbols:\n";
+    out << "globals:\n";
+    std::vector<std::shared_ptr<HAKCGlobalInfo>> SortedGlobals;
+    SortedGlobals.reserve(globals.size() + UnmappedGlobals.size());
     for (auto &it: globals) {
-        out << *it.second << "\n";
+        SortedGlobals.push_back(it.second);
     }
+    for (const auto &Unmapped: UnmappedGlobals) {
+        SortedGlobals.push_back(Unmapped);
+    }
+    llvm::sort(SortedGlobals.begin(), SortedGlobals.end(),
+               [](const std::shared_ptr<HAKCGlobalInfo> &LHS, const std::shared_ptr<HAKCGlobalInfo> &RHS) {
+                   return LHS->GetName() < RHS->GetName();
+               });
+    for (auto &it: SortedGlobals) {
+        out << *it << "\n";
+    }
+
+    out << "functions:\n";
+    std::vector<std::shared_ptr<HAKCFunctionInfo>> SortedFunctions;
+    SortedFunctions.reserve(globals.size() + UnmappedGlobals.size());
     for (auto &it: functions) {
-        out << *it.second << "\n";
+        SortedFunctions.push_back(it.second);
     }
-//    for (auto &t: types) {
-//        if (!t->getType()->isStructTy()) {
-//            continue;
-//        }
-//        std::string yml = t->getYaml();
-//        if (yml.empty()) {
-//            continue;
-//        }
-//        StringRef yaml(yml);
-//        SmallVector<StringRef> lines;
-//        yaml.split(lines, "\n");
-//        for (auto line: lines) {
-//            out << "  " << line << "\n";
-//        }
-//    }
-//
-//    out << "symbols:\n";
-//    for (auto &s: symbols) {
-//        debug = s->getName() == CommonHAKCAnalysis::getHAKCDebugName();
-//        if (debug) {
-//            CommonHAKCAnalysis::getWriter() << "Outputting YAML for " << s->getValue()->getName() << "\n";
-//            CommonHAKCAnalysis::getWriter() << "typeString = " << s-> << "\n";
-//        }
-//        std::string yml = s->getYaml();
-//        if (yml.empty()) {
-//            if (debug) {
-//                CommonHAKCAnalysis::getWriter() << "\tYAML empty for " << s->getValue()->getName() << "\n";
-//            }
-//            continue;
-//        }
-//        StringRef yaml(yml);
-//        SmallVector<StringRef> lines;
-//        yaml.split(lines, "\n");
-//        for (auto line: lines) {
-//            out << "  " << line << "\n";
-//        }
-//    }
+    for (const auto &Unmapped: UnmappedFunctions) {
+        SortedFunctions.push_back(Unmapped);
+    }
+    llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
+               [](const std::shared_ptr<HAKCFunctionInfo> &LHS, const std::shared_ptr<HAKCFunctionInfo> &RHS) {
+                   return LHS->GetName() < RHS->GetName();
+               });
+    for (auto &it: SortedFunctions) {
+        out << *it << "\n";
+    }
 }
 //
 //std::shared_ptr<hakc::HAKCTypeInfo>
