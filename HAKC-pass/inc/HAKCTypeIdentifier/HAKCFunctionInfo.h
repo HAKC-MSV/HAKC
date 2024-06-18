@@ -7,6 +7,7 @@
 
 #include "HAKCSymbolInfo.h"
 #include "llvm/IR/Function.h"
+#include "HAKCIndirectCallSource.h"
 
 using namespace llvm;
 
@@ -18,13 +19,13 @@ namespace hakc {
         void SetFunction(Function *F);
         Function* GetFunction();
         void AddDirectCall(const std::shared_ptr<HAKCFunctionInfo>& DirectCall);
-        void AddIndirectCall(const std::shared_ptr<HAKCTypeInfo>& HAKCType);
+        void AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource>& Source);
 
-        std::string GetYaml() override;
+        std::string GetYaml(unsigned Indents) override;
 
     protected:
         std::set<std::shared_ptr<HAKCFunctionInfo>> DirectCalls;
-        std::set<std::shared_ptr<HAKCTypeInfo>> IndirectCalls;
+        std::set<std::shared_ptr<HAKCIndirectCallSource>> IndirectCalls;
     };
 
 } // hakc

@@ -102,6 +102,8 @@ namespace hakc {
             os << "Function " << F->getName();
         } else if (auto *GV = dyn_cast<GlobalVariable>(V)) {
             os << "Global " << GV->getName();
+        } else if (auto *Arg = dyn_cast<Argument>(V)) {
+            os << "Argument " << Arg->getArgNo() << " of " << Arg->getParent()->getName();
         } else {
             os << *V;
         }

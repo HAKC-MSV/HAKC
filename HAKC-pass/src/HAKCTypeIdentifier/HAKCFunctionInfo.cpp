@@ -19,12 +19,12 @@ namespace hakc {
         return dyn_cast<Function>(GetGlobalObj());
     }
 
-    void HAKCFunctionInfo::AddIndirectCall(const std::shared_ptr<HAKCTypeInfo> &HAKCType) {
-        if(!HAKCType) {
-            CommonHAKCAnalysis::getWriter() << "Trying to add null indirect call\n";
+    void HAKCFunctionInfo::AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource>& Source) {
+        if(!Source) {
+            CommonHAKCAnalysis::getWriter() << "Trying to add null indirect call source\n";
             throw std::exception();
         }
-        IndirectCalls.insert(HAKCType);
+        IndirectCalls.insert(Source);
     }
 
     void HAKCFunctionInfo::AddDirectCall(const std::shared_ptr<HAKCFunctionInfo> &DirectCall) {
@@ -35,23 +35,30 @@ namespace hakc {
         DirectCalls.insert(DirectCall);
     }
 
-    std::string HAKCFunctionInfo::GetYaml() {
-        auto Yaml = HAKCSymbolInfo::GetYaml();
+    std::string HAKCFunctionInfo::GetYaml(unsigned Indents) {
+        auto Yaml = HAKCSymbolInfo::GetYaml( Indents);
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(HAKCInfo::IndentSpaces()) << "Direct-Calls:\n";
-        unsigned Count = 0;
-        for (auto &Symbol: DirectCalls) {
-            sstream << Symbol->GetYamlHeader(3 * HAKCInfo::IndentSpaces());
-            if(++Count != DirectCalls.size()) {
-                sstream << "\n";
+        unsigned Count;
+        if(!DirectCalls.empty()) {
+            sstream.indent(Indents) << "Direct-Calls:\n";
+            Count = 0;
+            for (auto &Symbol: DirectCalls) {
+                sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
+                if (++Count != DirectCalls.size()) {
+                    sstream << "\n";
+                }
             }
         }
-        Count = 0;
-        sstream.indent(HAKCInfo::IndentSpaces()) << "Indirect-Calls:\n";
-        for(auto &Ty : IndirectCalls) {
-            sstream.indent(2*HAKCInfo::IndentSpaces()) << "-\n";
-            sstream.indent(3*HAKCInfo::IndentSpaces()) << "Type: " << Ty->GetName() << "\n";
+        if(!IndirectCalls.empty()) {
+            Count = 0;
+            sstream.indent(Indents) << "Indirect-Calls:\n";
+            for (auto &IndirectSource : IndirectCalls) {
+                sstream << IndirectSource->GetYaml(Indents + HAKCInfo::IndentSpaces());
+                if(++Count != IndirectCalls.size()) {
+                    sstream << "\n";
+                }
+            }
         }
         return Yaml;
     }

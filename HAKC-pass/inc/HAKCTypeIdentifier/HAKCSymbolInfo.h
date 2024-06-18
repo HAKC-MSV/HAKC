@@ -19,7 +19,7 @@ namespace hakc {
 
         void AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo>& Symbol);
 
-        std::string GetYaml() override;
+        std::string GetYaml(unsigned Indents) override;
         std::string GetYamlHeader(unsigned Indents = 4);
 
         GlobalObject* GetGlobalObj();

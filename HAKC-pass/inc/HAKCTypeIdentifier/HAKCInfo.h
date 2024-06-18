@@ -15,7 +15,7 @@ namespace hakc {
 
     class HAKCInfo {
     public:
-        virtual std::string GetYaml() = 0;
+        virtual std::string GetYaml(unsigned Indents) = 0;
         virtual StringRef GetName() const;
 
         friend raw_ostream &operator<<(raw_ostream &os, HAKCInfo& Info);

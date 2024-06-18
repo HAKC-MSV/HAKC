@@ -42,15 +42,15 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned Indents) {
     return Yaml;
 }
 
-std::string hakc::HAKCSymbolInfo::GetYaml() {
-    auto Yaml = GetYamlHeader();
+std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
+    auto Yaml = GetYamlHeader(Indents);
     llvm::raw_string_ostream sstream(Yaml);
 
     if(!UsedSymbols.empty()) {
-        sstream.indent(HAKCInfo::IndentSpaces()) << "Used-Symbols:\n";
+        sstream.indent(Indents) << "Used-Symbols:\n";
         unsigned Count = 0;
         for(auto &Symbol : UsedSymbols) {
-            sstream << Symbol->GetYamlHeader(2 * HAKCInfo::IndentSpaces());
+            sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
             if(++Count != UsedSymbols.size()) {
                 sstream << "\n";
             }

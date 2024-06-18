@@ -23,7 +23,7 @@ namespace hakc {
     }
 
     raw_ostream &operator<<(raw_ostream &os, HAKCInfo &Info) {
-        os << Info.GetYaml();
+        os << Info.GetYaml(HAKCInfo::IndentSpaces());
         return os;
     }
 

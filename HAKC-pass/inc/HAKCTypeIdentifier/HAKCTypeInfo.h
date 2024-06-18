@@ -19,7 +19,7 @@ namespace hakc {
 
         void AddMember(const std::shared_ptr<HAKCTypeInfo>& TypeUse, unsigned BitOffset);
 
-        std::string GetYaml() override;
+        std::string GetYaml(unsigned Indents) override;
 
         void SetSizeInBits(unsigned Size);
         unsigned GetSizeInBits();

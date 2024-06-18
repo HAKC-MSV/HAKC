@@ -33,12 +33,12 @@ namespace hakc {
         Members[BitOffset].insert(TypeUse);
     }
 
-    std::string hakc::HAKCTypeInfo::GetYaml() {
+    std::string hakc::HAKCTypeInfo::GetYaml(unsigned Indents) {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream << "-\n";
-        sstream.indent(HAKCInfo::IndentSpaces()) << "Name: " << GetName() << "\n";
+        sstream.indent(Indents) << "-\n";
+        sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Name: " << GetName() << "\n";
         if (!Members.empty()) {
             std::vector<unsigned> SortedBitOffsets;
             SortedBitOffsets.reserve(Members.size());
@@ -47,15 +47,15 @@ namespace hakc {
             }
 
             llvm::sort(SortedBitOffsets.begin(), SortedBitOffsets.end());
-            sstream.indent(HAKCInfo::IndentSpaces()) << "Members:\n";
+            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Members:\n";
             for (auto BitOffset: SortedBitOffsets) {
                 auto MemberSet = Members[BitOffset];
-                sstream.indent(2 * HAKCInfo::IndentSpaces()) << "-\n";
-                sstream.indent(2 * HAKCInfo::IndentSpaces()) << "  Offset: " << BitOffset << "\n";
-                sstream.indent(2 * HAKCInfo::IndentSpaces()) << "  Type:\n";
+                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "-\n";
+                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "  Offset: " << BitOffset << "\n";
+                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "  Type:\n";
                 for(auto &Member : MemberSet) {
-                    sstream.indent(3 * HAKCInfo::IndentSpaces()) << "-\n";
-                    sstream.indent(3 * HAKCInfo::IndentSpaces()) << Member->GetName() << "\n";
+                    sstream.indent(Indents + 3 * HAKCInfo::IndentSpaces()) << "-\n";
+                    sstream.indent(Indents + 3 * HAKCInfo::IndentSpaces()) << Member->GetName() << "\n";
                 }
             }
         }

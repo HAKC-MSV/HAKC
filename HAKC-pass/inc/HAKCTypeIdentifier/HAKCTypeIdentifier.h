@@ -32,56 +32,11 @@ namespace hakc {
         HAKCTypeIdentifier(Module &M, CommonHAKCAnalysis *Analysis);
 
         void OutputYAML(raw_ostream &out);
-//
-//        std::shared_ptr<HAKCTypeInfo> getHAKCType(const DIType *type);
-//
-//        std::shared_ptr<HAKCTypeInfo> getHAKCType(Type *type);
-//
-//        std::string getCallOperandOrigin(CallInst *call);
-//
-//        std::string getStoreOperandOrigin(StoreInst *storeInst);
-//
-//        Value *GetDef(Value *V);
-//
-//        std::vector<Value *> GetDefChain(Value *V);
-//
         static std::string GetTransformedPath(StringRef Path);
-//
-//        Module &GetModule();
 
     protected:
 
         CommonHAKCAnalysis *AnalysisHelper;
-
-//        std::shared_ptr<HAKCTypeInfo> addType(const DIType *diType, GlobalObject *GO);
-//
-//        std::shared_ptr<HAKCTypeInfo> addType(const DIType *diType, Type *Ty);
-//
-//        std::shared_ptr<HAKCTypeInfo> addNoDebugType(GlobalObject *GO);
-//
-//        bool GlobalShouldBeSkipped(GlobalVariable *GV);
-//
-//        void addEscapingSymbol(Function *F, std::string &escapingSymbol);
-//
-//        void addUseInIndirectCall(Function *F);
-//
-//        void addUseInUnknownOriginStore(Function *F);
-//
-//        Value *getOperandOrigin(Value *operand);
-//
-//        std::string getOperandString(Value *operand, std::shared_ptr<HAKCTypeInfo> hakcType);
-//
-//        std::string getOperandOriginString(Value *operand);
-//
-//        std::string getUseOriginString(Use *use, std::shared_ptr<HAKCTypeInfo> hakcType);
-//
-//        void findEscapes();
-//
-//        std::set<std::pair<std::string, std::string>>
-//        getOperandStringTokens(Value *operand, std::shared_ptr<HAKCTypeInfo> &hakcType);
-//
-//        std::string combineTokens(std::set<std::pair<std::string, std::string>> &tokens);
-//
         std::shared_ptr<HAKCTypeInfo> HandleType(const DIType *type);
         std::shared_ptr<HAKCTypeInfo> FindType(const DIType *type);
         void AddTypeMapping(const DIType* type, const std::shared_ptr<HAKCTypeInfo>& HAKCType);
@@ -106,7 +61,14 @@ namespace hakc {
 
         std::shared_ptr<HAKCSymbolInfo> FindSymbol(Value *V, bool SearchUnmapped = false);
         std::shared_ptr<HAKCFunctionInfo> FindFunction(Function *F, bool SearchUnmapped = false);
+        std::shared_ptr<HAKCGlobalInfo> FindGlobal(GlobalVariable *GV, bool SearchUnmapped = false);
         std::shared_ptr<HAKCTypeInfo> FindCalledFunctionType(FunctionType *FunctionTy);
+        std::shared_ptr<HAKCTypeInfo> FindPointerType(PointerType *PointerTy);
+
+        std::shared_ptr<HAKCTypeInfo> FindType(Type *Ty);
+
+        void FindIndirectCallSource(CallInst *CallI, std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path);
+        void CreateIndirectCallSourceLink(Value *V, std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path);
 
     protected:
         std::map<const DIType*, std::shared_ptr<HAKCTypeInfo>> types;

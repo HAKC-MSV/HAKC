@@ -1,0 +1,49 @@
+//
+// Created by de29664 on 6/18/24.
+//
+
+#ifndef HAKC_HAKCINDIRECTCALLSOURCE_H
+#define HAKC_HAKCINDIRECTCALLSOURCE_H
+
+#include "llvm/IR/Instructions.h"
+#include "HAKCTypeInfo.h"
+#include "HAKCGlobalInfo.h"
+
+using namespace llvm;
+
+namespace hakc {
+    class HAKCIndirectCallSourceLink : public HAKCInfo {
+    public:
+        HAKCIndirectCallSourceLink(Argument *Arg, bool Debug);
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo>& GlobalInfo, bool Debug);
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo>& GlobalInfo, int OffsetInBits, bool Debug);
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCTypeInfo> &HAKCType, int OffsetInBits, bool Debug);
+
+        virtual ~HAKCIndirectCallSourceLink() = default;
+
+        std::string GetYaml(unsigned Indents) override;
+
+    protected:
+        std::string LinkYaml;
+
+    };
+
+
+    class HAKCIndirectCallSource : public HAKCInfo {
+    public:
+        HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
+                               std::shared_ptr<HAKCTypeInfo> HAKCType, bool debug);
+
+        virtual ~HAKCIndirectCallSource() = default;
+
+        std::string GetYaml(unsigned Indents) override;
+
+    protected:
+        std::shared_ptr<HAKCTypeInfo> HAKCType;
+        std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath;
+
+    };
+
+} // hakc
+
+#endif //HAKC_HAKCINDIRECTCALLSOURCE_H
