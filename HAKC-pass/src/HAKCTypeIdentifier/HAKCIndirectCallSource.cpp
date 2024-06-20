@@ -16,13 +16,12 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << "-\n";
-        sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Type: " << GetName() << "\n";
+        sstream.indent(Indents) << "- Type: " << GetName() << "\n";
         if (!SourcePath.empty()) {
-            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Source:\n";
+            sstream.indent(Indents + 2) << "Source:\n";
             unsigned Count = 0;
             for (auto &link: SourcePath) {
-                sstream << link->GetYaml(Indents + 2 * HAKCInfo::IndentSpaces());
+                sstream << link->GetYaml(Indents + 3 * HAKCInfo::IndentSpaces());
                 if (++Count != SourcePath.size()) {
                     sstream << "\n";
                 }

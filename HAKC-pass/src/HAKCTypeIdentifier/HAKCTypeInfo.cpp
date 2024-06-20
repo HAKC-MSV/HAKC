@@ -37,8 +37,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << "-\n";
-        sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Name: " << GetName() << "\n";
+        sstream.indent(Indents) << "- Name: " << GetName() << "\n";
         if (!Members.empty()) {
             std::vector<unsigned> SortedBitOffsets;
             SortedBitOffsets.reserve(Members.size());
@@ -47,15 +46,13 @@ namespace hakc {
             }
 
             llvm::sort(SortedBitOffsets.begin(), SortedBitOffsets.end());
-            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "Members:\n";
+            sstream.indent(Indents + 2) << "Members:\n";
             for (auto BitOffset: SortedBitOffsets) {
                 auto MemberSet = Members[BitOffset];
-                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "-\n";
-                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "  Offset: " << BitOffset << "\n";
-                sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "  Type:\n";
+                sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- Offset: " << BitOffset << "\n";
+                sstream.indent(Indents + HAKCInfo::IndentSpaces() + 2) << "Type:\n";
                 for(auto &Member : MemberSet) {
-                    sstream.indent(Indents + 3 * HAKCInfo::IndentSpaces()) << "-\n";
-                    sstream.indent(Indents + 3 * HAKCInfo::IndentSpaces()) << Member->GetName() << "\n";
+                    sstream.indent(Indents + 2 * HAKCInfo::IndentSpaces()) << "- " << Member->GetName() << "\n";
                 }
             }
         }

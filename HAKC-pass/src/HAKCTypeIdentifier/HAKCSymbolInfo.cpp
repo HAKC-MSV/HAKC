@@ -29,16 +29,15 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned Indents) {
     std::string Yaml;
     llvm::raw_string_ostream sstream(Yaml);
 
-    sstream.indent(Indents) << "-\n";
-    sstream.indent(Indents) << "Name: " << GetName() << "\n";
-    sstream.indent(Indents) << "Type: ";
+    sstream.indent(Indents) << "- Name: " << GetName() << "\n";
+    sstream.indent(Indents + 2) << "Type: \"";
     if(!this->Type) {
         sstream << "@UNKNOWN@";
     } else {
         sstream << this->Type->GetName();
     }
-    sstream << "\n";
-    sstream.indent(Indents) << "LLVM-Type: " << *GetGlobalObj()->getType() << "\n";
+    sstream << "\"\n";
+    sstream.indent(Indents + 2) << "LLVM-Type: \"" << *GetGlobalObj()->getType() << "\"\n";
     return Yaml;
 }
 
@@ -47,7 +46,7 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
     llvm::raw_string_ostream sstream(Yaml);
 
     if(!UsedSymbols.empty()) {
-        sstream.indent(Indents) << "Used-Symbols:\n";
+        sstream.indent(Indents + 2) << "Used-Symbols:\n";
         unsigned Count = 0;
         for(auto &Symbol : UsedSymbols) {
             sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
