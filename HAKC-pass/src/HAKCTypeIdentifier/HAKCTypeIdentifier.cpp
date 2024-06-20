@@ -452,7 +452,7 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
                 CreateIndirectCallSourceLink(GEP->getPointerOperand(), Path);
             } else if (debug) {
                 if (!GEP->hasAllConstantIndices()) {
-                    CommonHAKCAnalysis::getWriter() << "GEP does not have all constant indicies: " << *GEP << "\n";
+                    CommonHAKCAnalysis::getWriter() << "GEP does not have all constant indices: " << *GEP << "\n";
                 } else {
                     CommonHAKCAnalysis::getWriter() << "Could not find Load Pointer HAKC Type for " << *TyToCheck
                                                     << "\n";
