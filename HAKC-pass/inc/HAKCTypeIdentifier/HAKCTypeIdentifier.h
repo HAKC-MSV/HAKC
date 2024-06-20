@@ -63,7 +63,6 @@ namespace hakc {
         std::shared_ptr<HAKCFunctionInfo> FindFunction(Function *F, bool SearchUnmapped = false);
         std::shared_ptr<HAKCGlobalInfo> FindGlobal(GlobalVariable *GV, bool SearchUnmapped = false);
         std::shared_ptr<HAKCTypeInfo> FindCalledFunctionType(FunctionType *FunctionTy);
-        std::shared_ptr<HAKCTypeInfo> FindPointerType(PointerType *PointerTy);
 
         std::shared_ptr<HAKCTypeInfo> FindType(Type *Ty);
 
