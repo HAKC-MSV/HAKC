@@ -16,7 +16,7 @@ namespace hakc {
     }
 
     HAKCInfo::HAKCInfo(StringRef Name, bool DebugActive) : DebugActive(DebugActive), Name(Name.str()) {
-        if(Name.empty()) {
+        if (Name.empty()) {
             CommonHAKCAnalysis::getWriter() << "Name is empty!\n";
             throw std::exception();
         }

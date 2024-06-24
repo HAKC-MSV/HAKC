@@ -12,17 +12,20 @@ namespace hakc {
     class HAKCSymbolInfo : public HAKCInfo {
     public:
         HAKCSymbolInfo(StringRef Name, bool DebugActive);
+
         virtual ~HAKCSymbolInfo() = default;
 
         void SetType(std::shared_ptr<HAKCTypeInfo> HAKCType);
+
         std::shared_ptr<HAKCTypeInfo> GetType();
 
-        void AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo>& Symbol);
+        void AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo> &Symbol);
 
         std::string GetYaml(unsigned Indents) override;
+
         std::string GetYamlHeader(unsigned Indents = 4);
 
-        GlobalObject* GetGlobalObj();
+        GlobalObject *GetGlobalObj();
 
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;

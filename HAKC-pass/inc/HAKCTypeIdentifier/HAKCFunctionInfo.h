@@ -16,10 +16,14 @@ namespace hakc {
     class HAKCFunctionInfo : public HAKCSymbolInfo {
     public:
         HAKCFunctionInfo(StringRef Name, bool DebugActive);
+
         void SetFunction(Function *F);
-        Function* GetFunction();
-        void AddDirectCall(const std::shared_ptr<HAKCFunctionInfo>& DirectCall);
-        void AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource>& Source);
+
+        Function *GetFunction();
+
+        void AddDirectCall(const std::shared_ptr<HAKCFunctionInfo> &DirectCall);
+
+        void AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource> &Source);
 
         std::string GetYaml(unsigned Indents) override;
 

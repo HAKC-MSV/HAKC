@@ -26,18 +26,17 @@ void hakc::HAKCSymbolInfo::AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo> &S
 }
 
 std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned Indents) {
+    if (!this->Type) {
+        CommonHAKCAnalysis::getWriter() << "Symbol " << GetName() << " has no HAKCType!\n";
+        throw std::exception();
+    }
+
     std::string Yaml;
     llvm::raw_string_ostream sstream(Yaml);
 
     sstream.indent(Indents) << "- Name: " << GetName() << "\n";
-    sstream.indent(Indents + 2) << "Type: \"";
-    if(!this->Type) {
-        sstream << "@UNKNOWN@";
-    } else {
-        sstream << this->Type->GetName();
-    }
-    sstream << "\"\n";
-    sstream.indent(Indents + 2) << "LLVM-Type: \"" << *GetGlobalObj()->getType() << "\"\n";
+    sstream.indent(Indents + 2) << "Type:\n";
+    sstream << this->Type->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
     return Yaml;
 }
 
@@ -45,12 +44,13 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
     auto Yaml = GetYamlHeader(Indents);
     llvm::raw_string_ostream sstream(Yaml);
 
-    if(!UsedSymbols.empty()) {
+    if (!UsedSymbols.empty()) {
+        sstream << "\n";
         sstream.indent(Indents + 2) << "Used-Symbols:\n";
         unsigned Count = 0;
-        for(auto &Symbol : UsedSymbols) {
+        for (auto &Symbol: UsedSymbols) {
             sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
-            if(++Count != UsedSymbols.size()) {
+            if (++Count != UsedSymbols.size()) {
                 sstream << "\n";
             }
         }
@@ -60,13 +60,13 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
 }
 
 void hakc::HAKCSymbolInfo::SetGlobalObj(GlobalObject *GlobalObj) {
-    if(!GlobalObj) {
+    if (!GlobalObj) {
         CommonHAKCAnalysis::getWriter() << "Trying to set null GlobalVariable\n";
         throw std::exception();
     }
     this->GlobalObj = GlobalObj;
 }
 
-GlobalObject* hakc::HAKCSymbolInfo::GetGlobalObj() {
+GlobalObject *hakc::HAKCSymbolInfo::GetGlobalObj() {
     return GlobalObj;
 }

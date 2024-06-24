@@ -19,8 +19,8 @@ namespace hakc {
         return dyn_cast<Function>(GetGlobalObj());
     }
 
-    void HAKCFunctionInfo::AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource>& Source) {
-        if(!Source) {
+    void HAKCFunctionInfo::AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource> &Source) {
+        if (!Source) {
             CommonHAKCAnalysis::getWriter() << "Trying to add null indirect call source\n";
             throw std::exception();
         }
@@ -36,11 +36,12 @@ namespace hakc {
     }
 
     std::string HAKCFunctionInfo::GetYaml(unsigned Indents) {
-        auto Yaml = HAKCSymbolInfo::GetYaml( Indents);
+        auto Yaml = HAKCSymbolInfo::GetYaml(Indents);
         llvm::raw_string_ostream sstream(Yaml);
 
         unsigned Count;
-        if(!DirectCalls.empty()) {
+        if (!DirectCalls.empty()) {
+            sstream << "\n";
             sstream.indent(Indents + 2) << "Direct-Calls:\n";
             Count = 0;
             for (auto &Symbol: DirectCalls) {
@@ -50,12 +51,13 @@ namespace hakc {
                 }
             }
         }
-        if(!IndirectCalls.empty()) {
+        if (!IndirectCalls.empty()) {
             Count = 0;
+            sstream << "\n";
             sstream.indent(Indents + 2) << "Indirect-Calls:\n";
-            for (auto &IndirectSource : IndirectCalls) {
+            for (auto &IndirectSource: IndirectCalls) {
                 sstream << IndirectSource->GetYaml(Indents + HAKCInfo::IndentSpaces());
-                if(++Count != IndirectCalls.size()) {
+                if (++Count != IndirectCalls.size()) {
                     sstream << "\n";
                 }
             }

@@ -10,12 +10,14 @@
 
 namespace hakc {
 
-class HAKCGlobalInfo : public HAKCSymbolInfo {
-public:
-    HAKCGlobalInfo(StringRef Name, bool DebugActive);
-    void SetGlobalVariable(GlobalVariable *GV);
-    GlobalVariable* GetGlobalVariable();
-};
+    class HAKCGlobalInfo : public HAKCSymbolInfo {
+    public:
+        HAKCGlobalInfo(StringRef Name, bool DebugActive);
+
+        void SetGlobalVariable(GlobalVariable *GV);
+
+        GlobalVariable *GetGlobalVariable();
+    };
 
 } // hakc
 

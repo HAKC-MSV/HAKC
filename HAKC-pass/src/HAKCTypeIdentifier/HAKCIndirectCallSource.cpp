@@ -16,7 +16,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << "- Type: " << GetName() << "\n";
+        sstream.indent(Indents) << "- Category: " << GetName() << "\n";
         if (!SourcePath.empty()) {
             sstream.indent(Indents + 2) << "Source:\n";
             unsigned Count = 0;
@@ -38,6 +38,10 @@ namespace hakc {
 
         sstream << "- { Link-Type: \"Argument\", ArgNumber: " << Arg->getArgNo() << ", Function: \""
                 << Arg->getParent()->getName() << "\" }";
+
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
+        }
     };
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
@@ -46,7 +50,11 @@ namespace hakc {
         llvm::raw_string_ostream sstream(LinkYaml);
 
         sstream << "- { Link-Type: \"Global\", Name: \"" << GlobalInfo->GetName() << "\", Type: \""
-                << GlobalInfo->GetType()->GetName() << "\" }";
+                << GlobalInfo->GetType()->GetYamlHeader(0) << "\" }";
+
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
+        }
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
@@ -56,7 +64,11 @@ namespace hakc {
         llvm::raw_string_ostream sstream(LinkYaml);
 
         sstream << "- { Link-Type: \"Global-Member\", Offset: " << OffsetInBits << ", Name: \"" << GlobalInfo->GetName()
-                << "\", Type: \"" << GlobalInfo->GetType()->GetName() << "\" }";
+                << "\", Type: \"" << GlobalInfo->GetType()->GetYamlHeader(0) << "\" }";
+
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
+        }
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCTypeInfo> &HAKCType,
@@ -65,7 +77,11 @@ namespace hakc {
         llvm::raw_string_ostream sstream(LinkYaml);
 
         sstream << "- { Link-Type: \"Pointer-Dereference\", Offset: " << OffsetInBits << ", Type: \""
-                << HAKCType->GetName() << "\" }";
+                << HAKCType->GetYamlHeader(0) << "\" }";
+
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
+        }
     }
 
     std::string HAKCIndirectCallSourceLink::GetYaml(unsigned int Indents) {

@@ -15,8 +15,11 @@ namespace hakc {
     class HAKCIndirectCallSourceLink : public HAKCInfo {
     public:
         HAKCIndirectCallSourceLink(Argument *Arg, bool Debug);
-        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo>& GlobalInfo, bool Debug);
-        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo>& GlobalInfo, int OffsetInBits, bool Debug);
+
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo, bool Debug);
+
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo, int OffsetInBits, bool Debug);
+
         HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCTypeInfo> &HAKCType, int OffsetInBits, bool Debug);
 
         virtual ~HAKCIndirectCallSourceLink() = default;
