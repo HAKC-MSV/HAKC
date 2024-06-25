@@ -48,6 +48,22 @@ namespace hakc {
             throw std::exception();
         }
         if (LLVMType && Ty != LLVMType) {
+            if(auto *NewStructTy = dyn_cast<StructType>(Ty)) {
+                if(auto *OrigStructTy = dyn_cast<StructType>(LLVMType)) {
+                    StructType *NamedStructType = nullptr;
+                    if(OrigStructTy->hasName()) {
+                        NamedStructType = OrigStructTy;
+                    } else if(NewStructTy->hasName()) {
+                        NamedStructType = NewStructTy;
+                    }
+
+                    if(NamedStructType) {
+                        LLVMType = NamedStructType;
+                        return;
+                    }
+                }
+            }
+
             CommonHAKCAnalysis::getWriter() << "Trying to change LLVM Type for " << GetName() << " from " << *LLVMType
                                             << " to " << *Ty << "\n";
             throw std::exception();

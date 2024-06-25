@@ -14,9 +14,11 @@ using namespace llvm;
 namespace hakc {
     class HAKCIndirectCallSourceLink : public HAKCInfo {
     public:
-        HAKCIndirectCallSourceLink(Argument *Arg, bool Debug);
+        HAKCIndirectCallSourceLink(Argument *Arg, const std::shared_ptr<HAKCTypeInfo> &HAKCType, bool Debug);
 
         HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo, bool Debug);
+
+        HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCSymbolInfo> &HAKCSymbol, bool Debug);
 
         HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo, int OffsetInBits, bool Debug);
 
@@ -33,7 +35,17 @@ namespace hakc {
 
         void SplitTypeYaml(const std::shared_ptr<HAKCTypeInfo> &HAKCType);
 
-        void SplitString(StringRef S);
+        void SplitString(StringRef S, unsigned Indents);
+
+        void InputHAKCSymbol(const std::shared_ptr<HAKCSymbolInfo> &HAKCSymbol);
+
+        void InputLinkType(StringRef LinkType);
+
+        void InputType(const std::shared_ptr<HAKCTypeInfo> &HAKCType);
+
+        void InputGlobalObject(GlobalObject *GlobalObj);
+
+        void InputYamlHeader();
 
     };
 

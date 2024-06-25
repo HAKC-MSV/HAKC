@@ -60,8 +60,6 @@ namespace hakc {
 
         void FindUsesInGlobals();
 
-        void FinalizeTypes();
-
         void FindUsesInFunctions();
 
         void FindTypesInFunctions();
@@ -102,7 +100,7 @@ namespace hakc {
         std::map<const DIType *, std::shared_ptr<HAKCTypeInfo>> types;
         std::map<const DIGlobalVariable *, std::shared_ptr<HAKCGlobalInfo>> globals;
         std::map<const DISubprogram *, std::shared_ptr<HAKCFunctionInfo>> functions;
-        std::map<std::shared_ptr<HAKCTypeInfo>, std::set<Type *>> LLVMTypeMapping;
+        std::map<std::shared_ptr<HAKCTypeInfo>, std::vector<Type *>> LLVMTypeMapping;
         std::map<const DIType *, unsigned> AnonymousNumberMapping;
         std::set<std::shared_ptr<HAKCGlobalInfo>> UnmappedGlobals;
         std::set<std::shared_ptr<HAKCFunctionInfo>> UnmappedFunctions;
