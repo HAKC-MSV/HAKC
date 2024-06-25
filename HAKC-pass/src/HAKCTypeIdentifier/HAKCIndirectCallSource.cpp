@@ -13,10 +13,12 @@ namespace hakc {
     }
 
     std::string HAKCIndirectCallSource::GetYaml(unsigned Indents) {
-        std::string Yaml;
+        std::string Yaml = HAKCInfo::GetYamlHeader(Indents);
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << "- Category: " << GetName() << "\n";
+        sstream << "\n";
+        sstream.indent(Indents + 2) << "Type:\n" << HAKCType->GetYamlHeader(Indents + 3 * HAKCInfo::IndentSpaces())
+                                    << "\n";
         if (!SourcePath.empty()) {
             sstream.indent(Indents + 2) << "Source:\n";
             unsigned Count = 0;
@@ -31,64 +33,114 @@ namespace hakc {
         return Yaml;
     }
 
-    HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(Argument *Arg, bool Debug) : HAKCInfo(
-            "Argument Indirect Call Link", Debug),
-                                                                                        LinkYaml() {
-        llvm::raw_string_ostream sstream(LinkYaml);
+    StringRef HAKCIndirectCallSource::GetYamlIdentifier() const {
+        return "!HAKCIndirectSource";
+    }
 
-        sstream << "- { Link-Type: \"Argument\", ArgNumber: " << Arg->getArgNo() << ", Function: \""
-                << Arg->getParent()->getName() << "\" }";
+    StringRef HAKCIndirectCallSourceLink::GetYamlIdentifier() const {
+        return "!HAKCIndirectSourceLink";
+    }
 
-        if (Debug) {
-            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
-        }
+    HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(Argument *Arg, bool Debug) :
+    HAKCInfo("Argument Indirect Call Link", Debug), LinkYamlTokens() {
+        std::string Yaml = HAKCInfo::GetYamlHeader(0);
+        SplitString(Yaml);
+
+        Yaml = "";
+        llvm::raw_string_ostream sstream(Yaml);
+        sstream << "Link-Type: " << "\"Argument\"";
+        LinkYamlTokens.push_back(Yaml);
+
+        Yaml = "";
+        sstream << "ArgNumber: " << Arg->getArgNo();
+        LinkYamlTokens.push_back(Yaml);
+
+        Yaml = "";
+        sstream << "Function: " << Arg->getParent()->getName();
+        LinkYamlTokens.push_back(Yaml);
     };
+
+    void HAKCIndirectCallSourceLink::SplitString(StringRef S) {
+        llvm::SmallVector<StringRef> SplitTokens;
+        S.split(SplitTokens, "\n");
+        for(auto Tok : SplitTokens) {
+            LinkYamlTokens.push_back(Tok.str());
+        }
+    }
+
+    void HAKCIndirectCallSourceLink::SplitTypeYaml(const std::shared_ptr<HAKCTypeInfo> &HAKCType) {
+        auto TypeTokensStr = HAKCType->GetYamlHeader(0);
+        SplitString(TypeTokensStr);
+    }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
                                                            bool Debug)
-            : HAKCInfo("Global Indirect Call Link", Debug), LinkYaml() {
-        llvm::raw_string_ostream sstream(LinkYaml);
+            : HAKCInfo("Global Indirect Call Link", Debug), LinkYamlTokens() {
+        std::string Yaml = HAKCInfo::GetYamlHeader(0);
+        SplitString(Yaml);
 
-        sstream << "- { Link-Type: \"Global\", Name: \"" << GlobalInfo->GetName() << "\", Type: \""
-                << GlobalInfo->GetType()->GetYamlHeader(0) << "\" }";
+        Yaml = "";
+        llvm::raw_string_ostream sstream(Yaml);
+        sstream << "Link-Type: " << "\"Global\"";
+        LinkYamlTokens.push_back(Yaml);
 
-        if (Debug) {
-            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
-        }
+        Yaml = "";
+        sstream << "Name: " << "\"" << GlobalInfo->GetName() << "\"";
+        LinkYamlTokens.push_back(Yaml);
+
+        SplitTypeYaml(GlobalInfo->GetType());
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
                                                            int OffsetInBits,
                                                            bool Debug) : HAKCInfo("Global Member Indirect Call Link",
-                                                                                  Debug), LinkYaml() {
-        llvm::raw_string_ostream sstream(LinkYaml);
+                                                                                  Debug), LinkYamlTokens() {
+        std::string Yaml = HAKCInfo::GetYamlHeader(0);
+        SplitString(Yaml);
 
-        sstream << "- { Link-Type: \"Global-Member\", Offset: " << OffsetInBits << ", Name: \"" << GlobalInfo->GetName()
-                << "\", Type: \"" << GlobalInfo->GetType()->GetYamlHeader(0) << "\" }";
+        Yaml = "";
+        llvm::raw_string_ostream sstream(Yaml);
 
-        if (Debug) {
-            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
-        }
+        sstream << "Link-Type: " << "\"Global-Member\"";
+        LinkYamlTokens.push_back(Yaml);
+
+        Yaml = "";
+        sstream << "Offset: " << OffsetInBits;
+        LinkYamlTokens.push_back(Yaml);
+
+        SplitTypeYaml(GlobalInfo->GetType());
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCTypeInfo> &HAKCType,
                                                            int OffsetInBits, bool Debug) : HAKCInfo(
-            "Type member dereference", Debug), LinkYaml() {
-        llvm::raw_string_ostream sstream(LinkYaml);
+            "Type member dereference", Debug), LinkYamlTokens() {
+        std::string Yaml = HAKCInfo::GetYamlHeader(0);
+        SplitString(Yaml);
 
-        sstream << "- { Link-Type: \"Pointer-Dereference\", Offset: " << OffsetInBits << ", Type: \""
-                << HAKCType->GetYamlHeader(0) << "\" }";
+        Yaml = "";
+        llvm::raw_string_ostream sstream(Yaml);
 
-        if (Debug) {
-            CommonHAKCAnalysis::getWriter() << "Created Indirect Call Source Link " << LinkYaml << "\n";
-        }
+        sstream << "Link-Type: " << "\"Pointer-Dereference\"";
+        LinkYamlTokens.push_back(Yaml);
+
+        Yaml = "";
+        sstream << "Offset: " << OffsetInBits;
+        LinkYamlTokens.push_back(Yaml);
+
+        SplitTypeYaml(HAKCType);
     }
 
     std::string HAKCIndirectCallSourceLink::GetYaml(unsigned int Indents) {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << LinkYaml;
+        unsigned Count = 0;
+        for(const auto& YamlLine : LinkYamlTokens) {
+            sstream.indent(Indents) << YamlLine;
+            if(++Count < LinkYamlTokens.size()) {
+                sstream << "\n";
+            }
+        }
 
         return Yaml;
     }

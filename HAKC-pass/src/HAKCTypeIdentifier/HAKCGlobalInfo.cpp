@@ -18,4 +18,8 @@ namespace hakc {
     GlobalVariable *HAKCGlobalInfo::GetGlobalVariable() {
         return dyn_cast<GlobalVariable>(GetGlobalObj());
     }
+
+    StringRef HAKCGlobalInfo::GetYamlIdentifier() const {
+        return "!HAKCGlobalVariable";
+    }
 } // hakc

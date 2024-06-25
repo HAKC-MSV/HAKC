@@ -27,6 +27,8 @@ namespace hakc {
 
         std::string GetYaml(unsigned Indents) override;
 
+        StringRef GetYamlIdentifier() const override;
+
     protected:
         std::set<std::shared_ptr<HAKCFunctionInfo>> DirectCalls;
         std::set<std::shared_ptr<HAKCIndirectCallSource>> IndirectCalls;

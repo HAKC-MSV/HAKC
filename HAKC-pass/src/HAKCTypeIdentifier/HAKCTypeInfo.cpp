@@ -55,12 +55,17 @@ namespace hakc {
         LLVMType = Ty;
     }
 
-    std::string HAKCTypeInfo::GetYamlHeader(unsigned Indents) {
+    StringRef HAKCTypeInfo::GetYamlIdentifier() const {
+        return "!HAKCType";
+    }
+
+    std::string HAKCTypeInfo::GetYamlHeader(unsigned int Indents) const {
         auto UnknownType = "@UNKNOWN@";
 
-        std::string Yaml;
+        std::string Yaml = HAKCInfo::GetYamlHeader(Indents);
         llvm::raw_string_ostream sstream(Yaml);
-        sstream.indent(Indents) << "- Name: \"" << GetName() << "\"\n";
+
+        sstream << "\n";
         sstream.indent(Indents + 2) << "Debug-Type: \"";
         if (!DbgTypeName.empty()) {
             sstream << DbgTypeName;

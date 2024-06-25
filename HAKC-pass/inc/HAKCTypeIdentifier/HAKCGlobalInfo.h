@@ -17,6 +17,8 @@ namespace hakc {
         void SetGlobalVariable(GlobalVariable *GV);
 
         GlobalVariable *GetGlobalVariable();
+
+        StringRef GetYamlIdentifier() const override;
     };
 
 } // hakc

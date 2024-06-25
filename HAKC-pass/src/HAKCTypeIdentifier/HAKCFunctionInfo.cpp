@@ -19,6 +19,10 @@ namespace hakc {
         return dyn_cast<Function>(GetGlobalObj());
     }
 
+    StringRef HAKCFunctionInfo::GetYamlIdentifier() const {
+        return "!HAKCFunction";
+    }
+
     void HAKCFunctionInfo::AddIndirectCall(const std::shared_ptr<HAKCIndirectCallSource> &Source) {
         if (!Source) {
             CommonHAKCAnalysis::getWriter() << "Trying to add null indirect call source\n";

@@ -25,16 +25,16 @@ void hakc::HAKCSymbolInfo::AddSymbolUse(const std::shared_ptr<HAKCSymbolInfo> &S
     UsedSymbols.insert(Symbol);
 }
 
-std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned Indents) {
+std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned int Indents) const {
     if (!this->Type) {
         CommonHAKCAnalysis::getWriter() << "Symbol " << GetName() << " has no HAKCType!\n";
         throw std::exception();
     }
 
-    std::string Yaml;
+    std::string Yaml = HAKCInfo::GetYamlHeader(Indents);
     llvm::raw_string_ostream sstream(Yaml);
 
-    sstream.indent(Indents) << "- Name: " << GetName() << "\n";
+    sstream << "\n";
     sstream.indent(Indents + 2) << "Type:\n";
     sstream << this->Type->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
     return Yaml;

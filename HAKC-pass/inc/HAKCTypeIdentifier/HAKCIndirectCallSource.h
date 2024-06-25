@@ -26,8 +26,14 @@ namespace hakc {
 
         std::string GetYaml(unsigned Indents) override;
 
+        StringRef GetYamlIdentifier() const override;
+
     protected:
-        std::string LinkYaml;
+        std::vector<std::string> LinkYamlTokens;
+
+        void SplitTypeYaml(const std::shared_ptr<HAKCTypeInfo> &HAKCType);
+
+        void SplitString(StringRef S);
 
     };
 
@@ -40,6 +46,8 @@ namespace hakc {
         virtual ~HAKCIndirectCallSource() = default;
 
         std::string GetYaml(unsigned Indents) override;
+        StringRef GetYamlIdentifier() const override;
+
 
     protected:
         std::shared_ptr<HAKCTypeInfo> HAKCType;

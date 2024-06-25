@@ -36,7 +36,9 @@ namespace hakc {
 
         void SetLLVMType(Type *Ty);
 
-        std::string GetYamlHeader(unsigned Indents);
+        std::string GetYamlHeader(unsigned Indents) const override;
+
+        StringRef GetYamlIdentifier() const override;
 
     protected:
         std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;

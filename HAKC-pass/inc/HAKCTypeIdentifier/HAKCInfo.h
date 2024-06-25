@@ -17,6 +17,10 @@ namespace hakc {
     public:
         virtual std::string GetYaml(unsigned Indents) = 0;
 
+        virtual StringRef GetYamlIdentifier() const = 0;
+
+        virtual std::string GetYamlHeader(unsigned Indents) const;
+
         virtual StringRef GetName() const;
 
         friend raw_ostream &operator<<(raw_ostream &os, HAKCInfo &Info);
@@ -28,6 +32,7 @@ namespace hakc {
         std::string Name;
 
         explicit HAKCInfo(StringRef Name, bool DebugActive);
+
     };
 
 } // hakc

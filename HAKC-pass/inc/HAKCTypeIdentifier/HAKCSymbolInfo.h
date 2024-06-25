@@ -23,7 +23,7 @@ namespace hakc {
 
         std::string GetYaml(unsigned Indents) override;
 
-        std::string GetYamlHeader(unsigned Indents = 4);
+        std::string GetYamlHeader(unsigned Indents) const override;
 
         GlobalObject *GetGlobalObj();
 
