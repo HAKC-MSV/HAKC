@@ -7,7 +7,7 @@
 
 namespace hakc {
     HAKCIndirectCallSource::HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
-                                                   std::shared_ptr<HAKCTypeInfo> HAKCType,
+                                                   const std::shared_ptr<HAKCTypeInfo>& HAKCType,
                                                    bool debug) : HAKCInfo(HAKCType->GetName(), debug),
                                                                  HAKCType(HAKCType), SourcePath(SourcePath) {
     }
@@ -17,10 +17,10 @@ namespace hakc {
         llvm::raw_string_ostream sstream(Yaml);
 
         sstream << "\n";
-        sstream.indent(Indents + 2) << "Type:\n" << HAKCType->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
+        sstream.indent(Indents + EntrySpaces()) << "Type:\n" << HAKCType->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
         if (!SourcePath.empty()) {
             sstream << "\n";
-            sstream.indent(Indents + 2) << "Source:\n";
+            sstream.indent(Indents + EntrySpaces()) << "Source:\n";
             unsigned Count = 0;
             for (auto &link: SourcePath) {
                 sstream << link->GetYaml(Indents + 2 + HAKCInfo::IndentSpaces());
@@ -111,7 +111,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(DefaultIndent()) << "Link-Type: " << "\"" << LinkType << "\"";
+        sstream.indent(EntrySpaces()) << "LinkType: " << "\"" << LinkType << "\"";
         LinkYamlTokens.push_back(Yaml);
     }
 
@@ -119,7 +119,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(DefaultIndent()) << "Type:";
+        sstream.indent(EntrySpaces()) << "Type:";
         LinkYamlTokens.push_back(Yaml);
 
         SplitTypeYaml(HAKCType);
@@ -129,7 +129,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(DefaultIndent()) << "Name: " << "\"" << GlobalObj->getName() << "\"";
+        sstream.indent(EntrySpaces()) << "Name: " << "\"" << GlobalObj->getName() << "\"";
         LinkYamlTokens.push_back(Yaml);
     }
 
@@ -142,7 +142,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(DefaultIndent()) << "Offset: " << BitOffset;
+        sstream.indent(EntrySpaces()) << "Offset: " << BitOffset;
         LinkYamlTokens.push_back(Yaml);
     }
 
@@ -150,16 +150,12 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(DefaultIndent()) << "ArgNumber: " << Arg->getArgNo();
+        sstream.indent(EntrySpaces()) << "ArgNumber: " << Arg->getArgNo();
         LinkYamlTokens.push_back(Yaml);
 
         Yaml = "";
-        sstream.indent(DefaultIndent()) << "Function: \"" << Arg->getParent()->getName() << "\"";
+        sstream.indent(EntrySpaces()) << "Function: \"" << Arg->getParent()->getName() << "\"";
         LinkYamlTokens.push_back(Yaml);
-    }
-
-    unsigned HAKCIndirectCallSourceLink::DefaultIndent() {
-        return 2;
     }
 
     std::string HAKCIndirectCallSourceLink::GetYaml(unsigned int Indents) {

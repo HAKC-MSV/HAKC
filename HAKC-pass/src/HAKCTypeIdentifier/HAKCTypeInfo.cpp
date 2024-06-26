@@ -82,14 +82,14 @@ namespace hakc {
         llvm::raw_string_ostream sstream(Yaml);
 
         sstream << "\n";
-        sstream.indent(Indents + 2) << "Debug-Type: \"";
+        sstream.indent(Indents + EntrySpaces()) << "DebugType: \"";
         if (!DbgTypeName.empty()) {
             sstream << DbgTypeName;
         } else {
             sstream << UnknownType;
         }
         sstream << "\"\n";
-        sstream.indent(Indents + 2) << "LLVM-Type: \"";
+        sstream.indent(Indents + EntrySpaces()) << "LLVMType: \"";
         if (LLVMType) {
             sstream << *LLVMType;
         } else {
@@ -113,11 +113,11 @@ namespace hakc {
             }
 
             llvm::sort(SortedBitOffsets.begin(), SortedBitOffsets.end());
-            sstream.indent(Indents + 2) << "Members:\n";
+            sstream.indent(Indents + EntrySpaces()) << "Members:\n";
             for (auto BitOffset: SortedBitOffsets) {
                 auto MemberSet = Members[BitOffset];
                 sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- Offset: " << BitOffset << "\n";
-                sstream.indent(Indents + HAKCInfo::IndentSpaces() + 2) << "Type:\n";
+                sstream.indent(Indents + HAKCInfo::IndentSpaces() + EntrySpaces()) << "Type:\n";
                 for (auto &Member: MemberSet) {
                     sstream << Member->GetYamlHeader(Indents + 2 * HAKCInfo::IndentSpaces()) << "\n";
                 }

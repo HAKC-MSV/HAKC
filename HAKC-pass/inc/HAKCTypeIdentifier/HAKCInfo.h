@@ -27,6 +27,8 @@ namespace hakc {
 
         static unsigned int IndentSpaces();
 
+        static unsigned int EntrySpaces();
+
     protected:
         bool DebugActive;
         std::string Name;

@@ -31,12 +31,16 @@ namespace hakc {
         return 4;
     }
 
+    unsigned int HAKCInfo::EntrySpaces() {
+        return 2;
+    }
+
     std::string HAKCInfo::GetYamlHeader(unsigned int Indents) const {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
         sstream.indent(Indents) << "- " << GetYamlIdentifier() << "\n";
-        sstream.indent(Indents + 2) << "Name: \"" << GetName() << "\"";
+        sstream.indent(Indents + EntrySpaces()) << "Name: \"" << GetName() << "\"";
 
         return Yaml;
     }

@@ -51,15 +51,13 @@ namespace hakc {
 
         void InputArgument(Argument *Arg);
 
-        static unsigned DefaultIndent();
-
     };
 
 
     class HAKCIndirectCallSource : public HAKCInfo {
     public:
         HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
-                               std::shared_ptr<HAKCTypeInfo> HAKCType, bool debug);
+                               const std::shared_ptr<HAKCTypeInfo>& HAKCType, bool debug);
 
         virtual ~HAKCIndirectCallSource() = default;
 
