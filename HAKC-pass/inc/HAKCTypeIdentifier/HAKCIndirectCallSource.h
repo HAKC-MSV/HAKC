@@ -47,6 +47,12 @@ namespace hakc {
 
         void InputYamlHeader();
 
+        void InputBitoffset(unsigned BitOffset);
+
+        void InputArgument(Argument *Arg);
+
+        static unsigned DefaultIndent();
+
     };
 
 
