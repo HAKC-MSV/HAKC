@@ -46,10 +46,10 @@ namespace hakc {
         unsigned Count;
         if (!DirectCalls.empty()) {
             sstream << "\n";
-            sstream.indent(Indents + EntrySpaces()) << "Direct-Calls:\n";
+            sstream.indent(Indents + EntrySpaces()) << "DirectCalls:\n";
             Count = 0;
             for (auto &Symbol: DirectCalls) {
-                sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
+                sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
                 if (++Count != DirectCalls.size()) {
                     sstream << "\n";
                 }
@@ -58,9 +58,9 @@ namespace hakc {
         if (!IndirectCalls.empty()) {
             Count = 0;
             sstream << "\n";
-            sstream.indent(Indents + EntrySpaces()) << "Indirect-Calls:\n";
+            sstream.indent(Indents + EntrySpaces()) << "IndirectCalls:\n";
             for (auto &IndirectSource: IndirectCalls) {
-                sstream << IndirectSource->GetYaml(Indents + HAKCInfo::IndentSpaces());
+                sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << IndirectSource->GetYaml(Indents + HAKCInfo::IndentSpaces());
                 if (++Count != IndirectCalls.size()) {
                     sstream << "\n";
                 }

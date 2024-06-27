@@ -39,7 +39,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(Indents) << "- " << GetYamlIdentifier() << "\n";
+        sstream << GetYamlIdentifier() << "\n";
         sstream.indent(Indents + EntrySpaces()) << "Name: \"" << GetName() << "\"";
 
         return Yaml;

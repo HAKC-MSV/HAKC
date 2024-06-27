@@ -1021,7 +1021,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
                        return LHS->GetName() < RHS->GetName();
                    });
         for (auto &it: SortedGlobals) {
-            out << *it << "\n";
+            out.indent(HAKCInfo::IndentSpaces()) << "- " << it->GetYaml(HAKCInfo::IndentSpaces()) << "\n";
         }
     }
 
@@ -1041,7 +1041,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
                        return LHS->GetName() < RHS->GetName();
                    });
         for (auto &it: SortedFunctions) {
-            out << *it << "\n";
+            out.indent(HAKCInfo::IndentSpaces()) << "- " << it->GetYaml(HAKCInfo::IndentSpaces()) << "\n";
         }
     }
 }

@@ -36,7 +36,7 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned int Indents) const {
 
     sstream << "\n";
     sstream.indent(Indents + EntrySpaces()) << "Type:\n";
-    sstream << this->Type->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
+    sstream.indent(Indents + EntrySpaces() + HAKCInfo::IndentSpaces()) << this->Type->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
     return Yaml;
 }
 
@@ -46,10 +46,10 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
 
     if (!UsedSymbols.empty()) {
         sstream << "\n";
-        sstream.indent(Indents + EntrySpaces()) << "Used-Symbols:\n";
+        sstream.indent(Indents + EntrySpaces()) << "UsedSymbols:\n";
         unsigned Count = 0;
         for (auto &Symbol: UsedSymbols) {
-            sstream << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
+            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
             if (++Count != UsedSymbols.size()) {
                 sstream << "\n";
             }

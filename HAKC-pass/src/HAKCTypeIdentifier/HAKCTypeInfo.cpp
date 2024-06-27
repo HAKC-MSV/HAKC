@@ -91,7 +91,15 @@ namespace hakc {
         sstream << "\"\n";
         sstream.indent(Indents + EntrySpaces()) << "LLVMType: \"";
         if (LLVMType) {
-            sstream << *LLVMType;
+            if(auto *StructTy = dyn_cast<StructType>(LLVMType)) {
+                if(StructTy->hasName()) {
+                    sstream << StructTy->getName();
+                } else {
+                    sstream << *LLVMType;
+                }
+            } else {
+                sstream << *LLVMType;
+            }
         } else {
             sstream << UnknownType;
         }

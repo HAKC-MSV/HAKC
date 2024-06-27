@@ -23,7 +23,7 @@ namespace hakc {
             sstream.indent(Indents + EntrySpaces()) << "Source:\n";
             unsigned Count = 0;
             for (auto &link: SourcePath) {
-                sstream << link->GetYaml(Indents + 2 + HAKCInfo::IndentSpaces());
+                sstream << "-\n" << link->GetYaml(Indents + 2 + HAKCInfo::IndentSpaces());
                 if (++Count != SourcePath.size()) {
                     sstream << "\n";
                 }
@@ -129,7 +129,7 @@ namespace hakc {
         std::string Yaml;
         llvm::raw_string_ostream sstream(Yaml);
 
-        sstream.indent(EntrySpaces()) << "Name: " << "\"" << GlobalObj->getName() << "\"";
+        sstream.indent(EntrySpaces()) << "GlobalName: " << "\"" << GlobalObj->getName() << "\"";
         LinkYamlTokens.push_back(Yaml);
     }
 
