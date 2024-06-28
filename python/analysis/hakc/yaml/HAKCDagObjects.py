@@ -27,6 +27,7 @@ class HAKCCompartmentalization(nx.DiGraph):
     cu_attr = 'compilation-units'
     compartment_id_attr = 'compartment-id'
     color_attr = 'color'
+    defining_compilation_unit_attr = 'defining-compilation-unit'
 
     kernel_compartment_id = 0
     kernel_color = CliqueColors.SILVER_CLIQUE

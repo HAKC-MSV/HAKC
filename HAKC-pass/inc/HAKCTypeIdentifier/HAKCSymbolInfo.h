@@ -27,11 +27,15 @@ namespace hakc {
 
         GlobalObject *GetGlobalObj();
 
+        void SetDefiningLocation(const DIFile* File, unsigned Line);
+
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
         std::set<std::shared_ptr<HAKCSymbolInfo>> UsedSymbols;
         GlobalObject *GlobalObj;
         DIType *DbgType;
+        const DIFile *DefiningLocation;
+        unsigned DefiningLine;
 
         void SetGlobalObj(GlobalObject *GlobalObj);
     };

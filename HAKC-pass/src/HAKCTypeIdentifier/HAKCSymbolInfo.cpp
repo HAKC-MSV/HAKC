@@ -5,11 +5,13 @@
 #include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
 #include "llvm/Support/raw_ostream.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
 #include <utility>
 
 hakc::HAKCSymbolInfo::HAKCSymbolInfo(StringRef Name, bool DebugActive) : HAKCInfo(Name, DebugActive), Type(nullptr),
-                                                                         UsedSymbols(), GlobalObj(nullptr) {
+                                                                         UsedSymbols(), GlobalObj(nullptr),
+                                                                         DbgType(nullptr), DefiningLocation(nullptr), DefiningLine(0) {
 
 }
 
@@ -35,8 +37,20 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned int Indents) const {
     llvm::raw_string_ostream sstream(Yaml);
 
     sstream << "\n";
+    if(DefiningLocation) {
+        std::string PathName = DefiningLocation->getDirectory().str();
+        if(!PathName.empty()) {
+            PathName += "/";
+            PathName += DefiningLocation->getFilename();
+        }
+        PathName = HAKCTypeIdentifier::GetTransformedPath(PathName);
+
+        sstream.indent(Indents + EntrySpaces()) << "DefiningFile: " << PathName << "\n";
+        sstream.indent(Indents + EntrySpaces()) << "DefiningLine: " << DefiningLine << "\n";
+    }
     sstream.indent(Indents + EntrySpaces()) << "Type:\n";
-    sstream.indent(Indents + EntrySpaces() + HAKCInfo::IndentSpaces()) << this->Type->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
+    sstream.indent(Indents + EntrySpaces() + HAKCInfo::IndentSpaces())
+            << this->Type->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
     return Yaml;
 }
 
@@ -49,7 +63,8 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
         sstream.indent(Indents + EntrySpaces()) << "UsedSymbols:\n";
         unsigned Count = 0;
         for (auto &Symbol: UsedSymbols) {
-            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
+            sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(
+                    Indents + HAKCInfo::IndentSpaces());
             if (++Count != UsedSymbols.size()) {
                 sstream << "\n";
             }
@@ -69,4 +84,9 @@ void hakc::HAKCSymbolInfo::SetGlobalObj(GlobalObject *GlobalObj) {
 
 GlobalObject *hakc::HAKCSymbolInfo::GetGlobalObj() {
     return GlobalObj;
+}
+
+void hakc::HAKCSymbolInfo::SetDefiningLocation(const DIFile *File, unsigned int Line) {
+    DefiningLine = Line;
+    DefiningLocation = File;
 }

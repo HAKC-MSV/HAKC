@@ -274,6 +274,7 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
     auto GVP = std::make_shared<HAKCGlobalInfo>(DIGV->getName(), debug);
     GVP->SetType(DIGVTy);
     GVP->SetGlobalVariable(GV);
+    GVP->SetDefiningLocation(DIGV->getFile(), DIGV->getLine());
     AddGlobalMapping(DIGV, GVP);
 
     return GVP;
@@ -320,6 +321,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     auto FP = std::make_shared<HAKCFunctionInfo>(SubProg->getName(), debug);
     FP->SetType(DIGVTy);
     FP->SetFunction(F);
+    FP->SetDefiningLocation(SubProg->getFile(), SubProg->getLine());
     AddFunctionMapping(SubProg, FP);
 
     return FP;
@@ -361,11 +363,6 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
             if (auto *GlobalMember = dyn_cast<GlobalObject>(MemberDef)) {
                 GlobalSet.insert(GlobalMember);
             }
-        }
-    } else if (auto *Const = dyn_cast<DSOLocalEquivalent>(V)) {
-        if (V->getName() == "raid6_recov_avx512") {
-            CommonHAKCAnalysis::getWriter() << "ConstantStruct " << *Const << "\n";
-            throw std::exception();
         }
     }
 }
@@ -476,7 +473,7 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
                                             << " of Function " << Arg->getParent()->getName() << "\n";
             return;
         }
-        if(!HAKCType->GetLLVMType()) {
+        if (!HAKCType->GetLLVMType()) {
             HAKCType->SetLLVMType(Arg->getType());
         }
         auto Link = std::make_shared<HAKCIndirectCallSourceLink>(Arg, HAKCType, debug);
@@ -766,7 +763,15 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(Type *Ty) {
     std::string Name;
     llvm::raw_string_ostream sstream(Name);
-    sstream << *Ty;
+    if(auto *StructTy = dyn_cast<StructType>(Ty)) {
+        if(StructTy->hasName()) {
+            sstream << StructTy->getName();
+        } else {
+            sstream << *Ty;
+        }
+    } else {
+        sstream << *Ty;
+    }
 
     auto HAKCType = std::make_shared<HAKCTypeInfo>(Name, debug);
     HAKCType->SetLLVMType(Ty);

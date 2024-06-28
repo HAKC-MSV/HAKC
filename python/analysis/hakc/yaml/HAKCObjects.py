@@ -57,6 +57,8 @@ class HAKCSymbol(HAKCInfo):
     def __init__(self, Type: HAKCType, **kwargs):
         HAKCInfo.__init__(self, **kwargs)
         self.type = Type
+        self.defining_file = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
+        self.defining_line = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
         self.used_symbols = kwargs['UsedSymbols'] if 'UsedSymbols' in kwargs else list()
 
     def __eq__(self, other):
