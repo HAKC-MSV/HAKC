@@ -222,3 +222,5 @@ class HAKCCompartmentalization:
                           f"and {found_tail.get_all_atoms()}")
                     self.compartment_topo.add_edge(found_head, found_tail,
                                                    **new_weights)
+
+

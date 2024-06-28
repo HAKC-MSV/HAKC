@@ -7,7 +7,7 @@
 
 namespace hakc {
     HAKCIndirectCallSource::HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
-                                                   const std::shared_ptr<HAKCTypeInfo>& HAKCType,
+                                                   const std::shared_ptr<HAKCTypeInfo> &HAKCType,
                                                    bool debug) : HAKCInfo(HAKCType->GetName(), debug),
                                                                  HAKCType(HAKCType), SourcePath(SourcePath) {
     }
@@ -17,13 +17,16 @@ namespace hakc {
         llvm::raw_string_ostream sstream(Yaml);
 
         sstream << "\n";
-        sstream.indent(Indents + EntrySpaces()) << "Type:\n" << HAKCType->GetYamlHeader(Indents + 2 + HAKCInfo::IndentSpaces());
+        sstream.indent(Indents + EntrySpaces()) << "Type:\n";
+        sstream.indent(Indents + EntrySpaces() + HAKCInfo::IndentSpaces())
+                << HAKCType->GetYamlHeader(Indents + HAKCInfo::IndentSpaces());
         if (!SourcePath.empty()) {
             sstream << "\n";
             sstream.indent(Indents + EntrySpaces()) << "Source:\n";
             unsigned Count = 0;
             for (auto &link: SourcePath) {
-                sstream << "-\n" << link->GetYaml(Indents + 2 + HAKCInfo::IndentSpaces());
+                sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- "
+                                                                   << link->GetYaml(Indents + HAKCInfo::IndentSpaces());
                 if (++Count != SourcePath.size()) {
                     sstream << "\n";
                 }
@@ -72,7 +75,6 @@ namespace hakc {
             : HAKCInfo("Global Indirect Call Link", Debug), LinkYamlTokens() {
         InputHAKCSymbol(GlobalInfo);
     }
-
 
 
     void HAKCIndirectCallSourceLink::InputHAKCSymbol(const std::shared_ptr<HAKCSymbolInfo> &HAKCSymbol) {
@@ -164,7 +166,11 @@ namespace hakc {
 
         unsigned Count = 0;
         for (const auto &YamlLine: LinkYamlTokens) {
-            sstream.indent(Indents) << YamlLine;
+            if(Count == 0) {
+                sstream << YamlLine;
+            } else {
+                sstream.indent(Indents + HAKCInfo::EntrySpaces()) << YamlLine;
+            }
             if (++Count < LinkYamlTokens.size()) {
                 sstream << "\n";
             }
