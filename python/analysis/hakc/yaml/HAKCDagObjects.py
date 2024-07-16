@@ -1,6 +1,7 @@
-import networkx as nx
 from enum import Enum
-from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType
+
+import networkx as nx
+from hakc.yaml.HAKCObjects import HAKCSymbol
 
 
 class CliqueColors(Enum):
@@ -24,10 +25,17 @@ class CliqueColors(Enum):
 
 
 class HAKCCompartmentalization(nx.DiGraph):
+    # Node attributes
     cu_attr = 'compilation-units'
     compartment_id_attr = 'compartment-id'
     color_attr = 'color'
     defining_compilation_unit_attr = 'defining-compilation-unit'
+
+    # Edge attributes
+    indirect_call_attr = 'indirect-call'
+    isa_attr = 'is-a'
+    uses_attr = 'uses'
+    dag_attr = 'dag'
 
     kernel_compartment_id = 0
     kernel_color = CliqueColors.SILVER_CLIQUE
@@ -36,8 +44,14 @@ class HAKCCompartmentalization(nx.DiGraph):
         super().__init__(self)
         self.current_compartment_id = 1
 
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
+        if dag_edge_weight > 0:
+            edge_attrs = {HAKCCompartmentalization.dag_attr: dag_edge_weight}
+            self.add_edge(head, tail, **edge_attrs)
+
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: str):
-        self.add_edge(symbol, symbol.type)
+        type_attrs = {HAKCCompartmentalization.isa_attr: True}
+        self.add_edge(symbol, symbol.type, **type_attrs)
         if HAKCCompartmentalization.cu_attr not in self.nodes[symbol]:
             self.nodes[symbol][HAKCCompartmentalization.cu_attr] = set()
         self.nodes[symbol][HAKCCompartmentalization.cu_attr].add(compilation_unit)
@@ -49,12 +63,14 @@ class HAKCCompartmentalization(nx.DiGraph):
         if HAKCCompartmentalization.color_attr not in self.nodes[symbol]:
             self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
 
+        symbol_attrs = {HAKCCompartmentalization.uses_attr: True}
         for used_symbol in symbol.used_symbols:
-            self.add_edge(symbol, used_symbol)
+            self.add_edge(symbol, used_symbol, **symbol_attrs)
 
         if symbol.is_function():
+            indirect_edge_attrs = {HAKCCompartmentalization.indirect_call_attr: True}
             for indirect_call in symbol.indirect_calls:
-                self.add_edge(symbol, indirect_call.type)
+                self.add_edge(symbol, indirect_call.type, **indirect_edge_attrs)
 
     def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
         self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id

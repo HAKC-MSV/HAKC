@@ -1,5 +1,6 @@
 import argparse
 import concurrent.futures
+import itertools
 import logging
 import multiprocessing as mp
 import os
@@ -8,10 +9,11 @@ import time
 from enum import Enum
 from typing import Type
 
+import tqdm
 import yaml
 
 from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
-from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable
+from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol
 
 logger = logging.getLogger('hakc-dag')
 
@@ -109,13 +111,29 @@ def add_symbols(compartmentalization: HAKCCompartmentalization, compilation_unit
         compartmentalization.add_symbol(glob, compilation_unit)
 
 
+def add_dag_edges(compartmentalization: HAKCCompartmentalization):
+    logger.info(f'Starting DAG edge computation')
+    symbols = compartmentalization.get_symbols()
+    with tqdm.tqdm(total=len(symbols) * (len(symbols) - 1)) as pbar:
+        for head, tail in itertools.permutations(symbols, 2):
+            dag_edge_weight = add_dag_edge(compartmentalization, head, tail)
+            pbar.update(1)
+            logger.debug(f'Adding DAG Edge between {head.name} -> {tail.name} with weight {dag_edge_weight}')
+            compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+
+
 def create_dag_single_thread(files: set[str]) -> HAKCCompartmentalization:
     compartmentalization = HAKCCompartmentalization()
-    for filename in files:
-        compilation_unit, functions, global_variables = parse_yaml(filename)
-        logger.debug(
-            f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
-        add_symbols(compartmentalization, compilation_unit, functions, global_variables)
+    with tqdm.tqdm(total=len(files)) as pbar:
+        for filename in files:
+            compilation_unit, functions, global_variables = parse_yaml(filename)
+            pbar.update(1)
+            logger.debug(
+                f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
+            add_symbols(compartmentalization, compilation_unit, functions, global_variables)
+
+    add_dag_edges(compartmentalization)
+
     return compartmentalization
 
 
@@ -155,14 +173,71 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
                 logger.info(f'Not changing Symbol {symbol.name}')
 
 
+mp_compartmentalization = None
+
+
+def add_dag_edge(compartmentalization: HAKCCompartmentalization, head: HAKCSymbol, tail: HAKCSymbol) -> int:
+    edge_weight = 0
+
+    if compartmentalization.has_edge(head, tail):
+        edge_weight += 1
+
+    if head.is_function():
+        for indirect_call in head.indirect_calls:
+            if indirect_call == tail.type:
+                edge_weight += 1
+
+    return edge_weight
+
+
+def mp_add_edge(head: HAKCSymbol):
+    global mp_compartmentalization
+    results = list()
+
+    for tail in mp_compartmentalization.get_symbols():
+        try:
+            if tail is not head:
+                edge_weight = add_dag_edge(mp_compartmentalization, head, tail)
+                if edge_weight > 0:
+                    results.append((head, tail, edge_weight))
+        except Exception as e:
+            logger.error(f'Error computing edge weight between {head.name}  and {tail.name}: {str(e)}')
+
+    return results
+
+
 def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
     max_workers = mp.cpu_count() - 1
     compartmentalization = HAKCCompartmentalization()
+    tasks_per_worker = 1000
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
-        for compilation_unit, functions, global_variables in executor.map(parse_yaml, files):
-            logger.debug(
-                f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
-            add_symbols(compartmentalization, compilation_unit, functions, global_variables)
+        with tqdm.tqdm(total=len(files)) as pbar:
+            for compilation_unit, functions, global_variables in executor.map(parse_yaml, files):
+                pbar.update(1)
+                logger.debug(
+                    f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
+                add_symbols(compartmentalization, compilation_unit, functions, global_variables)
+
+    global mp_compartmentalization
+    mp_compartmentalization = compartmentalization
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+        logger.info(f'Starting DAG edge computation')
+
+        symbols = compartmentalization.get_symbols()
+        dag_edges_added = 0
+        with tqdm.tqdm(total=len(symbols)) as pbar:
+            for edge_weights in executor.map(mp_add_edge, symbols):
+                pbar.update(1)
+                try:
+                    for (head, tail, dag_edge_weight) in edge_weights:
+                        logger.debug(
+                            f'Adding DAG Edge between {head.name} -> {tail.name} with weight {dag_edge_weight}')
+                        dag_edges_added += 1
+                        compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+                except Exception as e:
+                    logger.error(f'Error computing DAG edge: {str(e)}')
+
+    logger.info(f'Finished adding {dag_edges_added} DAG edges')
     return compartmentalization
 
 
