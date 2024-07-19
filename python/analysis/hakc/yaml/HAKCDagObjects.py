@@ -58,30 +58,10 @@ class HAKCCompartmentalization(nx.DiGraph):
     def get_symbols_by_name(self, name: str):
         return nx.subgraph_view(self, filter_node=lambda n, sym_name=name: n.is_symbol() and n.name == sym_name)
 
-    def get_symbol(self, symbol: HAKCSymbol) -> HAKCSymbol:
-        symbol_graph = nx.subgraph_view(self, filter_node=lambda n, s=symbol: n == s)
-
-        for sym in symbol_graph:
-            return sym
-
-        return None
-
-    def merge_symbol(self, symbol: HAKCSymbol):
-        if symbol.is_definition:
-            existing_symbol = self.get_symbol(symbol)
-            existing_symbol.merge_symbol(symbol)
-
-    def add_symbol(self, symbol: HAKCSymbol, compilation_unit: str):
-        if self.has_node(symbol):
-            self.merge_symbol(symbol)
-        else:
-            type_attrs = {HAKCCompartmentalization.isa_attr: True}
-            self.add_edge(symbol, symbol.type, **type_attrs)
-            self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
-
-        if HAKCCompartmentalization.cu_attr not in self.nodes[symbol]:
-            self.nodes[symbol][HAKCCompartmentalization.cu_attr] = set()
-        self.nodes[symbol][HAKCCompartmentalization.cu_attr].add(compilation_unit)
+    def add_symbol(self, symbol: HAKCSymbol):
+        type_attrs = {HAKCCompartmentalization.isa_attr: True}
+        self.add_edge(symbol, symbol.type, **type_attrs)
+        self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
 
     def finalize_symbols(self):
         compartment_id = 0
