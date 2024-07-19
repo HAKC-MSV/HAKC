@@ -115,7 +115,7 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
             }
             out << "*";
         } else if (DerivedTy->getTag() == dwarf::DW_TAG_typedef) {
-            out << DerivedTy->getName();
+            out << GetTypeName(DerivedTy->getBaseType());
         } else if (DerivedTy->getTag() == dwarf::DW_TAG_volatile_type) {
             out << "volatile ";
             if (!DerivedTy->getBaseType()) {
@@ -169,7 +169,11 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
             throw std::exception();
         }
     } else if (auto *BaseTy = dyn_cast<DIBasicType>(type)) {
-        out << BaseTy->getName();
+        if(BaseTy->getEncoding() == dwarf::DW_ATE_boolean) {
+            out << "bool";
+        } else {
+            out << BaseTy->getName();
+        }
     } else {
         CommonHAKCAnalysis::getWriter() << "Unhandled DIType\n";
         printDIType(type, 0);
@@ -275,6 +279,9 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
     GVP->SetType(DIGVTy);
     GVP->SetGlobalVariable(GV);
     GVP->SetDefiningLocation(DIGV->getFile(), DIGV->getLine());
+    if(DIGV->isLocalToUnit()) {
+        GVP->SetLocalScope(DIGV->getScope());
+    }
     AddGlobalMapping(DIGV, GVP);
 
     return GVP;
@@ -295,6 +302,15 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     }
 
     auto *F = M.getFunction(SubProg->getName());
+    if(!F) {
+        for(auto &FM : M.functions()) {
+            if(FM.getSubprogram() == SubProg) {
+                F = &FM;
+                break;
+            }
+        }
+    }
+
     if (!F) {
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "\nCould not find Function " << SubProg->getName() << "\n";
@@ -322,6 +338,9 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     FP->SetType(DIGVTy);
     FP->SetFunction(F);
     FP->SetDefiningLocation(SubProg->getFile(), SubProg->getLine());
+    if(SubProg->isLocalToUnit()) {
+        FP->SetLocalScope(SubProg->getScope());
+    }
     AddFunctionMapping(SubProg, FP);
 
     return FP;

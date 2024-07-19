@@ -29,15 +29,19 @@ namespace hakc {
 
         void SetDefiningLocation(const DIFile* File, unsigned Line);
 
+        void SetLocalScope(const DIScope* Scope);
+
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
         std::set<std::shared_ptr<HAKCSymbolInfo>> UsedSymbols;
         GlobalObject *GlobalObj;
-        DIType *DbgType;
+        const DIType *DbgType;
         const DIFile *DefiningLocation;
         unsigned DefiningLine;
+        const DIScope *LocalScope;
 
         void SetGlobalObj(GlobalObject *GlobalObj);
+        std::string GetTransformedPathName(const DIFile *File) const;
     };
 }
 

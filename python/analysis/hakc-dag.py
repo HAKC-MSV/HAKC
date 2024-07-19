@@ -11,6 +11,7 @@ from typing import Type
 
 import tqdm
 import yaml
+import networkx as nx
 
 from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
 from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol
@@ -125,13 +126,14 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
 def create_dag_single_thread(files: set[str]) -> HAKCCompartmentalization:
     compartmentalization = HAKCCompartmentalization()
     with tqdm.tqdm(total=len(files)) as pbar:
-        for filename in files:
+        for filename in sorted(files):
             compilation_unit, functions, global_variables = parse_yaml(filename)
             pbar.update(1)
             logger.debug(
                 f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
             add_symbols(compartmentalization, compilation_unit, functions, global_variables)
 
+    compartmentalization.finalize_symbols()
     add_dag_edges(compartmentalization)
 
     return compartmentalization
@@ -209,15 +211,16 @@ def mp_add_edge(head: HAKCSymbol):
 def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
     max_workers = mp.cpu_count() - 1
     compartmentalization = HAKCCompartmentalization()
-    tasks_per_worker = 1000
+
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         with tqdm.tqdm(total=len(files)) as pbar:
-            for compilation_unit, functions, global_variables in executor.map(parse_yaml, files):
+            for compilation_unit, functions, global_variables in executor.map(parse_yaml, sorted(files)):
                 pbar.update(1)
                 logger.debug(
                     f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
                 add_symbols(compartmentalization, compilation_unit, functions, global_variables)
 
+    compartmentalization.finalize_symbols()
     global mp_compartmentalization
     mp_compartmentalization = compartmentalization
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -268,6 +271,11 @@ def create_new_dag(analysis_root: str, single_thread: bool) -> HAKCCompartmental
     return compartmentalization
 
 
+def print_symbols(compartmentalization: HAKCCompartmentalization):
+    for symbol in sorted(compartmentalization.get_symbols(), key=lambda node: node.name):
+        logger.info(f'{symbol}')
+
+
 def parse_log_level(level_string: str):
     for level in LoggingLevelEnum:
         if level.name == level_string.upper():
@@ -304,6 +312,7 @@ def main():
     parser.add_argument('--create-dag', dest='create_dag', action='store_true', help='Create new DAG')
     parser.add_argument("--adjust", help='Adjust compartmentalization', action='store_true')
     parser.add_argument('--adjust-path', dest='adjust_path', help='Path to adjustment YAML')
+    parser.add_argument('--print-symbols', dest='print_symbols', action='store_true')
 
     args = parser.parse_args()
 
@@ -331,6 +340,11 @@ def main():
             adjustments = yaml.safe_load(f)
         adjust_compartmentalization(compartmentalization, adjustments)
         logger.info("Done")
+
+    if args.print_symbols:
+        if compartmentalization is None:
+            raise RuntimeError("No compartmentalization")
+        print_symbols(compartmentalization)
 
     if args.output_yaml:
         if compartmentalization is None:

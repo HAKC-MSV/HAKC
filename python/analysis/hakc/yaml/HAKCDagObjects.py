@@ -1,7 +1,10 @@
+import logging
 from enum import Enum
 
 import networkx as nx
-from hakc.yaml.HAKCObjects import HAKCSymbol
+from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType
+
+logger = logging.getLogger('hakc-dag')
 
 
 class CliqueColors(Enum):
@@ -42,35 +45,64 @@ class HAKCCompartmentalization(nx.DiGraph):
 
     def __init__(self):
         super().__init__(self)
-        self.current_compartment_id = 1
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
         if dag_edge_weight > 0:
             edge_attrs = {HAKCCompartmentalization.dag_attr: dag_edge_weight}
             self.add_edge(head, tail, **edge_attrs)
 
+    def has_symbol_name(self, symbol: HAKCSymbol) -> bool:
+        same_name_graph = self.get_symbols_by_name(symbol.name)
+        return len(same_name_graph) > 0
+
+    def get_symbols_by_name(self, name: str):
+        return nx.subgraph_view(self, filter_node=lambda n, sym_name=name: n.is_symbol() and n.name == sym_name)
+
+    def get_symbol(self, symbol: HAKCSymbol) -> HAKCSymbol:
+        symbol_graph = nx.subgraph_view(self, filter_node=lambda n, s=symbol: n == s)
+
+        for sym in symbol_graph:
+            return sym
+
+        return None
+
+    def merge_symbol(self, symbol: HAKCSymbol):
+        if symbol.is_definition:
+            existing_symbol = self.get_symbol(symbol)
+            existing_symbol.merge_symbol(symbol)
+
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: str):
-        type_attrs = {HAKCCompartmentalization.isa_attr: True}
-        self.add_edge(symbol, symbol.type, **type_attrs)
+        if self.has_node(symbol):
+            self.merge_symbol(symbol)
+        else:
+            type_attrs = {HAKCCompartmentalization.isa_attr: True}
+            self.add_edge(symbol, symbol.type, **type_attrs)
+            self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
+
         if HAKCCompartmentalization.cu_attr not in self.nodes[symbol]:
             self.nodes[symbol][HAKCCompartmentalization.cu_attr] = set()
         self.nodes[symbol][HAKCCompartmentalization.cu_attr].add(compilation_unit)
 
-        if HAKCCompartmentalization.compartment_id_attr not in self.nodes[symbol]:
-            self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = self.current_compartment_id
-            self.current_compartment_id += 1
-
-        if HAKCCompartmentalization.color_attr not in self.nodes[symbol]:
-            self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
-
+    def finalize_symbols(self):
+        compartment_id = 0
+        indirect_edge_attrs = {HAKCCompartmentalization.indirect_call_attr: True}
         symbol_attrs = {HAKCCompartmentalization.uses_attr: True}
-        for used_symbol in symbol.used_symbols:
-            self.add_edge(symbol, used_symbol, **symbol_attrs)
 
-        if symbol.is_function():
-            indirect_edge_attrs = {HAKCCompartmentalization.indirect_call_attr: True}
-            for indirect_call in symbol.indirect_calls:
-                self.add_edge(symbol, indirect_call.type, **indirect_edge_attrs)
+        symbols = set()
+        for symbol in self.get_symbols():
+            symbols.add(symbol)
+
+        for symbol in symbols:
+            compartment_id += 1
+
+            self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id
+
+            for used_symbol in symbol.used_symbols:
+                self.add_edge(symbol, used_symbol, **symbol_attrs)
+
+            if symbol.is_function():
+                for indirect_call in symbol.indirect_calls:
+                    self.add_edge(symbol, indirect_call.type, **indirect_edge_attrs)
 
     def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
         self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id
@@ -88,20 +120,16 @@ class HAKCCompartmentalization(nx.DiGraph):
         return self.nodes[symbol][HAKCCompartmentalization.cu_attr]
 
     def get_types(self):
-        node_filter = lambda n: n.is_type()
-        return nx.subgraph_view(self, filter_node=node_filter).nodes
+        return nx.subgraph_view(self, filter_node=lambda n: n.is_type()).nodes
 
     def get_functions(self):
-        node_filter = lambda n: n.is_function()
-        return nx.subgraph_view(self, filter_node=node_filter).nodes
+        return nx.subgraph_view(self, filter_node=lambda n: n.is_function()).nodes
 
     def get_global_variables(self):
-        node_filter = lambda n: n.is_global_variable()
-        return nx.subgraph_view(self, filter_node=node_filter).nodes
+        return nx.subgraph_view(self, filter_node=lambda n: n.is_global_variable()).nodes
 
     def get_symbols(self):
-        node_filter = lambda n: n.is_global_variable() or n.is_function()
-        return nx.subgraph_view(self, filter_node=node_filter)
+        return nx.subgraph_view(self, filter_node=lambda n: n.is_symbol())
 
     def to_yaml(self) -> dict:
         result = dict()

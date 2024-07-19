@@ -23,6 +23,9 @@ class HAKCInfo(object):
     def is_type(self) -> bool:
         return False
 
+    def is_symbol(self) -> bool:
+        return self.is_function() or self.is_global_variable()
+
 
 class HAKCType(HAKCInfo, yaml.YAMLObject):
     yaml_tag = "!HAKCType"
@@ -49,25 +52,98 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         else:
             return hash(self.llvm_type)
 
+    def __str__(self):
+        cls = self.__class__.__name__
+        return f'{cls}(debug_type={self.debug_type}, llvm_type={self.llvm_type})'
+
     def is_type(self) -> bool:
         return True
 
+    def merge_type(self, other):
+        if isinstance(other, HAKCType):
+            if other.debug_type != HAKCType.unknown_type:
+                self.debug_type = other.debug_type
+
+            if other.llvm_type != HAKCType.unknown_type:
+                self.llvm_type = other.llvm_type
+            return
+        raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
+
+
+class HAKCScope(yaml.YAMLObject):
+    yaml_tag = "!HAKCScope"
+    global_scope = "global"
+    local_scope = "local"
+
+    def __init__(self, **kwargs):
+        yaml.YAMLObject.__init__(self)
+        self.scope = kwargs['Scope'] if 'Scope' in kwargs else None
+        self.local_scope_name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else None
+
+    def __eq__(self, other):
+        if isinstance(other, HAKCScope):
+            if self.is_local_scope():
+                return other.is_local_scope() and self.local_scope_name == other.local_scope_name
+            else:
+                return other.is_global_scope()
+        raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
+
+    def __hash__(self):
+        if self.is_global_scope():
+            return hash(self.scope)
+        else:
+            return hash((self.scope, self.local_scope_name))
+
+    def __str__(self):
+        inside_string = f'scope={self.scope}'
+        if self.is_local_scope():
+            inside_string += f', local_scope_name={self.local_scope_name}'
+        return f'{HAKCScope.yaml_tag}({inside_string})'
+
+    def is_global_scope(self):
+        return self.scope == HAKCScope.global_scope
+
+    def is_local_scope(self):
+        return self.scope == HAKCScope.local_scope
+
 
 class HAKCSymbol(HAKCInfo):
-    def __init__(self, Type: HAKCType, **kwargs):
+    def __init__(self, Type: HAKCType, Scope: HAKCScope, IsDefinition: bool, **kwargs):
         HAKCInfo.__init__(self, **kwargs)
         self.type = Type
-        self.defining_file = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
-        self.defining_line = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
+        self.scope = Scope
+        self.defining_file = None
+        self.defining_line = None
+
+        if IsDefinition:
+            self.defining_file = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
+            self.defining_line = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
+
         self.used_symbols = kwargs['UsedSymbols'] if 'UsedSymbols' in kwargs else list()
 
     def __eq__(self, other):
         if isinstance(other, HAKCSymbol):
-            return self.type == other.type and self.name == other.name
-        return False
+            return self.type == other.type and self.name == other.name and self.scope == other.scope
+        raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
 
     def __hash__(self):
-        return hash((HAKCInfo.__hash__(self), self.type))
+        return hash((HAKCInfo.__hash__(self),))
+
+    def __str__(self):
+        cls = self.__class__.__name__
+        return (f'{cls}(name={self.name}, type={self.type}, scope={self.scope}, '
+                f'definition={self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"})')
+
+    @property
+    def is_definition(self):
+        return self.defining_file is not None
+
+    def merge_symbol(self, other):
+        if other.is_definition:
+            self.defining_file = other.defining_file
+            self.defining_line = other.defining_line
+            for symbol in other.used_symbols:
+                self.used_symbols.append(symbol)
 
 
 class HAKCIndirectSourceLink(yaml.YAMLObject, HAKCInfo):
@@ -120,11 +196,19 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCSymbol.__init__(self, **kwargs)
-        self.direct_calls = kwargs['DirectCalls'] if 'DirectCalls' in kwargs else set()
-        self.indirect_calls = kwargs['IndirectCalls'] if 'IndirectCalls' in kwargs else set()
+        self.direct_calls = set(kwargs['DirectCalls']) if 'DirectCalls' in kwargs else set()
+        self.indirect_calls = set(kwargs['IndirectCalls']) if 'IndirectCalls' in kwargs else set()
 
     def is_function(self) -> bool:
         return True
+
+    def merge_symbol(self, other):
+        if other.is_definition:
+            HAKCSymbol.merge_symbol(self, other)
+            for direct_call in other.direct_calls:
+                self.direct_calls.add(direct_call)
+            for indirect_call in other.indirect_calls:
+                self.indirect_calls.add(indirect_call)
 
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
@@ -136,6 +220,10 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
 
     def is_global_variable(self) -> bool:
         return True
+
+
+def construct_scope(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCScope:
+    return HAKCScope(**loader.construct_mapping(node, deep=True))
 
 
 def construct_global_variable(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCGlobalVariable:
@@ -165,4 +253,5 @@ HAKCObject_constructors = {
     HAKCIndirectCallSource.yaml_tag: construct_indirect_call_source,
     HAKCIndirectSourceLink.yaml_tag: construct_indirect_call_source_link,
     HAKCType.yaml_tag: construct_type,
+    HAKCScope.yaml_tag: construct_scope,
 }
