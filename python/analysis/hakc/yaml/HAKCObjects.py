@@ -132,6 +132,7 @@ class HAKCSymbol(HAKCInfo):
         if other.is_definition:
             self.defining_file = other.defining_file
             self.defining_line = other.defining_line
+            self.type = other.type
             for symbol in other.used_symbols:
                 self.used_symbols.add(symbol)
 
@@ -193,12 +194,13 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
         return True
 
     def merge_symbol(self, other):
-        if other.is_definition:
-            HAKCSymbol.merge_symbol(self, other)
-            for direct_call in other.direct_calls:
-                self.direct_calls.add(direct_call)
-            for indirect_call in other.indirect_calls:
-                self.indirect_calls.add(indirect_call)
+        if not isinstance(other, HAKCFunction):
+            raise RuntimeError(f'Tried to merge {other} with {self}')
+        HAKCSymbol.merge_symbol(self, other)
+        for direct_call in other.direct_calls:
+            self.direct_calls.add(direct_call)
+        for indirect_call in other.indirect_calls:
+            self.indirect_calls.add(indirect_call)
 
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):

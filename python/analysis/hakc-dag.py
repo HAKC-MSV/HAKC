@@ -93,23 +93,55 @@ class HAKCDagState:
     def __init__(self):
         self.compartmentalization = HAKCCompartmentalization()
         self.global_dict = dict()
+        self.symbol_count = 0
 
-    def track_global(self, symbol: HAKCSymbol, compilation_unit: str):
-        symbol.compilation_units.add(compilation_unit)
-        if symbol not in self.global_dict:
-            self.global_dict[symbol] = symbol
+    def track_global(self, symbol: HAKCSymbol, compilation_unit: str) -> HAKCSymbol:
+        if len(compilation_unit) > 0:
+            symbol.compilation_units.add(compilation_unit)
+        if symbol.name not in self.global_dict:
+            self.global_dict[symbol.name] = dict()
+            self.global_dict[symbol.name][symbol.scope] = dict()
+            self.global_dict[symbol.name][symbol.scope][symbol.is_function()] = symbol
+            self.symbol_count += 1
+            result = symbol
         else:
-            self.global_dict[symbol].merge_symbol(symbol)
+            if symbol.scope in self.global_dict[symbol.name]:
+                if symbol.is_function() in self.global_dict[symbol.name][symbol.scope]:
+                    self.global_dict[symbol.name][symbol.scope][symbol.is_function()].merge_symbol(symbol)
+                    result = self.global_dict[symbol.name][symbol.scope][symbol.is_function()]
+                else:
+                    self.global_dict[symbol.name][symbol.scope][symbol.is_function()] = symbol
+                    result = symbol
+            else:
+                self.global_dict[symbol.name][symbol.scope] = dict()
+                self.global_dict[symbol.name][symbol.scope][symbol.is_function()] = symbol
+                self.symbol_count += 1
+                result = symbol
+        return result
 
     def finalize_symbols(self):
-        for _, symbol in self.global_dict.items():
+        symbols = set()
+
+        for name, scope_dict in self.global_dict.items():
+            logger.debug(f'Symbol {name} has {len(scope_dict)} scoped symbols')
+            for scope, symbol_dict in scope_dict.items():
+                for _, symbol in symbol_dict.items():
+                    symbols.add(symbol)
+
+        for symbol in symbols:
+            for used_symbol in symbol.used_symbols:
+                tracked_symbol = self.track_global(used_symbol, "")
+                used_symbol.merge_symbol(tracked_symbol)
+
+        for symbol in symbols:
             self.compartmentalization.add_symbol(symbol)
+
         self.global_dict.clear()
 
         self.compartmentalization.finalize_symbols()
 
     def __len__(self):
-        return len(self.global_dict)
+        return self.symbol_count
 
 
 def get_loader() -> Type[yaml.SafeLoader]:
@@ -163,13 +195,16 @@ def compute_dag_edges_for_symbol(head: HAKCSymbol):
 def add_dag_edges(compartmentalization: HAKCCompartmentalization):
     logger.info(f'Starting DAG edge computation')
     symbols = compartmentalization.get_symbols()
+    dag_edge_count = 0
     with tqdm.tqdm(total=len(symbols)) as pbar:
         for symbol in symbols:
             edge_weights = compute_dag_edges_for_symbol(symbol)
             pbar.update(1)
             for (head, tail, dag_edge_weight) in edge_weights:
                 logger.debug(f'Adding DAG Edge between {head.name} -> {tail.name} with weight {dag_edge_weight}')
+                dag_edge_count += 1
                 compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+    logger.info(f'Finished adding {dag_edge_count} DAG edges')
 
 
 def finalize_symbols(state: HAKCDagState):
@@ -177,7 +212,8 @@ def finalize_symbols(state: HAKCDagState):
     state.finalize_symbols()
 
 
-def add_symbols(state: HAKCDagState, compilation_unit: str, functions: set[HAKCFunction], global_variables: set[HAKCGlobalVariable]):
+def add_symbols(state: HAKCDagState, compilation_unit: str, functions: set[HAKCFunction],
+                global_variables: set[HAKCGlobalVariable]):
     for func in functions:
         state.track_global(func, compilation_unit)
     for glob in global_variables:
@@ -322,6 +358,20 @@ def print_symbols(compartmentalization: HAKCCompartmentalization):
         logger.info(f'{symbol}')
 
 
+def print_symbols_with_same_name(compartmentalization: HAKCCompartmentalization):
+    name_dict = dict()
+    for symbol in compartmentalization.get_symbols():
+        if symbol.name not in name_dict:
+            name_dict[symbol.name] = set()
+        name_dict[symbol.name].add(symbol)
+
+    for name, symbols in name_dict.items():
+        if len(symbols) > 1:
+            for symbol in symbols:
+                logger.info(f'{symbol}')
+            logger.info("")
+
+
 def parse_log_level(level_string: str):
     for level in LoggingLevelEnum:
         if level.name == level_string.upper():
@@ -329,14 +379,14 @@ def parse_log_level(level_string: str):
     raise RuntimeError(f'Invalid log level {level_string}')
 
 
-def setup_logging(log_file: str, log_level: LoggingLevelEnum):
+def setup_logging(log_file: str, log_level: LoggingLevelEnum, log_mode: str):
     log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
     logger.setLevel(log_level.value)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(log_formatter)
     logger.addHandler(console_handler)
     if log_file is not None:
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, mode=log_mode)
         file_handler.setFormatter(log_formatter)
         logger.addHandler(file_handler)
 
@@ -357,6 +407,7 @@ def main():
                         help=f'Log level to display, can be lower case {[level.name for level in LoggingLevelEnum]}',
                         type=parse_log_level)
     parser.add_argument('-l', '--log', default=None, dest='log_path')
+    parser.add_argument('--log-mode', default='w', dest='log_mode')
     parser.add_argument('--single-thread', dest='single_thread', action='store_true',
                         help='Run analysis without multiprocessing')
     parser.add_argument('--output-yaml', dest='output_yaml', action='store_true',
@@ -367,11 +418,12 @@ def main():
     parser.add_argument('--adjust-path', dest='adjust_path', help='Path to adjustment YAML')
     parser.add_argument('--print-symbols', dest='print_symbols', action='store_true')
     parser.add_argument('--profile', dest='profile', action='store_true')
+    parser.add_argument('--print-symbols-with-same-name', dest='print_symbols_with_same_name', action='store_true')
 
     args = parser.parse_args()
 
     profile = None
-    setup_logging(log_file=args.log_path, log_level=args.log_level)
+    setup_logging(log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
     compartmentalization = None
     if args.c_in:
         with open(args.c_in, 'rb') as f:
@@ -409,6 +461,11 @@ def main():
         if compartmentalization is None:
             raise RuntimeError("No compartmentalization")
         print_symbols(compartmentalization)
+
+    if args.print_symbols_with_same_name:
+        if compartmentalization is None:
+            raise RuntimeError("No compartmentalization")
+        print_symbols_with_same_name(compartmentalization)
 
     if args.output_yaml:
         if compartmentalization is None:
