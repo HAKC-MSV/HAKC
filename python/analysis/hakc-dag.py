@@ -15,7 +15,7 @@ import tqdm
 import yaml
 
 from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
-from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol
+from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol, HAKCType
 
 logger = logging.getLogger('hakc-dag')
 
@@ -111,6 +111,7 @@ class HAKCDagState:
                     result = self.global_dict[symbol.name][symbol.scope][symbol.is_function()]
                 else:
                     self.global_dict[symbol.name][symbol.scope][symbol.is_function()] = symbol
+                    self.symbol_count += 1
                     result = symbol
             else:
                 self.global_dict[symbol.name][symbol.scope] = dict()
@@ -128,10 +129,11 @@ class HAKCDagState:
                 for _, symbol in symbol_dict.items():
                     symbols.add(symbol)
 
+        # Ensure that types match for correct hash computations
         for symbol in symbols:
             for used_symbol in symbol.used_symbols:
                 tracked_symbol = self.track_global(used_symbol, "")
-                used_symbol.merge_symbol(tracked_symbol)
+                used_symbol.type = tracked_symbol.type
 
         for symbol in symbols:
             self.compartmentalization.add_symbol(symbol)
@@ -139,6 +141,9 @@ class HAKCDagState:
         self.global_dict.clear()
 
         self.compartmentalization.finalize_symbols()
+
+        for symbol in self.compartmentalization.get_symbols():
+            symbol.clear()
 
     def __len__(self):
         return self.symbol_count
@@ -162,14 +167,15 @@ def parse_yaml(filename: str):
     return compilation_unit, functions, global_variables
 
 
-def compute_dag_edge_weight(compartmentalization: HAKCCompartmentalization, head: HAKCSymbol, tail: HAKCSymbol) -> int:
+def compute_dag_edge_weight(compartmentalization: HAKCCompartmentalization, head: HAKCSymbol, tail: HAKCSymbol,
+                            indirect_calls: set[HAKCType]) -> int:
     edge_weight = 0
 
     if compartmentalization.has_edge(head, tail):
         edge_weight += 1
 
     if head.is_function():
-        for indirect_call in head.indirect_calls:
+        for indirect_call in indirect_calls:
             if indirect_call == tail.type:
                 edge_weight += 1
 
@@ -180,10 +186,11 @@ def compute_dag_edges_for_symbol(head: HAKCSymbol):
     global mp_compartmentalization
     results = list()
 
+    indirect_calls = mp_compartmentalization.get_indirect_calls(head)
     for tail in mp_compartmentalization.get_symbols():
         try:
             if tail is not head:
-                edge_weight = compute_dag_edge_weight(mp_compartmentalization, head, tail)
+                edge_weight = compute_dag_edge_weight(mp_compartmentalization, head, tail, indirect_calls)
                 if edge_weight > 0:
                     results.append((head, tail, edge_weight))
         except Exception as e:
@@ -208,7 +215,7 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
 
 
 def finalize_symbols(state: HAKCDagState):
-    logger.info(f'Finalizing {len(state.global_dict)} symbols')
+    logger.info(f'Finalizing {len(state)} symbols')
     state.finalize_symbols()
 
 

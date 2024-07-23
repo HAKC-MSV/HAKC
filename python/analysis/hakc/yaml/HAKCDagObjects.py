@@ -29,7 +29,6 @@ class CliqueColors(Enum):
 
 class HAKCCompartmentalization(nx.DiGraph):
     # Node attributes
-    cu_attr = 'compilation-units'
     compartment_id_attr = 'compartment-id'
     color_attr = 'color'
     defining_compilation_unit_attr = 'defining-compilation-unit'
@@ -63,6 +62,13 @@ class HAKCCompartmentalization(nx.DiGraph):
         self.add_edge(symbol, symbol.type, **type_attrs)
         self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
 
+    def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
+        indirect_calls = set()
+        for nbr, edgeattr in self.adj[symbol].items():
+            if HAKCCompartmentalization.indirect_call_attr in edgeattr:
+                indirect_calls.add(nbr)
+        return indirect_calls
+
     def finalize_symbols(self):
         compartment_id = 0
         indirect_edge_attrs = {HAKCCompartmentalization.indirect_call_attr: True}
@@ -73,16 +79,18 @@ class HAKCCompartmentalization(nx.DiGraph):
             symbols.add(symbol)
 
         for symbol in symbols:
-            compartment_id += 1
-
-            self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id
-
             for used_symbol in symbol.used_symbols:
+                if not self.has_node(used_symbol):
+                    self.add_symbol(used_symbol)
                 self.add_edge(symbol, used_symbol, **symbol_attrs)
 
             if symbol.is_function():
                 for indirect_call in symbol.indirect_calls:
                     self.add_edge(symbol, indirect_call.type, **indirect_edge_attrs)
+
+        for symbol in self.get_symbols():
+            compartment_id += 1
+            self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id
 
     def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
         self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr] = compartment_id
@@ -95,9 +103,6 @@ class HAKCCompartmentalization(nx.DiGraph):
 
     def get_color(self, symbol: HAKCSymbol) -> CliqueColors:
         return self.nodes[symbol][HAKCCompartmentalization.color_attr]
-
-    def get_referenced_compilation_units(self, symbol: HAKCSymbol) -> set[str]:
-        return self.nodes[symbol][HAKCCompartmentalization.cu_attr]
 
     def get_types(self):
         return nx.subgraph_view(self, filter_node=lambda n: n.is_type()).nodes
@@ -141,6 +146,13 @@ class HAKCCompartmentalization(nx.DiGraph):
 
                 for nbr, _ in self.adj[node].items():
                     if not nbr.is_type():
+                        if HAKCCompartmentalization.compartment_id_attr not in self.nodes[nbr]:
+                            error_message = f'Neighbor {nbr} of {node} does not have a compartment ID'
+                            logger.error(error_message)
+                            logger.error("Symbols with the same name:")
+                            for symbol in self.get_symbols_by_name(nbr.name):
+                                logger.error(f'\t{symbol}')
+                            raise ValueError(error_message)
                         target_compartment = self.nodes[nbr][HAKCCompartmentalization.compartment_id_attr]
                         compartment_targets[compartment_id].add(target_compartment)
 

@@ -1,4 +1,5 @@
 import yaml
+import re
 
 
 class HAKCInfo(object):
@@ -36,19 +37,21 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         HAKCInfo.__init__(self, **kwargs)
         self.debug_type = DebugType
         self.llvm_type = LLVMType
+        self._debug_type_transformed = HAKCType.transform_type_str(self.debug_type)
+        self._debug_type_is_known = self.debug_type != HAKCType.unknown_type
+        self._llvm_type_is_known = self.llvm_type != HAKCType.unknown_type
 
     def __eq__(self, other):
         if isinstance(other, HAKCType):
-            if self.debug_type != HAKCType.unknown_type and other.debug_type != HAKCType.unknown_type:
-                return self.debug_type == other.debug_type
-            elif self.llvm_type != HAKCType.unknown_type and other.llvm_type != HAKCType.unknown_type:
+            if self._debug_type_is_known and other._debug_type_is_known:
+                return self._debug_type_transformed == other._debug_type_transformed
+            elif self._llvm_type_is_known and other._llvm_type_is_known:
                 return self.llvm_type == other.llvm_type
-
-        return False
+        raise RuntimeError(f'{other} is not a {self.__class__.__name__}!')
 
     def __hash__(self):
-        if self.debug_type != HAKCType.unknown_type:
-            return hash(self.debug_type)
+        if self._debug_type_is_known:
+            return hash(self._debug_type_transformed)
         else:
             return hash(self.llvm_type)
 
@@ -58,6 +61,18 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
 
     def is_type(self) -> bool:
         return True
+
+    @staticmethod
+    def transform_type_str(type_str: str) -> str:
+        transforms = {
+            "struct anon.[0-9]*": "struct anon.#",
+        }
+
+        result = type_str
+        for regex, sub in transforms.items():
+            result = re.sub(regex, sub, result)
+
+        return result
 
 
 class HAKCScope(yaml.YAMLObject):
@@ -136,6 +151,9 @@ class HAKCSymbol(HAKCInfo):
             for symbol in other.used_symbols:
                 self.used_symbols.add(symbol)
 
+    def clear(self):
+        self.used_symbols.clear()
+
 
 class HAKCIndirectSourceLink(yaml.YAMLObject, HAKCInfo):
     yaml_tag = "!HAKCIndirectSourceLink"
@@ -201,6 +219,11 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
             self.direct_calls.add(direct_call)
         for indirect_call in other.indirect_calls:
             self.indirect_calls.add(indirect_call)
+
+    def clear(self):
+        HAKCSymbol.clear(self)
+        self.direct_calls.clear()
+        self.indirect_calls.clear()
 
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
