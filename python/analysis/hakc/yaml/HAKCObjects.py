@@ -2,8 +2,21 @@ import yaml
 import re
 
 
-class HAKCInfo(object):
+class HAKCPrintableObj:
+    def __init__(self, **kwargs):
+        pass
+
+    def __str__(self):
+        cls = self.__class__.__name__
+        return f'{cls}({", ".join(self.get_info_tokens())})'
+
+    def get_info_tokens(self) -> list[str]:
+        raise NotImplementedError
+
+
+class HAKCInfo(HAKCPrintableObj):
     def __init__(self, Name: str, **kwargs):
+        HAKCPrintableObj.__init__(self, **kwargs)
         self.name = Name
 
     def __eq__(self, other):
@@ -26,6 +39,9 @@ class HAKCInfo(object):
 
     def is_symbol(self) -> bool:
         return self.is_function() or self.is_global_variable()
+
+    def get_info_tokens(self) -> list[str]:
+        return [f'name={self.name}']
 
 
 class HAKCType(HAKCInfo, yaml.YAMLObject):
@@ -55,9 +71,8 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         else:
             return hash(self.llvm_type)
 
-    def __str__(self):
-        cls = self.__class__.__name__
-        return f'{cls}(debug_type={self.debug_type}, llvm_type={self.llvm_type})'
+    def get_info_tokens(self):
+        return [f'debug_type={self.debug_type}', f'llvm_type={self.llvm_type}']
 
     def is_type(self) -> bool:
         return True
@@ -75,13 +90,14 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         return result
 
 
-class HAKCScope(yaml.YAMLObject):
+class HAKCScope(yaml.YAMLObject, HAKCPrintableObj):
     yaml_tag = "!HAKCScope"
     global_scope = "global"
     local_scope = "local"
 
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
+        HAKCPrintableObj.__init__(self, **kwargs)
         self.scope = kwargs['Scope'] if 'Scope' in kwargs else None
         self.local_scope_name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else None
         self.is_global_scope = self.scope == HAKCScope.global_scope
@@ -101,11 +117,11 @@ class HAKCScope(yaml.YAMLObject):
         else:
             return hash((self.scope, self.local_scope_name))
 
-    def __str__(self):
-        inside_string = f'scope={self.scope}'
+    def get_info_tokens(self):
+        result = [f'scope={self.scope}']
         if self.is_local_scope:
-            inside_string += f', local_scope_name={self.local_scope_name}'
-        return f'{self.__class__.__name__}({inside_string})'
+            result.append(f'local_scope_name={self.local_scope_name}')
+        return result
 
 
 class HAKCSymbol(HAKCInfo):
@@ -131,10 +147,11 @@ class HAKCSymbol(HAKCInfo):
     def __hash__(self):
         return hash((self.name, self.type, self.scope))
 
-    def __str__(self):
-        cls = self.__class__.__name__
-        return (f'{cls}(name={self.name}, type={self.type}, scope={self.scope}, '
-                f'definition={self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"})')
+    def get_info_tokens(self):
+        result = HAKCInfo.get_info_tokens(self)
+        result.extend([f'type={str(self.type)}', f'scope={str(self.scope)}',
+                       f'definition={self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"}'])
+        return result
 
     @property
     def is_definition(self):

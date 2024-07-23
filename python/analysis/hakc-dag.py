@@ -208,7 +208,7 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
             edge_weights = compute_dag_edges_for_symbol(symbol)
             pbar.update(1)
             for (head, tail, dag_edge_weight) in edge_weights:
-                logger.debug(f'Adding DAG Edge between {head.name} -> {tail.name} with weight {dag_edge_weight}')
+                logger.debug(f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
                 dag_edge_count += 1
                 compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
     logger.info(f'Finished adding {dag_edge_count} DAG edges')
@@ -274,11 +274,11 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
 
             if change:
                 logger.debug(
-                    f'Changing Symbol {symbol.name} Compartment from {original_compartment_id} to {compartment_id}')
+                    f'Changing Symbol {symbol} Compartment from {original_compartment_id} to {compartment_id}')
                 compartmentalization.set_compartment_id(symbol, compartment_id)
                 compartmentalization.set_color(symbol, color)
             else:
-                logger.info(f'Not changing Symbol {symbol.name}')
+                logger.info(f'Not changing Symbol {symbol}')
 
 
 def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
@@ -323,7 +323,7 @@ def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
                     edge_weights = future.result()
                     for (head, tail, dag_edge_weight) in edge_weights:
                         logger.debug(
-                            f'Adding DAG Edge between {head.name} -> {tail.name} with weight {dag_edge_weight}')
+                            f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
                         dag_edges_added += 1
                         state.compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
                 except Exception as e:
