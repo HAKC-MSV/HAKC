@@ -10,7 +10,7 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "HAKCSystemInformation.h"
+#include "HAKCCompartmentalizationPolicy/HAKCSystemInformation.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 

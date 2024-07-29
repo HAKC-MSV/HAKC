@@ -2,7 +2,7 @@
 // Created by de29664 on 3/21/23.
 //
 
-#include "HAKCSystemInformation.h"
+#include "HAKCCompartmentalizationPolicy/HAKCSystemInformation.h"
 #include "HAKCCompartment.h"
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"

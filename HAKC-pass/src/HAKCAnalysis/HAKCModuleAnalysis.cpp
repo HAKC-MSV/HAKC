@@ -12,7 +12,7 @@
 
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
-#include "HAKCSystemInformation.h"
+#include "HAKCCompartmentalizationPolicy/HAKCSystemInformation.h"
 
 namespace hakc {
 

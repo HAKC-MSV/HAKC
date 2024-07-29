@@ -76,6 +76,11 @@ namespace hakc {
         NO_CLIQUE
     } sym_color_t;
 
+    typedef enum {
+        hakc_global_scope,
+        hakc_local_scope
+    } hakc_scope_t;
+
     const unsigned KERNEL_COMPARTMENT = 0;
     const sym_color_t KERNEL_COLOR = NO_CLIQUE;
 
