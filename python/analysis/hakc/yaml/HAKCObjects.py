@@ -84,7 +84,7 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         else:
             return hash(self.llvm_type)
 
-    def get_info_tokens(self)  -> dict[str, object]:
+    def get_info_tokens(self) -> dict[str, object]:
         return {'debug_type': f'{self.debug_type}', 'llvm_type': f'{self.llvm_type}'}
 
     def is_type(self) -> bool:
@@ -130,7 +130,7 @@ class HAKCScope(yaml.YAMLObject, HAKCPrintableObj):
         else:
             return hash((self.scope, self.local_scope_name))
 
-    def get_info_tokens(self)  -> dict[str, object]:
+    def get_info_tokens(self) -> dict[str, object]:
         result = {'scope': f'{self.scope}'}
         if self.is_local_scope:
             result['local_scope_name'] = self.local_scope_name

@@ -85,7 +85,8 @@ class HAKCCompartmentalization(nx.DiGraph):
     dag_attr = 'dag'
 
     kernel_compartment_id = 0
-    kernel_color = CliqueColors.SILVER_CLIQUE
+    kernel_color = CliqueColors.NO_CLIQUE
+    default_color = CliqueColors.TEAL_CLIQUE
 
     def __init__(self):
         super().__init__(self)
@@ -105,7 +106,7 @@ class HAKCCompartmentalization(nx.DiGraph):
     def add_symbol(self, symbol: HAKCSymbol):
         type_attrs = {HAKCCompartmentalization.isa_attr: True}
         self.add_edge(symbol, symbol.type, **type_attrs)
-        self.nodes[symbol][HAKCCompartmentalization.color_attr] = CliqueColors.NO_CLIQUE
+        self.nodes[symbol][HAKCCompartmentalization.color_attr] = HAKCCompartmentalization.default_color
 
     def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
         indirect_calls = set()
@@ -164,7 +165,7 @@ class HAKCCompartmentalization(nx.DiGraph):
     def to_yaml(self) -> dict:
         result = dict()
         result['COMPARTMENTS'] = list()
-        result['SYMBOLS'] = list()
+        result['FILES'] = list()
 
         compartments = dict()
         compilation_unit_symbols = dict()
@@ -204,7 +205,9 @@ class HAKCCompartmentalization(nx.DiGraph):
             compilation_unit_dict['file'] = compilation_unit
             compilation_unit_dict['symbols'] = list()
             for symbol in sorted(list(compilation_unit_symbols[compilation_unit]), key=lambda s: s.name):
-                compilation_unit_dict['symbols'].append(symbol.to_yaml_dict())
-            result['SYMBOLS'].append(compilation_unit_dict)
+                symbol_dict = symbol.to_yaml_dict()
+                symbol_dict['compartment_id'] = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
+                compilation_unit_dict['symbols'].append(symbol_dict)
+            result['FILES'].append(compilation_unit_dict)
 
         return result
