@@ -64,6 +64,8 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
                 return self._debug_type_transformed == other._debug_type_transformed
             elif self._llvm_type_is_known and other._llvm_type_is_known:
                 return self.llvm_type == other.llvm_type
+            else:
+                return False
         raise RuntimeError(f'{other} is not a {self.__class__.__name__}!')
 
     def __hash__(self):
