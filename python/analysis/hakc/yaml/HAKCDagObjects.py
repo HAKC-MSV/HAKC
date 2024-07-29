@@ -2,7 +2,8 @@ import logging
 from enum import Enum
 
 import networkx as nx
-from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType
+import yaml
+from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType, HAKCPrintableObj
 
 logger = logging.getLogger('hakc-dag')
 
@@ -25,6 +26,50 @@ class CliqueColors(Enum):
     VIOLET_CLIQUE = 13  # VLT
     CRIMSON_CLIQUE = 14  # CRI
     GOLD_CLIQUE = 15  # GLD
+
+
+class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
+    yaml_tag = u'!HAKCCompartment'
+
+    def __init__(self, compartment_id: int, **kwargs):
+        yaml.YAMLObject.__init__(self)
+        HAKCPrintableObj.__init__(self, **kwargs)
+        self.compartment_id = compartment_id
+        self.targets = set()
+        self.cliques = dict()
+
+    def __eq__(self, other):
+        if isinstance(other, HAKCCompartment):
+            return self.compartment_id == other.compartment_id
+        raise RuntimeError(f'{other} is not a class of {self.__class__.__name__}!')
+
+    def __hash__(self):
+        return hash(self.compartment_id)
+
+    def add_target(self, target_compartment: int):
+        self.targets.add(target_compartment)
+
+    def add_clique(self, clique: CliqueColors):
+        if clique is not CliqueColors.NO_CLIQUE:
+            access_token = (self.compartment_id << 16) | (1 << clique.value)
+        else:
+            access_token = 0xFFFF
+
+        self.cliques[clique] = access_token
+
+    def get_info_tokens(self) -> dict[str, object]:
+        result = dict()
+        result['compartment_id'] = self.compartment_id
+        result['targets'] = sorted(list(self.targets))
+        result['cliques'] = list()
+
+        for clique in sorted(self.cliques, key=lambda c: c.name):
+            access_token = self.cliques[clique]
+            clique_dict = dict()
+            clique_dict['name'] = clique.name
+            clique_dict['access_token'] = access_token
+            result['cliques'].append(clique_dict)
+        return result
 
 
 class HAKCCompartmentalization(nx.DiGraph):
@@ -121,59 +166,45 @@ class HAKCCompartmentalization(nx.DiGraph):
         result['COMPARTMENTS'] = list()
         result['SYMBOLS'] = list()
 
-        compartment_targets = dict()
-        compartment_colors = dict()
-        compartment_ids = set()
-        compartment_symbols = dict()
-        for node, node_attrs in self.nodes.items():
-            if not node.is_type():
-                compartment_id = node_attrs[HAKCCompartmentalization.compartment_id_attr]
-                compartment_ids.add(compartment_id)
-                color = node_attrs[HAKCCompartmentalization.color_attr]
-                if compartment_id not in compartment_targets:
-                    compartment_targets[compartment_id] = set()
-                if compartment_id not in compartment_colors:
-                    compartment_colors[compartment_id] = set()
-                compartment_colors[compartment_id].add(color)
-                if compartment_id not in compartment_symbols:
-                    compartment_symbols[compartment_id] = list()
+        compartments = dict()
+        compilation_unit_symbols = dict()
+        for symbol in self.get_symbols():
+            compartment_id = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
+            color = self.nodes[symbol][HAKCCompartmentalization.color_attr]
+            if compartment_id not in compartments:
+                compartments[compartment_id] = HAKCCompartment(compartment_id)
 
-                compartment_symbol = dict()
-                compartment_symbol['NAME'] = node.name
-                compartment_symbol['CLIQUE'] = color.name
-                compartment_symbol['COMPARTMENT'] = compartment_id
-                compartment_symbols[compartment_id].append(compartment_symbol)
+            current_compartment = compartments[compartment_id]
+            current_compartment.add_clique(color)
 
-                for nbr, _ in self.adj[node].items():
-                    if not nbr.is_type():
-                        if HAKCCompartmentalization.compartment_id_attr not in self.nodes[nbr]:
-                            error_message = f'Neighbor {nbr} of {node} does not have a compartment ID'
-                            logger.error(error_message)
-                            logger.error("Symbols with the same name:")
-                            for symbol in self.get_symbols_by_name(nbr.name):
-                                logger.error(f'\t{symbol}')
-                            raise ValueError(error_message)
-                        target_compartment = self.nodes[nbr][HAKCCompartmentalization.compartment_id_attr]
-                        compartment_targets[compartment_id].add(target_compartment)
+            for nbr, _ in self.adj[symbol].items():
+                if not nbr.is_type():
+                    if HAKCCompartmentalization.compartment_id_attr not in self.nodes[nbr]:
+                        error_message = f'Neighbor {nbr} of {symbol} does not have a compartment ID'
+                        logger.error(error_message)
+                        logger.error("Symbols with the same name:")
+                        for sym in self.get_symbols_by_name(nbr.name):
+                            logger.error(f'\t{sym}')
+                        raise ValueError(error_message)
+                    target_compartment = self.nodes[nbr][HAKCCompartmentalization.compartment_id_attr]
+                    current_compartment.add_target(target_compartment)
 
-        for compartment_id in sorted(compartment_ids):
-            compartment_yaml = dict()
-            compartment_yaml['ID'] = compartment_id
-            compartment_yaml['CLIQUES'] = list()
-            for color in sorted(compartment_colors[compartment_id]):
-                if color is not CliqueColors.NO_CLIQUE:
-                    access_token = (compartment_id << 16) | (1 << color.value)
-                else:
-                    access_token = 0xFFFF
-                compartment_yaml['CLIQUES'].append({'COLOR': color.name,
-                                                    'ACCESS_TOKEN': access_token})
-            compartment_yaml['TARGETS'] = list()
-            for target in sorted(compartment_targets[compartment_id]):
-                compartment_yaml['TARGETS'].append(target)
+            for compilation_unit in symbol.compilation_units:
+                if compilation_unit not in compilation_unit_symbols:
+                    compilation_unit_symbols[compilation_unit] = set()
 
-            result['COMPARTMENTS'].append(compartment_yaml)
+                compilation_unit_symbols[compilation_unit].add(symbol)
 
-            for compartment_symbol in sorted(compartment_symbols[compartment_id], key=lambda x: x['NAME']):
-                result['SYMBOLS'].append(compartment_symbol)
+        for compartment_id in sorted(compartments.keys()):
+            current_compartment = compartments[compartment_id]
+            result['COMPARTMENTS'].append(current_compartment.to_yaml_dict())
+
+        for compilation_unit in sorted(compilation_unit_symbols.keys()):
+            compilation_unit_dict = dict()
+            compilation_unit_dict['file'] = compilation_unit
+            compilation_unit_dict['symbols'] = list()
+            for symbol in sorted(list(compilation_unit_symbols[compilation_unit]), key=lambda s: s.name):
+                compilation_unit_dict['symbols'].append(symbol.to_yaml_dict())
+            result['SYMBOLS'].append(compilation_unit_dict)
 
         return result
