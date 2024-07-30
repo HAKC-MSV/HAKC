@@ -8,8 +8,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include "llvm/IR/Module.h"
 #include "HAKCTransferFunction.h"
-#include "HAKCSymbol.h"
-
+#include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
 
 using namespace llvm;
 
@@ -28,11 +27,11 @@ namespace hakc {
 
         Function *GetFunction() const;
 
-        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
+        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                             Value *HAKCPointer, Value *Size, bool IsData) = 0;
 
         virtual Instruction *
-        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
+        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                 Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy) = 0;
 
     protected:

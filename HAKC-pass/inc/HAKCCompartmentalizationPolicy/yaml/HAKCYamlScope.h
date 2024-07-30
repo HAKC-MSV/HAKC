@@ -8,8 +8,6 @@
 #include <string>
 #include "HAKC-defs.h"
 
-#include "llvm/Support/YAMLTraits.h"
-
 namespace hakc {
 
     class HAKCYamlScope {
@@ -19,8 +17,6 @@ namespace hakc {
 
         std::string LocalScope;
         hakc_scope_t Scope;
-
-        static void YamlMapping(yaml::IO &io, hakc::HAKCYamlScope &Scope);
     };
 
 } // hakc

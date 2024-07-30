@@ -10,9 +10,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/IRBuilder.h"
 
-#include "HAKCCompartmentalizationPolicy/HAKCSystemInformation.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 using namespace llvm;
 
@@ -155,8 +155,6 @@ namespace hakc {
 
         virtual Module &getModule();
 
-        virtual HAKCSystemInformation &getSystemInformation();
-
         virtual Type *HAKCAuthenticationRetType(unsigned AddrSpace);
 
         virtual hakc_compartment_id_t getFunctionCompartmentID(Function *F);
@@ -194,9 +192,9 @@ namespace hakc {
 
     protected:
         IRBuilder<> HAKCIRBuilder;
-        HAKCDebugInfoProcessor DebugInfoProcessor;
-        HAKCSystemInformation SystemInformation;
-        HAKCModuleAnalysis *HAKCAnalysis;
+        HAKCCompartmentalizationPolicy CompartmentalizationPolicy;
+        HAKCModuleAnalysis &ModuleAnalysis;
+
         std::map<Function *, Function *> VariadicTransferFunctions;
 
         /**

@@ -5,11 +5,16 @@
 #ifndef HAKC_HAKCYAMLFILE_H
 #define HAKC_HAKCYAMLFILE_H
 
+#include "HAKCYamlSymbol.h"
+
 namespace hakc {
 
     class HAKCYamlFile {
-    protected:
-        std::string F
+    public:
+        HAKCYamlFile() = default;
+
+        std::string Filename;
+        std::vector<HAKCYamlSymbol> Symbols;
     };
 
 } // hakc

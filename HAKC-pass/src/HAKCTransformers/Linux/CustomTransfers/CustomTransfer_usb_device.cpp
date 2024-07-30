@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_usb_device.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_usb_device::CustomTransfer_usb_device(Module &M, unsigned CompartmentStorageSizeInBits) :

@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_scsi_cmnd.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_scsi_cmnd::CustomTransfer_scsi_cmnd(Module &M, unsigned CompartmentStorageSizeInBits) :
@@ -18,4 +19,3 @@ namespace hakc {
 
     }
 } // hakc
-

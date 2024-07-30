@@ -5,11 +5,18 @@
 #ifndef HAKC_HAKCYAMLCOMPARTMENTALIZATIONPOLICY_H
 #define HAKC_HAKCYAMLCOMPARTMENTALIZATIONPOLICY_H
 
+#include <vector>
+#include "HAKCYamlCompartment.h"
+#include "HAKCYamlFile.h"
+
 namespace hakc {
 
     class HAKCYamlCompartmentalizationPolicy {
-    protected:
+    public:
+        HAKCYamlCompartmentalizationPolicy() = default;
 
+        std::vector<HAKCYamlCompartment> Compartments;
+        std::vector<HAKCYamlFile> Files;
     };
 
 } // hakc

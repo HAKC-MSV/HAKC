@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_sk_buff.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_sk_buff::CustomTransfer_sk_buff(Module &M, unsigned CompartmentStorageSizeInBits) :

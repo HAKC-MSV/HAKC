@@ -21,11 +21,11 @@ namespace hakc {
         TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys, unsigned
                                      SignedPtrIdx, unsigned CompartmentIDIdx);
 
-        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
+        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                     Value *HAKCPointer, Value *Size, bool IsData) override;
 
         Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
-                                             std::shared_ptr<HAKCSymbol> TargetCompartment,
+                                             std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                              Value *HAKCPointer, Value *Size, Type *SrcTy, Type *DestTy) override;
 
 

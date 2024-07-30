@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_socket.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_socket::CustomTransfer_socket(Module &M, unsigned CompartmentStorageSizeInBits) :

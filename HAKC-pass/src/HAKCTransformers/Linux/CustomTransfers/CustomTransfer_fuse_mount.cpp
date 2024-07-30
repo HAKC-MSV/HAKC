@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_fuse_mount.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_fuse_mount::CustomTransfer_fuse_mount(Module &M, unsigned CompartmentStorageSizeInBits) :

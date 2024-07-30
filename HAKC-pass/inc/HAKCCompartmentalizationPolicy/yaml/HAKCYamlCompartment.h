@@ -12,9 +12,7 @@ namespace hakc {
 
     class HAKCYamlCompartment {
     public:
-        HAKCYamlCompartment(hakc_compartment_id_t CompartmentID, std::vector<HAKCYamlClique> Cliques,
-                            std::vector<hakc_compartment_id_t> Targets);
-        HAKCYamlCompartment() = default;
+        HAKCYamlCompartment();
 
         std::vector<HAKCYamlClique> Cliques;
         hakc_compartment_id_t CompartmentID;

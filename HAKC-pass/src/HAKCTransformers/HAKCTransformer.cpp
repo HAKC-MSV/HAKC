@@ -13,9 +13,7 @@
 
 hakc::HAKCTransformer::HAKCTransformer(Module &Module, HAKCModuleAnalysis *HAKCAnalysis) :
         HAKCIRBuilder(Module.getContext()),
-        DebugInfoProcessor(Module),
-        SystemInformation(Module),
-        HAKCAnalysis(HAKCAnalysis),
+        CompartmentalizationPolicy()
         VariadicTransferFunctions() {
 
 }
@@ -24,9 +22,6 @@ Module &hakc::HAKCTransformer::getModule() {
     return HAKCAnalysis->GetModule();
 }
 
-hakc::HAKCSystemInformation &hakc::HAKCTransformer::getSystemInformation() {
-    return SystemInformation;
-}
 
 void hakc::HAKCTransformer::ValidateLocation(Instruction *I) {
     if (I == nullptr) {
@@ -48,7 +43,7 @@ void hakc::HAKCTransformer::ValidateHAKCPointer(Value *HAKCPointer) {
         CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer ";
         HAKCPointer->print(CommonHAKCAnalysis::getWriter());
         CommonHAKCAnalysis::getWriter() << " is not Pointer-like!\n";
-        for (auto *deflink: HAKCAnalysis->findDefChain(HAKCPointer, false, true)) {
+        for (auto *deflink: CommonHAKCAnalysis::findDefChain(HAKCPointer, false, true)) {
             CommonHAKCAnalysis::getWriter() << "\t";
             deflink->print(CommonHAKCAnalysis::getWriter());
             CommonHAKCAnalysis::getWriter() << "\n";

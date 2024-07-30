@@ -3,6 +3,7 @@
 //
 
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_file_ops.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     CustomTransfer_file_ops::CustomTransfer_file_ops(Module &M, unsigned CompartmentStorageSizeInBits) :

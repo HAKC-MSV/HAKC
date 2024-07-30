@@ -17,8 +17,6 @@ namespace hakc {
 
         std::string DebugType;
         std::string LLVMType;
-
-        static void YamlMapping(yaml::IO &io, hakc::HAKCYamlType &Type);
     };
 
 } // hakc

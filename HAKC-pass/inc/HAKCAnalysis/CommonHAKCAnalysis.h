@@ -6,7 +6,6 @@
 #define HAKC_COMMONHAKCANALYSIS_H
 
 #include "HAKCPass.h"
-#include "HAKCCompartmentalizationPolicy/HAKCSystemInformation.h"
 #include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 

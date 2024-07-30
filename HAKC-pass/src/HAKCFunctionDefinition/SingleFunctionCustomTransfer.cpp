@@ -3,6 +3,7 @@
 //
 
 #include "HAKCFunctionDefinition/SingleFunctionCustomTransfer.h"
+#include "HAKC-defs.h"
 #include <iostream>
 
 namespace hakc {
@@ -31,7 +32,7 @@ namespace hakc {
     }
 
     Instruction *SingleFunctionCustomTransfer::CreateTransfer(IRBuilder<> &HAKCIRBuilder,
-                                                              std::shared_ptr<HAKCSymbol> TargetCompartment,
+                                                              std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                                               Value *HAKCPointer, Value *Size, bool IsData) {
         hakc_compartment_id_t CompartmentID;
         sym_color_t ColorID;
@@ -51,7 +52,7 @@ namespace hakc {
     }
 
     Instruction *SingleFunctionCustomTransfer::CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
-                                                                       std::shared_ptr<HAKCSymbol> TargetCompartment,
+                                                                       std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
                                                                        Value *HAKCPointer, Value *Size,
                                                                        Type *SrcTy, Type *DestTy) {
         hakc_compartment_id_t CompartmentID;
