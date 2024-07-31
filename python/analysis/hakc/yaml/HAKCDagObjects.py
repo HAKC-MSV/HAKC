@@ -36,7 +36,7 @@ class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
         HAKCPrintableObj.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.targets = set()
-        self.cliques = dict()
+        self.divisions = dict()
 
     def __eq__(self, other):
         if isinstance(other, HAKCCompartment):
@@ -49,33 +49,33 @@ class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
     def add_target(self, target_compartment: int):
         self.targets.add(target_compartment)
 
-    def add_clique(self, clique: CliqueColors):
-        if clique is not CliqueColors.NO_CLIQUE:
-            access_token = (self.compartment_id << 16) | (1 << clique.value)
+    def add_division(self, division_id: int):
+        if division_id != CliqueColors.NO_CLIQUE.value:
+            access_token = (self.compartment_id << 16) | (1 << division_id)
         else:
             access_token = 0xFFFF
 
-        self.cliques[clique] = access_token
+        self.divisions[division_id] = access_token
 
     def get_info_tokens(self) -> dict[str, object]:
         result = dict()
         result['compartment_id'] = self.compartment_id
         result['targets'] = sorted(list(self.targets))
-        result['cliques'] = list()
+        result['divisions'] = list()
 
-        for clique in sorted(self.cliques, key=lambda c: c.name):
-            access_token = self.cliques[clique]
-            clique_dict = dict()
-            clique_dict['name'] = clique.name
-            clique_dict['access_token'] = access_token
-            result['cliques'].append(clique_dict)
+        for division in sorted(self.divisions):
+            access_token = self.divisions[division]
+            division_dict = dict()
+            division_dict['division_id'] = division
+            division_dict['access_token'] = access_token
+            result['divisions'].append(division_dict)
         return result
 
 
 class HAKCCompartmentalization(nx.DiGraph):
     # Node attributes
     compartment_id_attr = 'compartment-id'
-    color_attr = 'color'
+    division_attr = 'division-id'
     defining_compilation_unit_attr = 'defining-compilation-unit'
 
     # Edge attributes
@@ -85,8 +85,8 @@ class HAKCCompartmentalization(nx.DiGraph):
     dag_attr = 'dag'
 
     kernel_compartment_id = 0
-    kernel_color = CliqueColors.NO_CLIQUE
-    default_color = CliqueColors.TEAL_CLIQUE
+    kernel_division = CliqueColors.NO_CLIQUE.value
+    default_division = CliqueColors.TEAL_CLIQUE.value
 
     def __init__(self):
         super().__init__(self)
@@ -106,7 +106,7 @@ class HAKCCompartmentalization(nx.DiGraph):
     def add_symbol(self, symbol: HAKCSymbol):
         type_attrs = {HAKCCompartmentalization.isa_attr: True}
         self.add_edge(symbol, symbol.type, **type_attrs)
-        self.nodes[symbol][HAKCCompartmentalization.color_attr] = HAKCCompartmentalization.default_color
+        self.nodes[symbol][HAKCCompartmentalization.division_attr] = HAKCCompartmentalization.default_division
 
     def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
         indirect_calls = set()
@@ -144,11 +144,11 @@ class HAKCCompartmentalization(nx.DiGraph):
     def get_compartment_id(self, symbol: HAKCSymbol) -> int:
         return self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
 
-    def set_color(self, symbol: HAKCSymbol, color: CliqueColors):
-        self.nodes[symbol][HAKCCompartmentalization.color_attr] = color
+    def set_division_id(self, symbol: HAKCSymbol, division_id: int):
+        self.nodes[symbol][HAKCCompartmentalization.division_attr] = division_id
 
-    def get_color(self, symbol: HAKCSymbol) -> CliqueColors:
-        return self.nodes[symbol][HAKCCompartmentalization.color_attr]
+    def get_division_id(self, symbol: HAKCSymbol) -> int:
+        return self.nodes[symbol][HAKCCompartmentalization.division_attr]
 
     def get_types(self):
         return nx.subgraph_view(self, filter_node=lambda n: n.is_type()).nodes
@@ -171,12 +171,12 @@ class HAKCCompartmentalization(nx.DiGraph):
         compilation_unit_symbols = dict()
         for symbol in self.get_symbols():
             compartment_id = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
-            color = self.nodes[symbol][HAKCCompartmentalization.color_attr]
+            color = self.nodes[symbol][HAKCCompartmentalization.division_attr]
             if compartment_id not in compartments:
                 compartments[compartment_id] = HAKCCompartment(compartment_id)
 
             current_compartment = compartments[compartment_id]
-            current_compartment.add_clique(color)
+            current_compartment.add_division(color)
 
             for nbr, _ in self.adj[symbol].items():
                 if not nbr.is_type():
@@ -207,6 +207,7 @@ class HAKCCompartmentalization(nx.DiGraph):
             for symbol in sorted(list(compilation_unit_symbols[compilation_unit]), key=lambda s: s.name):
                 symbol_dict = symbol.to_yaml_dict()
                 symbol_dict['compartment_id'] = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
+                symbol_dict['division_id'] = self.nodes[symbol][HAKCCompartmentalization.division_attr]
                 compilation_unit_dict['symbols'].append(symbol_dict)
             result['FILES'].append(compilation_unit_dict)
 

@@ -253,14 +253,14 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
             defining_unit = symbol.defining_file
             compartment_id = compartmentalization.get_compartment_id(symbol)
             original_compartment_id = compartment_id
-            color = compartmentalization.get_color(symbol)
+            division_id = compartmentalization.get_division_id(symbol)
 
             change = defining_unit is None
             if defining_unit:
                 for kernel_path in adjustments['kernel']:
                     if kernel_path in defining_unit:
                         compartment_id = HAKCCompartmentalization.kernel_compartment_id
-                        color = HAKCCompartmentalization.kernel_color
+                        division_id = HAKCCompartmentalization.kernel_division
                         change = True
 
                 if change and 'compartmentalize' in adjustments and adjustments['compartmentalize'] is not None:
@@ -270,13 +270,13 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
                             break
             else:
                 compartment_id = HAKCCompartmentalization.kernel_compartment_id
-                color = HAKCCompartmentalization.kernel_color
+                division_id = HAKCCompartmentalization.kernel_division
 
             if change:
                 logger.debug(
                     f'Changing Symbol {symbol} Compartment from {original_compartment_id} to {compartment_id}')
                 compartmentalization.set_compartment_id(symbol, compartment_id)
-                compartmentalization.set_color(symbol, color)
+                compartmentalization.set_division_id(symbol, division_id)
             else:
                 logger.info(f'Not changing Symbol {symbol}')
 
