@@ -17,7 +17,7 @@ namespace hakc {
 
     HAKCModuleAnalysis::HAKCModuleAnalysis(Module &M)
             : CommonHAKCAnalysis(false),
-              moduleModified(false),
+              ModuleModified(false),
               IsCompartmentalizedAndContainsDebugName(false),
               M(M),
               AnalysisFunctions(),
@@ -35,10 +35,15 @@ namespace hakc {
         GetAnalysisFunctions();
     }
 
-    std::string HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV) {
+    std::string
+    HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
+        auto Compartment = Policy.GetCompartment(GV);
+        if (Compartment.IsKernelCompartment()) {
+            return GV->getSection().str();
+        }
+
         std::string finalName = HAKC_SECTION_PREFIX.str();
-        auto compartmentId = getTransformer().getGlobalCompartmentID(GV);
-        finalName += std::to_string(compartmentId);
+        finalName += std::to_string(Compartment.GetCompartmentID()->getSExtValue());
 
         finalName += GV->getSection().str();
         if (GV->getSection().empty()) {
@@ -51,44 +56,51 @@ namespace hakc {
         return finalName;
     }
 
-    void HAKCModuleAnalysis::registerUsedCompartment(int64_t compartment) {
-        if (compartment >= 0)
-            used_compartments.insert(compartment);
+    void HAKCModuleAnalysis::RegisterUsedCompartment(HAKCCompartment &compartment) {
+        if (!(compartment.IsKernelCompartment())) {
+            UsedCompartments.push_back(compartment);
+        }
     }
 
     /**
         * @brief Moves all global values to the specified HAKC ELF section
         */
-    void HAKCModuleAnalysis::moveGlobalsToPMCSection() {
+    void HAKCModuleAnalysis::MoveGlobalsToHAKCSection(HAKCCompartmentalizationPolicy &Policy) {
         std::set<GlobalVariable *> globalsToChange;
 
         for (auto *pGlobal: globalsToChange) {
-            auto &global = *pGlobal;
-            auto finalName = getGlobalHAKCSectionName(pGlobal);
-            auto compartment = getTransformer().getGlobalCompartmentID(pGlobal);
-            registerUsedCompartment(compartment);
+            auto finalName = getGlobalHAKCSectionName(pGlobal, Policy);
+            auto compartment = Policy.GetCompartment(pGlobal);
+            RegisterUsedCompartment(compartment);
 
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Changing section of global ";
-                global.print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " to section " << finalName << " from " << global.getSection()
-                                                << "\n";
+            if (finalName != pGlobal->getSection()) {
+                ModuleModified = true;
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Changing section of global " << *pGlobal << " to section "
+                                                    << finalName << " from " << pGlobal->getSection() << "\n";
+                }
+                pGlobal->setSection(finalName);
             }
-
-            global.setSection(finalName);
-            moduleModified = true;
         }
     }
 
     bool HAKCModuleAnalysis::functionInAnalysisSet(Function *F) {
-        return AnalysisFunctions.find(F) != AnalysisFunctions.end();
+        auto Search = [F](Function *Func) {
+            return F == Func;
+        };
+        return std::any_of(AnalysisFunctions.begin(), AnalysisFunctions.end(), Search);
     }
 
     void HAKCModuleAnalysis::GetAnalysisFunctions() {
+        std::vector<GlobalValue *> List;
         for (auto &F: M.getFunctionList()) {
             if (FunctionNeedsAnalysis(&F)) {
-                AnalysisFunctions.insert(&F);
+                List.push_back(&F);
             }
+        }
+        CommonHAKCAnalysis::SortGlobalList(List);
+        for(auto *F : List) {
+            AnalysisFunctions.push_back(dyn_cast<Function>(F));
         }
     }
 
@@ -132,10 +144,6 @@ namespace hakc {
     FunctionCallee HAKCModuleAnalysis::GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy) {
         auto Callee = getModule().getOrInsertFunction(Name, FuncTy);
         return Callee;
-    }
-
-    bool HAKCModuleAnalysis::isModuleCompartmentalized() {
-        return getTransformer().getSystemInformation().ContainsCompartmentalizedSymbols();
     }
 
     bool HAKCModuleAnalysis::AliasShouldBeCreated(Function *F) {
@@ -226,14 +234,33 @@ namespace hakc {
         return escapes;
     }
 
-    void HAKCModuleAnalysis::performTransformations() {
-        if (isModuleCompartmentalized()) {
-            compartmentalizeModule();
-        } else {
-            removeSignatures();
-        }
+    void HAKCModuleAnalysis::TransformModule(HAKCCompartmentalizationPolicy &Policy) {
+        MoveGlobalsToHAKCSection(Policy);
+        TransformFunctions(Policy);
+        AddCompartmentMetadata(Policy);
 
-        addTransferFunctions();
+        CreateInitGlobalMemberTransfers(Policy);
+        AddTransferFunctions();
+    }
+
+    void HAKCModuleAnalysis::TransformFunctions(HAKCCompartmentalizationPolicy &Policy) {
+        SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
+        llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
+                   [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+
+        for (auto *F: SortedFunctions) {
+            auto *FunctionTransformation = GetFunctionTransformation(F);
+            FunctionTransformation->InstrumentCode(Policy);
+            delete FunctionTransformation;
+        }
+    }
+
+    void HAKCModuleAnalysis::performTransformations() {
+        HAKCCompartmentalizationPolicy Policy(M.getContext());
+        const auto *YamlPath = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
+        Policy.ReadCompartmentalizationPolicy(YamlPath);
+
+        TransformModule(Policy);
         if (IsCompartmentalizedAndContainsDebugName) {
             CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n";
             M.print(CommonHAKCAnalysis::getWriter(), nullptr);
@@ -251,7 +278,7 @@ namespace hakc {
             }
             HAKCFunctionAnalysis *functionAnalysis = GetFunctionTransformation(F);
             functionAnalysis->InstrumentKernelCode();
-            moduleModified |= functionAnalysis->modifiedFunction();
+            ModuleModified |= functionAnalysis->modifiedFunction();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Completed signature removal in " << F->getName() << "\n";
                 CommonHAKCAnalysis::getWriter() << "\n";
@@ -284,16 +311,16 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysis::functionIsExported(Function *F) {
-        return getTransformer().FunctionIsExported(F);
+        return false;
     }
 
-    bool HAKCModuleAnalysis::TransferFunctionShouldBeCreated(Function *F) {
+    bool HAKCModuleAnalysis::TransferFunctionShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         if (F->isDeclaration()) {
             return false;
         }
         if (CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
-            auto CompartmentID = getTransformer().getFunctionCompartmentID(F);
-            if (CommonHAKCAnalysis::IsKernelCompartment(CompartmentID)) {
+            auto &Compartment = Policy.GetCompartment(F);
+            if (Compartment.IsKernelCompartment()) {
                 return false;
             }
         }
@@ -351,7 +378,7 @@ namespace hakc {
         return TransferFunctions;
     }
 
-    void HAKCModuleAnalysis::addTransferFunctions() {
+    void HAKCModuleAnalysis::AddTransferFunctions() {
         std::vector<Function *> FuncsNeedingTransfers;
         for (auto &F: getModule().getFunctionList()) {
             if (functionIsTransferCandidate(&F)) {
@@ -473,12 +500,6 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::compartmentalizeModule() {
-        if (!isModuleCompartmentalized()) {
-            return;
-        }
-
-        moveGlobalsToPMCSection();
-
         SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
         llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
                    [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
@@ -490,9 +511,9 @@ namespace hakc {
             }
             CompartmentalizeFunction(F);
         }
-        addCompartmentMetadata();
+        AddCompartmentMetadata();
 
-        transferModuleParams();
+        TransferModuleParams();
 
         CreateInitGlobalMemberTransfers();
     }
@@ -546,11 +567,11 @@ namespace hakc {
         return Result;
     }
 
-    void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers() {
-        std::set<GlobalVariable *> GlobalsToModifyDuringInit;
+    void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers(HAKCCompartmentalizationPolicy &Policy) {
+        std::vector<GlobalVariable *> GlobalsToModifyDuringInit;
         for (auto &GV: M.getGlobalList()) {
             if (TransferIsNeeded(&GV)) {
-                GlobalsToModifyDuringInit.insert(&GV);
+                GlobalsToModifyDuringInit.push_back(&GV);
             }
         }
 
@@ -661,21 +682,21 @@ namespace hakc {
         TransferPointer->setSection(GlobalInitTransferPointerSectionName());
     }
 
-    void HAKCModuleAnalysis::addCompartmentMetadata() {
-        for (auto CompartmentId: used_compartments) {
-            getTransformer().AddCompartmentMetadataEntry(CompartmentId);
+    void HAKCModuleAnalysis::AddCompartmentMetadata(HAKCCompartmentalizationPolicy &Policy) {
+        for (auto Compartment: UsedCompartments) {
+            getTransformer(Policy).AddCompartmentMetadataEntry(Compartment);
         }
     }
 
-    HAKCTransformer &HAKCModuleAnalysis::getTransformer() {
+    HAKCTransformer &HAKCModuleAnalysis::getTransformer(HAKCCompartmentalizationPolicy &Policy) {
         if (!transformer) {
-            transformer = CreateTransformer();
+            transformer = CreateTransformer(Policy);
         }
         return *transformer;
     }
 
     bool HAKCModuleAnalysis::isModuleTransformed() {
-        return moduleModified;
+        return ModuleModified;
     }
 
     void HAKCModuleAnalysis::CompartmentalizeFunction(Function *F) {
@@ -684,11 +705,11 @@ namespace hakc {
         }
         getTransformer().getSystemInformation().SetDebugActive(debug_output);
         auto compartment = getTransformer().getFunctionCompartmentID(F);
-        registerUsedCompartment(compartment);
+        RegisterUsedCompartment(compartment);
 
         HAKCFunctionAnalysis *functionAnalysis = GetFunctionTransformation(F);
-        functionAnalysis->InstrumentCompartmentalizedCode();
-        moduleModified |= functionAnalysis->modifiedFunction();
+        functionAnalysis->InstrumentCode();
+        ModuleModified |= functionAnalysis->modifiedFunction();
 
         totalCodeChecks += functionAnalysis->GetCodeAuthenticationCount();
         totalDataChecks += functionAnalysis->GetDataAuthenticationCount();

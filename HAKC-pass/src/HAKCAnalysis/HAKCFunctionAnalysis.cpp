@@ -1431,13 +1431,10 @@ namespace hakc {
 #undef CHECK_AND_REPLACE
     }
 
-    void HAKCFunctionAnalysis::InstrumentCompartmentalizedCode() {
-        if (!isCompartmentalizedFunction()) {
-            InstrumentKernelCode();
-            return;
-        }
+    void HAKCFunctionAnalysis::InstrumentCode(HAKCCompartmentalizationPolicy &Policy) {
+        auto Compartment = Policy.GetCompartment(&getFunction());
 
-        AddInstrumentation(true);
+        AddInstrumentation(!IsKernelCompartment(Compartment));
     }
 
     bool HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Value *Pointer) {

@@ -79,7 +79,7 @@ namespace hakc {
             }
 
             if (!color) {
-                CommonHAKCAnalysis::getWriter() << "Could not find Color for function " << F->getName()
+                CommonHAKCAnalysis::getWriter() << "Could not find DivisionID for function " << F->getName()
                                                 << "\n";
                 throw std::exception();
             }

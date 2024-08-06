@@ -5,34 +5,12 @@
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 #include "llvm/Support/FileSystem.h"
+#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlCompartment)
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlFile)
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlClique)
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlSymbol)
-
-template<>
-struct yaml::ScalarEnumerationTraits<hakc::sym_color_t> {
-    static void enumeration(yaml::IO &io, hakc::sym_color_t &value) {
-        io.enumCase(value, "SILVER_CLIQUE", hakc::SILVER_CLIQUE);
-        io.enumCase(value, "GREEN_CLIQUE", hakc::GREEN_CLIQUE);
-        io.enumCase(value, "RED_CLIQUE", hakc::RED_CLIQUE);
-        io.enumCase(value, "ORANGE_CLIQUE", hakc::ORANGE_CLIQUE);
-        io.enumCase(value, "YELLOW_CLIQUE", hakc::YELLOW_CLIQUE);
-        io.enumCase(value, "PURPLE_CLIQUE", hakc::PURPLE_CLIQUE);
-        io.enumCase(value, "BLUE_CLIQUE", hakc::BLUE_CLIQUE);
-        io.enumCase(value, "GREY_CLIQUE", hakc::GREY_CLIQUE);
-        io.enumCase(value, "PINK_CLIQUE", hakc::PINK_CLIQUE);
-        io.enumCase(value, "BROWN_CLIQUE", hakc::BROWN_CLIQUE);
-        io.enumCase(value, "WHITE_CLIQUE", hakc::WHITE_CLIQUE);
-        io.enumCase(value, "BLACK_CLIQUE", hakc::BLACK_CLIQUE);
-        io.enumCase(value, "TEAL_CLIQUE", hakc::TEAL_CLIQUE);
-        io.enumCase(value, "VIOLET_CLIQUE", hakc::VIOLET_CLIQUE);
-        io.enumCase(value, "CRIMSON_CLIQUE", hakc::CRIMSON_CLIQUE);
-        io.enumCase(value, "GOLD_CLIQUE", hakc::GOLD_CLIQUE);
-        io.enumCase(value, "NO_CLIQUE", hakc::NO_CLIQUE);
-    }
-};
 
 template<>
 struct yaml::ScalarEnumerationTraits<hakc::hakc_scope_t> {
@@ -62,7 +40,7 @@ template<>
 struct yaml::MappingTraits<hakc::HAKCYamlClique> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlClique &Clique) {
         io.mapRequired("access_token", Clique.AccessToken);
-        io.mapRequired("name", Clique.Color);
+        io.mapRequired("name", Clique.DivisionID);
     }
 };
 
@@ -95,6 +73,7 @@ template<>
 struct yaml::MappingTraits<hakc::HAKCYamlSymbol> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlSymbol &Symbol) {
         io.mapRequired("compartment_id", Symbol.CompartmentID);
+        io.mapRequired("division_id", Symbol.DivisionID);
         io.mapRequired("definition", Symbol.Definition);
         io.mapRequired("name", Symbol.Name);
         io.mapRequired("scope", Symbol.Scope);
@@ -103,12 +82,13 @@ struct yaml::MappingTraits<hakc::HAKCYamlSymbol> {
 };
 
 namespace hakc {
-    HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(HAKCTypeIdentifier &TypeIdentifier)
-            : YamlPolicy(), TypeIdentifier(TypeIdentifier) {
+    HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(class LLVMContext &LLVMContext)
+            : YamlPolicy(), LLVMContext(LLVMContext),
+            KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, LLVMContext) {
 
     }
 
-    void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(std::string YamlPath) {
+    void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(const std::string& YamlPath) {
         if (!sys::fs::exists(YamlPath)) {
             CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << YamlPath << "\n";
             throw std::exception();
@@ -127,7 +107,12 @@ namespace hakc {
         yin >> YamlPolicy;
     }
 
-    ConstantInt *HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
-        return nullptr;
+    HAKCCompartment &HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
+        return KernelCompartment;
     }
+
+    HAKC_Division_ID HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
+        return ConstantInt::get(IntegerType::get(LLVMContext, 64), KERNEL_COLOR);
+    }
+
 } // hakc

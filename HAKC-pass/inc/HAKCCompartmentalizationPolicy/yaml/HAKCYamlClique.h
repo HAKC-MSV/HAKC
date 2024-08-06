@@ -16,7 +16,7 @@ namespace hakc {
         HAKCYamlClique() = default;
 
         hakc_access_token_t AccessToken;
-        sym_color_t Color;
+        hakc_compartment_division_t DivisionID;
     };
 
 } // hakc

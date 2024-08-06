@@ -40,8 +40,6 @@ namespace hakc {
 
         Module &getModule();
 
-        virtual HAKCTransformer &getTransformer() = 0;
-
         virtual bool functionIsModParamGetCtx(Function *F);
 
         virtual bool IsNoTransferFunction(Function *F);
@@ -122,9 +120,9 @@ namespace hakc {
 
         static bool isRegisterRead(Value *v);
 
-        bool IsKernelSymbol(GlobalValue *GV);
+//        bool IsKernelSymbol(GlobalValue *GV);
 
-        bool IsKernelFunction(Function *F);
+//        bool IsKernelFunction(Function *F);
 
         bool isIgnoredType(Type *Ty);
 
@@ -155,6 +153,8 @@ namespace hakc {
         static bool IsConstantUsedInGlobal(Value *V);
 
         static void PrettyPrintValue(Value *V, raw_ostream &os);
+
+        static void SortGlobalList(std::vector<GlobalValue*> &GlobalList);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

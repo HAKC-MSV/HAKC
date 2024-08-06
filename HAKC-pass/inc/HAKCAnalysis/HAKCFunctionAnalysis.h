@@ -235,7 +235,7 @@ namespace hakc {
 
         bool modifiedFunction();
 
-        void InstrumentCompartmentalizedCode();
+        void InstrumentCode(HAKCCompartmentalizationPolicy &Policy);
 
         void InstrumentKernelCode();
 

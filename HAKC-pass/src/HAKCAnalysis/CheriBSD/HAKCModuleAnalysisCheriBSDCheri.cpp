@@ -60,7 +60,7 @@ namespace hakc {
         return;
     }
 
-    void HAKCModuleAnalysisCheriBSDCheri::transferModuleParams() {
+    void HAKCModuleAnalysisCheriBSDCheri::TransferModuleParams() {
         return;
     }
 
@@ -177,7 +177,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysisCheriBSDCheri::HybridModeEnabled() {
-        const auto *env_var = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
+        const auto *env_var = std::getenv(HAKC_MORELLO_HYBRID_ENV_VAR.str().c_str());
         if (env_var) {
             return std::strcmp(env_var, "1") == 0;
         }

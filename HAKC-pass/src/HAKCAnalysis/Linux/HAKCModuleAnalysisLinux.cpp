@@ -66,32 +66,41 @@ namespace hakc {
         HAKC_FUNCTION("hakc_init_globals");
     }
 
-    ConstantInt *HAKCModuleAnalysisLinux::getFunctionColor(Function *F) {
-        return getSymbolColor(F);
+    HAKC_Division_ID HAKCModuleAnalysisLinux::getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy) {
+        return getSymbolColor(F, Policy);
     }
 
-    ConstantInt *HAKCModuleAnalysisLinux::getGlobalColor(GlobalVariable *GV) {
-        return getSymbolColor(GV);
+    HAKC_Division_ID HAKCModuleAnalysisLinux::getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
+        return getSymbolColor(GV, Policy);
     }
 
-    ConstantInt *HAKCModuleAnalysisLinux::GetColorValue(sym_color_t Color) {
-        return getTransformer().getInt32(Color);
+    HAKC_Division_ID HAKCModuleAnalysisLinux::getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
+        return Policy.GetDivision(GV);
     }
 
-    ConstantInt *HAKCModuleAnalysisLinux::getSymbolColor(GlobalValue *GV) {
-        auto Symbol = getTransformer().getSystemInformation().findSymbol(GV);
-        if (!Symbol) {
-            CommonHAKCAnalysis::getWriter() << "Could not find color for " << GV->getName() << "\n";
-            return GetColorValue(KERNEL_COLOR);
-        }
-        return GetColorValue(Symbol->getCompartment()->getColor());
+    HAKC_Division_ID HAKCModuleAnalysisLinux::getColor(sym_color_t Color) {
+        return ConstantInt::get(IntegerType::get(getModule().getContext(), 64), Color);
     }
 
-    std::string HAKCModuleAnalysisLinux::getGlobalHAKCSectionName(GlobalVariable *GV) {
+    bool HAKCModuleAnalysisLinux::functionIsExported(Function *F) {
+        auto ksym_name = getKstrtab_entry_name(F);
+        /* Add colon so __kstrtab_foo_1 doesn't match __kstrtab_foo */
+        ksym_name += ":";
+        return M.getModuleInlineAsm().find(ksym_name) != M.getModuleInlineAsm().npos;
+    }
+
+    std::string HAKCModuleAnalysisLinux::getKstrtab_entry_name(Function *F) {
+        std::string ksymtab_symbol_name = "__kstrtab_";
+        ksymtab_symbol_name += F->getName();
+        return ksymtab_symbol_name;
+    }
+
+    std::string
+    HAKCModuleAnalysisLinux::getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
         std::string sectionName = HAKC_SECTION_PREFIX.str();
-        auto *symbolColor = getGlobalColor(GV);
+        auto *symbolColor = getGlobalColor(GV, Policy);
         if (!symbolColor) {
-            symbolColor = getTransformer().getInt32(KERNEL_COLOR);
+            symbolColor = getColor()
         }
         sectionName += HAKCModuleAnalysisLinux::getColorStringFromValue(symbolColor);
         sectionName += GV->getSection().str();
@@ -179,6 +188,10 @@ namespace hakc {
         return llvm::StructType::getTypeByName(M.getContext(), llvm::StringRef("struct.kernel_param"));
     }
 
+    void HAKCModuleAnalysisLinux::TransformModule(HAKCCompartmentalizationPolicy &Policy) {
+        HAKCModuleAnalysis::TransformModule(Policy);
+    }
+
     GlobalValue *HAKCModuleAnalysisLinux::ExtractGlobalFromKernelParam(GlobalVariable *GV) {
         // the result of walking through the kernel param struct
         // until we get to the actual global value backing the parameter
@@ -264,8 +277,7 @@ namespace hakc {
 
     // we generate these for all kernel params, some may go unused by the actual module loader
     // (non-pointer params are ignored by the loader when it comes to transferring)
-    void HAKCModuleAnalysisLinux::transferModuleParams() {
-
+    void HAKCModuleAnalysisLinux::TransferModuleParams() {
         if (!isModuleCompartmentalized()) {
             return;
         }
@@ -305,7 +317,7 @@ namespace hakc {
         }
     }
 
-    void HAKCModuleAnalysisLinux::emitModParamGetCtx(GlobalValue *kernparam) {
+    void HAKCModuleAnalysisLinux::emitModParamGetCtx(GlobalValue *kernparam, HAKCCompartmentalizationPolicy &Policy) {
         // type of void*
         PointerType *PointerTy = PointerType::get(IntegerType::get(M.getContext(), 8), 0);
 
@@ -345,31 +357,15 @@ namespace hakc {
         // constant zero for compare/select
         Value *czero = ConstantInt::get(IntegerType::get(M.getContext(), 64), 0);
 
-        // get HAKC symbol for the kernel parameter Value
-        auto Symbol = getTransformer().getSystemInformation().findSymbol(kernparam);
-
         // find the color of the HAKC symbol
-        ConstantInt *Color;
-        if (!Symbol) {
-            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: \n";
-            kernparam->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            Color = getTransformer().getInt64(KERNEL_COLOR);
-            throw std::exception();
-        } else {
-            Color = getTransformer().getInt64(Symbol->getCompartment()->getColor());
-        }
+        HAKCDivision Color = Policy.GetDivision(kernparam);
 
         // find the compartment ID of the HAKC symbol
-        ConstantInt *compartId = getTransformer().GetHAKCCompartmentValue(Symbol->getCompartmentID());
+        HAKCCompartment compartId = Policy.GetCompartment(kernparam);
 
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "color:\n";
-            CommonHAKCAnalysis::getWriter() << getColorStringFromValue(Color) << "\n";
-
-            CommonHAKCAnalysis::getWriter() << "compartment:\n";
-            compartId->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "color:\n" << getColorStringFromValue(Color) << "\n" << "compartment:\n"
+                                            << *compartId << "\n";
         }
 
         // get the access token for HAKC symbol as an int64_t
@@ -592,7 +588,7 @@ namespace hakc {
     }
 
 
-    std::string HAKCModuleAnalysisLinux::getColorStringFromValue(ConstantInt *color) {
+    std::string HAKCModuleAnalysisLinux::getColorStringFromValue(HAKCDivision color) {
         switch (color->getZExtValue()) {
             case SILVER_CLIQUE:
                 return "SILVER_CLIQUE";

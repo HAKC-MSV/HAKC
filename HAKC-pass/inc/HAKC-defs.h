@@ -28,10 +28,13 @@ using namespace llvm;
 
 namespace hakc {
 
-    typedef int64_t hakc_compartment_id_t;
-    typedef int64_t hakc_access_token_t;
+    typedef const int64_t hakc_compartment_id_t;
+    typedef const int64_t hakc_access_token_t;
+    typedef const int64_t hakc_compartment_division_t;
 
-    typedef ConstantInt* HAKCCompartment;
+    typedef ConstantInt* HAKC_Compartment_ID;
+    typedef ConstantInt* HAKC_Access_Token;
+    typedef ConstantInt* HAKC_Division_ID;
 
     const StringRef OUTSIDE_TRANSFER_PREFIX = "HAKC_XFER_";
     const StringRef ORIGINAL_FUNCTION_PREFIX = "HAKC_ORIG_";
@@ -83,8 +86,9 @@ namespace hakc {
         hakc_local_scope
     } hakc_scope_t;
 
-    const unsigned KERNEL_COMPARTMENT = 0;
-    const sym_color_t KERNEL_COLOR = NO_CLIQUE;
+    hakc_compartment_id_t KERNEL_COMPARTMENT = 0;
+    hakc_compartment_division_t KERNEL_COLOR = NO_CLIQUE;
+    hakc_access_token_t KERNEL_ACCESS_TOKEN = 0;
 
 }
 

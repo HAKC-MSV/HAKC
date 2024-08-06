@@ -26,7 +26,7 @@ namespace hakc {
 
         void generateModuleParamGetCtxFunction(GlobalVariable *GV) override;
 
-        void transferModuleParams() override;
+        void TransferModuleParams() override;
 
         void InitHAKCFunctions() override;
 

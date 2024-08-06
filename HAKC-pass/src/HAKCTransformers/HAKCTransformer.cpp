@@ -11,9 +11,9 @@
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 
-hakc::HAKCTransformer::HAKCTransformer(Module &Module, HAKCModuleAnalysis *HAKCAnalysis) :
-        HAKCIRBuilder(Module.getContext()),
-        CompartmentalizationPolicy()
+hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy) :
+        HAKCIRBuilder(HAKCAnalysis->getModule().getContext()),
+        CompartmentalizationPolicy(Policy),
         VariadicTransferFunctions() {
 
 }
@@ -1067,9 +1067,9 @@ void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Funct
 
 void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) {}
 
-bool hakc::HAKCTransformer::FunctionIsExported(Function *F) {
-    return false;
-}
+//bool hakc::HAKCTransformer::FunctionIsExported(Function *F) {
+//    return false;
+//}
 
 unsigned hakc::HAKCTransformer::GetPointerAddrSpace(Value *V) {
     unsigned AddrSpace = 0;
@@ -1079,7 +1079,7 @@ unsigned hakc::HAKCTransformer::GetPointerAddrSpace(Value *V) {
     return AddrSpace;
 }
 
-GlobalVariable *hakc::HAKCTransformer::AddCompartmentMetadataEntry(hakc::hakc_compartment_id_t CompartmentID) {
+GlobalVariable *hakc::HAKCTransformer::AddCompartmentMetadataEntry(HAKCCompartment &Compartment) {
     return nullptr;
 }
 

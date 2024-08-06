@@ -20,15 +20,15 @@ namespace hakc {
 
         std::set<StringRef> GetHAKCSourcePaths() override;
 
-        ConstantInt *getFunctionColor(Function *F);
+        HAKC_Division_ID getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
-        ConstantInt *getGlobalColor(GlobalVariable *GV);
+        HAKC_Division_ID getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
 
         StructType *GetKernelParamType() override;
 
         void generateModuleParamGetCtxFunction(GlobalVariable *GV) override;
 
-        void transferModuleParams() override;
+        virtual void TransferModuleParams();
 
         std::set<StringRef> GetIgnoredGlobals() override;
 
@@ -44,24 +44,30 @@ namespace hakc {
 
         virtual sym_color_t GetMajoritySymbolColor();
 
-        static std::string getColorStringFromValue(ConstantInt *color);
+        static std::string getColorStringFromValue(HAKC_Division_ID color);
 
-        static sym_color_t getColorFromValue(ConstantInt *Color);
+        static sym_color_t getColorFromValue(HAKC_Division_ID Color);
 
         std::vector<StringRef> GetSafeTransitionFunctions_Arch() override;
 
     protected:
-        std::string getGlobalHAKCSectionName(GlobalVariable *GV) override;
+        std::string getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) override;
 
-        ConstantInt *getSymbolColor(GlobalValue *GV);
+        void TransformModule(HAKCCompartmentalizationPolicy &Policy) override;
 
-        ConstantInt *GetColorValue(sym_color_t Color);
+        HAKC_Division_ID getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
+
+        HAKC_Division_ID getColor(sym_color_t Color);
 
         GlobalValue *ExtractGlobalFromKernelParam(GlobalVariable *GV);
 
-        void emitModParamGetCtx(GlobalValue *kernparam);
+        void emitModParamGetCtx(GlobalValue *kernparam, HAKCCompartmentalizationPolicy &Policy);
 
         bool FunctionNeedsAnalysis(Function *F) override;
+
+        bool functionIsExported(Function *F) override;
+
+        virtual std::string getKstrtab_entry_name(Function *F);
 
     protected:
         bool MajorityColorSet;

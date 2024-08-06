@@ -14,9 +14,11 @@ namespace hakc {
 
     class HAKCTransformerLinux : public HAKCTransformer {
     public:
-        bool FunctionIsExported(Function *F) override;
+//        bool FunctionIsExported(Function *F) override;
 
     protected:
+        StructType *EntryTokenType;
+
         HAKCTransformerLinux(Module &Module, HAKCModuleAnalysisLinux *ModuleAnalysis);
 
         Value *CreateSafePointer_Arch(Value *HAKCPointer, Instruction *I) override;
@@ -32,9 +34,6 @@ namespace hakc {
         void CreateTransferFunctionArg_PostCall(Function *Target, Function *TransferFunction, Value *Arg) override;
 
         FunctionType *GetHAKCDataAuthenticationFunctionType(unsigned AddrSpace) override;
-
-    protected:
-        StructType *EntryTokenType;
 
         virtual CallInst *SaveColor(Value *V);
 

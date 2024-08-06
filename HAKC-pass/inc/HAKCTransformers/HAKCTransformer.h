@@ -28,7 +28,7 @@ namespace hakc {
      */
     class HAKCTransformer {
     public:
-        HAKCTransformer(Module &Module, HAKCModuleAnalysis *HAKCAnalysis);
+        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy);
 
         virtual ~HAKCTransformer() = default;
 
@@ -151,7 +151,7 @@ namespace hakc {
          */
         virtual void CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg);
 
-        virtual bool FunctionIsExported(Function *F);
+//        virtual bool FunctionIsExported(Function *F);
 
         virtual Module &getModule();
 
@@ -186,13 +186,13 @@ namespace hakc {
          * @param CompartmentID
          * @return
          */
-        virtual GlobalVariable *AddCompartmentMetadataEntry(hakc_compartment_id_t CompartmentID);
+        virtual GlobalVariable *AddCompartmentMetadataEntry(HAKCCompartment &Compartment);
 
         virtual Function *PopulateGlobalTransfer(Function *GlobalTransfer, GlobalVariable *GlobalVar, bool Debug);
 
     protected:
         IRBuilder<> HAKCIRBuilder;
-        HAKCCompartmentalizationPolicy CompartmentalizationPolicy;
+        HAKCCompartmentalizationPolicy &CompartmentalizationPolicy;
         HAKCModuleAnalysis &ModuleAnalysis;
 
         std::map<Function *, Function *> VariadicTransferFunctions;

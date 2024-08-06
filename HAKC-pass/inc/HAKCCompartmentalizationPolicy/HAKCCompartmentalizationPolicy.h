@@ -6,20 +6,23 @@
 #define HAKC_HAKCCOMPARTMENTALIZATIONPOLICY_H
 
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h"
-#include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
+#include "HAKCCompartment.h"
+
 
 namespace hakc {
 
     class HAKCCompartmentalizationPolicy {
     public:
-        explicit HAKCCompartmentalizationPolicy(HAKCTypeIdentifier &TypeIdentifier);
+        explicit HAKCCompartmentalizationPolicy(class LLVMContext &LLVMContext);
 
-        void ReadCompartmentalizationPolicy(std::string YamlPath);
-        ConstantInt* GetCompartment(GlobalValue *GV);
+        void ReadCompartmentalizationPolicy(const std::string& YamlPath);
+        HAKCCompartment& GetCompartment(GlobalValue *GV);
+        HAKC_Division_ID GetDivision(GlobalValue *GV);
 
     protected:
         HAKCYamlCompartmentalizationPolicy YamlPolicy;
-        HAKCTypeIdentifier &TypeIdentifier;
+        LLVMContext &LLVMContext;
+        HAKCCompartment KernelCompartment;
     };
 
 } // hakc

@@ -198,12 +198,12 @@ void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *O
     }
 }
 
-bool hakc::HAKCTransformerLinux::FunctionIsExported(Function *F) {
-    auto ksym_name = getKstrtab_entry_name(F);
-    /* Add colon so __kstrtab_foo_1 doesn't match __kstrtab_foo */
-    ksym_name += ":";
-    return getModule().getModuleInlineAsm().find(ksym_name) != getModule().getModuleInlineAsm().npos;
-}
+//bool hakc::HAKCTransformerLinux::FunctionIsExported(Function *F) {
+//    auto ksym_name = getKstrtab_entry_name(F);
+//    /* Add colon so __kstrtab_foo_1 doesn't match __kstrtab_foo */
+//    ksym_name += ":";
+//    return getModule().getModuleInlineAsm().find(ksym_name) != getModule().getModuleInlineAsm().npos;
+//}
 
 std::string hakc::HAKCTransformerLinux::getUniqueAddressable_Name(Function *F) {
     std::string unique_addressable_name = "__UNIQUE_ID___addressable_";

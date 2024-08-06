@@ -19,6 +19,7 @@ namespace hakc {
         std::string Name;
         std::string Definition;
         hakc_compartment_id_t CompartmentID;
+        hakc_compartment_division_t DivisionID;
     };
 
 } // hakc

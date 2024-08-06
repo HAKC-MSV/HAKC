@@ -616,26 +616,30 @@ namespace hakc {
         return ID == KERNEL_COMPARTMENT;
     }
 
-    bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
-        return IsKernelSymbol(F);
+//    bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
+//        return IsKernelSymbol(F);
+//    }
+
+    void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalValue *> &GlobalList) {
+        llvm::sort(GlobalList.begin(), GlobalList.end(), [](GlobalValue *LHS, GlobalValue *RHS) { return LHS->getName().str() < RHS->getName().str(); });
     }
 
-    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV) {
-        if(!GV) {
-            return false;
-        }
-
-        hakc_compartment_id_t CompartmentID;
-        if(auto *F = dyn_cast<Function>(GV)) {
-            CompartmentID = getTransformer().getFunctionCompartmentID(F);
-        } else if(auto *GlobVar = dyn_cast<GlobalVariable>(GV)) {
-            CompartmentID = getTransformer().getGlobalCompartmentID(GlobVar);
-        } else {
-            return false;
-        }
-
-        return CommonHAKCAnalysis::IsKernelCompartment(CompartmentID);
-    }
+//    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV) {
+//        if(!GV) {
+//            return false;
+//        }
+//
+//        hakc_compartment_id_t CompartmentID;
+//        if(auto *F = dyn_cast<Function>(GV)) {
+//            CompartmentID = getTransformer().getFunctionCompartmentID(F);
+//        } else if(auto *GlobVar = dyn_cast<GlobalVariable>(GV)) {
+//            CompartmentID = getTransformer().getGlobalCompartmentID(GlobVar);
+//        } else {
+//            return false;
+//        }
+//
+//        return CommonHAKCAnalysis::IsKernelCompartment(CompartmentID);
+//    }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
         const char *name = std::getenv(HAKC_DEBUG_ENV_VAR.str().c_str());
