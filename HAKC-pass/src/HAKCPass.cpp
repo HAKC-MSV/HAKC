@@ -4,16 +4,13 @@
  */
 
 #include "HAKCPass.h"
-#include "HAKCSymbolGenerator.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 
 #if defined(HAKC_CHERIBSD_MORELLO)
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
 #elif defined(HAKC_LINUX_X86)
-
 #include "HAKCAnalysis/Linux/X86/HAKCModuleAnalysisLinuxX86.h"
-
 #elif defined(HAKC_LINUX_ARMV8)
 #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV8.h"
 #elif defined(HAKC_LINUX_ARMV9)
@@ -126,10 +123,8 @@ namespace hakc {
             }*/
         }
 
-        bool moduleTransformed = Transformation->isModuleTransformed();
-
         delete Transformation;
-        return moduleTransformed;
+        return true;
     }
 
     struct HAKCPass : public PassInfoMixin<HAKCPass> {
