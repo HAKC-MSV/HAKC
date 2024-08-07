@@ -14,7 +14,7 @@ hakc::HAKCTransformerLinux::HAKCTransformerLinux(HAKCCompartmentalizationPolicy 
                                                  hakc::HAKCModuleAnalysisLinux &ModuleAnalysis) :
         HAKCTransformer(Policy, ModuleAnalysis),
         EntryTokenType(nullptr) {
-    auto &Module = ModuleAnalysis.getModule();
+    auto &Module = ModuleAnalysis.GetModule();
     Type *intTy64 = Type::getInt64Ty(Module.getContext());
 
     EntryTokenType = StructType::getTypeByName(Module.getContext(), ModuleAnalysis.HAKCEntryTokenName());
@@ -105,15 +105,15 @@ hakc::HAKCTransformerLinux::CreateTransferFunctionArg_PostCall(Function *Target,
     CreateCall(HAKCColorAddressName(), HAKCIRBuilder.getVoidTy(), Args);
 }
 
-const StringRef hakc::HAKCTransformerLinux::HAKCGetColorName() {
+StringRef hakc::HAKCTransformerLinux::HAKCGetColorName() {
     return "get_hakc_address_color";
 }
 
-const StringRef hakc::HAKCTransformerLinux::HAKCGetPerCPUColorName() {
+StringRef hakc::HAKCTransformerLinux::HAKCGetPerCPUColorName() {
     return "get_hakc_percpu_color";
 }
 
-const StringRef hakc::HAKCTransformerLinux::HAKCColorAddressName() {
+StringRef hakc::HAKCTransformerLinux::HAKCColorAddressName() {
     return "hakc_color_address";
 }
 
@@ -121,8 +121,9 @@ Type *hakc::HAKCTransformerLinux::GetEntryTokenType(unsigned AddrSpace) {
     return EntryTokenType;
 }
 
-Constant *hakc::HAKCTransformerLinux::GetEntryToken(hakc_compartment_id_t CompartmentID) {
-    auto EntryTokenValue = SystemInformation.getEntryToken(CompartmentID);
+Constant *hakc::HAKCTransformerLinux::GetEntryToken(HAKCCompartment &Compartment) {
+    auto CompartmentID = Compartment.GetCompartmentIDValue();
+    auto EntryTokenValue = Compartment.GetAccessToken()->getSExtValue();
     if (CompartmentID < 0) {
         CommonHAKCAnalysis::getWriter() << "Tried to create an Entry Token for an invalid CompartmentID: "
                                         << std::to_string(CompartmentID) <<
@@ -136,14 +137,14 @@ Constant *hakc::HAKCTransformerLinux::GetEntryToken(hakc_compartment_id_t Compar
         throw std::exception();
     }
     return ConstantStruct::get(EntryTokenType, {
-            HAKCIRBuilder.getInt64(CompartmentID), HAKCIRBuilder.getInt64(EntryTokenValue)
+            Compartment.GetCompartmentID(), Compartment.GetAccessToken()
     });
 }
 
 void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) {
     TransferArgumentsToRestore.clear();
 
-    if (ModuleAnalysis.functionIs(Original)) {
+    if (ModuleAnalysis.FunctionIsExported(Original)) {
         /* Exported functions are often used elsewhere. Make sure that
          * the transfer function is also exported, so it can be used in the same places.
          * According to the comment for ___EXPORT_SYMBOL in include/linux/export.h,
@@ -193,13 +194,6 @@ void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *O
     }
 }
 
-//bool hakc::HAKCTransformerLinux::FunctionIsExported(Function *F) {
-//    auto ksym_name = getKstrtab_entry_name(F);
-//    /* Add colon so __kstrtab_foo_1 doesn't match __kstrtab_foo */
-//    ksym_name += ":";
-//    return getModule().getModuleInlineAsm().find(ksym_name) != getModule().getModuleInlineAsm().npos;
-//}
-
 std::string hakc::HAKCTransformerLinux::getUniqueAddressable_Name(Function *F) {
     std::string unique_addressable_name = "__UNIQUE_ID___addressable_";
     unique_addressable_name += F->getName();
@@ -210,18 +204,6 @@ std::string hakc::HAKCTransformerLinux::getUniqueAddressable_Name(Function *F) {
     }
     return unique_addressable_name;
 }
-
-//std::string hakc::HAKCTransformerLinux::getKstrtab_entry_name(Function *F) {
-//    std::string ksymtab_symbol_name = "__kstrtab_";
-//    ksymtab_symbol_name += F->getName();
-//    return ksymtab_symbol_name;
-//}
-
-//std::string hakc::HAKCTransformerLinux::getKstrtabns_entry_name(Function *F) {
-//    std::string ksymtabns_symbol_name = "__kstrtabns_";
-//    ksymtabns_symbol_name += F->getName();
-//    return ksymtabns_symbol_name;
-//}
 
 FunctionType *hakc::HAKCTransformerLinux::GetHAKCDataAuthenticationFunctionType(unsigned AddrSpace) {
     Type *RetTy = HAKCIRBuilder.getInt8PtrTy(AddrSpace);

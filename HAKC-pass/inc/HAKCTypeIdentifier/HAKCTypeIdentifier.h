@@ -14,11 +14,11 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Transforms/Utils/Local.h"
 
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
-
 #include "HAKCDebugInfoProcessor.h"
 #include "HAKCFunctionInfo.h"
 #include "HAKCGlobalInfo.h"
+
+#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 #include <map>
 #include <set>
@@ -73,7 +73,7 @@ namespace hakc {
 
         bool LLVMTypeMappingSanityCheck(const DIType *type, Type *Ty);
 
-        std::string ConstructStructName(StructType *StructTy);
+        static std::string ConstructStructName(StructType *StructTy);
 
         HAKCSymbolP AddUnmappedGlobal(GlobalObject *GlobalObj);
 
@@ -82,7 +82,7 @@ namespace hakc {
         void AddUsedGlobals(std::set<GlobalObject *> &GlobalObjects,
                             const HAKCSymbolP &UserSymbol);
 
-        FunctionType *GetIndirectCallFunctionType(CallInst *CallI);
+        static FunctionType *GetIndirectCallFunctionType(CallInst *CallI);
 
         HAKCSymbolP FindSymbol(Value *V, bool SearchUnmapped = false);
 
@@ -104,11 +104,11 @@ namespace hakc {
         CommonHAKCAnalysis *AnalysisHelper;
         std::map<const DIType *, HAKCTypeP> types;
         std::map<const DIGlobalVariable *, HAKCGlobalP> globals;
-        std::map<const DISubprogram *, HAKCSymbolP> functions;
+        std::map<const DISubprogram *, HAKCFunctionP> functions;
         std::map<HAKCTypeP, std::vector<Type *>> LLVMTypeMapping;
         std::map<const DIType *, unsigned> AnonymousNumberMapping;
         std::set<HAKCGlobalP> UnmappedGlobals;
-        std::set<HAKCSymbolP> UnmappedFunctions;
+        std::set<HAKCFunctionP> UnmappedFunctions;
         unsigned CurrentAnonID;
     };
 

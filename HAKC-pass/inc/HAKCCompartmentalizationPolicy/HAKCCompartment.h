@@ -14,9 +14,13 @@ namespace hakc {
         HAKCCompartment(hakc_compartment_id_t Compartment, hakc_access_token_t AccessToken, class LLVMContext &Context);
 
         HAKC_Compartment_ID GetCompartmentID();
+
         HAKC_Access_Token GetAccessToken();
+
         std::set<HAKC_Compartment_ID> GetValidTargets();
+
         void AddTarget(HAKC_Compartment_ID CompartmentID);
+
         hakc_compartment_id_t GetCompartmentIDValue();
 
         bool IsKernelCompartment();
@@ -28,6 +32,7 @@ namespace hakc {
         friend bool operator!=(const HAKCCompartment &lhs, const HAKCCompartment &rhs) {
             return !(lhs == rhs);
         }
+
     protected:
         HAKC_Compartment_ID Compartment;
         HAKC_Access_Token AccessToken;

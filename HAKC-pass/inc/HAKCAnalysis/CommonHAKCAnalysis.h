@@ -8,11 +8,11 @@
 #include "HAKCPass.h"
 #include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
-#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 namespace hakc {
 
     class HAKCTransformer;
+    class HAKCCompartmentalizationPolicy;
 
     typedef std::function<llvm::Value *(llvm::Value *)> hakc_allocation_size_map_t;
 
@@ -119,21 +119,17 @@ namespace hakc {
 
         static bool isRegisterRead(Value *v);
 
-//        bool IsKernelSymbol(GlobalValue *GV);
-
-//        bool IsKernelFunction(Function *F);
-
         bool isIgnoredType(Type *Ty);
 
         bool IsIgnoredGlobal(Value *V);
 
-        bool FunctionsAreInSameCompartment(Function *F, Function *G);
+        static bool FunctionsAreInSameCompartment(Function *F, Function *G, HAKCCompartmentalizationPolicy &Policy);
 
         bool callIsSafeTransition(CallBase *call);
 
         bool IsKernelAllocation(Value *V);
 
-        bool IsCompartmentalizedFunction(Function *F);
+        static bool IsCompartmentalizedFunction(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
         static bool IsStringType(Type *Ty);
 
@@ -153,13 +149,13 @@ namespace hakc {
 
         static void PrettyPrintValue(Value *V, raw_ostream &os);
 
-        static void SortGlobalList(std::vector<GlobalVariable*> &GlobalList);
+        static void SortGlobalList(std::vector<GlobalVariable *> &GlobalList);
 
-        static void SortFunctionList(std::vector<Function*> &FuncList);
+        static void SortFunctionList(std::vector<Function *> &FuncList);
 
         static bool IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
 
-        Module &getModule();
+        static void VerifyFunction(Function *F);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

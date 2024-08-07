@@ -12,7 +12,8 @@ namespace hakc {
 
     class HAKCFunctionAnalysisLinuxX86 : public HAKCFunctionAnalysisLinux {
     public:
-        HAKCFunctionAnalysisLinuxX86(Function *F, HAKCModuleAnalysisLinuxX86 *ModAnalysis);
+        HAKCFunctionAnalysisLinuxX86(Function *F, HAKCCompartmentalizationPolicy &Policy,
+                                     HAKCModuleAnalysisLinuxX86 *ModAnalysis);
 
     protected:
         HAKCModuleAnalysisLinuxX86 *ModAnalysis;

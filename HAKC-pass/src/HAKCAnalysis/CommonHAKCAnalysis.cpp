@@ -2,8 +2,10 @@
 // Created by derrick on 8/20/21.
 //
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
-#include "HAKCTransformers/HAKCTransformer.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 #include "llvm/Support/FileSystem.h"
+
+#include "llvm/IR/Verifier.h"
 
 namespace hakc {
 
@@ -187,14 +189,14 @@ namespace hakc {
                         working_list.insert(call->getArgOperand(0));
                     }
                 }
-            } else if (auto *gep = dyn_cast<GEPOperator>(curr)) {
-                working_list.insert(gep->getPointerOperand());
-            } else if (auto *bitcast = dyn_cast<BitCastOperator>(curr)) {
-                working_list.insert(bitcast->getOperand(0));
-            } else if (auto *cast = dyn_cast<PtrToIntInst>(curr)) {
-                working_list.insert(cast->getPointerOperand());
-            } else if (auto *cast = dyn_cast<PtrToIntOperator>(curr)) {
-                working_list.insert(cast->getPointerOperand());
+            } else if (auto *GEPOp = dyn_cast<GEPOperator>(curr)) {
+                working_list.insert(GEPOp->getPointerOperand());
+            } else if (auto *BitcastOp = dyn_cast<BitCastOperator>(curr)) {
+                working_list.insert(BitcastOp->getOperand(0));
+            } else if (auto *PtrToIntI = dyn_cast<PtrToIntInst>(curr)) {
+                working_list.insert(PtrToIntI->getPointerOperand());
+            } else if (auto *PtrToIntOp = dyn_cast<PtrToIntOperator>(curr)) {
+                working_list.insert(PtrToIntOp->getPointerOperand());
             } else if (followLoad && isa<LoadInst>(curr)) {
                 auto *load = dyn_cast<LoadInst>(curr);
                 working_list.insert(load->getPointerOperand());
@@ -497,8 +499,15 @@ namespace hakc {
         return F->getName().startswith(CAPABILITY_REASSIGNMENT_PREFIX);
     }
 
-    bool CommonHAKCAnalysis::IsCompartmentalizedFunction(Function *F) {
-        return !IsKernelFunction(F) && !isOutsideTransferFunc(F);
+    void CommonHAKCAnalysis::VerifyFunction(Function *F) {
+        if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter())) {
+            CommonHAKCAnalysis::getWriter() << "Verification failed for function\n" << *F << "\n";
+            throw std::exception();
+        }
+    }
+
+    bool CommonHAKCAnalysis::IsCompartmentalizedFunction(Function *F, HAKCCompartmentalizationPolicy &Policy) {
+        return !IsKernelSymbol(F, Policy) && !isOutsideTransferFunc(F);
     }
 
     std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
@@ -552,10 +561,6 @@ namespace hakc {
                                            Intrinsic::IndependentIntrinsics::read_register);
         }
         return false;
-    }
-
-    Module &CommonHAKCAnalysis::getModule() {
-        return getTransformer().getModule();
     }
 
     std::set<StringRef> CommonHAKCAnalysis::GetIgnoredGlobals() {
@@ -616,13 +621,12 @@ namespace hakc {
         return ID == KERNEL_COMPARTMENT;
     }
 
-//    bool CommonHAKCAnalysis::IsKernelFunction(Function *F) {
-//        return IsKernelSymbol(F);
-//    }
 
     void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
         llvm::sort(GlobalList.begin(), GlobalList.end(),
-                   [](GlobalVariable *LHS, GlobalVariable *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+                   [](GlobalVariable *LHS, GlobalVariable *RHS) {
+                       return LHS->getName().str() < RHS->getName().str();
+                   });
     }
 
     void CommonHAKCAnalysis::SortFunctionList(std::vector<Function *> &FuncList) {
@@ -634,23 +638,6 @@ namespace hakc {
         auto &Compartment = Policy.GetCompartment(GV);
         return Compartment.IsKernelCompartment();
     }
-
-//    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV) {
-//        if(!GV) {
-//            return false;
-//        }
-//
-//        hakc_compartment_id_t CompartmentID;
-//        if(auto *F = dyn_cast<Function>(GV)) {
-//            CompartmentID = getTransformer().getFunctionCompartmentID(F);
-//        } else if(auto *GlobVar = dyn_cast<GlobalVariable>(GV)) {
-//            CompartmentID = getTransformer().getGlobalCompartmentID(GlobVar);
-//        } else {
-//            return false;
-//        }
-//
-//        return CommonHAKCAnalysis::IsKernelCompartment(CompartmentID);
-//    }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
         const char *name = std::getenv(HAKC_DEBUG_ENV_VAR.str().c_str());
@@ -674,8 +661,11 @@ namespace hakc {
         return Existing;
     }
 
-    bool CommonHAKCAnalysis::FunctionsAreInSameCompartment(Function *F, Function *G) {
-        return getTransformer().getFunctionCompartmentID(F) == getTransformer().getFunctionCompartmentID(G);
+    bool CommonHAKCAnalysis::FunctionsAreInSameCompartment(Function *F, Function *G,
+                                                           HAKCCompartmentalizationPolicy &Policy) {
+        auto FCompartment = Policy.GetCompartment(F);
+        auto GCompartment = Policy.GetCompartment(G);
+        return FCompartment == GCompartment;
     }
 
     bool CommonHAKCAnalysis::IsKernelAllocation(Value *V) {

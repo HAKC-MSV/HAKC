@@ -5,14 +5,14 @@
 #include "HAKCAnalysis/Linux/HAKCFunctionAnalysisLinux.h"
 
 namespace hakc {
-    HAKCFunctionAnalysisLinux::HAKCFunctionAnalysisLinux(Function *F) :
-            HAKCFunctionAnalysis(F, CommonHAKCAnalysis::getHAKCDebugName() == F->getName()) {
+    HAKCFunctionAnalysisLinux::HAKCFunctionAnalysisLinux(Function *F, HAKCCompartmentalizationPolicy &Policy) :
+            HAKCFunctionAnalysis(F, Policy, CommonHAKCAnalysis::getHAKCDebugName() == F->getName()) {
 
     }
 
-    std::string HAKCFunctionAnalysisLinux::getHAKCFunctionSectionName() {
+    std::string HAKCFunctionAnalysisLinux::getHAKCFunctionSectionName(HAKCCompartmentalizationPolicy &Policy) {
         std::string sectionName = HAKC_SECTION_PREFIX.str();
-        auto *Color = getColor();
+        auto *Color = getDivision(Policy);
 
         sectionName += HAKCModuleAnalysisLinux::getColorStringFromValue(Color);
         if (getFunction().getSection().empty()) {
@@ -23,12 +23,8 @@ namespace hakc {
         return sectionName;
     }
 
-    ConstantInt *HAKCFunctionAnalysisLinux::getColor() {
-        auto Symbol = getTransformer().getSystemInformation().findSymbol(CurrentFunction);
-        if (Symbol) {
-            return getTransformer().getInt64(Symbol->getCompartment()->getColor());
-        }
-        return getTransformer().getInt64(getLinuxModuleAnalysis().GetMajoritySymbolColor());
+    HAKC_Division_ID HAKCFunctionAnalysisLinux::getDivision(HAKCCompartmentalizationPolicy &Policy) {
+        return Policy.GetDivision(CurrentFunction);
     }
 
     std::set<StringRef> HAKCFunctionAnalysisLinux::GetSafePointerFunctionNames() {
@@ -55,41 +51,33 @@ namespace hakc {
         return isSafe;
     }
 
-    void HAKCFunctionAnalysisLinux::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID,
-                                                                      hakc_transfer_def_t &HAKCTransferFunction) {
-        auto *CompartmentIDValue = getTransformer().GetHAKCCompartmentValue(TargetID);
+    void
+    HAKCFunctionAnalysisLinux::UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
+                                                                 hakc_transfer_def_t &HAKCTransferFunction,
+                                                                 HAKCCompartmentalizationPolicy &Policy) {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Setting ";
-            CallI->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " to be ";
-            CompartmentIDValue->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Setting "
+                                            << *CallI->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())
+                                            << " to be " << *TargetCompartment.GetCompartmentID() << "\n";
         }
-        CallI->setOperand(HAKCTransferFunction->GetCompartmentIdIdx(), CompartmentIDValue);
+        CallI->setOperand(HAKCTransferFunction->GetCompartmentIdIdx(), TargetCompartment.GetCompartmentID());
 
         if (HAKCTransferFunction->HasDivisionIdx()) {
             auto *F = CallI->getFunction();
-            ConstantInt *color;
+            HAKC_Division_ID Division;
             if (isOutsideTransferFunc(F)) {
                 auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
-                auto *TransferTarget = getModule().getFunction(transferTargetName);
-                color = getLinuxModuleAnalysis().getFunctionColor(TransferTarget);
+                auto *TransferTarget = F->getParent()->getFunction(transferTargetName);
+                Division = Policy.GetDivision(TransferTarget);
             } else {
-                color = getLinuxModuleAnalysis().getFunctionColor(F);
+                Division = Policy.GetDivision(F);
             }
 
-            if (!color) {
-                CommonHAKCAnalysis::getWriter() << "Could not find DivisionID for function " << F->getName()
-                                                << "\n";
-                throw std::exception();
-            }
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Setting argument " << HAKCTransferFunction->GetDivisionIdx()
-                                                << " to be ";
-                color->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+                                                << " to be " << *Division << "\n";
             }
-            CallI->setOperand(HAKCTransferFunction->GetDivisionIdx(), color);
+            CallI->setOperand(HAKCTransferFunction->GetDivisionIdx(), Division);
         }
     }
 

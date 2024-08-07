@@ -4,6 +4,7 @@
 #include "llvm/IR/Verifier.h"
 
 #include "HAKCAnalysis/Linux/HAKCModuleAnalysisLinux.h"
+#include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_sk_buff.h"
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_file.h"
@@ -50,7 +51,7 @@ namespace hakc {
 
         HAKC_TRANSFER(HAKCCompartmentTransferName(), 2, 3);
         HAKC_TRANSFER(HAKCPerCPUCompartmentTransferName(), 2, 3);
-        HAKC_TRANSFER(HAKCSignWithColorName(), 1, -1);
+        HAKC_TRANSFER(HAKCSignWithDivisionName(), 1, -1);
         HAKC_TRANSFER("hakc_sign_pointer", 1, 2);
 
         /* TODO: Make these custom transfer functions */
@@ -66,21 +67,9 @@ namespace hakc {
         HAKC_FUNCTION("hakc_init_globals");
     }
 
-    HAKC_Division_ID HAKCModuleAnalysisLinux::getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy) {
-        return getSymbolColor(F, Policy);
-    }
-
     HAKC_Division_ID
-    HAKCModuleAnalysisLinux::getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
-        return getSymbolColor(GV, Policy);
-    }
-
-    HAKC_Division_ID HAKCModuleAnalysisLinux::getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
+    HAKCModuleAnalysisLinux::getSymbolDivision(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
         return Policy.GetDivision(GV);
-    }
-
-    HAKC_Division_ID HAKCModuleAnalysisLinux::getColor(sym_color_t Color) {
-        return ConstantInt::get(IntegerType::get(getModule().getContext(), 64), Color);
     }
 
     bool HAKCModuleAnalysisLinux::FunctionIsExported(Function *F) {
@@ -105,8 +94,8 @@ namespace hakc {
     std::string
     HAKCModuleAnalysisLinux::getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
         std::string sectionName = HAKC_SECTION_PREFIX.str();
-        auto *symbolColor = getGlobalColor(GV, Policy);
-        sectionName += HAKCModuleAnalysisLinux::getColorStringFromValue(symbolColor);
+        auto *symbolDivision = getSymbolDivision(GV, Policy);
+        sectionName += HAKCModuleAnalysisLinux::getColorStringFromValue(symbolDivision);
         sectionName += GV->getSection().str();
         if (GV->getSection().empty()) {
             if (GV->isConstant()) {
@@ -355,7 +344,7 @@ namespace hakc {
         Value *czero = ConstantInt::get(IntegerType::get(M.getContext(), 64), 0);
 
         // find the color of the HAKC symbol
-        auto Color = getSymbolColor(kernparam, Policy);
+        auto Color = getSymbolDivision(kernparam, Policy);
 
         // find the compartment ID of the HAKC symbol
         auto &Compartment = Policy.GetCompartment(kernparam);
@@ -406,7 +395,8 @@ namespace hakc {
     // takes a KernelParam and generate a function to get the HAKC signing context
     // for the actual backing global variable
     // used to correctly transfer charp parameters
-    void HAKCModuleAnalysisLinux::GenerateModuleParamGetCtxFunction(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
+    void HAKCModuleAnalysisLinux::GenerateModuleParamGetCtxFunction(GlobalVariable *GV,
+                                                                    HAKCCompartmentalizationPolicy &Policy) {
         GlobalValue *kernparam = ExtractGlobalFromKernelParam(GV);
 
         if (!kernparam) {
@@ -556,7 +546,7 @@ namespace hakc {
 //            }
 //
 //            for (auto *GV: symbols) {
-//                auto color = getSymbolColor(GV);
+//                auto color = getSymbolDivision(GV);
 //                if (!color->equalsInt(hakc::KERNEL_COLOR)) {
 //                    if (ColorCounts.find(color) == ColorCounts.end()) {
 //                        ColorCounts[color] = 0;
@@ -617,48 +607,6 @@ namespace hakc {
             default:
                 CommonHAKCAnalysis::getWriter() << "number " << color->getZExtValue() << "isn't a valid color\n";
                 return "INVALID_CLIQUE";
-        }
-    }
-
-    sym_color_t HAKCModuleAnalysisLinux::getColorFromValue(ConstantInt *Color) {
-        switch (Color->getZExtValue()) {
-            case SILVER_CLIQUE:
-                return SILVER_CLIQUE;
-            case GREEN_CLIQUE:
-                return GREEN_CLIQUE;
-            case RED_CLIQUE:
-                return RED_CLIQUE;
-            case ORANGE_CLIQUE:
-                return ORANGE_CLIQUE;
-            case YELLOW_CLIQUE:
-                return YELLOW_CLIQUE;
-            case PURPLE_CLIQUE:
-                return PURPLE_CLIQUE;
-            case BLUE_CLIQUE:
-                return BLUE_CLIQUE;
-            case GREY_CLIQUE:
-                return GREY_CLIQUE;
-            case PINK_CLIQUE:
-                return PINK_CLIQUE;
-            case BROWN_CLIQUE:
-                return BROWN_CLIQUE;
-            case WHITE_CLIQUE:
-                return WHITE_CLIQUE;
-            case BLACK_CLIQUE:
-                return BLACK_CLIQUE;
-            case TEAL_CLIQUE:
-                return TEAL_CLIQUE;
-            case VIOLET_CLIQUE:
-                return VIOLET_CLIQUE;
-            case CRIMSON_CLIQUE:
-                return CRIMSON_CLIQUE;
-            case GOLD_CLIQUE:
-                return GOLD_CLIQUE;
-            case NO_CLIQUE:
-                return NO_CLIQUE;
-            default:
-                CommonHAKCAnalysis::getWriter() << "number " << Color->getZExtValue() << "isn't a valid color\n";
-                return NO_CLIQUE;
         }
     }
 

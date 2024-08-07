@@ -10,11 +10,13 @@ namespace hakc {
     HAKCModuleAnalysisLinuxX86::HAKCModuleAnalysisLinuxX86(Module &M) :
             HAKCModuleAnalysisLinux(M) {}
 
-    HAKCFunctionAnalysis *HAKCModuleAnalysisLinuxX86::GetFunctionTransformation(Function *F) {
-        return new HAKCFunctionAnalysisLinuxX86(F, this);
+    HAKCFunctionAnalysis *
+    HAKCModuleAnalysisLinuxX86::GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) {
+        return new HAKCFunctionAnalysisLinuxX86(F, Policy, this);
     }
 
-    std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisLinuxX86::CreateTransformer(HAKCCompartmentalizationPolicy &Policy) {
+    std::shared_ptr<HAKCTransformer>
+    HAKCModuleAnalysisLinuxX86::CreateTransformer(HAKCCompartmentalizationPolicy &Policy) {
         return std::make_shared<HAKCTransformerLinuxX86>(Policy, *this);
     }
 
@@ -68,7 +70,8 @@ namespace hakc {
         return HAKCModuleAnalysisLinux::functionIsTransferCandidate(F);
     }
 
-    bool HAKCModuleAnalysisLinuxX86::TransferFunctionShouldBeCreated(Function *F) {
+    bool
+    HAKCModuleAnalysisLinuxX86::TransferFunctionShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         /* There are functions which are declared and then defined by assembly in a macro
         * (see PV_CALLEE_SAVE_REGS_THUNK in arch/x86/include/asm/paravirt.h). So if
         * that is the case, do not create a transfer function */
@@ -78,7 +81,7 @@ namespace hakc {
             }
             return true;
         }
-        return HAKCModuleAnalysisLinux::TransferFunctionShouldBeCreated(F);
+        return HAKCModuleAnalysisLinux::TransferFunctionShouldBeCreated(F, Policy);
     }
 
     bool HAKCModuleAnalysisLinuxX86::AliasShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) {
@@ -86,6 +89,6 @@ namespace hakc {
         if (F->isDeclaration() && FunctionDefinedInAssembly(F)) {
             return false;
         }
-        return HAKCModuleAnalysisLinux::AliasShouldBeCreated(F);
+        return HAKCModuleAnalysisLinux::AliasShouldBeCreated(F, Policy);
     }
 } // hakc

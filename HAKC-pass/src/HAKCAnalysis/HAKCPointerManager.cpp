@@ -7,12 +7,14 @@
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
 
 namespace hakc {
-    HAKCPointerManager::HAKCPointerManager(HAKCFunctionAnalysis *Analysis, bool DebugActive) :
+    HAKCPointerManager::HAKCPointerManager(HAKCFunctionAnalysis *Analysis, HAKCCompartmentalizationPolicy &Policy,
+                                           bool DebugActive) :
             ManagedPointers(),
             AuthenticatedValues(),
             ProtectedValues(),
             Clones(),
             HAKCAnalysis(Analysis),
+            Policy(Policy),
             DataAuthenticationsAdded(0),
             CodeAuthenticationsAdded(0),
             SafePointersAdded(0),
@@ -92,10 +94,10 @@ namespace hakc {
         bool Result = false;
         auto *FuncAnalysis = GetFunctionAnalysis();
         if (auto *ConstExpr = dyn_cast<ConstantExpr>(U)) {
-            auto Search = [FuncAnalysis](User *ConstUser) {
+            auto Search = [FuncAnalysis, this](User *ConstUser) {
                 if (auto *Call = dyn_cast<CallBase>(ConstUser)) {
                     return Call->getFunction() == &FuncAnalysis->getFunction() &&
-                           FuncAnalysis->IsKernelFunction(Call->getCalledFunction());
+                           CommonHAKCAnalysis::IsKernelSymbol(Call->getCalledFunction(), Policy);
                 }
                 return false;
             };
@@ -228,7 +230,7 @@ namespace hakc {
         } else if (auto *Call = dyn_cast<CallInst>(UserP)) {
             if (!GetFunctionAnalysis()->callIsSafeTransition(Call) || Call->getCalledFunction() != nullptr ||
                 GetFunctionAnalysis()->IsHAKCTransferFunction(Call->getCalledFunction()) ||
-                GetFunctionAnalysis()->IsKernelFunction(Call->getCalledFunction())) {
+                CommonHAKCAnalysis::IsKernelSymbol(Call->getCalledFunction(), Policy)) {
                 UseSignedPointer = true;
             } else if (Call->isInlineAsm()) {
                 UseSignedPointer = false;
@@ -510,7 +512,7 @@ namespace hakc {
 
             for (auto &ManagedPtr: SortedPointers) {
                 auto OrigBaseIsAuthenticated = ManagedPtr->BaseIsAuthenticatedPointer();
-                auto BaseAuthenticatedResult = ManagedPtr->DetermineIfBasePointerIsAuthenticated();
+                auto BaseAuthenticatedResult = ManagedPtr->DetermineIfBasePointerIsAuthenticated(Policy);
                 if (OrigBaseIsAuthenticated != BaseAuthenticatedResult) {
                     if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << *ManagedPtr << " changed base authentication flag from "
@@ -526,7 +528,7 @@ namespace hakc {
          * pointers need to be created */
 
         for (auto &HAKCPointer: SortedPointers) {
-            HAKCPointer->MaybeCreateProtectedPointer();
+            HAKCPointer->MaybeCreateProtectedPointer(Policy);
         }
     }
 
@@ -540,7 +542,7 @@ namespace hakc {
         }
 
         for (auto &ManagedPtr: SortedPointers) {
-            ManagedPtr->CreateBaseAuthenticatedPointer();
+            ManagedPtr->CreateBaseAuthenticatedPointer(Policy);
             if (DebugActive && ManagedPtr->GetAuthenticatedPointer()) {
                 CommonHAKCAnalysis::getWriter() << "Authenticated Pointer for " << *ManagedPtr << ": ";
                 CommonHAKCAnalysis::PrettyPrintValue(ManagedPtr->GetAuthenticatedPointer(),
@@ -826,7 +828,7 @@ namespace hakc {
         }
 
         SafePointersAdded++;
-        return GetFunctionAnalysis()->AddSafePointerCreationAtLocation(Pointer, InsertLocation);
+        return GetFunctionAnalysis()->AddSafePointerCreationAtLocation(Pointer, InsertLocation, Policy);
     }
 
     Value *HAKCPointerManager::CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation) {
@@ -837,10 +839,10 @@ namespace hakc {
 
         if (HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
-            return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
+            return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation, Policy);
         } else {
             DataAuthenticationsAdded++;
-            return GetFunctionAnalysis()->AddDataAuthCheckAtLocation(Pointer, InsertLocation);
+            return GetFunctionAnalysis()->AddDataAuthCheckAtLocation(Pointer, InsertLocation, Policy);
         }
     }
 

@@ -57,11 +57,12 @@ namespace hakc {
     class HAKCIndirectCallSource : public HAKCInfo {
     public:
         HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
-                               const std::shared_ptr<HAKCTypeInfo>& HAKCType, bool debug);
+                               const std::shared_ptr<HAKCTypeInfo> &HAKCType, bool debug);
 
         virtual ~HAKCIndirectCallSource() = default;
 
         std::string GetYaml(unsigned Indents) override;
+
         StringRef GetYamlIdentifier() const override;
 
 

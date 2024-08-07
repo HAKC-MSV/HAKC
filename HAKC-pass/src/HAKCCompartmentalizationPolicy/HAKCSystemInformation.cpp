@@ -232,7 +232,7 @@ namespace hakc {
 
     bool HAKCSystemInformation::SymbolIsInScope(const std::shared_ptr<HAKCSymbol> &Symbol, const DIScope *Scope) {
         std::string ScopeFile;
-        if(DebugActive) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Checking if " << Symbol << " is in Scope with " << *Scope << "\n";
         }
 
@@ -263,17 +263,17 @@ namespace hakc {
         if (auto *Func = dyn_cast<Function>(GV)) {
             Name = CommonHAKCAnalysis::GetFunctionName(Func);
         }
-        if(DebugActive) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Getting Symbol named " << Name << "\n";
         }
         auto Symbols = getSymbols(Name);
         if (Symbols.empty()) {
-            if(DebugActive) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "No symbols found\n";
             }
             return nullptr;
         } else if (Symbols.size() == 1) {
-            if(DebugActive) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Found one symbol " << *Symbols.begin() << "\n";
             }
             return *Symbols.begin();

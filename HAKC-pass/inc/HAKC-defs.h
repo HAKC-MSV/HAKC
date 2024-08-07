@@ -32,9 +32,9 @@ namespace hakc {
     typedef int64_t hakc_access_token_t;
     typedef int64_t hakc_compartment_division_t;
 
-    typedef ConstantInt* HAKC_Compartment_ID;
-    typedef ConstantInt* HAKC_Access_Token;
-    typedef ConstantInt* HAKC_Division_ID;
+    typedef ConstantInt *HAKC_Compartment_ID;
+    typedef ConstantInt *HAKC_Access_Token;
+    typedef ConstantInt *HAKC_Division_ID;
 
     const StringRef OUTSIDE_TRANSFER_PREFIX = "HAKC_XFER_";
     const StringRef ORIGINAL_FUNCTION_PREFIX = "HAKC_ORIG_";

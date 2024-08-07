@@ -12,14 +12,14 @@ namespace hakc {
 
     class HAKCFunctionAnalysisLinux : public HAKCFunctionAnalysis {
     public:
-        HAKCFunctionAnalysisLinux(Function *F);
+        explicit HAKCFunctionAnalysisLinux(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
         static StringRef SafePointerName;
 
     protected:
-        std::string getHAKCFunctionSectionName() override;
+        std::string getHAKCFunctionSectionName(HAKCCompartmentalizationPolicy &Policy) override;
 
-        ConstantInt *getColor();
+        HAKC_Division_ID getDivision(HAKCCompartmentalizationPolicy &Policy);
 
         virtual HAKCModuleAnalysisLinux &getLinuxModuleAnalysis() = 0;
 
@@ -27,8 +27,9 @@ namespace hakc {
 
         std::set<StringRef> GetSafePointerFunctionNames() override;
 
-        void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, hakc_compartment_id_t TargetID, hakc_transfer_def_t
-        &HAKCTransferFunction) override;
+        void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
+                                               hakc_transfer_def_t &HAKCTransferFunction,
+                                               HAKCCompartmentalizationPolicy &Policy) override;
     };
 
 } // hakc

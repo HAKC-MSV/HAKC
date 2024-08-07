@@ -11,7 +11,7 @@ namespace hakc {
 
     class HAKCModuleAnalysisLinuxX86 : public HAKCModuleAnalysisLinux {
     public:
-        HAKCModuleAnalysisLinuxX86(Module &M);
+        explicit HAKCModuleAnalysisLinuxX86(Module &M);
 
         std::set<StringRef> GetSeparateNamespacePaths() override;
 
@@ -21,12 +21,12 @@ namespace hakc {
 
         bool functionIsTransferCandidate(Function *F) override;
 
-        bool TransferFunctionShouldBeCreated(Function *F) override;
+        bool TransferFunctionShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
         bool AliasShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
     protected:
-        HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) override;
+        HAKCFunctionAnalysis *GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
         std::shared_ptr<HAKCTransformer> CreateTransformer(HAKCCompartmentalizationPolicy &Policy) override;
     };

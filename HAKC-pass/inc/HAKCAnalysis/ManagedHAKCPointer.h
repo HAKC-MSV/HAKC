@@ -143,7 +143,7 @@ namespace hakc {
 
         void CreatePointerReplacements();
 
-        bool ComputeBasePointerAuthenticated();
+        bool ComputeBasePointerAuthenticated(HAKCCompartmentalizationPolicy &Policy);
 
         std::set<ManagedHAKCPointerUseP> GetAllUses();
 
@@ -177,15 +177,15 @@ namespace hakc {
 
         Value *GetProtectedPointer();
 
-        void CreateBaseAuthenticatedPointer();
+        void CreateBaseAuthenticatedPointer(HAKCCompartmentalizationPolicy &Policy);
 
         void CreatePointerUseClones();
 
-        bool BaseDefinitionShouldBeTransferred();
+        bool BaseDefinitionShouldBeTransferred(HAKCCompartmentalizationPolicy &Policy);
 
         void TransformUses();
 
-        void MaybeCreateProtectedPointer();
+        void MaybeCreateProtectedPointer(HAKCCompartmentalizationPolicy &Policy);
 
         void MaybeCreateBaseCopyPointer();
 
@@ -199,7 +199,7 @@ namespace hakc {
 
         bool IsAuthenticatedIsCopyOfBase() const;
 
-        bool DetermineIfBasePointerIsAuthenticated();
+        bool DetermineIfBasePointerIsAuthenticated(HAKCCompartmentalizationPolicy &Policy);
 
         unsigned GetID() const;
 

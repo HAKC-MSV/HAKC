@@ -12,7 +12,7 @@
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 
 hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis) :
-        HAKCIRBuilder(HAKCAnalysis.getModule().getContext()),
+        HAKCIRBuilder(HAKCAnalysis.GetModule().getContext()),
         CompartmentalizationPolicy(Policy),
         ModuleAnalysis(HAKCAnalysis),
         VariadicTransferFunctions() {
@@ -20,7 +20,7 @@ hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, H
 }
 
 Module &hakc::HAKCTransformer::getModule() {
-    return ModuleAnalysis.getModule();
+    return ModuleAnalysis.GetModule();
 }
 
 
@@ -167,7 +167,8 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
                [](hakc_compartment_id_t LHS, hakc_compartment_id_t RHS) { return LHS < RHS; });
 
     for (auto ID: IDs) {
-        Constant *EntryToken = GetEntryToken(ID);
+        auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(ID);
+        Constant *EntryToken = GetEntryToken(TargetCompartment);
         EntryTokenValues.push_back(EntryToken);
     }
 
@@ -257,9 +258,7 @@ hakc::HAKCTransformer::CreateSizedCompartmentTransfer(Value *HAKCPointer, Instru
         auto *V = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
         auto *SafePtr = dyn_cast<Instruction>(V);
         if (!SafePtr) {
-            CommonHAKCAnalysis::getWriter() << "Unexpected Safe Pointer Type: ";
-            V->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Unexpected Safe Pointer Type: " << *V << "\n";
             throw std::exception();
         }
         return SafePtr;
@@ -279,15 +278,14 @@ hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, GlobalValue *Tar
                                             ConstantInt *Size) {
     auto CustomTransfer = GetCustomTransferFunction(HAKCPointer);
     if (!CustomTransfer) {
-        CommonHAKCAnalysis::getWriter() << "Could not find Transfer Function for ";
-        HAKCPointer->getType()->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << "Could not find Transfer Function for " << *HAKCPointer->getType() << "\n";
         throw std::exception();
     }
 
     auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(Target);
+    auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
 
-    return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetCompartment, HAKCPointer, Size, IsData);
+    return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetCompartment, TargetDivision, HAKCPointer, Size, IsData);
 }
 
 Instruction *
@@ -309,7 +307,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, G
             OperandCast, CompartmentIDValue, IsCodeValue
     };
 
-    return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithColorName(), HAKCAuthenticationRetType(AddrSpace),
+    return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithDivisionName(), HAKCAuthenticationRetType(AddrSpace),
                                     Args, HAKCPointer);
 }
 
@@ -444,19 +442,13 @@ Type *hakc::HAKCTransformer::FindEntryBitcast(Value *V, Instruction *I, Function
     }
 
     if (DebugIsActive()) {
-        CommonHAKCAnalysis::getWriter() << "Value ";
-        V->print(CommonHAKCAnalysis::getWriter());
+        CommonHAKCAnalysis::getWriter() << "Value " << *V;
         if (BitcastType) {
-            CommonHAKCAnalysis::getWriter() << " is cast to ";
-            BitcastType->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " by Instruction ";
-            BitcastUser->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << " is cast to " << *BitcastType << " by Instruction " << *BitcastUser;
         } else {
             CommonHAKCAnalysis::getWriter() << " is not bitcast";
         }
-        CommonHAKCAnalysis::getWriter() << " in function ";
-        Target->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << " in function " << *Target << "\n";
     }
     return BitcastType;
 }
@@ -508,9 +500,9 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
 
     /* the type has to be a struct */
     if (auto *StructTy = dyn_cast<StructType>(TypeToUse->getPointerElementType())) {
-        auto *StructDITy = DebugInfoProcessor.findDiType(StructTy);
+        auto *StructDITy = CompartmentalizationPolicy.GetTypeIdentifier().findDiType(StructTy);
         if (StructDITy) {
-            size = DebugInfoProcessor.getDITypeSizeInBits(StructDITy);
+            size = CompartmentalizationPolicy.GetTypeIdentifier().getDITypeSizeInBits(StructDITy);
         } else {
             size = StructTy->getScalarSizeInBits();
         }
@@ -522,6 +514,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
     }
 
     auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(Target);
+    auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
 
     /*
      * at this point, we know the dest type is a struct* and we know the actual size
@@ -537,8 +530,8 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
 
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
-        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, HAKCPointer,
-                                                           HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
+        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, TargetDivision,
+                                                           HAKCPointer, HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
                                                            HAKCPointer->getType(), TypeToUse);
 
         if (DebugIsActive()) {

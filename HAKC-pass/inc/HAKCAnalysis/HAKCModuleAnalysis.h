@@ -6,7 +6,6 @@
 #define HAKC_HAKCMODULEANALYSIS_H
 
 #include "CommonHAKCAnalysis.h"
-#include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 
 namespace hakc {
@@ -25,7 +24,6 @@ namespace hakc {
 
     class HAKCModuleAnalysis : public CommonHAKCAnalysis {
     protected:
-        bool ModuleModified;
         bool IsCompartmentalizedAndContainsDebugName;
         std::vector<HAKCCompartment> UsedCompartments;
         Module &M;
@@ -39,9 +37,8 @@ namespace hakc {
 
         virtual std::string getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
 
-//        virtual void CompartmentalizeFunction(Function *F);
-
-        virtual HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) = 0;
+        virtual HAKCFunctionAnalysis *
+        GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) = 0;
 
         virtual void GetAnalysisFunctions();
 
@@ -50,10 +47,6 @@ namespace hakc {
         virtual void TransformModule(HAKCCompartmentalizationPolicy &Policy);
 
         virtual void TransformFunctions(HAKCCompartmentalizationPolicy &Policy);
-
-//        virtual void compartmentalizeModule();
-//
-//        virtual void removeSignatures();
 
         virtual void AddTransferFunctions(HAKCCompartmentalizationPolicy &Policy);
 
@@ -65,7 +58,7 @@ namespace hakc {
 
         virtual bool FunctionNeedsAnalysis(Function *F);
 
-        virtual Function* CreateInitTransfer(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
+        virtual Function *CreateInitTransfer(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
 
         virtual StringRef GlobalInitTransferPrefix() const;
 
@@ -73,20 +66,16 @@ namespace hakc {
 
         virtual StringRef GlobalInitTransferPointerSectionName() const;
 
-        virtual std::string GlobalVariableROSectionName(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
+        virtual std::string
+        GlobalVariableROSectionName(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
 
-        virtual void PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
+        virtual void PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar,
+                                                    HAKCCompartmentalizationPolicy &Policy);
 
         virtual bool TransferIsNeeded(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
 
-        virtual bool ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct, HAKCCompartmentalizationPolicy &Policy);
-
-        /**
-        * @brief Determines if a symbol is used in EXPORT_SYMBOL macro
-        * @param F
-        * @return
-        */
-        virtual bool FunctionIsExported(Function *F);
+        virtual bool
+        ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct, HAKCCompartmentalizationPolicy &Policy);
 
     private:
         std::shared_ptr<HAKCTransformer> transformer;
@@ -98,11 +87,7 @@ namespace hakc {
         void MoveGlobalsToHAKCSection(HAKCCompartmentalizationPolicy &Policy);
 
     public:
-        unsigned totalDataChecks, totalCodeChecks, totalTransfers;
-
         virtual ~HAKCModuleAnalysis() = default;
-
-//        virtual bool isModuleTransformed();
 
         virtual void performTransformations();
 
@@ -144,7 +129,7 @@ namespace hakc {
 
         virtual StringRef HAKCPerCPUCompartmentTransferName();
 
-        virtual StringRef HAKCSignWithColorName();
+        virtual StringRef HAKCSignWithDivisionName();
 
         virtual StringRef HAKCEntryTokenName();
 
@@ -152,13 +137,16 @@ namespace hakc {
 
         virtual FunctionCallee GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy);
 
-//        virtual StructType *GetKernelParamType() = 0;
-//
-//        virtual void GenerateModuleParamGetCtxFunction(GlobalVariable *GV) = 0;
-
-//        virtual void TransferModuleParams() = 0;
-
         virtual void CreateInitGlobalMemberTransfers(HAKCCompartmentalizationPolicy &Policy);
+
+        Module &GetModule();
+
+        /**
+            * @brief Determines if a symbol is used in EXPORT_SYMBOL macro
+            * @param F
+            * @return
+            */
+        virtual bool FunctionIsExported(Function *F);
     };
 
 } // hakc

@@ -5,8 +5,9 @@
 #include "HAKCTransformers/Linux/Arm/HAKCTransformerLinuxArmV9.h"
 
 namespace hakc {
-    HAKCTransformerLinuxArmV9::HAKCTransformerLinuxArmV9(Module &Module, HAKCModuleAnalysisLinuxArmV9 *ModAnalysis) :
-            HAKCTransformerLinux(Module, ModAnalysis) {
+    HAKCTransformerLinuxArmV9::HAKCTransformerLinuxArmV9(HAKCCompartmentalizationPolicy &Policy,
+                                                         HAKCModuleAnalysisLinuxArmV9 &ModAnalysis)
+            : HAKCTransformerLinux(Policy, ModAnalysis) {
 
     }
 } // hakc

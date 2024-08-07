@@ -124,7 +124,7 @@ namespace hakc {
 
     std::map<StringRef, hakc_allocation_size_map_t> HAKCModuleAnalysisCheriBSDCheri::GetKernelAllocationSizeMap() {
         return {
-                {"malloc", simpleArgumentSize<0>},
+                {"malloc", simpleArgumentSize < 0 > },
         };
     }
 

@@ -13,14 +13,11 @@
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
+#include "HAKCAnalysis/HAKCModuleAnalysis.h"
 
 using namespace llvm;
 
 namespace hakc {
-
-    class HAKCModuleAnalysis;
-
-    class HAKCTypeIdentifier;
 
     /**
      * A virtual class that defines the API for creating HAKC transformations.
@@ -151,8 +148,6 @@ namespace hakc {
          */
         virtual void CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg);
 
-//        virtual bool FunctionIsExported(Function *F);
-
         virtual Module &getModule();
 
         virtual Type *HAKCAuthenticationRetType(unsigned AddrSpace);
@@ -241,7 +236,7 @@ namespace hakc {
          * Returns the Entry Token for the given CompartmentID and Value
          * @return
          */
-        virtual Constant *GetEntryToken(hakc_compartment_id_t CompartmentID) = 0;
+        virtual Constant *GetEntryToken(HAKCCompartment &Compartment) = 0;
 
         virtual ConstantInt *GetObjectSizeInBytes(Value *V);
 
@@ -328,7 +323,9 @@ namespace hakc {
 
         virtual bool TargetIsKernel(GlobalValue *Target);
 
-        virtual void TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer, GlobalValue *GlobalVar, bool Debug);
+        virtual void
+        TransferStructMembers(ConstantStruct *ConstStruct, Function *GlobalTransfer, GlobalValue *GlobalVar,
+                              bool Debug);
 
         virtual bool TransferShouldBeCreated(Value *V, GlobalValue *Target);
 

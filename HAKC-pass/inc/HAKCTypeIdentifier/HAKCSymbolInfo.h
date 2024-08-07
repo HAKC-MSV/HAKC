@@ -27,9 +27,9 @@ namespace hakc {
 
         GlobalObject *GetGlobalObj();
 
-        void SetDefiningLocation(const DIFile* File, unsigned Line);
+        void SetDefiningLocation(const DIFile *File, unsigned Line);
 
-        void SetLocalScope(const DIScope* Scope);
+        void SetLocalScope(const DIScope *Scope);
 
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
@@ -41,6 +41,7 @@ namespace hakc {
         const DIScope *LocalScope;
 
         void SetGlobalObj(GlobalObject *GlobalObj);
+
         std::string GetTransformedPathName(const DIFile *File) const;
     };
 }

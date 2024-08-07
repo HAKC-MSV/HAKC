@@ -4,7 +4,6 @@
 
 #include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
 #include "llvm/Support/raw_ostream.h"
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
 #include "llvm/Support/FileSystem.h"
@@ -80,11 +79,11 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned int Indents) const {
         sstream << "\"local\"\n";
         sstream.indent(Indents + EntrySpaces() + HAKCInfo::IndentSpaces()) << "LocalScopeName: ";
         const DIFile *ScopeFile;
-        if(auto *SubProg = dyn_cast<DISubprogram>(LocalScope)) {
+        if (auto *SubProg = dyn_cast<DISubprogram>(LocalScope)) {
             ScopeFile = SubProg->getFile();
-        } else if(auto *File = dyn_cast<DIFile>(LocalScope)) {
+        } else if (auto *File = dyn_cast<DIFile>(LocalScope)) {
             ScopeFile = File;
-        } else if(auto *CompileUnit = dyn_cast<DICompileUnit>(LocalScope)) {
+        } else if (auto *CompileUnit = dyn_cast<DICompileUnit>(LocalScope)) {
             ScopeFile = CompileUnit->getFile();
         } else {
             CommonHAKCAnalysis::getWriter() << "Unexpected LocalScope: " << *LocalScope << "\n";

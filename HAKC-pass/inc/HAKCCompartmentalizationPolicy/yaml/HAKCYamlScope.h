@@ -13,6 +13,7 @@ namespace hakc {
     class HAKCYamlScope {
     public:
         HAKCYamlScope(hakc_scope_t Scope, std::string LocalScope);
+
         HAKCYamlScope() = default;
 
         std::string LocalScope;

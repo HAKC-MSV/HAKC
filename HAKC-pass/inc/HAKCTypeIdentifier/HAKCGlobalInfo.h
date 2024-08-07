@@ -5,7 +5,7 @@
 #ifndef HAKC_HAKCGLOBALINFO_H
 #define HAKC_HAKCGLOBALINFO_H
 
-#include "llvm/IR/GlobalObject.h"
+#include "llvm/IR/GlobalVariable.h"
 #include "HAKCSymbolInfo.h"
 
 namespace hakc {

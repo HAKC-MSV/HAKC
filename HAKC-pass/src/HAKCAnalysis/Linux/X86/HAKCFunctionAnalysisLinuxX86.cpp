@@ -5,8 +5,9 @@
 #include "HAKCAnalysis/Linux/X86/HAKCFunctionAnalysisLinuxX86.h"
 
 namespace hakc {
-    HAKCFunctionAnalysisLinuxX86::HAKCFunctionAnalysisLinuxX86(Function *F, HAKCModuleAnalysisLinuxX86 *ModAnalysis)
-            : HAKCFunctionAnalysisLinux(F),
+    HAKCFunctionAnalysisLinuxX86::HAKCFunctionAnalysisLinuxX86(Function *F, HAKCCompartmentalizationPolicy &Policy,
+                                                               HAKCModuleAnalysisLinuxX86 *ModAnalysis)
+            : HAKCFunctionAnalysisLinux(F, Policy),
               ModAnalysis(ModAnalysis) {
 
     }

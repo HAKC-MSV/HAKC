@@ -6,8 +6,9 @@
 #include "HAKCTransformers/Linux/X86/HAKCTransformerLinuxX86.h"
 
 namespace hakc {
-    HAKCTransformerLinuxX86::HAKCTransformerLinuxX86(Module &Module, HAKCModuleAnalysisLinuxX86 *ModAnalysis) :
-            HAKCTransformerLinux(Module, ModAnalysis) {
+    HAKCTransformerLinuxX86::HAKCTransformerLinuxX86(HAKCCompartmentalizationPolicy &Policy,
+                                                     HAKCModuleAnalysisLinuxX86 &ModAnalysis) : HAKCTransformerLinux(
+            Policy, ModAnalysis) {
 
     }
 

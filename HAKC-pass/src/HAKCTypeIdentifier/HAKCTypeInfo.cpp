@@ -48,16 +48,16 @@ namespace hakc {
             throw std::exception();
         }
         if (LLVMType && Ty != LLVMType) {
-            if(auto *NewStructTy = dyn_cast<StructType>(Ty)) {
-                if(auto *OrigStructTy = dyn_cast<StructType>(LLVMType)) {
+            if (auto *NewStructTy = dyn_cast<StructType>(Ty)) {
+                if (auto *OrigStructTy = dyn_cast<StructType>(LLVMType)) {
                     StructType *NamedStructType = nullptr;
-                    if(OrigStructTy->hasName()) {
+                    if (OrigStructTy->hasName()) {
                         NamedStructType = OrigStructTy;
-                    } else if(NewStructTy->hasName()) {
+                    } else if (NewStructTy->hasName()) {
                         NamedStructType = NewStructTy;
                     }
 
-                    if(NamedStructType) {
+                    if (NamedStructType) {
                         LLVMType = NamedStructType;
                         return;
                     }
@@ -91,8 +91,8 @@ namespace hakc {
         sstream << "\"\n";
         sstream.indent(Indents + EntrySpaces()) << "LLVMType: \"";
         if (LLVMType) {
-            if(auto *StructTy = dyn_cast<StructType>(LLVMType)) {
-                if(StructTy->hasName()) {
+            if (auto *StructTy = dyn_cast<StructType>(LLVMType)) {
+                if (StructTy->hasName()) {
                     sstream << StructTy->getName();
                 } else {
                     sstream << *LLVMType;

@@ -20,10 +20,6 @@ namespace hakc {
 
         std::set<StringRef> GetHAKCSourcePaths() override;
 
-        static HAKC_Division_ID getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy);
-
-        static HAKC_Division_ID getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
-
         virtual StructType *GetKernelParamType();
 
         std::set<StringRef> GetIgnoredGlobals() override;
@@ -38,11 +34,7 @@ namespace hakc {
 
         std::set<StringRef> GetNoTransferFunctions() override;
 
-//        virtual sym_color_t GetMajoritySymbolColor();
-
         static std::string getColorStringFromValue(HAKC_Division_ID color);
-
-        static sym_color_t getColorFromValue(HAKC_Division_ID Color);
 
         std::vector<StringRef> GetSafeTransitionFunctions_Arch() override;
 
@@ -55,9 +47,7 @@ namespace hakc {
 
         void TransformModule(HAKCCompartmentalizationPolicy &Policy) override;
 
-        static HAKC_Division_ID getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
-
-        HAKC_Division_ID getColor(sym_color_t Color);
+        static HAKC_Division_ID getSymbolDivision(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
 
         virtual GlobalValue *ExtractGlobalFromKernelParam(GlobalVariable *GV);
 

@@ -3,7 +3,6 @@
 //
 
 #include "HAKCTypeIdentifier/HAKCIndirectCallSource.h"
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
     HAKCIndirectCallSource::HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
@@ -166,7 +165,7 @@ namespace hakc {
 
         unsigned Count = 0;
         for (const auto &YamlLine: LinkYamlTokens) {
-            if(Count == 0) {
+            if (Count == 0) {
                 sstream << YamlLine;
             } else {
                 sstream.indent(Indents + HAKCInfo::EntrySpaces()) << YamlLine;

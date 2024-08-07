@@ -26,7 +26,8 @@ namespace hakc {
         friend class ManagedHAKCPointer;
 
     public:
-        explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis, bool DebugActive);
+        explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis, HAKCCompartmentalizationPolicy &Policy,
+                                    bool DebugActive);
 
         bool ManagePointer(Value *V);
 
@@ -115,6 +116,7 @@ namespace hakc {
         std::set<ManagedHAKCPointerUseP> AnalyzedUses;
 
         HAKCFunctionAnalysis *HAKCAnalysis;
+        HAKCCompartmentalizationPolicy &Policy;
 
         unsigned DataAuthenticationsAdded;
         unsigned CodeAuthenticationsAdded;

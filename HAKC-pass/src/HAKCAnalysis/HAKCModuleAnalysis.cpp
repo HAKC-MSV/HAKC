@@ -17,14 +17,11 @@ namespace hakc {
 
     HAKCModuleAnalysis::HAKCModuleAnalysis(Module &M)
             : CommonHAKCAnalysis(false),
-              ModuleModified(false),
               IsCompartmentalizedAndContainsDebugName(false),
               M(M),
               AnalysisFunctions(),
               transformer(nullptr),
-              Transfers(), NonTransferHAKCFunctions(),
-              totalDataChecks(0),
-              totalCodeChecks(0), totalTransfers(0) {
+              Transfers(), NonTransferHAKCFunctions() {
     }
 
     void HAKCModuleAnalysis::InitAnalysis() {
@@ -33,6 +30,10 @@ namespace hakc {
 
         InitHAKCFunctions();
         GetAnalysisFunctions();
+    }
+
+    Module &HAKCModuleAnalysis::GetModule() {
+        return M;
     }
 
     std::string
@@ -74,7 +75,6 @@ namespace hakc {
             RegisterUsedCompartment(compartment);
 
             if (finalName != pGlobal->getSection()) {
-                ModuleModified = true;
                 if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Changing section of global " << *pGlobal << " to section "
                                                     << finalName << " from " << pGlobal->getSection() << "\n";
@@ -137,7 +137,7 @@ namespace hakc {
     }
 
     FunctionCallee HAKCModuleAnalysis::GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy) {
-        auto Callee = getModule().getOrInsertFunction(Name, FuncTy);
+        auto Callee = GetModule().getOrInsertFunction(Name, FuncTy);
         return Callee;
     }
 
@@ -146,7 +146,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysis::FunctionDefinedInAssembly(Function *F) {
-        StringRef ModuleAsm = getModule().getModuleInlineAsm();
+        StringRef ModuleAsm = GetModule().getModuleInlineAsm();
         std::string SearchTerm = "[[:space:];]+";
         SearchTerm += F->getName().str();
         SearchTerm += ":";
@@ -244,14 +244,14 @@ namespace hakc {
                    [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
 
         for (auto *F: SortedFunctions) {
-            auto *FunctionTransformation = GetFunctionTransformation(F);
+            auto *FunctionTransformation = GetFunctionTransformation(F, Policy);
             FunctionTransformation->InstrumentCode(Policy);
             delete FunctionTransformation;
         }
     }
 
     void HAKCModuleAnalysis::performTransformations() {
-        HAKCCompartmentalizationPolicy Policy(M.getContext());
+        HAKCCompartmentalizationPolicy Policy(M, this);
         const auto *YamlPath = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
         Policy.ReadCompartmentalizationPolicy(YamlPath);
 
@@ -262,25 +262,6 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "\n";
         }
     }
-
-//    void HAKCModuleAnalysis::removeSignatures() {
-//        for (auto *F: AnalysisFunctions) {
-//            debug_output = F->getName() == getHAKCDebugName();
-//            if (debug_output) {
-//                CommonHAKCAnalysis::getWriter() << "Removing signatures in " << F->getName() << "\n";
-//                F->print(CommonHAKCAnalysis::getWriter());
-//                CommonHAKCAnalysis::getWriter() << "\n";
-//            }
-//            HAKCFunctionAnalysis *functionAnalysis = GetFunctionTransformation(F);
-//            functionAnalysis->InstrumentKernelCode();
-//            ModuleModified |= functionAnalysis->modifiedFunction();
-//            if (debug_output) {
-//                CommonHAKCAnalysis::getWriter() << "Completed signature removal in " << F->getName() << "\n";
-//                CommonHAKCAnalysis::getWriter() << "\n";
-//            }
-//            delete functionAnalysis;
-//        }
-//    }
 
     bool HAKCModuleAnalysis::functionEscapes(Function *F) {
         if (F->isIntrinsic()) {
@@ -296,7 +277,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << " does not escape\n";
             }
         }
-        Function *transfer = getModule().getFunction(getOutsideTransferName(F));
+        Function *transfer = GetModule().getFunction(getOutsideTransferName(F));
         if (transfer) {
             /* A transfer function reference has been made, so it escapes */
             return true;
@@ -375,7 +356,7 @@ namespace hakc {
 
     void HAKCModuleAnalysis::AddTransferFunctions(HAKCCompartmentalizationPolicy &Policy) {
         std::vector<Function *> FuncsNeedingTransfers;
-        for (auto &F: getModule().getFunctionList()) {
+        for (auto &F: GetModule().getFunctionList()) {
             if (functionIsTransferCandidate(&F)) {
                 FuncsNeedingTransfers.push_back(&F);
             }
@@ -451,7 +432,7 @@ namespace hakc {
                         F.replaceUsesWithIf(transferFunc, useEscapes);
                         if (debug_output) {
                             CommonHAKCAnalysis::getWriter() << "Done\n";
-                            getModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
+                            GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
                             CommonHAKCAnalysis::getWriter() << "\n";
                         }
                     }
@@ -665,7 +646,7 @@ namespace hakc {
         if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter())) {
             CommonHAKCAnalysis::getWriter() << "\nFaulty Global Transfer function "
                                             << GlobTransfer->getName() << "\n";
-            getModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
+            GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
             throw std::exception();
         }
 
@@ -749,7 +730,7 @@ namespace hakc {
         return "hakc_transfer_to_clique";
     }
 
-    StringRef HAKCModuleAnalysis::HAKCSignWithColorName() {
+    StringRef HAKCModuleAnalysis::HAKCSignWithDivisionName() {
         return "hakc_sign_pointer_with_color";
     }
 

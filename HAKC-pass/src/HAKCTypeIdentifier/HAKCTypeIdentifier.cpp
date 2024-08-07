@@ -169,7 +169,7 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
             throw std::exception();
         }
     } else if (auto *BaseTy = dyn_cast<DIBasicType>(type)) {
-        if(BaseTy->getEncoding() == dwarf::DW_ATE_boolean) {
+        if (BaseTy->getEncoding() == dwarf::DW_ATE_boolean) {
             out << "bool";
         } else {
             out << BaseTy->getName();
@@ -279,7 +279,7 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
     GVP->SetType(DIGVTy);
     GVP->SetGlobalVariable(GV);
     GVP->SetDefiningLocation(DIGV->getFile(), DIGV->getLine());
-    if(DIGV->isLocalToUnit()) {
+    if (DIGV->isLocalToUnit()) {
         GVP->SetLocalScope(DIGV->getScope());
     }
     AddGlobalMapping(DIGV, GVP);
@@ -302,9 +302,9 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     }
 
     auto *F = M.getFunction(SubProg->getName());
-    if(!F) {
-        for(auto &FM : M.functions()) {
-            if(FM.getSubprogram() == SubProg) {
+    if (!F) {
+        for (auto &FM: M.functions()) {
+            if (FM.getSubprogram() == SubProg) {
                 F = &FM;
                 break;
             }
@@ -338,7 +338,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     FP->SetType(DIGVTy);
     FP->SetFunction(F);
     FP->SetDefiningLocation(SubProg->getFile(), SubProg->getLine());
-    if(SubProg->isLocalToUnit()) {
+    if (SubProg->isLocalToUnit()) {
         FP->SetLocalScope(SubProg->getScope());
     }
     AddFunctionMapping(SubProg, FP);
@@ -387,7 +387,7 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
 }
 
 std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFunction(Function *F) {
-    for (auto UnmappedFunc: UnmappedFunctions) {
+    for (const auto &UnmappedFunc: UnmappedFunctions) {
         if (UnmappedFunc->GetFunction() == F) {
             return UnmappedFunc;
         }
@@ -531,10 +531,10 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
                                                     << "\n";
                 }
             }
-        } else if (auto *GV = dyn_cast<GlobalValue>(Pointer)) {
-            auto HAKCSymbol = FindSymbol(GV, true);
+        } else if (auto *GVal = dyn_cast<GlobalValue>(Pointer)) {
+            auto HAKCSymbol = FindSymbol(GVal, true);
             if (!HAKCSymbol) {
-                CommonHAKCAnalysis::getWriter() << "Unable to find Global " << GV->getName() << "\n";
+                CommonHAKCAnalysis::getWriter() << "Unable to find Global " << GVal->getName() << "\n";
                 return;
             }
             auto Link = std::make_shared<HAKCIndirectCallSourceLink>(HAKCSymbol, debug);
@@ -782,8 +782,8 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(Type *Ty) {
     std::string Name;
     llvm::raw_string_ostream sstream(Name);
-    if(auto *StructTy = dyn_cast<StructType>(Ty)) {
-        if(StructTy->hasName()) {
+    if (auto *StructTy = dyn_cast<StructType>(Ty)) {
+        if (StructTy->hasName()) {
             sstream << StructTy->getName();
         } else {
             sstream << *Ty;
@@ -842,7 +842,7 @@ bool hakc::HAKCTypeIdentifier::LLVMTypeMappingSanityCheck(const DIType *type, Ty
                 return Ty->getPointerElementType()->isIntegerTy(8);
             }
         }
-    } else if (auto *SubProgTy = dyn_cast<DISubroutineType>(type)) {
+    } else if (isa<DISubroutineType>(type)) {
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "DISubroutineType Sanity Checks\n";
         }
@@ -997,7 +997,7 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
         throw std::exception();
     }
 
-    unsigned length = 0;
+    unsigned length;
     std::string Replacement;
     if (Path.startswith(BuildPath)) {
         length = std::strlen(BuildPath);
@@ -1021,7 +1021,6 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
 }
 
 void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
-    std::error_code err;
     auto RealPath = CommonHAKCAnalysis::GetModuleFullPath(M);
 
     out << "---\n";

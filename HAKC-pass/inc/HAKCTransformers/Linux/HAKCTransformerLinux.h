@@ -13,9 +13,6 @@ namespace hakc {
     class HAKCModuleAnalysisLinux;
 
     class HAKCTransformerLinux : public HAKCTransformer {
-    public:
-//        bool FunctionIsExported(Function *F) override;
-
     protected:
         StructType *EntryTokenType;
 
@@ -25,7 +22,7 @@ namespace hakc {
 
         Type *GetEntryTokenType(unsigned AddrSpace) override;
 
-        Constant *GetEntryToken(int64_t CompartmentID) override;
+        Constant *GetEntryToken(HAKCCompartment &Compartment) override;
 
         void CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) override;
 
@@ -37,17 +34,13 @@ namespace hakc {
 
         virtual CallInst *SaveColor(Value *V);
 
-        virtual const StringRef HAKCGetColorName();
+        virtual StringRef HAKCGetColorName();
 
-        virtual const StringRef HAKCGetPerCPUColorName();
+        virtual StringRef HAKCGetPerCPUColorName();
 
-        virtual const StringRef HAKCColorAddressName();
+        virtual StringRef HAKCColorAddressName();
 
         virtual std::string getUniqueAddressable_Name(Function *F);
-
-//        virtual std::string getKstrtab_entry_name(Function *F);
-
-//        virtual std::string getKstrtabns_entry_name(Function *F);
 
         std::vector<Value *> CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) override;
 
@@ -62,6 +55,5 @@ namespace hakc {
         std::map<Value *, CallInst *> TransferArgumentsToRestore;
     };
 }
-
 
 #endif //HAKC_HAKCTRANSFORMERLINUX_H
