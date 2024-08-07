@@ -14,21 +14,17 @@ namespace hakc {
 
     class HAKCModuleAnalysisLinux : public HAKCModuleAnalysis {
     public:
-        HAKCModuleAnalysisLinux(Module &M);
+        explicit HAKCModuleAnalysisLinux(Module &M);
 
         void InitHAKCFunctions() override;
 
         std::set<StringRef> GetHAKCSourcePaths() override;
 
-        HAKC_Division_ID getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy);
+        static HAKC_Division_ID getFunctionColor(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
-        HAKC_Division_ID getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
+        static HAKC_Division_ID getGlobalColor(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
 
-        StructType *GetKernelParamType() override;
-
-        void generateModuleParamGetCtxFunction(GlobalVariable *GV) override;
-
-        virtual void TransferModuleParams();
+        virtual StructType *GetKernelParamType();
 
         std::set<StringRef> GetIgnoredGlobals() override;
 
@@ -42,7 +38,7 @@ namespace hakc {
 
         std::set<StringRef> GetNoTransferFunctions() override;
 
-        virtual sym_color_t GetMajoritySymbolColor();
+//        virtual sym_color_t GetMajoritySymbolColor();
 
         static std::string getColorStringFromValue(HAKC_Division_ID color);
 
@@ -50,28 +46,30 @@ namespace hakc {
 
         std::vector<StringRef> GetSafeTransitionFunctions_Arch() override;
 
+        static std::string getKstrtab_entry_name(Function *F);
+
+        static std::string getKstrtabns_entry_name(Function *F);
+
     protected:
         std::string getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) override;
 
         void TransformModule(HAKCCompartmentalizationPolicy &Policy) override;
 
-        HAKC_Division_ID getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
+        static HAKC_Division_ID getSymbolColor(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
 
         HAKC_Division_ID getColor(sym_color_t Color);
 
-        GlobalValue *ExtractGlobalFromKernelParam(GlobalVariable *GV);
+        virtual GlobalValue *ExtractGlobalFromKernelParam(GlobalVariable *GV);
 
-        void emitModParamGetCtx(GlobalValue *kernparam, HAKCCompartmentalizationPolicy &Policy);
+        virtual void emitModParamGetCtx(GlobalValue *kernparam, HAKCCompartmentalizationPolicy &Policy);
 
         bool FunctionNeedsAnalysis(Function *F) override;
 
-        bool functionIsExported(Function *F) override;
+        bool FunctionIsExported(Function *F) override;
 
-        virtual std::string getKstrtab_entry_name(Function *F);
+        virtual void TransferModuleParams(HAKCCompartmentalizationPolicy &Policy);
 
-    protected:
-        bool MajorityColorSet;
-        sym_color_t MajorityColor;
+        void GenerateModuleParamGetCtxFunction(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy);
 
     };
 

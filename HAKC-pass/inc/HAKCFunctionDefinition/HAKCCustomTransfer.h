@@ -8,7 +8,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include "llvm/IR/Module.h"
 #include "HAKCTransferFunction.h"
-#include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartment.h"
 
 using namespace llvm;
 
@@ -16,7 +16,7 @@ namespace hakc {
     class HAKCCustomTransfer : public HAKCTransferFunction {
     public:
         HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
-                           ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int ColorIdx);
+                           ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int DivisionIdx);
 
         HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
                            ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
@@ -27,12 +27,14 @@ namespace hakc {
 
         Function *GetFunction() const;
 
-        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
-                                            Value *HAKCPointer, Value *Size, bool IsData) = 0;
+        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
+                                            HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size,
+                                            bool IsData) = 0;
 
         virtual Instruction *
-        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
-                                Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy) = 0;
+        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
+                                HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size, Type *srcTy,
+                                Type *dstTy) = 0;
 
     protected:
         Type *TargetType;

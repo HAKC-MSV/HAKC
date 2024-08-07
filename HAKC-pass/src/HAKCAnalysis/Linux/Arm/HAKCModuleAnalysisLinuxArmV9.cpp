@@ -15,8 +15,8 @@ namespace hakc {
         return new HAKCFunctionAnalysisLinuxArmV9(F, this);
     }
 
-    std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisLinuxArmV9::CreateTransformer() {
-        return std::make_shared<HAKCTransformerLinuxArmV9>(M, this);
+    std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisLinuxArmV9::CreateTransformer(HAKCCompartmentalizationPolicy &Policy) {
+        return std::make_shared<HAKCTransformerLinuxArmV9>(Policy, *this);
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinuxArmV9::GetHAKCSourcePaths() {

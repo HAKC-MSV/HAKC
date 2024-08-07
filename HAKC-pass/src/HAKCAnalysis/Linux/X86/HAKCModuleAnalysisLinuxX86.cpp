@@ -14,8 +14,8 @@ namespace hakc {
         return new HAKCFunctionAnalysisLinuxX86(F, this);
     }
 
-    std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisLinuxX86::CreateTransformer() {
-        return std::make_shared<HAKCTransformerLinuxX86>(M, this);
+    std::shared_ptr<HAKCTransformer> HAKCModuleAnalysisLinuxX86::CreateTransformer(HAKCCompartmentalizationPolicy &Policy) {
+        return std::make_shared<HAKCTransformerLinuxX86>(Policy, *this);
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinuxX86::GetSeparateNamespacePaths() {
@@ -81,7 +81,7 @@ namespace hakc {
         return HAKCModuleAnalysisLinux::TransferFunctionShouldBeCreated(F);
     }
 
-    bool HAKCModuleAnalysisLinuxX86::AliasShouldBeCreated(Function *F) {
+    bool HAKCModuleAnalysisLinuxX86::AliasShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         /* See note in HAKCModuleAnalysisLinuxX86::TransferFunctionShouldBeCreated */
         if (F->isDeclaration() && FunctionDefinedInAssembly(F)) {
             return false;

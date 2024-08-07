@@ -12,7 +12,7 @@ namespace hakc {
 
     class HAKCTransformerLinuxArmV9 : public HAKCTransformerLinux {
     public:
-        HAKCTransformerLinuxArmV9(Module &Module, HAKCModuleAnalysisLinuxArmV9 *ModAnalysis);
+        HAKCTransformerLinuxArmV9(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinuxArmV9 &ModAnalysis);
     };
 
 } // hakc

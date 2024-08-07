@@ -15,6 +15,9 @@ namespace hakc {
 
         HAKC_Compartment_ID GetCompartmentID();
         HAKC_Access_Token GetAccessToken();
+        std::set<HAKC_Compartment_ID> GetValidTargets();
+        void AddTarget(HAKC_Compartment_ID CompartmentID);
+        hakc_compartment_id_t GetCompartmentIDValue();
 
         bool IsKernelCompartment();
 
@@ -28,6 +31,7 @@ namespace hakc {
     protected:
         HAKC_Compartment_ID Compartment;
         HAKC_Access_Token AccessToken;
+        std::set<HAKC_Compartment_ID> Targets;
     };
 
 } // hakc

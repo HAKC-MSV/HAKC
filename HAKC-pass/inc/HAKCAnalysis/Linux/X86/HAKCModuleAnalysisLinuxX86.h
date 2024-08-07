@@ -23,12 +23,12 @@ namespace hakc {
 
         bool TransferFunctionShouldBeCreated(Function *F) override;
 
-        bool AliasShouldBeCreated(Function *F) override;
+        bool AliasShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
     protected:
         HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) override;
 
-        std::shared_ptr<HAKCTransformer> CreateTransformer() override;
+        std::shared_ptr<HAKCTransformer> CreateTransformer(HAKCCompartmentalizationPolicy &Policy) override;
     };
 
 } // hakc

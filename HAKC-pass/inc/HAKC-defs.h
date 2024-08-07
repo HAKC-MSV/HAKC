@@ -28,9 +28,9 @@ using namespace llvm;
 
 namespace hakc {
 
-    typedef const int64_t hakc_compartment_id_t;
-    typedef const int64_t hakc_access_token_t;
-    typedef const int64_t hakc_compartment_division_t;
+    typedef int64_t hakc_compartment_id_t;
+    typedef int64_t hakc_access_token_t;
+    typedef int64_t hakc_compartment_division_t;
 
     typedef ConstantInt* HAKC_Compartment_ID;
     typedef ConstantInt* HAKC_Access_Token;

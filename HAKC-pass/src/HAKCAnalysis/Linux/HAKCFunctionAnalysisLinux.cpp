@@ -67,7 +67,7 @@ namespace hakc {
         }
         CallI->setOperand(HAKCTransferFunction->GetCompartmentIdIdx(), CompartmentIDValue);
 
-        if (HAKCTransferFunction->HasColorIdx()) {
+        if (HAKCTransferFunction->HasDivisionIdx()) {
             auto *F = CallI->getFunction();
             ConstantInt *color;
             if (isOutsideTransferFunc(F)) {
@@ -84,12 +84,12 @@ namespace hakc {
                 throw std::exception();
             }
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Setting argument " << HAKCTransferFunction->GetColorIdx()
+                CommonHAKCAnalysis::getWriter() << "Setting argument " << HAKCTransferFunction->GetDivisionIdx()
                                                 << " to be ";
                 color->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << "\n";
             }
-            CallI->setOperand(HAKCTransferFunction->GetColorIdx(), color);
+            CallI->setOperand(HAKCTransferFunction->GetDivisionIdx(), color);
         }
     }
 

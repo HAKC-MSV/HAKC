@@ -6,8 +6,8 @@
 
 hakc::HAKCCustomTransfer::HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName,
                                              Type *ReturnTy, ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx,
-                                             unsigned CompartmentIdIdx, int ColorIdx) :
-        HAKCTransferFunction(TransferFunctionName, SignedPtrIdx, CompartmentIdIdx, ColorIdx),
+                                             unsigned CompartmentIdIdx, int DivisionIdx) :
+        HAKCTransferFunction(TransferFunctionName, SignedPtrIdx, CompartmentIdIdx, DivisionIdx),
         TargetType(nullptr), CustomTransfer(nullptr) {
     FindTargetTypeAndTransfer(M, TransferFunctionName, TypeName, ReturnTy, ArgTys);
 }

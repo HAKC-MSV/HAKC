@@ -13,7 +13,7 @@ namespace hakc {
 
     class HAKCFunctionDefinition {
     public:
-        HAKCFunctionDefinition(StringRef Name);
+        explicit HAKCFunctionDefinition(StringRef Name);
 
         StringRef GetName() const;
 

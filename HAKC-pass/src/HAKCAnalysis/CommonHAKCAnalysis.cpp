@@ -620,8 +620,19 @@ namespace hakc {
 //        return IsKernelSymbol(F);
 //    }
 
-    void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalValue *> &GlobalList) {
-        llvm::sort(GlobalList.begin(), GlobalList.end(), [](GlobalValue *LHS, GlobalValue *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+    void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
+        llvm::sort(GlobalList.begin(), GlobalList.end(),
+                   [](GlobalVariable *LHS, GlobalVariable *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+    }
+
+    void CommonHAKCAnalysis::SortFunctionList(std::vector<Function *> &FuncList) {
+        llvm::sort(FuncList.begin(), FuncList.end(),
+                   [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+    }
+
+    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
+        auto &Compartment = Policy.GetCompartment(GV);
+        return Compartment.IsKernelCompartment();
     }
 
 //    bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV) {

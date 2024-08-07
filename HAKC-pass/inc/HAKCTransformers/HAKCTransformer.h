@@ -28,7 +28,7 @@ namespace hakc {
      */
     class HAKCTransformer {
     public:
-        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy);
+        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis);
 
         virtual ~HAKCTransformer() = default;
 

@@ -19,7 +19,7 @@ namespace hakc {
     protected:
         StructType *EntryTokenType;
 
-        HAKCTransformerLinux(Module &Module, HAKCModuleAnalysisLinux *ModuleAnalysis);
+        HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinux &ModuleAnalysis);
 
         Value *CreateSafePointer_Arch(Value *HAKCPointer, Instruction *I) override;
 
@@ -45,9 +45,9 @@ namespace hakc {
 
         virtual std::string getUniqueAddressable_Name(Function *F);
 
-        virtual std::string getKstrtab_entry_name(Function *F);
+//        virtual std::string getKstrtab_entry_name(Function *F);
 
-        virtual std::string getKstrtabns_entry_name(Function *F);
+//        virtual std::string getKstrtabns_entry_name(Function *F);
 
         std::vector<Value *> CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) override;
 

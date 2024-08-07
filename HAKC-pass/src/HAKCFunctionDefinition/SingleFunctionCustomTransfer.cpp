@@ -32,47 +32,24 @@ namespace hakc {
     }
 
     Instruction *SingleFunctionCustomTransfer::CreateTransfer(IRBuilder<> &HAKCIRBuilder,
-                                                              std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
+                                                              HAKCCompartment &TargetCompartment,
+                                                              HAKC_Division_ID TargetDivision,
                                                               Value *HAKCPointer, Value *Size, bool IsData) {
-        hakc_compartment_id_t CompartmentID;
-        sym_color_t ColorID;
-        if (TargetCompartment) {
-            CompartmentID = TargetCompartment->getCompartmentID();
-            ColorID = TargetCompartment->getCompartment()->getColor();
-        } else {
-            CompartmentID = KERNEL_COMPARTMENT;
-            ColorID = KERNEL_COLOR;
-        }
-        auto *Compartment = HAKCIRBuilder.getIntN(COMPARTMENT_ID_BIT_LENGTH,
-                                                  CompartmentID);
-        auto *Color = HAKCIRBuilder.getIntN(CLIQUE_COLOR_BIT_LENGTH, ColorID);
         return HAKCIRBuilder.CreateCall(GetFunction(), {
-                HAKCPointer, Compartment, Color
+                HAKCPointer, TargetCompartment.GetCompartmentID(), TargetDivision
         });
     }
 
     Instruction *SingleFunctionCustomTransfer::CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
-                                                                       std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
+                                                                       HAKCCompartment &TargetCompartment,
+                                                                       HAKC_Division_ID TargetDivision,
                                                                        Value *HAKCPointer, Value *Size,
                                                                        Type *SrcTy, Type *DestTy) {
-        hakc_compartment_id_t CompartmentID;
-        sym_color_t ColorID;
-        if (TargetCompartment) {
-            CompartmentID = TargetCompartment->getCompartmentID();
-            ColorID = TargetCompartment->getCompartment()->getColor();
-        } else {
-            CompartmentID = KERNEL_COMPARTMENT;
-            ColorID = KERNEL_COLOR;
-        }
-        auto *Compartment = HAKCIRBuilder.getIntN(COMPARTMENT_ID_BIT_LENGTH,
-                                                  CompartmentID);
-        auto *Color = HAKCIRBuilder.getIntN(CLIQUE_COLOR_BIT_LENGTH, ColorID);
-
         /* cast void* HAKCPointer to DestTy */
         Value *BitcastArgForTransferCall = HAKCIRBuilder.CreateBitCast(HAKCPointer, DestTy);
         /* Call transfer function with DestTy HAKCPointer */
         Value *TransferCall = HAKCIRBuilder.CreateCall(GetFunction(), {
-                BitcastArgForTransferCall, Compartment, Color
+                BitcastArgForTransferCall, TargetCompartment.GetCompartmentID(), TargetDivision
         });
         /* cast DestTy HAKCPointer back to void* */
         Value *BitcastArgForTargetCall = HAKCIRBuilder.CreateBitCast(TransferCall, SrcTy);

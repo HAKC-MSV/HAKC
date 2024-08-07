@@ -13,20 +13,21 @@ namespace hakc {
 
     class SingleFunctionCustomTransfer : public HAKCCustomTransfer {
     public:
-        SingleFunctionCustomTransfer(Module &M, unsigned CompartmentStorageSizeInBits, StringRef TypeName, StringRef
-        TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys, unsigned
-                                     SignedPtrIdx, unsigned CompartmentIDIdx, int ColorIdx);
+        SingleFunctionCustomTransfer(Module &M, unsigned CompartmentStorageSizeInBits, StringRef TypeName,
+                                     StringRef TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys,
+                                     unsigned SignedPtrIdx, unsigned CompartmentIDIdx, int ColorIdx);
 
-        SingleFunctionCustomTransfer(Module &M, unsigned CompartmentStorageSizeInBits, StringRef TypeName, StringRef
-        TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys, unsigned
-                                     SignedPtrIdx, unsigned CompartmentIDIdx);
+        SingleFunctionCustomTransfer(Module &M, unsigned CompartmentStorageSizeInBits, StringRef TypeName,
+                                     StringRef TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys,
+                                     unsigned SignedPtrIdx, unsigned CompartmentIDIdx);
 
-        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
-                                    Value *HAKCPointer, Value *Size, bool IsData) override;
+        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
+                                    HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size,
+                                    bool IsData) override;
 
-        Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
-                                             std::shared_ptr<HAKCSymbolInfo> TargetCompartment,
-                                             Value *HAKCPointer, Value *Size, Type *SrcTy, Type *DestTy) override;
+        Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
+                                             HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size,
+                                             Type *SrcTy, Type *DestTy) override;
 
 
     protected:

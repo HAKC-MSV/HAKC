@@ -11,22 +11,22 @@ namespace hakc {
                                                unsigned int CompartmentIdIdx) : HAKCFunctionDefinition(Name),
                                                                                 SignedPtrIdx(SignedPtrIdx),
                                                                                 CompartmentIdIdx(CompartmentIdIdx),
-                                                                                ColorIdx(-1) {
+                                                                                DivisionIdIdx(-1) {
 
     }
 
     HAKCTransferFunction::HAKCTransferFunction(StringRef Name, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
-                                               int ColorIdx) : HAKCFunctionDefinition(Name), SignedPtrIdx
-            (SignedPtrIdx), CompartmentIdIdx(CompartmentIdIdx), ColorIdx(ColorIdx) {
+                                               int DivisionIdx) : HAKCFunctionDefinition(Name), SignedPtrIdx
+            (SignedPtrIdx), CompartmentIdIdx(CompartmentIdIdx), DivisionIdIdx(DivisionIdx) {
 
     }
 
-    int HAKCTransferFunction::GetColorIdx() const {
-        return ColorIdx;
+    int HAKCTransferFunction::GetDivisionIdx() const {
+        return DivisionIdIdx;
     }
 
-    bool HAKCTransferFunction::HasColorIdx() const {
-        return ColorIdx >= 0;
+    bool HAKCTransferFunction::HasDivisionIdx() const {
+        return DivisionIdIdx >= 0;
     }
 
     unsigned HAKCTransferFunction::GetSignedPtrIdx() const {

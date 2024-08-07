@@ -10,32 +10,27 @@
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_sk_buff.h"
 
-hakc::HAKCTransformerLinux::HAKCTransformerLinux(Module &Module,
-                                                 hakc::HAKCModuleAnalysisLinux *ModuleAnalysis) :
-        HAKCTransformer(Module, ModuleAnalysis),
+hakc::HAKCTransformerLinux::HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy,
+                                                 hakc::HAKCModuleAnalysisLinux &ModuleAnalysis) :
+        HAKCTransformer(Policy, ModuleAnalysis),
         EntryTokenType(nullptr) {
+    auto &Module = ModuleAnalysis.getModule();
     Type *intTy64 = Type::getInt64Ty(Module.getContext());
 
-    EntryTokenType = StructType::getTypeByName(Module.getContext(), ModuleAnalysis->HAKCEntryTokenName());
+    EntryTokenType = StructType::getTypeByName(Module.getContext(), ModuleAnalysis.HAKCEntryTokenName());
     if (!EntryTokenType) {
-        EntryTokenType = StructType::create(Module.getContext(), {intTy64, intTy64}, ModuleAnalysis->HAKCEntryTokenName
-                ());
+        EntryTokenType = StructType::create(Module.getContext(), {intTy64, intTy64},
+                                            ModuleAnalysis.HAKCEntryTokenName());
     }
 }
 
 Value *hakc::HAKCTransformerLinux::CreateSafePointer_Arch(Value *HAKCPointer, Instruction *I) {
     if (isa<PHINode>(I)) {
-        CommonHAKCAnalysis::getWriter() << "Trying to insert data auth check at ";
-        I->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << " for ";
-        HAKCPointer->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
-        I->getFunction()->print(CommonHAKCAnalysis::getWriter());
+        CommonHAKCAnalysis::getWriter() << "Trying to insert data auth check at " << *I << " for " << *HAKCPointer
+                                        << "\n" << *I->getFunction() << "\n";
         throw std::exception();
     } else if (isa<ConstantPointerNull>(HAKCPointer)) {
-        CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer is a ConstantPointerNull: ";
-        HAKCPointer->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer is a ConstantPointerNull: " << *HAKCPointer << "\n";
         throw std::exception();
     }
     Value *voidCast;
@@ -148,7 +143,7 @@ Constant *hakc::HAKCTransformerLinux::GetEntryToken(hakc_compartment_id_t Compar
 void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer) {
     TransferArgumentsToRestore.clear();
 
-    if (FunctionIsExported(Original)) {
+    if (ModuleAnalysis.functionIs(Original)) {
         /* Exported functions are often used elsewhere. Make sure that
          * the transfer function is also exported, so it can be used in the same places.
          * According to the comment for ___EXPORT_SYMBOL in include/linux/export.h,
@@ -158,14 +153,14 @@ void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *O
         // Create kstrtab entry
         std::stringstream asm_stream;
         asm_stream << "\t.section \"__ksymtab_strings\",\"aMS\",%progbits,1\t\n"
-                   << getKstrtab_entry_name(Transfer) << ":\t\t\t\t\t\n"
+                   << hakc::HAKCModuleAnalysisLinux::getKstrtab_entry_name(Transfer) << ":\t\t\t\t\t\n"
                    << "\t.asciz \"" << Transfer->getName().str() << "\"\n";
 
         // Create kstrtabns entry
         /* Namespace values for exported symbols are defined by inline assembly, which is hard to get, but
          * an empty string is valid, so hopefully this will be ok
          */
-        asm_stream << getKstrtabns_entry_name(Transfer) << ":\t\t\t\t\t\n"
+        asm_stream << hakc::HAKCModuleAnalysisLinux::getKstrtabns_entry_name(Transfer) << ":\t\t\t\t\t\n"
                    << "\t.asciz \"\"\n"
                    << "\t.previous\t\t\t\t\t\n";
 
@@ -174,8 +169,8 @@ void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *O
                    << "\t.balign\t4\t\t\t\t\t\n"
                    << "__ksymtab_" << Transfer->getName().str() << ":\t\t\t\t\n"
                    << "\t.long\t" << Transfer->getName().str() << "- .\t\t\t\t\n"
-                   << "\t.long\t" << getKstrtab_entry_name(Transfer) << "- .\t\t\t\n"
-                   << "\t.long\t" << getKstrtabns_entry_name(Transfer) << "- .\t\t\t\n"
+                   << "\t.long\t" << hakc::HAKCModuleAnalysisLinux::getKstrtab_entry_name(Transfer) << "- .\t\t\t\n"
+                   << "\t.long\t" << hakc::HAKCModuleAnalysisLinux::getKstrtabns_entry_name(Transfer) << "- .\t\t\t\n"
                    << "\t.previous\t\t\t\t\t\n";
         getModule().appendModuleInlineAsm(asm_stream.str());
 
@@ -216,17 +211,17 @@ std::string hakc::HAKCTransformerLinux::getUniqueAddressable_Name(Function *F) {
     return unique_addressable_name;
 }
 
-std::string hakc::HAKCTransformerLinux::getKstrtab_entry_name(Function *F) {
-    std::string ksymtab_symbol_name = "__kstrtab_";
-    ksymtab_symbol_name += F->getName();
-    return ksymtab_symbol_name;
-}
+//std::string hakc::HAKCTransformerLinux::getKstrtab_entry_name(Function *F) {
+//    std::string ksymtab_symbol_name = "__kstrtab_";
+//    ksymtab_symbol_name += F->getName();
+//    return ksymtab_symbol_name;
+//}
 
-std::string hakc::HAKCTransformerLinux::getKstrtabns_entry_name(Function *F) {
-    std::string ksymtabns_symbol_name = "__kstrtabns_";
-    ksymtabns_symbol_name += F->getName();
-    return ksymtabns_symbol_name;
-}
+//std::string hakc::HAKCTransformerLinux::getKstrtabns_entry_name(Function *F) {
+//    std::string ksymtabns_symbol_name = "__kstrtabns_";
+//    ksymtabns_symbol_name += F->getName();
+//    return ksymtabns_symbol_name;
+//}
 
 FunctionType *hakc::HAKCTransformerLinux::GetHAKCDataAuthenticationFunctionType(unsigned AddrSpace) {
     Type *RetTy = HAKCIRBuilder.getInt8PtrTy(AddrSpace);
@@ -243,12 +238,8 @@ FunctionType *hakc::HAKCTransformerLinux::GetHAKCDataAuthenticationFunctionType(
 std::vector<Value *> hakc::HAKCTransformerLinux::CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) {
     Function *F = I->getFunction();
     Value *HAKCPointerBitCast;
-    auto Symbol = SystemInformation.findSymbol(F);
-    if (!Symbol) {
-        CommonHAKCAnalysis::getWriter() << "Could not find symbol for function " << F->getName() << "\n";
-        throw std::exception();
-    }
-    auto AccessToken = Symbol->getCompartment()->getAccessToken();
+    auto &Compartment = CompartmentalizationPolicy.GetCompartment(F);
+    auto AccessToken = Compartment.GetAccessToken();
     unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
     auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
 
@@ -259,25 +250,18 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateDataAuthArguments(Value *
     }
     return {HAKCPointerBitCast,
             GetHAKCCompartmentValue(getFunctionCompartmentID(F)),
-            HAKCIRBuilder.getInt64(AccessToken)};
+            AccessToken};
 }
 
 std::vector<Value *> hakc::HAKCTransformerLinux::CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) {
     Function *F = I->getFunction();
     auto *ExitTokens = GetValidTargetCompartments(F);
-    auto Symbol = SystemInformation.findSymbol(F);
-    if (!Symbol) {
-        CommonHAKCAnalysis::getWriter() << "Could not find symbol for function " << F->getName() << "\n";
-        throw std::exception();
-    }
-    auto AccessToken = Symbol->getCompartment()->getAccessToken();
+    auto &Compartment = CompartmentalizationPolicy.GetCompartment(F);
+    auto AccessToken = Compartment.GetAccessToken();
 
     if (!ExitTokens->getValueType()->isArrayTy()) {
-        CommonHAKCAnalysis::getWriter() << "Invalid ExitToken Type (";
-        ExitTokens->getValueType()->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << ") for ";
-        ExitTokens->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << "Invalid ExitToken Type (" << *ExitTokens->getValueType() << ") for "
+                                        << *ExitTokens << "\n";
         throw std::exception();
     }
     Value *FirstExitToken = HAKCIRBuilder.CreateGEP(ExitTokens->getValueType(),
@@ -289,7 +273,7 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateCodeAuthArguments(Value *
     return {
             IndirectCallTarget,
             GetHAKCCompartmentValue(getFunctionCompartmentID(F)),
-            HAKCIRBuilder.getInt64(AccessToken),
+            AccessToken,
             FirstExitToken,
             HAKCIRBuilder.getInt64(ExitTokens->getType()->getPointerElementType()->getArrayNumElements())
     };
@@ -303,23 +287,14 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *
     Value *OperandCast;
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
     bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer);
-    auto Symbol = SystemInformation.findSymbol(Target);
-    hakc_compartment_id_t CompartmentID;
-    sym_color_t Color;
-    if (Symbol) {
-        Color = Symbol->getCompartment()->getColor();
-        CompartmentID = Symbol->getCompartmentID();
-    } else {
-        Color = KERNEL_COLOR;
-        CompartmentID = KERNEL_COMPARTMENT;
-    }
+    auto Compartment = CompartmentalizationPolicy.GetCompartment(Target);
 
     OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
 
     FullArgSet.push_back(OperandCast);
     FullArgSet.push_back(Size);
-    FullArgSet.push_back(GetHAKCCompartmentValue(CompartmentID));
-    FullArgSet.push_back(GetColorValue(Color));
+    FullArgSet.push_back(Compartment.GetCompartmentID());
+    FullArgSet.push_back(CompartmentalizationPolicy.GetDivision(Target));
     if (!IsPerCPU) {
         /* Function signature uses is_code which is !isData */
         FullArgSet.push_back(IsData ? getFalse() : getTrue());

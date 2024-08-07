@@ -8,6 +8,7 @@
 #include "HAKCPass.h"
 #include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 namespace hakc {
 
@@ -37,8 +38,6 @@ namespace hakc {
         bool valueShouldBeReplacedWithTransfer(Value *V);
 
         hakc_function_def_t getHAKCFunction(StringRef name);
-
-        Module &getModule();
 
         virtual bool functionIsModParamGetCtx(Function *F);
 
@@ -154,7 +153,13 @@ namespace hakc {
 
         static void PrettyPrintValue(Value *V, raw_ostream &os);
 
-        static void SortGlobalList(std::vector<GlobalValue*> &GlobalList);
+        static void SortGlobalList(std::vector<GlobalVariable*> &GlobalList);
+
+        static void SortFunctionList(std::vector<Function*> &FuncList);
+
+        static bool IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
+
+        Module &getModule();
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

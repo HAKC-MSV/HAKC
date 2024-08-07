@@ -14,20 +14,20 @@ namespace hakc {
     public:
         HAKCTransferFunction(StringRef Name, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
 
-        HAKCTransferFunction(StringRef Name, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int ColorIdx);
+        HAKCTransferFunction(StringRef Name, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int DivisionIdx);
 
         unsigned GetSignedPtrIdx() const;
 
         unsigned GetCompartmentIdIdx() const;
 
-        int GetColorIdx() const;
+        int GetDivisionIdx() const;
 
-        bool HasColorIdx() const;
+        bool HasDivisionIdx() const;
 
     protected:
         unsigned SignedPtrIdx;
         unsigned CompartmentIdIdx;
-        int ColorIdx;
+        int DivisionIdIdx;
     };
 
     typedef std::shared_ptr<HAKCTransferFunction> hakc_transfer_def_t;

@@ -18,7 +18,7 @@ namespace hakc {
     protected:
         HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) override;
 
-        std::shared_ptr<HAKCTransformer> CreateTransformer() override;
+        std::shared_ptr<HAKCTransformer> CreateTransformer(HAKCCompartmentalizationPolicy &Policy) override;
     };
 
 } // hakc
