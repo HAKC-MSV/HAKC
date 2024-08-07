@@ -534,40 +534,6 @@ namespace hakc {
         };
     }
 
-//    sym_color_t HAKCModuleAnalysisLinux::GetMajoritySymbolColor() {
-//        if (!MajorityColorSet) {
-//            std::map<ConstantInt *, unsigned> ColorCounts;
-//            std::set<GlobalValue *> symbols;
-//            for (auto &Global: M.getGlobalList()) {
-//                symbols.insert(&Global);
-//            }
-//            for (auto &F: M.getFunctionList()) {
-//                symbols.insert(&F);
-//            }
-//
-//            for (auto *GV: symbols) {
-//                auto color = getSymbolDivision(GV);
-//                if (!color->equalsInt(hakc::KERNEL_COLOR)) {
-//                    if (ColorCounts.find(color) == ColorCounts.end()) {
-//                        ColorCounts[color] = 0;
-//                    }
-//                    ColorCounts[color] += 1;
-//                }
-//            }
-//
-//            unsigned MaxSymbolCount = 0;
-//            for (auto &it: ColorCounts) {
-//                if (it.second > MaxSymbolCount) {
-//                    MajorityColor = getColorFromValue(it.first);
-//                }
-//            }
-//            MajorityColorSet = true;
-//        }
-//
-//        return MajorityColor;
-//    }
-
-
     std::string HAKCModuleAnalysisLinux::getColorStringFromValue(HAKC_Division_ID color) {
         switch (color->getZExtValue()) {
             case SILVER_CLIQUE:

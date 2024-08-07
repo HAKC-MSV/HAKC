@@ -86,10 +86,9 @@ namespace hakc {
         hakc_local_scope
     } hakc_scope_t;
 
-    hakc_compartment_id_t KERNEL_COMPARTMENT = 0;
-    hakc_compartment_division_t KERNEL_COLOR = NO_CLIQUE;
-    hakc_access_token_t KERNEL_ACCESS_TOKEN = 0;
-
+    const hakc_compartment_id_t KERNEL_COMPARTMENT = 0;
+    const hakc_compartment_division_t KERNEL_DIVISION = NO_CLIQUE;
+    const hakc_access_token_t KERNEL_ACCESS_TOKEN = 0;
 }
 
 #endif//PMC_HAKC_DEFS_H

@@ -8,7 +8,6 @@
 #include "llvm/IR/Verifier.h"
 
 namespace hakc {
-
     /**
  * @brief Collective analysis functionality
  * @param debug

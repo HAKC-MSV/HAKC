@@ -47,7 +47,7 @@ namespace hakc {
 
     HAKC_Division_ID HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
         /* TODO: Implement */
-        return ConstantInt::get(IntegerType::get(LLVMContext, 64), KERNEL_COLOR);
+        return ConstantInt::get(IntegerType::get(LLVMContext, 64), KERNEL_DIVISION);
     }
 
     HAKCCompartment &HAKCCompartmentalizationPolicy::GetCompartment(hakc_compartment_id_t ID) {
