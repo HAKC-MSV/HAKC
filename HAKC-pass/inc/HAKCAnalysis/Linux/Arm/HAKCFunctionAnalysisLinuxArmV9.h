@@ -13,7 +13,8 @@ namespace hakc {
 
     class HAKCFunctionAnalysisLinuxArmV9 : public HAKCFunctionAnalysisLinux {
     public:
-        HAKCFunctionAnalysisLinuxArmV9(Function *F, HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinuxArmV9 *ModAnalysis);
+        HAKCFunctionAnalysisLinuxArmV9(Function *F, HAKCCompartmentalizationPolicy &Policy,
+                                       HAKCModuleAnalysisLinuxArmV9 *ModAnalysis);
 
     protected:
         HAKCModuleAnalysisLinuxArmV9 *ModAnalysis;

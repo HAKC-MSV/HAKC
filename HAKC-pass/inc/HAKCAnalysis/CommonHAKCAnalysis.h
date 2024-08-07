@@ -12,6 +12,7 @@
 namespace hakc {
 
     class HAKCTransformer;
+
     class HAKCCompartmentalizationPolicy;
 
     typedef std::function<llvm::Value *(llvm::Value *)> hakc_allocation_size_map_t;

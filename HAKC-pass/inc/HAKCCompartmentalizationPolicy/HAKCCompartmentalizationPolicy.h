@@ -12,6 +12,7 @@
 namespace hakc {
 
     class HAKCModuleAnalysis;
+
     class HAKCTypeIdentifier;
 
     class HAKCCompartmentalizationPolicy {
@@ -26,7 +27,7 @@ namespace hakc {
 
         HAKCCompartment &GetCompartment(hakc_compartment_id_t ID);
 
-        HAKCTypeIdentifier& GetTypeIdentifier();
+        HAKCTypeIdentifier &GetTypeIdentifier();
 
     protected:
         HAKCYamlCompartmentalizationPolicy YamlPolicy;

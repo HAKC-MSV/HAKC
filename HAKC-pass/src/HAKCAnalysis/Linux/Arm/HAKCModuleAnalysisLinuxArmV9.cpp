@@ -11,7 +11,8 @@ namespace hakc {
     HAKCModuleAnalysisLinuxArmV9::HAKCModuleAnalysisLinuxArmV9(Module &M) :
             HAKCModuleAnalysisLinuxArm(M) {}
 
-    HAKCFunctionAnalysis *HAKCModuleAnalysisLinuxArmV9::GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) {
+    HAKCFunctionAnalysis *
+    HAKCModuleAnalysisLinuxArmV9::GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         return new HAKCFunctionAnalysisLinuxArmV9(F, Policy, this);
     }
 
