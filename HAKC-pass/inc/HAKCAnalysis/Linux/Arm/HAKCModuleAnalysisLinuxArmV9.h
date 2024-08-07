@@ -11,12 +11,12 @@ namespace hakc {
 
     class HAKCModuleAnalysisLinuxArmV9 : public HAKCModuleAnalysisLinuxArm {
     public:
-        HAKCModuleAnalysisLinuxArmV9(Module &M);
+        explicit HAKCModuleAnalysisLinuxArmV9(Module &M);
 
         std::set<StringRef> GetHAKCSourcePaths() override;
 
     protected:
-        HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) override;
+        HAKCFunctionAnalysis *GetFunctionTransformation(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
         std::shared_ptr<HAKCTransformer> CreateTransformer(HAKCCompartmentalizationPolicy &Policy) override;
     };

@@ -5,9 +5,9 @@
 #include "HAKCAnalysis/Linux/Arm/HAKCFunctionAnalysisLinuxArmV8.h"
 
 namespace hakc {
-    HAKCFunctionAnalysisLinuxArmV8::HAKCFunctionAnalysisLinuxArmV8(Function *F,
+    HAKCFunctionAnalysisLinuxArmV8::HAKCFunctionAnalysisLinuxArmV8(Function *F, HAKCCompartmentalizationPolicy &Policy,
                                                                    HAKCModuleAnalysisLinuxArmV8 *ModAnalysis) :
-            HAKCFunctionAnalysisLinux(F),
+            HAKCFunctionAnalysisLinux(F, Policy),
             ModAnalysis(ModAnalysis) {
 
     }
