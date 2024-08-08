@@ -20,6 +20,8 @@ namespace hakc {
         std::string Definition;
         hakc_compartment_id_t CompartmentID;
         hakc_compartment_division_t DivisionID;
+
+        friend raw_ostream &operator<<(raw_ostream &os, HAKCYamlSymbol &YamlSymbol);
     };
 
 } // hakc

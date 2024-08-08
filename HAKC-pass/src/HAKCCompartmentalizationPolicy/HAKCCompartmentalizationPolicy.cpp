@@ -56,8 +56,11 @@ namespace hakc {
             for (auto &YamlSymbol: File.Symbols) {
                 auto SymbolInfo = TypeIdentifier.FindYamlSymbol(YamlSymbol);
                 if (SymbolInfo) {
+                    CommonHAKCAnalysis::getWriter() << "Found SymbolInfo " << *SymbolInfo << " for YamlSymbol " << YamlSymbol << "\n";
                     auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
                     GlobalValueMapping[SymbolInfo->GetGlobalObj()] = Div;
+                } else {
+                    CommonHAKCAnalysis::getWriter() << "Could not find SymbolInfo for YamlSymbol " << YamlSymbol << "\n";
                 }
             }
         }
@@ -74,6 +77,11 @@ namespace hakc {
     }
 
     HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
+        if(!GV) {
+            CommonHAKCAnalysis::getWriter() << "Trying to find Division for null GlobalValue!\n";
+            throw std::exception();
+        }
+
         auto it = GlobalValueMapping.find(GV);
         if (it == GlobalValueMapping.end()) {
             return KernelCompartment.GetDivisions()[0];
