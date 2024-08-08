@@ -39,7 +39,7 @@ std::string hakc::HAKCSymbolInfo::GetTransformedPathName(const DIFile *File) con
 }
 
 std::string hakc::HAKCSymbolInfo::GetLocalScopePath() const {
-    if(!LocalScope) {
+    if (!LocalScope) {
         return "";
     }
     const DIFile *ScopeFile;

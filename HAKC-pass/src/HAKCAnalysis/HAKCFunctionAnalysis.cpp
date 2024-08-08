@@ -1154,7 +1154,8 @@ namespace hakc {
 
                 if (!ValidTransition) {
                     CommonHAKCAnalysis::getWriter() << "A direct Compartment transition from "
-                                                    << std::to_string(CurrentDivision.GetHAKCCompartment().GetCompartmentIDValue())
+                                                    << std::to_string(
+                                                            CurrentDivision.GetHAKCCompartment().GetCompartmentIDValue())
                                                     << " to "
                                                     << std::to_string(TargetCompartment.GetCompartmentIDValue())
                                                     << " is statically possible but not allowed in the"

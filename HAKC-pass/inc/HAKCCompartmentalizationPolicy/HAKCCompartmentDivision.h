@@ -28,7 +28,7 @@ namespace hakc {
 
         bool operator!=(const HAKCCompartmentDivision &RHS) const;
 
-        bool operator <(const HAKCCompartmentDivision &Div) const;
+        bool operator<(const HAKCCompartmentDivision &Div) const;
 
     protected:
         HAKCCompartment ParentCompartment;

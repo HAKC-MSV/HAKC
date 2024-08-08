@@ -616,11 +616,6 @@ namespace hakc {
         return env != nullptr;
     }
 
-    bool CommonHAKCAnalysis::IsKernelCompartment(hakc_compartment_id_t ID) {
-        return ID == KERNEL_COMPARTMENT;
-    }
-
-
     void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
         llvm::sort(GlobalList.begin(), GlobalList.end(),
                    [](GlobalVariable *LHS, GlobalVariable *RHS) {

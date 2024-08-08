@@ -14,7 +14,9 @@
 #elif defined(HAKC_LINUX_ARMV8)
 #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV8.h"
 #elif defined(HAKC_LINUX_ARMV9)
+
 #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV9.h"
+
 #else
 #error "HAKC Architecture Unspecified"
 #endif

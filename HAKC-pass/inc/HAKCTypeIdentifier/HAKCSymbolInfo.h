@@ -37,7 +37,7 @@ namespace hakc {
         friend bool operator==(const HAKCYamlSymbol &YamlSymbol, const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo) {
             hakc_scope_t SymbolInfoScope = (SymbolInfo->LocalScope ? hakc_local_scope : hakc_global_scope);
             bool ScopesMatch = SymbolInfoScope == YamlSymbol.Scope.Scope;
-            if(ScopesMatch && SymbolInfoScope == hakc_local_scope) {
+            if (ScopesMatch && SymbolInfoScope == hakc_local_scope) {
                 ScopesMatch = (YamlSymbol.Scope.LocalScope == SymbolInfo->GetLocalScopePath());
             }
 

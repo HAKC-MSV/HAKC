@@ -351,7 +351,9 @@ namespace hakc {
 
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "color:\n" << getColorStringFromValue(Color) << "\n" << "compartment:\n"
-                                            << std::to_string(CompartmentDivision.GetHAKCCompartment().GetCompartmentIDValue()) << "\n";
+                                            << std::to_string(
+                                                    CompartmentDivision.GetHAKCCompartment().GetCompartmentIDValue())
+                                            << "\n";
         }
 
         // cast kernparam to a void*

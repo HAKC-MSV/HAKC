@@ -77,8 +77,6 @@ namespace hakc {
 
         static bool NoKernelTransferFunctionsSet();
 
-        static bool IsKernelCompartment(hakc_compartment_id_t ID);
-
         static bool IsPointerLikeType(Type *Ty);
 
         std::string getOutsideTransferName(Function *F);
