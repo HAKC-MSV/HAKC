@@ -38,14 +38,14 @@ template<>
 struct yaml::MappingTraits<hakc::HAKCYamlClique> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlClique &Clique) {
         io.mapRequired("access_token", Clique.AccessToken);
-        io.mapRequired("name", Clique.DivisionID);
+        io.mapRequired("division_id", Clique.DivisionID);
     }
 };
 
 template<>
 struct yaml::MappingTraits<hakc::HAKCYamlCompartment> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlCompartment &Compartment) {
-        io.mapRequired("cliques", Compartment.Cliques);
+        io.mapRequired("divisions", Compartment.Cliques);
         io.mapRequired("compartment_id", Compartment.CompartmentID);
         io.mapRequired("targets", Compartment.Targets);
     }
@@ -55,7 +55,7 @@ template<>
 struct yaml::MappingTraits<hakc::HAKCYamlFile> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlFile &File) {
         io.mapRequired("file", File.Filename);
-        io.mapRequired("symbol", File.Symbols);
+        io.mapRequired("symbols", File.Symbols);
     }
 };
 
