@@ -31,12 +31,14 @@ class CliqueColors(Enum):
 class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
     yaml_tag = u'!HAKCCompartment'
 
-    def __init__(self, compartment_id: int, **kwargs):
+    def __init__(self, compartment_id: int, division_count: int, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCPrintableObj.__init__(self, **kwargs)
         self.compartment_id = compartment_id
+        self.division_count = division_count
         self.targets = set()
         self.divisions = dict()
+        self.entry_token = self.compute_entry_token()
 
     def __eq__(self, other):
         if isinstance(other, HAKCCompartment):
@@ -50,20 +52,32 @@ class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
         self.targets.add(target_compartment)
 
     def add_division(self, division_id: int):
+        if division_id >= self.division_count:
+            raise RuntimeError(
+                f'Attempted to add an invalid division id {division_id} when the max division id is {self.division_count - 1}')
+
         if division_id != CliqueColors.NO_CLIQUE.value:
-            access_token = (self.compartment_id << 16) | (1 << division_id)
+            access_token = (self.compartment_id << self.division_count) | (1 << division_id)
         else:
             access_token = 0xFFFF
 
         self.divisions[division_id] = access_token
+        self.entry_token = self.compute_entry_token()
+
+    def compute_entry_token(self) -> int:
+        token = self.compartment_id << self.division_count
+        for division_id in self.divisions.keys():
+            token |= (1 << division_id)
+        return token
 
     def get_info_tokens(self) -> dict[str, object]:
         result = dict()
         result['compartment_id'] = self.compartment_id
         result['targets'] = sorted(list(self.targets))
         result['divisions'] = list()
+        result['entry_token'] = self.entry_token
 
-        for division in sorted(self.divisions):
+        for division in sorted(self.divisions.keys()):
             access_token = self.divisions[division]
             division_dict = dict()
             division_dict['division_id'] = division
@@ -88,8 +102,9 @@ class HAKCCompartmentalization(nx.DiGraph):
     kernel_division = CliqueColors.NO_CLIQUE.value
     default_division = CliqueColors.TEAL_CLIQUE.value
 
-    def __init__(self):
+    def __init__(self, division_count=16):
         super().__init__(self)
+        self.division_count = division_count
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
         if dag_edge_weight > 0:
@@ -173,7 +188,7 @@ class HAKCCompartmentalization(nx.DiGraph):
             compartment_id = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
             color = self.nodes[symbol][HAKCCompartmentalization.division_attr]
             if compartment_id not in compartments:
-                compartments[compartment_id] = HAKCCompartment(compartment_id)
+                compartments[compartment_id] = HAKCCompartment(compartment_id, self.division_count)
 
             current_compartment = compartments[compartment_id]
             current_compartment.add_division(color)
