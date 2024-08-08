@@ -40,6 +40,10 @@ namespace hakc {
 
         static std::string GetTransformedPath(StringRef Path);
 
+        HAKCSymbolP FindSymbol(Value *V, bool SearchUnmapped = false);
+
+        HAKCSymbolP FindYamlSymbol(const HAKCYamlSymbol &YamlSymbol);
+
     protected:
         HAKCTypeP HandleType(const DIType *type);
 
@@ -83,8 +87,6 @@ namespace hakc {
                             const HAKCSymbolP &UserSymbol);
 
         static FunctionType *GetIndirectCallFunctionType(CallInst *CallI);
-
-        HAKCSymbolP FindSymbol(Value *V, bool SearchUnmapped = false);
 
         HAKCFunctionP FindFunction(Function *F, bool SearchUnmapped = false);
 

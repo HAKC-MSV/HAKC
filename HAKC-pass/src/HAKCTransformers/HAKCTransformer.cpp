@@ -10,6 +10,7 @@
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis) :
         HAKCIRBuilder(HAKCAnalysis.GetModule().getContext()),
@@ -136,7 +137,7 @@ Value *hakc::HAKCTransformer::CreateCodeAuthentication(Value *HAKCPointer, Instr
 }
 
 GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
-    auto &Compartment = CompartmentalizationPolicy.GetCompartment(F);
+    auto Compartment = CompartmentalizationPolicy.GetCompartment(F);
 
     GlobalVariable *EntryTokenArray;
     auto CompartmentID = Compartment.GetCompartmentIDValue();
@@ -167,7 +168,7 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
                [](hakc_compartment_id_t LHS, hakc_compartment_id_t RHS) { return LHS < RHS; });
 
     for (auto ID: IDs) {
-        auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(ID);
+        auto TargetCompartment = CompartmentalizationPolicy.GetCompartment(ID);
         Constant *EntryToken = GetEntryToken(TargetCompartment);
         EntryTokenValues.push_back(EntryToken);
     }
@@ -282,10 +283,9 @@ hakc::HAKCTransformer::CreateCustomTransfer(Value *HAKCPointer, GlobalValue *Tar
         throw std::exception();
     }
 
-    auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(Target);
     auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
 
-    return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetCompartment, TargetDivision, HAKCPointer, Size, IsData);
+    return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetDivision, HAKCPointer, Size, IsData);
 }
 
 Instruction *
@@ -513,7 +513,6 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
         throw std::exception();
     }
 
-    auto &TargetCompartment = CompartmentalizationPolicy.GetCompartment(Target);
     auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
 
     /*
@@ -530,8 +529,8 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
 
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
-        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetCompartment, TargetDivision,
-                                                           HAKCPointer, HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
+        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetDivision, HAKCPointer,
+                                                           HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
                                                            HAKCPointer->getType(), TypeToUse);
 
         if (DebugIsActive()) {
@@ -999,7 +998,7 @@ hakc::hakc_compartment_id_t hakc::HAKCTransformer::getSymbolCompartmentID(Global
         CommonHAKCAnalysis::getWriter() << "GV is null when trying to get compartment ID\n";
         throw std::exception();
     }
-    auto &Compartment = CompartmentalizationPolicy.GetCompartment(GV);
+    auto Compartment = CompartmentalizationPolicy.GetCompartment(GV);
     return Compartment.GetCompartmentIDValue();
 }
 

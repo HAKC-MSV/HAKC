@@ -8,7 +8,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include "llvm/IR/Module.h"
 #include "HAKCTransferFunction.h"
-#include "HAKCCompartmentalizationPolicy/HAKCCompartment.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 using namespace llvm;
 
@@ -27,13 +27,13 @@ namespace hakc {
 
         Function *GetFunction() const;
 
-        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
-                                            HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size,
+        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                            Value *HAKCPointer, Value *Size,
                                             bool IsData) = 0;
 
         virtual Instruction *
-        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartment &TargetCompartment,
-                                HAKC_Division_ID TargetDivision, Value *HAKCPointer, Value *Size, Type *srcTy,
+        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                Value *HAKCPointer, Value *Size, Type *srcTy,
                                 Type *dstTy) = 0;
 
     protected:

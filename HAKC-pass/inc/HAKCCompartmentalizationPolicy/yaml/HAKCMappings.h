@@ -48,6 +48,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlCompartment> {
         io.mapRequired("divisions", Compartment.Cliques);
         io.mapRequired("compartment_id", Compartment.CompartmentID);
         io.mapRequired("targets", Compartment.Targets);
+        io.mapRequired("entry_token", Compartment.EntryToken);
     }
 };
 

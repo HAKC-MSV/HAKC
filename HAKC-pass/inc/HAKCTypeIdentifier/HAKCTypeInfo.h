@@ -6,6 +6,7 @@
 #define HAKC_HAKCTYPEINFO_H
 
 #include "HAKCTypeIdentifier/HAKCInfo.h"
+#include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlType.h"
 
 #include <map>
 #include <llvm/IR/DebugInfoMetadata.h>
@@ -68,6 +69,28 @@ namespace hakc {
 
         friend bool operator!=(const std::shared_ptr<HAKCTypeInfo> &lhs, const std::shared_ptr<HAKCTypeInfo> &rhs) {
             return !(*lhs == *rhs);
+        }
+
+        friend bool operator==(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
+            std::string LLVMTypeStr;
+            llvm::raw_string_ostream ostr(LLVMTypeStr);
+            if (TypeInfo->GetLLVMType()) {
+                ostr << *TypeInfo->GetLLVMType();
+            }
+            return YamlType.DebugType == TypeInfo->DbgTypeName ||
+                   (!LLVMTypeStr.empty() && LLVMTypeStr == YamlType.LLVMType);
+        }
+
+        friend bool operator==(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, HAKCYamlType &YamlType) {
+            return (YamlType == TypeInfo);
+        }
+
+        friend bool operator!=(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, HAKCYamlType &YamlType) {
+            return !(YamlType == TypeInfo);
+        }
+
+        friend bool operator!=(HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
+            return !(YamlType == TypeInfo);
         }
     };
 

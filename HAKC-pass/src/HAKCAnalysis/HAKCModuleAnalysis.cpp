@@ -295,7 +295,7 @@ namespace hakc {
             return false;
         }
         if (CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
-            auto &Compartment = Policy.GetCompartment(F);
+            auto Compartment = Policy.GetCompartment(F);
             if (Compartment.IsKernelCompartment()) {
                 return false;
             }
@@ -614,9 +614,9 @@ namespace hakc {
 
     std::string
     HAKCModuleAnalysis::GlobalVariableROSectionName(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy) {
-        auto &Compartment = Policy.GetCompartment(GlobalVar);
+        auto Compartment = Policy.GetCompartment(GlobalVar);
         std::string SectionName = ".hakc.";
-        SectionName += std::to_string(Compartment.GetCompartmentID()->getSExtValue());
+        SectionName += std::to_string(Compartment.GetCompartmentIDValue());
         SectionName += ".ro_data";
 
         return SectionName;

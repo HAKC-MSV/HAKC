@@ -236,7 +236,7 @@ namespace hakc {
          * Returns the Entry Token for the given CompartmentID and Value
          * @return
          */
-        virtual Constant *GetEntryToken(HAKCCompartment &Compartment) = 0;
+        virtual Constant *GetEntryToken(HAKCCompartment &CompartmentDivision) = 0;
 
         virtual ConstantInt *GetObjectSizeInBytes(Value *V);
 

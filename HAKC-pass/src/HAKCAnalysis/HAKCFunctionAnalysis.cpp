@@ -7,6 +7,7 @@
 
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 namespace hakc {
 
@@ -1127,10 +1128,10 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls(
             HAKCCompartmentalizationPolicy &Policy) {
-        auto &CurrentCompartment = Policy.GetCompartment(&getFunction());
+        auto CurrentDivision = Policy.GetDivision(&getFunction());
         for (auto *call: NonKernelDirectFunctionCallSet) {
-            auto &TargetCompartment = Policy.GetCompartment(call->getCalledFunction());
-            if (CurrentCompartment == TargetCompartment) {
+            auto TargetCompartment = Policy.GetCompartment(call->getCalledFunction());
+            if (CurrentDivision.GetHAKCCompartment().GetCompartmentID() == TargetCompartment.GetCompartmentID()) {
                 /* Aliases are being used for transfer functions, so if the
                  * called function is in the same compartment use the transformed function
                  * name. Otherwise do not change the function name, because the
@@ -1144,7 +1145,7 @@ namespace hakc {
                 // Fixing https://github.mit.edu/inherently-secure/ARM-MTE/issues/40
                 bool ValidTransition = false;
 
-                for (auto *Target: CurrentCompartment.GetValidTargets()) {
+                for (auto *Target: CurrentDivision.GetHAKCCompartment().GetValidTargets()) {
                     if (Target == TargetCompartment.GetCompartmentID()) {
                         ValidTransition = true;
                         break;
@@ -1153,7 +1154,7 @@ namespace hakc {
 
                 if (!ValidTransition) {
                     CommonHAKCAnalysis::getWriter() << "A direct Compartment transition from "
-                                                    << std::to_string(CurrentCompartment.GetCompartmentIDValue())
+                                                    << std::to_string(CurrentDivision.GetHAKCCompartment().GetCompartmentIDValue())
                                                     << " to "
                                                     << std::to_string(TargetCompartment.GetCompartmentIDValue())
                                                     << " is statically possible but not allowed in the"
@@ -1362,7 +1363,7 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::InstrumentCode(HAKCCompartmentalizationPolicy &Policy) {
-        auto &Compartment = Policy.GetCompartment(&getFunction());
+        auto Compartment = Policy.GetCompartment(&getFunction());
 
         AddInstrumentation(!Compartment.IsKernelCompartment(), Policy);
     }

@@ -69,7 +69,7 @@ namespace hakc {
 
     HAKC_Division_ID
     HAKCModuleAnalysisLinux::getSymbolDivision(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
-        return Policy.GetDivision(GV);
+        return Policy.GetDivisionID(GV);
     }
 
     bool HAKCModuleAnalysisLinux::FunctionIsExported(Function *F) {
@@ -347,11 +347,11 @@ namespace hakc {
         auto Color = getSymbolDivision(kernparam, Policy);
 
         // find the compartment ID of the HAKC symbol
-        auto &Compartment = Policy.GetCompartment(kernparam);
+        auto CompartmentDivision = Policy.GetDivision(kernparam);
 
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "color:\n" << getColorStringFromValue(Color) << "\n" << "compartment:\n"
-                                            << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
+                                            << std::to_string(CompartmentDivision.GetHAKCCompartment().GetCompartmentIDValue()) << "\n";
         }
 
         // cast kernparam to a void*
@@ -368,7 +368,7 @@ namespace hakc {
         // if returnTypeArg == 0, next step will use access token for return value
         // else, use color for return value
         Value *tokEqZero = builder.CreateICmpEQ(returnTypeArg, czero);
-        Value *tokColSelect = builder.CreateSelect(tokEqZero, Compartment.GetAccessToken(), Color);
+        Value *tokColSelect = builder.CreateSelect(tokEqZero, CompartmentDivision.GetAccessToken(), Color);
 
         // check if the address passed in matches address of kernparam
         Value *pointerArgEq = builder.CreateICmpEQ(pointerArg, voidCast);

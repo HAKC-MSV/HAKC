@@ -123,7 +123,7 @@ Type *hakc::HAKCTransformerLinux::GetEntryTokenType(unsigned AddrSpace) {
 
 Constant *hakc::HAKCTransformerLinux::GetEntryToken(HAKCCompartment &Compartment) {
     auto CompartmentID = Compartment.GetCompartmentIDValue();
-    auto EntryTokenValue = Compartment.GetAccessToken()->getSExtValue();
+    auto EntryTokenValue = Compartment.GetEntryToken()->getSExtValue();
     if (CompartmentID < 0) {
         CommonHAKCAnalysis::getWriter() << "Tried to create an Entry Token for an invalid CompartmentID: "
                                         << std::to_string(CompartmentID) <<
@@ -137,7 +137,7 @@ Constant *hakc::HAKCTransformerLinux::GetEntryToken(HAKCCompartment &Compartment
         throw std::exception();
     }
     return ConstantStruct::get(EntryTokenType, {
-            Compartment.GetCompartmentID(), Compartment.GetAccessToken()
+            Compartment.GetCompartmentID(), Compartment.GetEntryToken()
     });
 }
 
@@ -220,8 +220,8 @@ FunctionType *hakc::HAKCTransformerLinux::GetHAKCDataAuthenticationFunctionType(
 std::vector<Value *> hakc::HAKCTransformerLinux::CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) {
     Function *F = I->getFunction();
     Value *HAKCPointerBitCast;
-    auto &Compartment = CompartmentalizationPolicy.GetCompartment(F);
-    auto AccessToken = Compartment.GetAccessToken();
+    auto CompartmentDivision = CompartmentalizationPolicy.GetDivision(F);
+    auto AccessToken = CompartmentDivision.GetAccessToken();
     unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
     auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
 
@@ -238,8 +238,8 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateDataAuthArguments(Value *
 std::vector<Value *> hakc::HAKCTransformerLinux::CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) {
     Function *F = I->getFunction();
     auto *ExitTokens = GetValidTargetCompartments(F);
-    auto &Compartment = CompartmentalizationPolicy.GetCompartment(F);
-    auto AccessToken = Compartment.GetAccessToken();
+    auto CompartmentDivision = CompartmentalizationPolicy.GetDivision(F);
+    auto AccessToken = CompartmentDivision.GetAccessToken();
 
     if (!ExitTokens->getValueType()->isArrayTy()) {
         CommonHAKCAnalysis::getWriter() << "Invalid ExitToken Type (" << *ExitTokens->getValueType() << ") for "
@@ -276,7 +276,7 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *
     FullArgSet.push_back(OperandCast);
     FullArgSet.push_back(Size);
     FullArgSet.push_back(Compartment.GetCompartmentID());
-    FullArgSet.push_back(CompartmentalizationPolicy.GetDivision(Target));
+    FullArgSet.push_back(CompartmentalizationPolicy.GetDivisionID(Target));
     if (!IsPerCPU) {
         /* Function signature uses is_code which is !isData */
         FullArgSet.push_back(IsData ? getFalse() : getTrue());

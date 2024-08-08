@@ -8,6 +8,7 @@
 #include "HAKCPass.h"
 #include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 namespace hakc {
 

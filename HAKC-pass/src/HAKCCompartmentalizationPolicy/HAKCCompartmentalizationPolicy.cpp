@@ -8,13 +8,14 @@
 #include "llvm/Support/FileSystem.h"
 
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCMappings.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 namespace hakc {
     HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(Module &M, HAKCModuleAnalysis *HAKCAnalysis)
-            : YamlPolicy(), LLVMContext(M.getContext()),
+            : YamlPolicy(), LLVMModule(M),
               KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
-              TypeIdentifier(M, HAKCAnalysis) {
-
+              TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueMapping() {
+        HAKCCompartmentDivision KernelDivision(KernelCompartment, KERNEL_DIVISION, KERNEL_ACCESS_TOKEN, M.getContext());
     }
 
     void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(const std::string &YamlPath) {
@@ -29,30 +30,83 @@ namespace hakc {
         ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(YamlPath);
         yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
 
+        yin >> YamlPolicy;
         if (yin.error()) {
             CommonHAKCAnalysis::getWriter() << "Error parsing " << YamlPath << "\n";
             throw std::exception();
         }
-        yin >> YamlPolicy;
+
+        Compartments[KernelCompartment.GetCompartmentIDValue()] = KernelCompartment;
+
+        for (auto &YamlCompartment: YamlPolicy.Compartments) {
+            HAKCCompartment CurrentCompartment(YamlCompartment.CompartmentID, YamlCompartment.EntryToken,
+                                               LLVMModule.getContext());
+            for (auto &Target: YamlCompartment.Targets) {
+                CurrentCompartment.AddTarget(ConstantInt::get(IntegerType::get(LLVMModule.getContext(), 64), Target));
+            }
+            for (auto &YamlDivision: YamlCompartment.Cliques) {
+                HAKCCompartmentDivision Div(CurrentCompartment, YamlDivision.DivisionID, YamlDivision.AccessToken,
+                                            LLVMModule.getContext());
+                CurrentCompartment.AddDivision(Div);
+            }
+
+            Compartments[YamlCompartment.CompartmentID] = CurrentCompartment;
+        }
+        for (auto &File: YamlPolicy.Files) {
+            for (auto &YamlSymbol: File.Symbols) {
+                auto SymbolInfo = TypeIdentifier.FindYamlSymbol(YamlSymbol);
+                if (SymbolInfo) {
+                    auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
+                    GlobalValueMapping[SymbolInfo->GetGlobalObj()] = Div;
+                }
+            }
+        }
+
     }
 
     HAKCTypeIdentifier &HAKCCompartmentalizationPolicy::GetTypeIdentifier() {
         return TypeIdentifier;
     }
 
-    HAKCCompartment &HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
-        /* TODO: Implement */
-        return KernelCompartment;
+    HAKCCompartment HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
+        auto Division = GetDivision(GV);
+        return Division.GetHAKCCompartment();
     }
 
-    HAKC_Division_ID HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
-        /* TODO: Implement */
-        return ConstantInt::get(IntegerType::get(LLVMContext, 64), KERNEL_DIVISION);
+    HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
+        auto it = GlobalValueMapping.find(GV);
+        if (it == GlobalValueMapping.end()) {
+            return KernelCompartment.GetDivisions()[0];
+        } else {
+            return it->second;
+        }
     }
 
-    HAKCCompartment &HAKCCompartmentalizationPolicy::GetCompartment(hakc_compartment_id_t ID) {
-        /* TODO: Implement */
-        return KernelCompartment;
+    HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(hakc_compartment_id_t CompartmentID,
+                                                                        hakc_compartment_division_t DivisionID) {
+        auto Result = KernelCompartment.GetDivisions()[0];
+
+        auto Compartment = GetCompartment(CompartmentID);
+        for (auto &Div: Compartment.GetDivisions()) {
+            if (Div.GetDivisionID()->getSExtValue() == DivisionID) {
+                Result = Div;
+            }
+        }
+        return Result;
+    }
+
+    HAKC_Division_ID HAKCCompartmentalizationPolicy::GetDivisionID(GlobalValue *GV) {
+        auto Division = GetDivision(GV);
+        return Division.GetDivisionID();
+    }
+
+    HAKCCompartment HAKCCompartmentalizationPolicy::GetCompartment(hakc_compartment_id_t ID) {
+        auto it = Compartments.find(ID);
+        if (it == Compartments.end()) {
+            return KernelCompartment;
+        } else {
+            return it->second;
+        }
     }
 
 } // hakc

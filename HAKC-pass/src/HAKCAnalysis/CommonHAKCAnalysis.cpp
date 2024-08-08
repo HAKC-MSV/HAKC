@@ -634,7 +634,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
-        auto &Compartment = Policy.GetCompartment(GV);
+        auto Compartment = Policy.GetCompartment(GV);
         return Compartment.IsKernelCompartment();
     }
 

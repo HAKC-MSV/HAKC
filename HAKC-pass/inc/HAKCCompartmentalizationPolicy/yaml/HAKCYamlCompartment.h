@@ -15,6 +15,7 @@ namespace hakc {
         HAKCYamlCompartment();
 
         std::vector<HAKCYamlClique> Cliques;
+        hakc_access_token_t EntryToken;
         hakc_compartment_id_t CompartmentID;
         std::vector<hakc_compartment_id_t> Targets;
     };

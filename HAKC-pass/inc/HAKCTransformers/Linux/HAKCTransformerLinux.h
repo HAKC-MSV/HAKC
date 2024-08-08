@@ -7,6 +7,7 @@
 
 #include "HAKCTransformers/HAKCTransformer.h"
 #include "HAKCAnalysis/Linux/HAKCModuleAnalysisLinux.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 
 namespace hakc {

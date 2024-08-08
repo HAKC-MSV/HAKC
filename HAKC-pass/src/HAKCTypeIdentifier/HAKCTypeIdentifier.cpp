@@ -725,6 +725,30 @@ std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::FindSymbol(Value
     return nullptr;
 }
 
+hakc::HAKCSymbolP hakc::HAKCTypeIdentifier::FindYamlSymbol(const hakc::HAKCYamlSymbol &YamlSymbol) {
+    for(auto &it : globals) {
+        if(YamlSymbol == it.second) {
+            return it.second;
+        }
+    }
+    for(auto &Unmapped : UnmappedGlobals) {
+        if(YamlSymbol == Unmapped) {
+            return Unmapped;
+        }
+    }
+    for(auto &it : functions) {
+        if(YamlSymbol == it.second) {
+            return it.second;
+        }
+    }
+    for(auto &Unmapped : UnmappedFunctions) {
+        if(YamlSymbol == Unmapped) {
+            return Unmapped;
+        }
+    }
+    return nullptr;
+}
+
 void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
     for (auto &it: functions) {
         auto *F = it.second->GetFunction();

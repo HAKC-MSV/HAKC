@@ -7,6 +7,7 @@
 
 #include "HAKCTypeInfo.h"
 #include "llvm/IR/GlobalObject.h"
+#include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlSymbol.h"
 
 namespace hakc {
     class HAKCSymbolInfo : public HAKCInfo {
@@ -30,6 +31,18 @@ namespace hakc {
         void SetDefiningLocation(const DIFile *File, unsigned Line);
 
         void SetLocalScope(const DIScope *Scope);
+
+        std::string GetLocalScopePath() const;
+
+        friend bool operator==(const HAKCYamlSymbol &YamlSymbol, const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo) {
+            hakc_scope_t SymbolInfoScope = (SymbolInfo->LocalScope ? hakc_local_scope : hakc_global_scope);
+            bool ScopesMatch = SymbolInfoScope == YamlSymbol.Scope.Scope;
+            if(ScopesMatch && SymbolInfoScope == hakc_local_scope) {
+                ScopesMatch = (YamlSymbol.Scope.LocalScope == SymbolInfo->GetLocalScopePath());
+            }
+
+            return ScopesMatch && YamlSymbol.Name == SymbolInfo->Name && YamlSymbol.Type == SymbolInfo->Type;
+        }
 
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
