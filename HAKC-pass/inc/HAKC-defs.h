@@ -62,7 +62,7 @@ namespace hakc {
     const StringRef HAKC_BUILD_PATH_REPLACEMENT = "$HAKC_BUILD_PATH$";
 
     typedef enum {
-        SILVER_CLIQUE = 0xF0,
+        SILVER_CLIQUE,
         GREEN_CLIQUE,
         RED_CLIQUE,
         ORANGE_CLIQUE,

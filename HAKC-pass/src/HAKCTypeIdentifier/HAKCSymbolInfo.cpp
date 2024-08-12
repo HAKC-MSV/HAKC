@@ -70,7 +70,7 @@ std::string hakc::HAKCSymbolInfo::GetYamlHeader(unsigned int Indents) const {
     if (DefiningLocation) {
         auto PathName = GetTransformedPathName(DefiningLocation);
 
-        sstream.indent(Indents + EntrySpaces()) << "DefiningFile: " << PathName << "\n";
+        sstream.indent(Indents + EntrySpaces()) << "DefiningFile: \"" << PathName << "\"\n";
         sstream.indent(Indents + EntrySpaces()) << "DefiningLine: " << DefiningLine << "\n";
     }
     sstream.indent(Indents + EntrySpaces()) << "IsDefinition: ";
@@ -149,4 +149,13 @@ void hakc::HAKCSymbolInfo::SetDefiningLocation(const DIFile *File, unsigned int 
 
 void hakc::HAKCSymbolInfo::SetLocalScope(const DIScope *Scope) {
     LocalScope = Scope;
+}
+
+bool hakc::HAKCSymbolInfo::Matches(const hakc::HAKCYamlSymbol &YamlSymbol) {
+    hakc_scope_t SymbolInfoScope = (LocalScope ? hakc_local_scope : hakc_global_scope);
+    bool ScopesMatch = SymbolInfoScope == YamlSymbol.Scope.Scope;
+    if (ScopesMatch && SymbolInfoScope == hakc_local_scope) {
+        ScopesMatch = (YamlSymbol.Scope.LocalScope == GetLocalScopePath());
+    }
+    return ScopesMatch && YamlSymbol.Name == Name && YamlSymbol.Type == Type;
 }

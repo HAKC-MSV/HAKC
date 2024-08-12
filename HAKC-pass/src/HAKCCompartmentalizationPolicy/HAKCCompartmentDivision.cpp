@@ -17,6 +17,8 @@ namespace hakc {
     HAKCCompartmentDivision::HAKCCompartmentDivision()
             : ParentCompartment(), AccessToken(nullptr), DivisionID(nullptr) {}
 
+
+
     HAKCCompartment HAKCCompartmentDivision::GetHAKCCompartment() const {
         return ParentCompartment;
     }

@@ -573,7 +573,7 @@ namespace hakc {
             case NO_CLIQUE:
                 return "NO_CLIQUE";
             default:
-                CommonHAKCAnalysis::getWriter() << "number " << color->getZExtValue() << "isn't a valid color\n";
+                CommonHAKCAnalysis::getWriter() << "number " << color->getZExtValue() << " isn't a valid color\n";
                 return "INVALID_CLIQUE";
         }
     }

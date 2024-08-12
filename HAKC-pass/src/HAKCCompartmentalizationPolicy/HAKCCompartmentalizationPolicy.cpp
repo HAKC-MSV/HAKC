@@ -16,6 +16,7 @@ namespace hakc {
               KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
               TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueMapping() {
         HAKCCompartmentDivision KernelDivision(KernelCompartment, KERNEL_DIVISION, KERNEL_ACCESS_TOKEN, M.getContext());
+        KernelCompartment.AddDivision(KernelDivision);
     }
 
     void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(const std::string &YamlPath) {
@@ -56,7 +57,7 @@ namespace hakc {
             for (auto &YamlSymbol: File.Symbols) {
                 auto SymbolInfo = TypeIdentifier.FindYamlSymbol(YamlSymbol);
                 if (SymbolInfo) {
-                    CommonHAKCAnalysis::getWriter() << "Found SymbolInfo " << *SymbolInfo << " for YamlSymbol " << YamlSymbol << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Found SymbolInfo " << *SymbolInfo << "\nfor YamlSymbol " << YamlSymbol << "\n";
                     auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
                     GlobalValueMapping[SymbolInfo->GetGlobalObj()] = Div;
                 } else {
@@ -64,7 +65,6 @@ namespace hakc {
                 }
             }
         }
-
     }
 
     HAKCTypeIdentifier &HAKCCompartmentalizationPolicy::GetTypeIdentifier() {

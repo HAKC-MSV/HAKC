@@ -41,6 +41,8 @@ namespace hakc {
 
         StringRef GetYamlIdentifier() const override;
 
+        static StringRef UnknownType;
+
     protected:
         std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;
         unsigned SizeInBits;
@@ -81,15 +83,15 @@ namespace hakc {
                    (!LLVMTypeStr.empty() && LLVMTypeStr == YamlType.LLVMType);
         }
 
-        friend bool operator==(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, HAKCYamlType &YamlType) {
+        friend bool operator==(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, const HAKCYamlType &YamlType) {
             return (YamlType == TypeInfo);
         }
 
-        friend bool operator!=(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, HAKCYamlType &YamlType) {
+        friend bool operator!=(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, const HAKCYamlType &YamlType) {
             return !(YamlType == TypeInfo);
         }
 
-        friend bool operator!=(HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
+        friend bool operator!=(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
             return !(YamlType == TypeInfo);
         }
     };

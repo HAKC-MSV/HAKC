@@ -35,14 +35,21 @@ namespace hakc {
         std::string GetLocalScopePath() const;
 
         friend bool operator==(const HAKCYamlSymbol &YamlSymbol, const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo) {
-            hakc_scope_t SymbolInfoScope = (SymbolInfo->LocalScope ? hakc_local_scope : hakc_global_scope);
-            bool ScopesMatch = SymbolInfoScope == YamlSymbol.Scope.Scope;
-            if (ScopesMatch && SymbolInfoScope == hakc_local_scope) {
-                ScopesMatch = (YamlSymbol.Scope.LocalScope == SymbolInfo->GetLocalScopePath());
-            }
-
-            return ScopesMatch && YamlSymbol.Name == SymbolInfo->Name && YamlSymbol.Type == SymbolInfo->Type;
+            return SymbolInfo->Matches(YamlSymbol);
         }
+
+        friend bool operator==(const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo, const HAKCYamlSymbol &YamlSymbol) {
+            return YamlSymbol == SymbolInfo;
+        }
+
+        friend bool operator!=(const HAKCYamlSymbol &YamlSymbol, const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo) {
+            return !(YamlSymbol == SymbolInfo);
+        }
+
+        friend bool operator!=(const std::shared_ptr<HAKCSymbolInfo> &SymbolInfo, const HAKCYamlSymbol &YamlSymbol) {
+            return !(YamlSymbol == SymbolInfo);
+        }
+
 
     protected:
         std::shared_ptr<HAKCTypeInfo> Type;
@@ -56,6 +63,8 @@ namespace hakc {
         void SetGlobalObj(GlobalObject *GlobalObj);
 
         std::string GetTransformedPathName(const DIFile *File) const;
+
+        bool Matches(const HAKCYamlSymbol &YamlSymbol);
     };
 }
 

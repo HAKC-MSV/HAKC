@@ -75,9 +75,9 @@ namespace hakc {
         return "!HAKCType";
     }
 
-    std::string HAKCTypeInfo::GetYamlHeader(unsigned int Indents) const {
-        auto UnknownType = "@UNKNOWN@";
+    StringRef HAKCTypeInfo::UnknownType = "@UNKNOWN@";
 
+    std::string HAKCTypeInfo::GetYamlHeader(unsigned int Indents) const {
         std::string Yaml = HAKCInfo::GetYamlHeader(Indents);
         llvm::raw_string_ostream sstream(Yaml);
 
