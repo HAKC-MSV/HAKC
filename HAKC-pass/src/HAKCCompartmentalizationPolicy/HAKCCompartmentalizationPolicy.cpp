@@ -14,9 +14,10 @@ namespace hakc {
     HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(Module &M, HAKCModuleAnalysis *HAKCAnalysis)
             : YamlPolicy(), LLVMModule(M),
               KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
-              TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueMapping() {
+              TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueDivisionMapping() {
         HAKCCompartmentDivision KernelDivision(KernelCompartment, KERNEL_DIVISION, KERNEL_ACCESS_TOKEN, M.getContext());
         KernelCompartment.AddDivision(KernelDivision);
+        Compartments[KernelCompartment.GetCompartmentIDValue()] = KernelCompartment;
     }
 
     void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(const std::string &YamlPath) {
@@ -37,8 +38,6 @@ namespace hakc {
             throw std::exception();
         }
 
-        Compartments[KernelCompartment.GetCompartmentIDValue()] = KernelCompartment;
-
         for (auto &YamlCompartment: YamlPolicy.Compartments) {
             HAKCCompartment CurrentCompartment(YamlCompartment.CompartmentID, YamlCompartment.EntryToken,
                                                LLVMModule.getContext());
@@ -57,11 +56,8 @@ namespace hakc {
             for (auto &YamlSymbol: File.Symbols) {
                 auto SymbolInfo = TypeIdentifier.FindYamlSymbol(YamlSymbol);
                 if (SymbolInfo) {
-                    CommonHAKCAnalysis::getWriter() << "Found SymbolInfo " << *SymbolInfo << "\nfor YamlSymbol " << YamlSymbol << "\n";
                     auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
-                    GlobalValueMapping[SymbolInfo->GetGlobalObj()] = Div;
-                } else {
-                    CommonHAKCAnalysis::getWriter() << "Could not find SymbolInfo for YamlSymbol " << YamlSymbol << "\n";
+                    GlobalValueDivisionMapping[SymbolInfo->GetGlobalObj()] = Div;
                 }
             }
         }
@@ -82,8 +78,8 @@ namespace hakc {
             throw std::exception();
         }
 
-        auto it = GlobalValueMapping.find(GV);
-        if (it == GlobalValueMapping.end()) {
+        auto it = GlobalValueDivisionMapping.find(GV);
+        if (it == GlobalValueDivisionMapping.end()) {
             return KernelCompartment.GetDivisions()[0];
         } else {
             return it->second;

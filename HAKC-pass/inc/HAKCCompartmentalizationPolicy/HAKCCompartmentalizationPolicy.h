@@ -40,7 +40,9 @@ namespace hakc {
         HAKCCompartment KernelCompartment;
         HAKCTypeIdentifier TypeIdentifier;
         std::map<hakc_compartment_id_t, HAKCCompartment> Compartments;
-        std::map<GlobalValue *, HAKCCompartmentDivision> GlobalValueMapping;
+        std::map<GlobalValue *, HAKCCompartmentDivision> GlobalValueDivisionMapping;
+
+
     };
 
 } // hakc
