@@ -7,7 +7,7 @@
 
 #include <vector>
 #include "HAKCYamlCompartment.h"
-#include "HAKCYamlFile.h"
+#include "HAKCYamlSymbol.h"
 
 namespace hakc {
 
@@ -16,7 +16,7 @@ namespace hakc {
         HAKCYamlCompartmentalizationPolicy() = default;
 
         std::vector<HAKCYamlCompartment> Compartments;
-        std::vector<HAKCYamlFile> Files;
+        std::vector<HAKCYamlSymbol> Symbols;
     };
 
 } // hakc

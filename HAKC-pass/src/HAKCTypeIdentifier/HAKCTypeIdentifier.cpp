@@ -561,7 +561,11 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
         }
         CreateIndirectCallSourceLink(CallI->getCalledOperand(), Path);
     } else {
-        CommonHAKCAnalysis::getWriter() << "Unhandled Link type: " << *V << "\n";
+        if (debug) {
+            CommonHAKCAnalysis::getWriter() << "Unhandled Link type: ";
+            CommonHAKCAnalysis::PrettyPrintValue(V, CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "\n";
+        }
     }
 }
 

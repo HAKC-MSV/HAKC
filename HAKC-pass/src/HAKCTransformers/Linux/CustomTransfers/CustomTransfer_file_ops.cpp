@@ -15,7 +15,7 @@ namespace hakc {
                                                  IntegerType::get(M.getContext(),
                                                                   COMPARTMENT_ID_BIT_LENGTH),
                                                  IntegerType::get(
-                                                         M.getContext(), CLIQUE_COLOR_BIT_LENGTH)
+                                                         M.getContext(), DIVISION_ID_BIT_LENGTH)
                                          }, 0, 1, 2) {
 
     }

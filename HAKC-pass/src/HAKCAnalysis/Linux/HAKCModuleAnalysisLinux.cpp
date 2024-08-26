@@ -65,6 +65,8 @@ namespace hakc {
 
         HAKC_FUNCTION("hakc_init_kernel_globals");
         HAKC_FUNCTION("hakc_init_globals");
+        HAKC_FUNCTION("hakc_transfer_charp");
+        HAKC_FUNCTION("hakc_duplicate_readonly_charp");
     }
 
     HAKC_Division_ID
@@ -261,9 +263,7 @@ namespace hakc {
         }
 
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "processing kernel param\n";
-            kernparam->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "processing kernel param\n" << *kernparam << "\n";
         }
 
         return kernparam;
@@ -399,10 +399,16 @@ namespace hakc {
     // used to correctly transfer charp parameters
     void HAKCModuleAnalysisLinux::GenerateModuleParamGetCtxFunction(GlobalVariable *GV,
                                                                     HAKCCompartmentalizationPolicy &Policy) {
+        if(CommonHAKCAnalysis::IsKernelSymbol(GV, Policy)) {
+            return;
+        }
+
         GlobalValue *kernparam = ExtractGlobalFromKernelParam(GV);
 
         if (!kernparam) {
             CommonHAKCAnalysis::getWriter() << "Could not extract global from kernel param:\n" << *GV << "\n";
+            M.print(CommonHAKCAnalysis::getWriter(), nullptr);
+            CommonHAKCAnalysis::getWriter() << "\n";
             throw std::exception();
         }
 

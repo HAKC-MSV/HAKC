@@ -13,8 +13,8 @@
 namespace hakc {
     HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(Module &M, HAKCModuleAnalysis *HAKCAnalysis)
             : YamlPolicy(), LLVMModule(M),
-              KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
-              TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueDivisionMapping() {
+                                KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
+                                TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueDivisionMapping() {
         HAKCCompartmentDivision KernelDivision(KernelCompartment, KERNEL_DIVISION, KERNEL_ACCESS_TOKEN, M.getContext());
         KernelCompartment.AddDivision(KernelDivision);
         Compartments[KernelCompartment.GetCompartmentIDValue()] = KernelCompartment;
@@ -52,15 +52,6 @@ namespace hakc {
 
             Compartments[YamlCompartment.CompartmentID] = CurrentCompartment;
         }
-        for (auto &File: YamlPolicy.Files) {
-            for (auto &YamlSymbol: File.Symbols) {
-                auto SymbolInfo = TypeIdentifier.FindYamlSymbol(YamlSymbol);
-                if (SymbolInfo) {
-                    auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
-                    GlobalValueDivisionMapping[SymbolInfo->GetGlobalObj()] = Div;
-                }
-            }
-        }
     }
 
     HAKCTypeIdentifier &HAKCCompartmentalizationPolicy::GetTypeIdentifier() {
@@ -73,13 +64,23 @@ namespace hakc {
     }
 
     HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
-        if(!GV) {
+        if (!GV) {
             CommonHAKCAnalysis::getWriter() << "Trying to find Division for null GlobalValue!\n";
             throw std::exception();
         }
 
         auto it = GlobalValueDivisionMapping.find(GV);
         if (it == GlobalValueDivisionMapping.end()) {
+            auto SymbolInfo = TypeIdentifier.FindSymbol(GV, true);
+            if(SymbolInfo) {
+                for (auto &YamlSymbol: YamlPolicy.Symbols) {
+                    if(YamlSymbol == SymbolInfo) {
+                        auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
+                        GlobalValueDivisionMapping[SymbolInfo->GetGlobalObj()] = Div;
+                        return Div;
+                    }
+                }
+            }
             return KernelCompartment.GetDivisions()[0];
         } else {
             return it->second;

@@ -10,7 +10,7 @@ namespace hakc {
                                                      const hakc_access_token_t AccessToken, LLVMContext &Context) :
             ParentCompartment(C),
             AccessToken(ConstantInt::get(IntegerType::get(Context, 64), AccessToken)),
-            DivisionID(ConstantInt::get(IntegerType::get(Context, 64), DivisionID)) {
+            DivisionID(ConstantInt::get(IntegerType::get(Context, DIVISION_ID_BIT_LENGTH), DivisionID)) {
 
     }
 

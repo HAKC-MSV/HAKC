@@ -66,9 +66,9 @@ CallInst *hakc::HAKCTransformerLinux::SaveColor(Value *V) {
     std::vector<Value *> Args = {HAKCIRBuilder.CreateBitCast(V, HAKCIRBuilder.getInt8PtrTy(AddrSpace))};
     CallInst *SaveColorCall;
     if (CommonHAKCAnalysis::isPerCPUPointer(V)) {
-        SaveColorCall = CreateCall(HAKCGetPerCPUColorName(), HAKCIRBuilder.getIntNTy(CLIQUE_COLOR_BIT_LENGTH), Args);
+        SaveColorCall = CreateCall(HAKCGetPerCPUColorName(), HAKCIRBuilder.getIntNTy(DIVISION_ID_BIT_LENGTH), Args);
     } else {
-        SaveColorCall = CreateCall(HAKCGetColorName(), HAKCIRBuilder.getIntNTy(CLIQUE_COLOR_BIT_LENGTH), Args);
+        SaveColorCall = CreateCall(HAKCGetColorName(), HAKCIRBuilder.getIntNTy(DIVISION_ID_BIT_LENGTH), Args);
     }
 
     return SaveColorCall;
@@ -286,5 +286,5 @@ std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *
 }
 
 ConstantInt *hakc::HAKCTransformerLinux::GetColorValue(hakc::sym_color_t Color) {
-    return HAKCIRBuilder.getIntN(CLIQUE_COLOR_BIT_LENGTH, Color);
+    return HAKCIRBuilder.getIntN(DIVISION_ID_BIT_LENGTH, Color);
 }

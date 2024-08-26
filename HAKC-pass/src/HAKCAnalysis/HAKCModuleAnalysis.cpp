@@ -469,25 +469,6 @@ namespace hakc {
         }
     }
 
-//    void HAKCModuleAnalysis::compartmentalizeModule() {
-//        SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
-//        llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
-//                   [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
-//
-//        for (auto *F: SortedFunctions) {
-//            debug_output = (F->getName() == getHAKCDebugName());
-//            if (debug_output) {
-//                IsCompartmentalizedAndContainsDebugName = true;
-//            }
-//            CompartmentalizeFunction(F);
-//        }
-//        AddCompartmentMetadata();
-//
-//        TransferModuleParams();
-//
-//        CreateInitGlobalMemberTransfers();
-//    }
-
     bool HAKCModuleAnalysis::ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct,
                                                             HAKCCompartmentalizationPolicy &Policy) {
         bool Result = false;

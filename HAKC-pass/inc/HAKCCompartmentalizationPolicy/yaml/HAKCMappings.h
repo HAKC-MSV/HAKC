@@ -6,7 +6,6 @@
 #define HAKC_HAKCMAPPINGS_H
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlCompartment)
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlFile)
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlClique)
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYamlSymbol)
 
@@ -52,19 +51,12 @@ struct yaml::MappingTraits<hakc::HAKCYamlCompartment> {
     }
 };
 
-template<>
-struct yaml::MappingTraits<hakc::HAKCYamlFile> {
-    static void mapping(yaml::IO &io, hakc::HAKCYamlFile &File) {
-        io.mapRequired("file", File.Filename);
-        io.mapRequired("symbols", File.Symbols);
-    }
-};
 
 template<>
 struct yaml::MappingTraits<hakc::HAKCYamlCompartmentalizationPolicy> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlCompartmentalizationPolicy &YamlPolicy) {
         io.mapRequired("COMPARTMENTS", YamlPolicy.Compartments);
-        io.mapRequired("FILES", YamlPolicy.Files);
+        io.mapRequired("SYMBOLS", YamlPolicy.Symbols);
     }
 };
 
@@ -77,6 +69,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlSymbol> {
         io.mapRequired("name", Symbol.Name);
         io.mapRequired("scope", Symbol.Scope);
         io.mapRequired("type", Symbol.Type);
+        io.mapRequired("compilation_units", Symbol.CompilationUnits);
     }
 };
 

@@ -9,7 +9,7 @@
 namespace hakc {
     HAKCCompartment::HAKCCompartment(hakc_compartment_id_t Compartment, hakc_access_token_t EntryToken,
                                      class LLVMContext &Context) :
-            Compartment(ConstantInt::get(IntegerType::get(Context, 64), Compartment)),
+            Compartment(ConstantInt::get(IntegerType::get(Context, COMPARTMENT_ID_BIT_LENGTH), Compartment)),
             EntryToken(ConstantInt::get(IntegerType::get(Context, 64), EntryToken)),
             Targets(), Divisions() {
 
