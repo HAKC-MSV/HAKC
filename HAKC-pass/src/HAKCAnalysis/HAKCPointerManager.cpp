@@ -133,6 +133,14 @@ namespace hakc {
             }
         }
 
+        if(!UseShouldBeIgnored) {
+            if(auto *I = dyn_cast<Instruction>(UserP)) {
+                UseShouldBeIgnored = (I->getFunction() != &GetFunctionAnalysis()->getFunction());
+            } else if(auto *A = dyn_cast<Argument>(UserP)) {
+                UseShouldBeIgnored = (A->getParent() != &GetFunctionAnalysis()->getFunction());
+            }
+        }
+
         return UseShouldBeIgnored;
     }
 

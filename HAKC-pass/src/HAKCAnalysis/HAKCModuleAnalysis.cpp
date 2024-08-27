@@ -378,15 +378,7 @@ namespace hakc {
                     continue;
                 }
 
-                auto RawCompartmentID = getTransformer(Policy).getFunctionCompartmentID(&F);
-                auto *compartmentId = getTransformer(Policy).GetHAKCCompartmentValue(RawCompartmentID);
-
-                if (RawCompartmentID < 0) {
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Could not find compartment ID. Using kernel defaults\n";
-                    }
-                    compartmentId = getTransformer(Policy).GetHAKCCompartmentValue(KERNEL_COMPARTMENT);
-                }
+                auto Compartment = Policy.GetCompartment(&F);
 
                 if (functionIsTransferCandidate(&F)) {
                     transferFunc = getTransformer(Policy).CreateTransferFunction(&F);
@@ -402,7 +394,8 @@ namespace hakc {
                         } else {
                             CommonHAKCAnalysis::getWriter() << "Created transfer function " << transferFunc->getName();
                         }
-                        CommonHAKCAnalysis::getWriter() << " in compartment " << *compartmentId << "\n";
+                        CommonHAKCAnalysis::getWriter() << " in compartment "
+                                                        << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
                         if (!TransferAlreadyExisted) {
                             CommonHAKCAnalysis::getWriter() << *transferFunc << "\n";
                         }
@@ -641,7 +634,9 @@ namespace hakc {
 
     void HAKCModuleAnalysis::AddCompartmentMetadata(HAKCCompartmentalizationPolicy &Policy) {
         for (auto Compartment: UsedCompartments) {
-            getTransformer(Policy).AddCompartmentMetadataEntry(Compartment);
+            if(!Compartment.IsKernelCompartment()) {
+                getTransformer(Policy).AddCompartmentMetadataEntry(Compartment);
+            }
         }
     }
 

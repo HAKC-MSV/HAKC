@@ -161,7 +161,7 @@ namespace hakc {
 
         void createAllAuthenticatedPointers();
 
-        void createMissingTransfers();
+        void createMissingTransfers(HAKCCompartmentalizationPolicy &Policy);
 
         void transformPointerDereferences();
 

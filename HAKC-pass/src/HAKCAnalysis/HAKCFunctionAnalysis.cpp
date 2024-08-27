@@ -21,6 +21,10 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::UpdateHAKCFunctionParameters(HAKCCompartmentalizationPolicy &Policy) {
+        if (CommonHAKCAnalysis::IsKernelSymbol(CurrentFunction, Policy)) {
+            return;
+        }
+
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Updating parameters for the following HAKC functions:\n";
             for (auto *CallI: HAKCFunctionCalls) {
@@ -1193,14 +1197,17 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "setup() has run for " << getFunction().getName() << "\n";
         }
 
-        if (debug_output) {
+        if(debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
-            SmallVector<ManagedHAKCPointerP> SortedPointers;
-            PointerManager.GetSortedPointers(SortedPointers);
+        }
+        SmallVector<ManagedHAKCPointerP> SortedPointers;
+        PointerManager.GetSortedPointers(SortedPointers);
 
-            for (auto &HAKCPointer: SortedPointers) {
+        for (auto &HAKCPointer: SortedPointers) {
+            if(debug_output) {
                 CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
             }
+            HAKCPointer->DetermineIfBasePointerIsAuthenticated(Policy);
         }
 
         if (modifiedFunction()) {
@@ -1210,7 +1217,7 @@ namespace hakc {
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "---- createMissingTransfers ----\n";
             }
-            createMissingTransfers();
+            createMissingTransfers(Policy);
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n";
                 CommonHAKCAnalysis::getWriter() << "----- UpdateHAKCFunctionParameters ------\n";
@@ -1254,10 +1261,6 @@ namespace hakc {
         }
     }
 
-//    void HAKCFunctionAnalysis::InstrumentKernelCode() {
-//        AddInstrumentation(false);
-//    }
-
     Instruction *HAKCFunctionAnalysis::CreateMissingTransfer(Instruction *PointerNeedingTransfer,
                                                              HAKCCompartmentalizationPolicy &Policy) {
         auto Allocations = GetKernelAllocationSizeMap();
@@ -1298,7 +1301,10 @@ namespace hakc {
                                                           !isa<Function>(GlobalVar));
     }
 
-    void HAKCFunctionAnalysis::createMissingTransfers() {
+    void HAKCFunctionAnalysis::createMissingTransfers(HAKCCompartmentalizationPolicy &Policy) {
+        if (CommonHAKCAnalysis::IsKernelSymbol(CurrentFunction, Policy)) {
+            return;
+        }
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Function prior to making transfers:\n" << getFunction() << "\n";
         }

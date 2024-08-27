@@ -114,15 +114,6 @@ namespace hakc {
 
         if (PerformTransformations) {
             Transformation->performTransformations();
-            /*if (transformation.isCompartmentalized()) {
-                CommonHAKCAnalysis::getWriter() << "Total Data Checks: "
-                       << transformation.totalDataChecks << "\n"
-                       << "Total Code Checks: "
-                       << transformation.totalCodeChecks << "\n"
-                       << "Total Transfers:   "
-                       << transformation.totalTransfers
-                       << "\n";
-            }*/
         }
 
         delete Transformation;
