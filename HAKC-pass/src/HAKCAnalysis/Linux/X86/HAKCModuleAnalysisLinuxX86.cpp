@@ -62,12 +62,12 @@ namespace hakc {
         return AddToSet(Paths, extras);
     }
 
-    bool HAKCModuleAnalysisLinuxX86::functionIsTransferCandidate(Function *F) {
+    bool HAKCModuleAnalysisLinuxX86::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         if (F->getName().contains("__SCT")) {
             /* Handle trampolines */
             return false;
         }
-        return HAKCModuleAnalysisLinux::functionIsTransferCandidate(F);
+        return HAKCModuleAnalysisLinux::functionIsTransferCandidate(F, Policy);
     }
 
     bool

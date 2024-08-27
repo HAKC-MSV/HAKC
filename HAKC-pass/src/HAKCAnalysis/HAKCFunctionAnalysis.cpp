@@ -764,15 +764,17 @@ namespace hakc {
         }
     }
 
-    void HAKCFunctionAnalysis::MaybeAddCompareToDirectUsers(CmpInst *CmpI) {
-        CheckCompareOperandForDirectFunctionUse(CmpI, 0);
-        CheckCompareOperandForDirectFunctionUse(CmpI, 1);
+    void HAKCFunctionAnalysis::MaybeAddCompareToDirectUsers(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy) {
+        CheckCompareOperandForDirectFunctionUse(CmpI, Policy, 0);
+        CheckCompareOperandForDirectFunctionUse(CmpI, Policy, 1);
     }
 
-    void HAKCFunctionAnalysis::CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned int OpNo) {
+    void
+    HAKCFunctionAnalysis::CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy,
+                                                                  unsigned int OpNo) {
         auto *Op = getDef(CmpI->getOperand(OpNo), false, debug_output);
         if (auto *func = dyn_cast<Function>(Op)) {
-            if (valueShouldBeReplacedWithTransfer(func)) {
+            if (valueShouldBeReplacedWithTransfer(func, Policy)) {
                 if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Adding comparison to directFunctionUsers for argument " <<
                                                     std::to_string(OpNo) << "\n";
@@ -791,7 +793,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Checking comparison " << *compare << "\n";
         }
 
-        MaybeAddCompareToDirectUsers(compare);
+        MaybeAddCompareToDirectUsers(compare, Policy);
 
         if (isa<ConstantPointerNull>(compare->getOperand(0)) ||
             isa<ConstantPointerNull>(compare->getOperand(1))) {
@@ -1197,14 +1199,14 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "setup() has run for " << getFunction().getName() << "\n";
         }
 
-        if(debug_output) {
+        if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Managed Pointers:\n";
         }
         SmallVector<ManagedHAKCPointerP> SortedPointers;
         PointerManager.GetSortedPointers(SortedPointers);
 
         for (auto &HAKCPointer: SortedPointers) {
-            if(debug_output) {
+            if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
             }
             HAKCPointer->DetermineIfBasePointerIsAuthenticated(Policy);
@@ -1332,21 +1334,22 @@ namespace hakc {
         I->setOperand(ArgNo, Replacement);
     }
 
-    void HAKCFunctionAnalysis::ReplaceDirectFunctionUsesWithTransfers(HAKCCompartmentalizationPolicy &Policy) {
-#define CHECK_AND_REPLACE(V, Inst, ArgNo, P) do { \
-    if(auto *Func = dyn_cast<Function>(V)) { \
-            auto name = getOutsideTransferName(Func); \
-            auto transfer = getModuleAnalysis().GetFunctionByName(name, Func->getFunctionType()); \
-            if (debug_output) { \
-                CommonHAKCAnalysis::getWriter() << "Changing operand " << std::to_string(ArgNo) << " to " \
-                                                << name << " for\n\t" << *Inst << "\n"; \
-            } \
-            transfer->setLinkage(Func->getLinkage()); \
-            transfer->copyAttributesFrom(Func); \
-            ReplaceInstructionOperand(Inst, ArgNo, V, transfer, P);                              \
-        }                             \
-} while(0)
+    void HAKCFunctionAnalysis::CheckAndReplaceArgument(Value *V, Instruction *I, unsigned int ArgNo,
+                                                       HAKCCompartmentalizationPolicy &Policy) {
+        if (auto *Func = dyn_cast<Function>(V)) {
+            auto name = getOutsideTransferName(Func);
+            auto transfer = getModuleAnalysis().GetFunctionByName(name, Func->getFunctionType());
+            if (debug_output) {
+                CommonHAKCAnalysis::getWriter() << "Changing operand " << std::to_string(ArgNo) << " to "
+                                                << name << " for\n\t" << *I << "\n";
+            }
+            transfer->setLinkage(Func->getLinkage());
+            transfer->copyAttributesFrom(Func);
+            ReplaceInstructionOperand(I, ArgNo, V, transfer, Policy);
+        }
+    }
 
+    void HAKCFunctionAnalysis::ReplaceDirectFunctionUsesWithTransfers(HAKCCompartmentalizationPolicy &Policy) {
         for (auto *I: directFunctionUsers) {
             for (unsigned i = 0; i < I->getNumOperands(); i++) {
                 if (isa<CallInst>(I)) {
@@ -1357,16 +1360,15 @@ namespace hakc {
                 }
                 auto *Op = getDef(I->getOperand(i), false, debug_output);
                 if (isa<Function>(Op)) {
-                    CHECK_AND_REPLACE(Op, I, i, Policy);
+                    CheckAndReplaceArgument(Op, I, i, Policy);
                 } else if (auto *selectInst = dyn_cast<SelectInst>(Op)) {
                     auto *TrueValue = getDef(selectInst->getTrueValue(), false, debug_output);
-                    CHECK_AND_REPLACE(TrueValue, I, i, Policy);
+                    CheckAndReplaceArgument(TrueValue, I, i, Policy);
                     auto *FalseValue = getDef(selectInst->getFalseValue(), false, debug_output);
-                    CHECK_AND_REPLACE(FalseValue, I, i, Policy);
+                    CheckAndReplaceArgument(FalseValue, I, i, Policy);
                 }
             }
         }
-#undef CHECK_AND_REPLACE
     }
 
     void HAKCFunctionAnalysis::InstrumentCode(HAKCCompartmentalizationPolicy &Policy) {

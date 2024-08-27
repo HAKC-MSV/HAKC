@@ -357,7 +357,11 @@ namespace hakc {
     void HAKCModuleAnalysis::AddTransferFunctions(HAKCCompartmentalizationPolicy &Policy) {
         std::vector<Function *> FuncsNeedingTransfers;
         for (auto &F: GetModule().getFunctionList()) {
-            if (functionIsTransferCandidate(&F)) {
+            auto Compartment = Policy.GetCompartment(&F);
+
+            if (!Compartment.IsKernelCompartment() && functionIsTransferCandidate(&F, Policy) &&
+                !isOutsideTransferFunc(&F) &&
+                functionEscapes(&F)) {
                 FuncsNeedingTransfers.push_back(&F);
             }
         }
@@ -365,99 +369,85 @@ namespace hakc {
         for (auto *Funcp: FuncsNeedingTransfers) {
             Function &F = *Funcp;
             debug_output = (F.getName() == getHAKCDebugName());
-            if (!isOutsideTransferFunc(&F) && functionEscapes(&F)) {
-                std::vector<Value *> arguments;
-                std::vector<std::tuple<Value *, CallInst *, Value *>> argsToRestore;
-                Function *transferFunc = nullptr;
+            Function *transferFunc = nullptr;
 
-                if (!CommonHAKCAnalysis::FunctionHasPointerArg(&F)) {
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Function " << F.getName() << " has no pointer arguments. "
-                                                        << "Skipping transfer function creation.\n";
-                    }
-                    continue;
-                }
-
+            if (functionIsTransferCandidate(&F, Policy)) {
                 auto Compartment = Policy.GetCompartment(&F);
-
-                if (functionIsTransferCandidate(&F)) {
-                    transferFunc = getTransformer(Policy).CreateTransferFunction(&F);
-                    if (!transferFunc) {
-                        CommonHAKCAnalysis::getWriter() << "Could not create transfer for " << F.getName() << "\n";
-                        throw std::exception();
-                    }
-                    bool TransferAlreadyExisted = (transferFunc->getInstructionCount() > 0 && !F.isDeclaration());
-                    if (debug_output) {
-                        if (TransferAlreadyExisted) {
-                            CommonHAKCAnalysis::getWriter() << "Retrieved transfer function " <<
-                                                            transferFunc->getName();
-                        } else {
-                            CommonHAKCAnalysis::getWriter() << "Created transfer function " << transferFunc->getName();
-                        }
-                        CommonHAKCAnalysis::getWriter() << " in compartment "
-                                                        << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
-                        if (!TransferAlreadyExisted) {
-                            CommonHAKCAnalysis::getWriter() << *transferFunc << "\n";
-                        }
-                    }
-
-                    if (F.isDeclaration() && debug_output) {
-                        CommonHAKCAnalysis::getWriter() << F.getName() << " is a declaration\n";
-                    }
-                } else if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "No transfer created for " << F.getName() << "\n";
-                }
+                transferFunc = getTransformer(Policy).CreateTransferFunction(&F);
                 if (!transferFunc) {
-                    transferFunc = GetFunctionByName(getOutsideTransferName(&F), F.getFunctionType());
-                    /* Ensure that transfer functions not defined here are treated
-                    * the same as the function we are replacing */
-                    transferFunc->setLinkage(F.getLinkage());
-                    transferFunc->copyAttributesFrom(&F);
+                    CommonHAKCAnalysis::getWriter() << "Could not create transfer for " << F.getName() << "\n";
+                    throw std::exception();
+                }
+                bool TransferAlreadyExisted = (transferFunc->getInstructionCount() > 0 && !F.isDeclaration());
+                if (debug_output) {
+                    if (TransferAlreadyExisted) {
+                        CommonHAKCAnalysis::getWriter() << "Retrieved transfer function " <<
+                                                        transferFunc->getName();
+                    } else {
+                        CommonHAKCAnalysis::getWriter() << "Created transfer function " << transferFunc->getName();
+                    }
+                    CommonHAKCAnalysis::getWriter() << " in compartment "
+                                                    << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
+                    if (!TransferAlreadyExisted) {
+                        CommonHAKCAnalysis::getWriter() << *transferFunc << "\n";
+                    }
                 }
 
-                if (valueShouldBeReplacedWithTransfer(&F)) {
-                    if (!IsNoTransferFunction(&F)) {
-                        if (debug_output) {
-                            CommonHAKCAnalysis::getWriter() << "Replacing uses of " << F.getName()
-                                                            << " with " << transferFunc->getName() << "\n";
-                        }
-                        in_debug = debug_output;
-                        F.replaceUsesWithIf(transferFunc, useEscapes);
-                        if (debug_output) {
-                            CommonHAKCAnalysis::getWriter() << "Done\n";
-                            GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
-                            CommonHAKCAnalysis::getWriter() << "\n";
-                        }
-                    }
-                }
-                if (AliasShouldBeCreated(&F, Policy)) {
-                    auto OrigName = F.getName().str();
-                    auto NewName = CommonHAKCAnalysis::getOriginalTransformedName(&F);
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Changing name from " << F.getName()
-                                                        << " to " << NewName << "\n";
-                    }
-                    F.setName(NewName);
-                    auto *alias = GlobalAlias::create(OrigName, transferFunc);
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Final Transfer:\n" << *transferFunc << "\nAlias: " << *alias
-                                                        << "\n";
-                    }
-                    auto *OrigSP = F.getSubprogram();
-                    if (OrigSP) {
-                        DIBuilder DIB(*F.getParent(), false, OrigSP->getUnit());
-                        DISubprogram::DISPFlags SPFlags = DISubprogram::SPFlagDefinition |
-                                                          DISubprogram::SPFlagOptimized |
-                                                          DISubprogram::SPFlagLocalToUnit;
-                        auto NewSP = DIB.createFunction(OrigSP->getScope(), transferFunc->getName(),
-                                                        transferFunc->getName(),
-                                                        OrigSP->getFile(), 0, OrigSP->getType(), 0, DINode::FlagZero,
-                                                        SPFlags);
-                        transferFunc->setSubprogram(NewSP);
-                    }
+                if (F.isDeclaration() && debug_output) {
+                    CommonHAKCAnalysis::getWriter() << F.getName() << " is a declaration\n";
                 }
             } else if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << F.getName() << " does not escape\n";
+                CommonHAKCAnalysis::getWriter() << "No transfer created for " << F.getName() << "\n";
+            }
+            if (!transferFunc) {
+                transferFunc = GetFunctionByName(getOutsideTransferName(&F), F.getFunctionType());
+                /* Ensure that transfer functions not defined here are treated
+                * the same as the function we are replacing */
+                transferFunc->setLinkage(F.getLinkage());
+                transferFunc->copyAttributesFrom(&F);
+            }
+
+            if (valueShouldBeReplacedWithTransfer(&F, Policy)) {
+                if (!IsNoTransferFunction(&F)) {
+                    if (debug_output) {
+                        CommonHAKCAnalysis::getWriter() << "Replacing uses of " << F.getName()
+                                                        << " with " << transferFunc->getName() << "\n";
+                    }
+                    in_debug = debug_output;
+                    F.replaceUsesWithIf(transferFunc, useEscapes);
+                    if (debug_output) {
+                        CommonHAKCAnalysis::getWriter() << "Done\n";
+                        GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
+                        CommonHAKCAnalysis::getWriter() << "\n";
+                    }
+                }
+            }
+            if (AliasShouldBeCreated(&F, Policy)) {
+                auto OrigName = F.getName().str();
+                auto NewName = CommonHAKCAnalysis::getOriginalTransformedName(&F);
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Changing name from " << F.getName()
+                                                    << " to " << NewName << "\n";
+                }
+                F.setName(NewName);
+
+                auto *alias = GlobalAlias::create(OrigName, transferFunc);
+                if (debug_output) {
+                    CommonHAKCAnalysis::getWriter() << "Final Transfer:\n" << *transferFunc << "\nAlias: " << *alias
+                                                    << "\n";
+                }
+                auto *OrigSP = F.getSubprogram();
+                if (OrigSP) {
+                    DIBuilder DIB(*F.getParent(), false, OrigSP->getUnit());
+                    DISubprogram::DISPFlags SPFlags = DISubprogram::SPFlagDefinition |
+                                                      DISubprogram::SPFlagOptimized |
+                                                      DISubprogram::SPFlagLocalToUnit;
+                    auto NewSP = DIB.createFunction(OrigSP->getScope(), transferFunc->getName(),
+                                                    transferFunc->getName(),
+                                                    OrigSP->getFile(), 0, OrigSP->getType(), 0, DINode::FlagZero,
+                                                    SPFlags);
+                    transferFunc->setSubprogram(NewSP);
+                }
             }
         }
     }
@@ -634,7 +624,7 @@ namespace hakc {
 
     void HAKCModuleAnalysis::AddCompartmentMetadata(HAKCCompartmentalizationPolicy &Policy) {
         for (auto Compartment: UsedCompartments) {
-            if(!Compartment.IsKernelCompartment()) {
+            if (!Compartment.IsKernelCompartment()) {
                 getTransformer(Policy).AddCompartmentMetadataEntry(Compartment);
             }
         }
@@ -717,4 +707,5 @@ namespace hakc {
     StringRef hakc::HAKCModuleAnalysis::HAKCEntryTokenName() {
         return "HAKCEntryToken";
     }
+
 }// namespace hakc

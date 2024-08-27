@@ -37,7 +37,7 @@ namespace hakc {
 
         bool functionIsAnalysisCandidate(Function *F);
 
-        bool valueShouldBeReplacedWithTransfer(Value *V);
+        bool valueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy);
 
         hakc_function_def_t getHAKCFunction(StringRef name);
 
@@ -107,7 +107,7 @@ namespace hakc {
 
         virtual std::set<StringRef> GetIgnoredGlobals();
 
-        virtual bool functionIsTransferCandidate(Function *f);
+        virtual bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
         static raw_ostream &getWriter();
 

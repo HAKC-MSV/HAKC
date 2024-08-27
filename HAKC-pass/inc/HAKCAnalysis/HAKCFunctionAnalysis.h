@@ -212,9 +212,10 @@ namespace hakc {
 
         void ReplaceDirectFunctionUsesWithTransfers(HAKCCompartmentalizationPolicy &Policy);
 
-        void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned OpNo);
+        void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy,
+                                                     unsigned int OpNo);
 
-        void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
+        void MaybeAddCompareToDirectUsers(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy);
 
         virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
@@ -227,6 +228,8 @@ namespace hakc {
         void AddInstrumentation(bool RelocateSection, HAKCCompartmentalizationPolicy &Policy);
 
         HAKCTransformer &getTransformer(HAKCCompartmentalizationPolicy &Policy);
+
+        void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo, HAKCCompartmentalizationPolicy &Policy);
 
     public:
         HAKCFunctionAnalysis(Function *F, HAKCCompartmentalizationPolicy &Policy, bool debug);

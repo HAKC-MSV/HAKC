@@ -19,7 +19,7 @@ namespace hakc {
 
         std::set<StringRef> GetHAKCSourcePaths() override;
 
-        bool functionIsTransferCandidate(Function *F) override;
+        bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 
         bool TransferFunctionShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) override;
 

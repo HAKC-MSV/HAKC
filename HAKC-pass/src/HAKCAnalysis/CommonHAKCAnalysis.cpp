@@ -464,11 +464,11 @@ namespace hakc {
         return ArgumentsContainPointer;
     }
 
-    bool CommonHAKCAnalysis::valueShouldBeReplacedWithTransfer(Value *V) {
+    bool CommonHAKCAnalysis::valueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy) {
         if (auto *F = dyn_cast<Function>(V)) {
-            return functionIsTransferCandidate(F);
+            return functionIsTransferCandidate(F, Policy);
         } else if (auto *BCO = dyn_cast<BitCastOperator>(V)) {
-            return valueShouldBeReplacedWithTransfer(BCO->getOperand(0));
+            return valueShouldBeReplacedWithTransfer(BCO->getOperand(0), Policy);
         }
         return false;
     }
@@ -536,16 +536,18 @@ namespace hakc {
         return F->getName().startswith(MODPARAM_GETCTX_PREFIX);
     }
 
-    bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *f) {
+    bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         auto NoTransferFuncs = GetNoTransferFunctions();
-        return NoTransferFuncs.find(f->getName()) == NoTransferFuncs.end() &&
-               !f->isDeclaration() &&
-               !isCapabilityReassignmentFunc(f) &&
-               !FunctionIsComplexVariadic(f) &&
-               !functionIsModParamGetCtx(f) &&
-               FunctionHasPointerArg(f) &&
-               (!isOutsideTransferFunc(f) ||
-                !f->hasFnAttribute(Attribute::InlineHint));
+        auto Compartment = Policy.GetCompartment(F);
+        return NoTransferFuncs.find(F->getName()) == NoTransferFuncs.end() &&
+               !Compartment.IsKernelCompartment() &&
+               !F->isDeclaration() &&
+               !isCapabilityReassignmentFunc(F) &&
+               !FunctionIsComplexVariadic(F) &&
+               !functionIsModParamGetCtx(F) &&
+               FunctionHasPointerArg(F) &&
+               (!isOutsideTransferFunc(F) ||
+                !F->hasFnAttribute(Attribute::InlineHint));
     }
 
     bool CommonHAKCAnalysis::FunctionIsComplexVariadic(Function *F) {
