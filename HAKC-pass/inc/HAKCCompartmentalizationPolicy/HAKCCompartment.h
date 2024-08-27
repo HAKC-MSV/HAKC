@@ -35,6 +35,8 @@ namespace hakc {
 
         bool IsKernelCompartment() const;
 
+        static HAKC_Compartment_ID CreateID(hakc_compartment_id_t ID, Module &M);
+
         friend bool operator==(const HAKCCompartment &lhs, const HAKCCompartment &rhs) {
             return lhs.Compartment == rhs.Compartment;
         }

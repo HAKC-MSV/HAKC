@@ -2,7 +2,7 @@
 
 mkdir -p build
 
-env HAKC_ANALYSIS=compartmentalize HAKC_COMPARTMENT_PATH=test-0.yml \
+env HAKC_ANALYSIS=compartmentalize HAKC_COMPARTMENT_PATH=test0-new.yml \
   $TEST_CLANG \
   -fexperimental-new-pass-manager \
   -fpass-plugin=$TEST_PASS \

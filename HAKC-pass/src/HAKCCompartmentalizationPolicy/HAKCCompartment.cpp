@@ -50,4 +50,8 @@ namespace hakc {
     HAKC_Access_Token HAKCCompartment::GetEntryToken() const {
         return EntryToken;
     }
+
+    HAKC_Compartment_ID HAKCCompartment::CreateID(hakc_compartment_id_t ID, Module &M) {
+        return ConstantInt::get(IntegerType::get(M.getContext(), COMPARTMENT_ID_BIT_LENGTH), ID);
+    }
 } // hakc

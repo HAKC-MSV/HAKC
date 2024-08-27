@@ -1152,6 +1152,10 @@ namespace hakc {
                 bool ValidTransition = false;
 
                 for (auto *Target: CurrentDivision.GetHAKCCompartment().GetValidTargets()) {
+                    if (debug_output) {
+                        CommonHAKCAnalysis::getWriter() << "Testing Target Compartment " << *Target << " against "
+                                                        << *TargetCompartment.GetCompartmentID() << "\n";
+                    }
                     if (Target == TargetCompartment.GetCompartmentID()) {
                         ValidTransition = true;
                         break;

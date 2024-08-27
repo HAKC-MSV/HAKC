@@ -17,12 +17,12 @@
 #define HAKC_CHERIBSD_COMPARTMENT_METADATA_TYPE 5
 #define HACK_CHERIBSD_DEFAULT_VERSION           1
 
-#define HAKC_CONTEXT_COMPARTMENT_SHIFT  16
+#define HAKC_CONTEXT_COMPARTMENT_SHIFT          16
 
-#define DIVISION_ID_BIT_LENGTH     32
-#define COMPARTMENT_ID_BIT_LENGTH   32
+#define DIVISION_ID_BIT_LENGTH                  32
+#define COMPARTMENT_ID_BIT_LENGTH               32
 
-#define BITS_PER_BYTE               8
+#define BITS_PER_BYTE                           8
 
 using namespace llvm;
 
