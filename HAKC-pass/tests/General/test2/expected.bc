@@ -9,10 +9,10 @@ target triple = "x86_64-unknown-linux-gnu"
 @init_data = alias void (%struct.data*), void (%struct.data*)* @HAKC_XFER_init_data
 
 ; Function Attrs: nofree norecurse nounwind uwtable willreturn writeonly
-define dso_local void @HAKC_ORIG_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+define dso_local void @HAKC_ORIG_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !7 {
   call void @llvm.dbg.value(metadata %struct.data* %0, metadata !21, metadata !DIExpression()), !dbg !22
   %2 = bitcast %struct.data* %0 to i8*, !dbg !23
-  %3 = call i8* @check_hakc_data_access(i8* %2, i32 6, i64 393218), !dbg !23
+  %3 = call i8* @check_hakc_data_access(i8* %2, i32 1, i64 73728), !dbg !23
   %4 = bitcast i8* %3 to %struct.data*, !dbg !23
   %5 = getelementptr inbounds %struct.data, %struct.data* %4, i64 0, i32 1, !dbg !23
   %6 = getelementptr inbounds %struct.data, %struct.data* %0, i64 0, i32 1, !dbg !23
@@ -30,11 +30,11 @@ declare void @llvm.dbg.value(metadata, metadata, metadata) #1
 declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nofree norecurse nounwind uwtable willreturn writeonly
-define dso_local void @HAKC_XFER_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !36 {
+define dso_local void @HAKC_XFER_init_data(%struct.data* %0) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !36 {
   %2 = bitcast %struct.data* %0 to i8*, !dbg !23
   %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !23
   %4 = bitcast %struct.data* %0 to i8*, !dbg !23
-  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 16, i32 6, i32 241, i1 false), !dbg !23
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 16, i32 1, i32 13, i1 false), !dbg !23
   %6 = bitcast i8* %5 to %struct.data*, !dbg !23
   call void @HAKC_ORIG_init_data(%struct.data* %6), !dbg !23
   %7 = bitcast %struct.data* %0 to i8*, !dbg !23

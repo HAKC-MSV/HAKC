@@ -14,7 +14,7 @@ target triple = "x86_64-unknown-linux-gnu"
 @__kvm_gfn_to_hva_cache_init = alias i32 (%struct.kvm_memslots*, %struct.gfn_to_hva_cache*, i64, i64), i32 (%struct.kvm_memslots*, %struct.gfn_to_hva_cache*, i64, i64)* @HAKC_XFER___kvm_gfn_to_hva_cache_init
 
 ; Function Attrs: nofree nounwind uwtable
-define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %0, %struct.gfn_to_hva_cache* nocapture %1, i64 %2, i64 %3) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !13 {
+define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %0, %struct.gfn_to_hva_cache* nocapture %1, i64 %2, i64 %3) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !13 {
   call void @llvm.dbg.value(metadata %struct.kvm_memslots* %0, metadata !75, metadata !DIExpression()), !dbg !84
   call void @llvm.dbg.value(metadata %struct.gfn_to_hva_cache* %1, metadata !76, metadata !DIExpression()), !dbg !84
   call void @llvm.dbg.value(metadata i64 %2, metadata !77, metadata !DIExpression()), !dbg !84
@@ -29,13 +29,13 @@ define dso_local i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots
   call void @llvm.dbg.value(metadata i64 %9, metadata !81, metadata !DIExpression()), !dbg !84
   call void @llvm.dbg.value(metadata i64 undef, metadata !82, metadata !DIExpression(DW_OP_plus_uconst, 1, DW_OP_stack_value)), !dbg !84
   %10 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !90
-  %11 = call i8* @check_hakc_data_access(i8* %10, i32 6, i64 393218), !dbg !90
+  %11 = call i8* @check_hakc_data_access(i8* %10, i32 1, i64 73728), !dbg !90
   %12 = bitcast i8* %11 to %struct.kvm_memslots*, !dbg !90
   %13 = getelementptr inbounds %struct.kvm_memslots, %struct.kvm_memslots* %12, i64 0, i32 0, !dbg !90
   %14 = getelementptr inbounds %struct.kvm_memslots, %struct.kvm_memslots* %0, i64 0, i32 0, !dbg !90
   %15 = load i64, i64* %13, align 8, !dbg !90, !tbaa !91
   %16 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
-  %17 = call i8* @check_hakc_data_access(i8* %16, i32 6, i64 393218), !dbg !95
+  %17 = call i8* @check_hakc_data_access(i8* %16, i32 1, i64 73728), !dbg !95
   %18 = bitcast i8* %17 to %struct.gfn_to_hva_cache*, !dbg !95
   %19 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %18, i64 0, i32 0, !dbg !95
   %20 = getelementptr inbounds %struct.gfn_to_hva_cache, %struct.gfn_to_hva_cache* %1, i64 0, i32 0, !dbg !95
@@ -309,16 +309,16 @@ declare void @llvm.dbg.value(metadata, metadata, metadata) #1
 declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nofree nounwind uwtable
-define dso_local i32 @HAKC_XFER___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %0, %struct.gfn_to_hva_cache* nocapture %1, i64 %2, i64 %3) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !331 {
+define dso_local i32 @HAKC_XFER___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %0, %struct.gfn_to_hva_cache* nocapture %1, i64 %2, i64 %3) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !331 {
   %5 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95
   %6 = call i32 @get_hakc_address_color(i8* %5), !dbg !95
   %7 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95
-  %8 = call i8* @hakc_transfer_to_clique(i8* %7, i64 32, i32 6, i32 241, i1 false), !dbg !95
+  %8 = call i8* @hakc_transfer_to_clique(i8* %7, i64 32, i32 1, i32 13, i1 false), !dbg !95
   %9 = bitcast i8* %8 to %struct.kvm_memslots*, !dbg !95
   %10 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
   %11 = call i32 @get_hakc_address_color(i8* %10), !dbg !95
   %12 = bitcast %struct.gfn_to_hva_cache* %1 to i8*, !dbg !95
-  %13 = call i8* @hakc_transfer_to_clique(i8* %12, i64 40, i32 6, i32 241, i1 false), !dbg !95
+  %13 = call i8* @hakc_transfer_to_clique(i8* %12, i64 40, i32 1, i32 13, i1 false), !dbg !95
   %14 = bitcast i8* %13 to %struct.gfn_to_hva_cache*, !dbg !95
   %15 = call i32 @HAKC_ORIG___kvm_gfn_to_hva_cache_init(%struct.kvm_memslots* %9, %struct.gfn_to_hva_cache* %14, i64 %2, i64 %3), !dbg !95
   %16 = bitcast %struct.kvm_memslots* %0 to i8*, !dbg !95

@@ -7,16 +7,16 @@ target triple = "x86_64-unknown-linux-gnu"
 %struct.data_struct2 = type { i32 (%struct.data_struct*)* }
 %struct.data_struct = type { i32 }
 
-@entry_tokens_6 = internal constant [2 x %HAKCEntryToken] [%HAKCEntryToken { i64 6, i64 393218 }, %HAKCEntryToken { i64 7, i64 458756 }]
+@entry_tokens_1 = internal constant [2 x %HAKCEntryToken] [%HAKCEntryToken { i32 1, i64 73728 }, %HAKCEntryToken { i32 2, i64 139264 }]
 
 @foo = alias i32 (%struct.data_struct2*), i32 (%struct.data_struct2*)* @HAKC_XFER_foo
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_ORIG_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+define dso_local i32 @HAKC_ORIG_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !7 {
   %2 = alloca %struct.data_struct, align 4
   call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
   %3 = bitcast %struct.data_struct2* %0 to i8*, !dbg !28
-  %4 = call i8* @check_hakc_data_access(i8* %3, i32 6, i64 393218), !dbg !28
+  %4 = call i8* @check_hakc_data_access(i8* %3, i32 1, i64 73728), !dbg !28
   %5 = bitcast i8* %4 to %struct.data_struct2*, !dbg !28
   %6 = icmp eq %struct.data_struct2* %0, null, !dbg !28
   br i1 %6, label %17, label %7, !dbg !29
@@ -31,7 +31,7 @@ define dso_local i32 @HAKC_ORIG_foo(%struct.data_struct2* readonly %0) local_unn
   %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %10, align 8, !dbg !39, !tbaa !40
   %13 = bitcast i32 (%struct.data_struct*)* %12 to i8*, !dbg !43
-  %14 = call i8* @check_hakc_code_access(i8* %13, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([2 x %HAKCEntryToken], [2 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 2), !dbg !43
+  %14 = call i8* @check_hakc_code_access(i8* %13, i32 1, i64 73728, %HAKCEntryToken* getelementptr inbounds ([2 x %HAKCEntryToken], [2 x %HAKCEntryToken]* @entry_tokens_1, i64 0, i64 0), i64 2), !dbg !43
   %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !43
   %16 = call i32 %15(%struct.data_struct* nonnull %2) #3, !dbg !43
   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
@@ -59,11 +59,11 @@ declare i8* @check_hakc_data_access(i8*, i32, i64)
 declare i8* @check_hakc_code_access(i8*, i32, i64, %HAKCEntryToken*, i64)
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_XFER_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !46 {
+define dso_local i32 @HAKC_XFER_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !46 {
   %2 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
   %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !43
   %4 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
-  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 6, i32 241, i1 false), !dbg !43
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 1, i32 13, i1 false), !dbg !43
   %6 = bitcast i8* %5 to %struct.data_struct2*, !dbg !43
   %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6), !dbg !43
   %8 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43

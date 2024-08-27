@@ -1,33 +1,73 @@
 COMPARTMENTS:
-  - CLIQUES:
-      - ACCESS_TOKEN: 393218
-        COLOR: GREEN_CLIQUE
-    ENTRY_TOKEN: 393218
-    ID: 6
-    TARGETS:
-      - 7
-  - CLIQUES:
-      - ACCESS_TOKEN: 458756
-        COLOR: RED_CLIQUE
-    ENTRY_TOKEN: 458756
-    ID: 7
-    TARGETS:
-FILES:
-  - GUID: 0
-    PATH: test-0.c
-    SYMBOLS:
-      - CLIQUE: GREEN_CLIQUE
-        COMPARTMENT: 6
-        NAME: foo
-        IS_GLOBAL: true
-      - CLIQUE: GREEN_CLIQUE
-        COMPARTMENT: 6
-        NAME: baz
-        IS_GLOBAL: true
-  - GUID: 0
-    PATH: nothing.c
-    SYMBOLS:
-      - CLIQUE: RED_CLIQUE
-        COMPARTMENT: 7
-        NAME: bar
-        IS_GLOBAL: true
+- compartment_id: 1
+  divisions:
+  - access_token: 73728
+    division_id: 13
+  entry_token: 73728
+  targets: []
+- compartment_id: 2
+  divisions:
+  - access_token: 139264
+    division_id: 13
+  entry_token: 139264
+  targets:
+  - 1
+- compartment_id: 3
+  divisions:
+  - access_token: 204800
+    division_id: 13
+  entry_token: 204800
+  targets:
+  - 2
+  - 4
+- compartment_id: 4
+  divisions:
+  - access_token: 270336
+    division_id: 13
+  entry_token: 270336
+  targets: []
+SYMBOLS:
+- compartment_id: 4
+  compilation_units:
+  - "$HAKC_SOURCE_PATH$/test-0.c"
+  definition: "None"
+  division_id: 13
+  name: "bar"
+  scope:
+    scope: "global"
+  type:
+    debug_type: "void (struct data_struct*)"
+    llvm_type: "void (%struct.data_struct*)"
+- compartment_id: 2
+  compilation_units:
+  - "$HAKC_SOURCE_PATH$/test-0.c"
+  definition: "$HAKC_SOURCE_PATH$/test-0.c:7"
+  division_id: 13
+  name: "baz"
+  scope:
+    scope: "global"
+  type:
+    debug_type: "struct data_struct"
+    llvm_type: "struct.data_struct"
+- compartment_id: 3
+  compilation_units:
+  - "$HAKC_SOURCE_PATH$/test-0.c"
+  definition: "$HAKC_SOURCE_PATH$/test-0.c:13"
+  division_id: 13
+  name: "foo"
+  scope:
+    scope: "global"
+  type:
+    debug_type: "int (int)"
+    llvm_type: "i32 (i32)"
+- compartment_id: 1
+  compilation_units:
+  - "$HAKC_SOURCE_PATH$/test-0.c"
+  definition: "$HAKC_SOURCE_PATH$/test-0.c:5"
+  division_id: 13
+  name: "glob"
+  scope:
+    scope: "global"
+  type:
+    debug_type: "int"
+    llvm_type: "i32"

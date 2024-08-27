@@ -6,11 +6,11 @@ target triple = "x86_64-unknown-linux-gnu"
 %struct.data_struct = type { i32* }
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @foo(i32 %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+define dso_local i32 @foo(i32 %0) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !7 {
   %2 = alloca %struct.data_struct, align 8
   call void @llvm.dbg.value(metadata i32 %0, metadata !12, metadata !DIExpression()), !dbg !18
   %3 = bitcast %struct.data_struct* %2 to i8*, !dbg !19
-  %4 = call i8* @hakc_transfer_to_clique(i8* %3, i64 8, i32 6, i32 241, i1 false), !dbg !19
+  %4 = call i8* @hakc_transfer_to_clique(i8* %3, i64 8, i32 1, i32 13, i1 false), !dbg !19
   %5 = bitcast i8* %4 to %struct.data_struct*
   %6 = bitcast %struct.data_struct* %2 to i8*, !dbg !19
   call void @llvm.lifetime.start.p0i8(i64 8, i8* nonnull %6) #4, !dbg !19
@@ -19,7 +19,7 @@ define dso_local i32 @foo(i32 %0) local_unnamed_addr #0 section ".hakc.GREEN_CLI
   %8 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !22
   %9 = load i32*, i32** %8, align 8, !dbg !22, !tbaa !23
   %10 = bitcast i32* %9 to i8*, !dbg !28
-  %11 = call i8* @check_hakc_data_access(i8* %10, i32 6, i64 393218), !dbg !28
+  %11 = call i8* @check_hakc_data_access(i8* %10, i32 1, i64 73728), !dbg !28
   %12 = bitcast i8* %11 to i32*, !dbg !28
   %13 = load i32, i32* %12, align 4, !dbg !28, !tbaa !29
   call void @llvm.lifetime.end.p0i8(i64 8, i8* nonnull %6) #4, !dbg !31

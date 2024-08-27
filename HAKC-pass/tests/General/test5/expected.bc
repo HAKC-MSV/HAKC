@@ -9,13 +9,13 @@ target triple = "x86_64-unknown-linux-gnu"
 @kvm_io_bus_get_first_dev = alias i32 (%struct.kvm_io_bus*, i8*, i32), i32 (%struct.kvm_io_bus*, i8*, i32)* @HAKC_XFER_kvm_io_bus_get_first_dev
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_ORIG_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %0, i8* %1, i32 %2) local_unnamed_addr #0 section ".hakc.RED_CLIQUE.text" !dbg !9 {
+define dso_local i32 @HAKC_ORIG_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %0, i8* %1, i32 %2) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !9 {
   %4 = alloca %struct.kvm_io_range, align 8
   call void @llvm.dbg.value(metadata %struct.kvm_io_bus* %0, metadata !27, metadata !DIExpression()), !dbg !34
   call void @llvm.dbg.value(metadata i8* %1, metadata !28, metadata !DIExpression()), !dbg !34
   call void @llvm.dbg.value(metadata i32 %2, metadata !29, metadata !DIExpression()), !dbg !34
   %5 = bitcast %struct.kvm_io_range* %4 to i8*, !dbg !35
-  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 16, i32 7, i32 242, i1 false), !dbg !35
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 16, i32 2, i32 13, i1 false), !dbg !35
   %7 = bitcast i8* %6 to %struct.kvm_io_range*
   %8 = bitcast %struct.kvm_io_range* %4 to i8*, !dbg !35
   call void @llvm.lifetime.start.p0i8(i64 16, i8* nonnull %8) #4, !dbg !35
@@ -25,7 +25,7 @@ define dso_local i32 @HAKC_ORIG_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %0,
   %10 = getelementptr inbounds %struct.kvm_io_range, %struct.kvm_io_range* %4, i64 0, i32 1, !dbg !37
   store i32 %2, i32* %10, align 8, !dbg !37, !tbaa.struct !45
   %11 = bitcast %struct.kvm_io_bus* %0 to i8*, !dbg !46
-  %12 = call i8* @check_hakc_data_access(i8* %11, i32 7, i64 458756), !dbg !46
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 2, i64 139264), !dbg !46
   %13 = bitcast i8* %12 to %struct.kvm_io_bus*, !dbg !46
   %14 = getelementptr inbounds %struct.kvm_io_bus, %struct.kvm_io_bus* %13, i64 0, i32 2, i64 0, !dbg !46
   %15 = getelementptr inbounds %struct.kvm_io_bus, %struct.kvm_io_bus* %0, i64 0, i32 2, i64 0, !dbg !46
@@ -72,14 +72,14 @@ declare i8* @hakc_transfer_to_clique(i8*, i64, i32, i32, i1)
 declare i8* @check_hakc_data_access(i8*, i32, i64)
 
 ; Function Attrs: nounwind uwtable
-define dso_local i32 @HAKC_XFER_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %0, i8* %1, i32 %2) local_unnamed_addr #0 section ".hakc.RED_CLIQUE.text" !dbg !56 {
+define dso_local i32 @HAKC_XFER_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %0, i8* %1, i32 %2) local_unnamed_addr #0 section ".hakc.VIOLET_CLIQUE.text" !dbg !56 {
   %4 = bitcast %struct.kvm_io_bus* %0 to i8*, !dbg !49
   %5 = call i32 @get_hakc_address_color(i8* %4), !dbg !49
   %6 = bitcast %struct.kvm_io_bus* %0 to i8*, !dbg !49
-  %7 = call i8* @hakc_transfer_to_clique(i8* %6, i64 8, i32 7, i32 242, i1 false), !dbg !49
+  %7 = call i8* @hakc_transfer_to_clique(i8* %6, i64 8, i32 2, i32 13, i1 false), !dbg !49
   %8 = bitcast i8* %7 to %struct.kvm_io_bus*, !dbg !49
   %9 = call i32 @get_hakc_address_color(i8* %1), !dbg !49
-  %10 = call i8* @hakc_transfer_to_clique(i8* %1, i64 1, i32 7, i32 242, i1 false), !dbg !49
+  %10 = call i8* @hakc_transfer_to_clique(i8* %1, i64 1, i32 2, i32 13, i1 false), !dbg !49
   %11 = call i32 @HAKC_ORIG_kvm_io_bus_get_first_dev(%struct.kvm_io_bus* %8, i8* %10, i32 %2), !dbg !49
   %12 = bitcast %struct.kvm_io_bus* %0 to i8*, !dbg !49
   call void @hakc_color_address(i8* %12, i32 %5, i64 8), !dbg !49
