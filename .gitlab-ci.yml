@@ -8,7 +8,7 @@ variables:
   STAGING_BRANCH: 'staging'
   DAG_FILE_PATH: 'dag-output'
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
-  BUILD_PROCESSORS: 64
+  BUILD_PROCESSORS: 32
 
 # Overview of stages (all jobs for a given stage run parallel before the next stage)
 # check - check that repo is in logical functioning manner (e.g. submodules match)

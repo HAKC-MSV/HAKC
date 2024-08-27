@@ -1,3 +1,4 @@
+
 build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job:
   stage: build_v6
   needs:

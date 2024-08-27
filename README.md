@@ -113,20 +113,18 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## DAG Analysis
 
 1. `cd $ROOT`
-2. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin -r
-   build-$BUILD_TYPE/hakc-dag-analysis --dag --filter_types --filter_mod_files`
+2. `python3 python/analysis/hakc-dag.py --c-out 
+build-$BUILD_TYPE/hakc-dag-analysis/dag.bin --create-dag --dag-files-root
+   build-$BUILD_TYPE/hakc-dag-analysis`
 
-## Create and apply compartmentalization modifications
+## Apply compartmentalization modifications and output compartmentalization policy
 
 1. `cd $ROOT`
-2. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
-   --adjust scripts/ros2-demo/rosdemo-compartments.yml`
-   * This creates `build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin`
-
-## Output compartmentalization policy
-
-1. `python3 python/analysis/data-access-analysis.py -c build-$BUILD_TYPE/hakc-dag-analysis/dag-adjusted.bin 
-    --output_compart build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml`
+2. `python3 python/analysis/hakc-dag.py --c-in build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
+   --adjust --adjust-path scripts/ros2-demo/rosdemo-compartments.yml --output-yaml 
+   --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml`
+   * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is 
+     the compartmentalization policy that will be used to build a protected kernel.
 
 ## Compile kernel with compartments enforced
 
@@ -144,7 +142,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    CC=$(realpath ../install/bin/clang) \
    HOSTCC=$(realpath ../install/bin/clang) \
    LOCALVERSION=$BUILD_TYPE \
-   -j$(nproc) clean
+   -j$(( $(nproc) * 9 / 10 )) clean
    ```
 3. ```
    env HAKC_ANALYSIS=compartmentalize \
@@ -159,7 +157,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    CC=$(realpath ../install/bin/clang) \
    HOSTCC=$(realpath ../install/bin/clang) \
    LOCALVERSION=$BUILD_TYPE \
-   -j$(nproc) 
+   -j$(( $(nproc) * 9 / 10 )) 
    ```
 
 ## Run the kernel in QEMU

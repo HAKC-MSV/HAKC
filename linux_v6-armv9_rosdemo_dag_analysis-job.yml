@@ -39,8 +39,7 @@ linux_v6-armv9_rosdemo_dag_analysis-job:
           echo "this has not been done before, continuing with build"
       fi
     - echo "Performing DAG Analysis"
-    - python3 scripts/analysis/data-access-analysis.py -c $HAKC_DAG_ROOT/dag.bin
-      -r $HAKC_DAG_ROOT --dag --filter_types --filter_mod_files
+    - python3 scripts/analysis/hakc-dag.py --c-out $HAKC_DAG_ROOT/dag.bin --create-dag --dag-files-root $HAKC_DAG_ROOT
     # put copy in artifact stage area
     - mkdir -p $ARTIFACT_PATH
     - mkdir -p $ARTIFACT_PATH/hakc-dag-analysis
