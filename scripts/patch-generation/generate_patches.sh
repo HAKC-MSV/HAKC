@@ -13,13 +13,9 @@ git add -A
 for i in `git diff --name-only $version_commit`
 do
    :
-#   inarray=$(echo ${new_files[@]} | grep -ow "$i" | wc -w)
-#   if [ $inarray -eq 0 ];
-#   then
-     patch_name=${i//"./"/""}
-     patch_name=${patch_name//"/"/"_"}
-     patch_name=${patch_name//"."/"_"}
-     git diff $version_commit $i > $curr_dir/"$patch_name""_""$short_hash".patch
-#   fi
+   patch_name=${i//"./"/""}
+   patch_name=${patch_name//"/"/"_"}
+   patch_name=${patch_name//"."/"_"}
+   git diff $version_commit $i > $curr_dir/"$patch_name""_""$short_hash".patch
 done
 exit 0
