@@ -3,29 +3,29 @@ from enum import Enum
 
 import networkx as nx
 import yaml
-from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType, HAKCPrintableObj
+from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType, HAKCPrintableObj, QuotedString
 
 logger = logging.getLogger('hakc-dag')
 
 
 class CliqueColors(Enum):
-    NO_CLIQUE = -1
-    SILVER_CLIQUE = 0  # SIL
-    GREEN_CLIQUE = 1  # GRN
-    RED_CLIQUE = 2  # RED
-    ORANGE_CLIQUE = 3  # ORN
-    YELLOW_CLIQUE = 4  # YEL
-    PURPLE_CLIQUE = 5  # PUR
-    BLUE_CLIQUE = 6  # BLU
-    GREY_CLIQUE = 7  # GRY
-    PINK_CLIQUE = 8  # PNK
-    BROWN_CLIQUE = 9  # BWN
-    WHITE_CLIQUE = 10  # WHI
-    BLACK_CLIQUE = 11  # BLK
-    TEAL_CLIQUE = 12  # TEA
-    VIOLET_CLIQUE = 13  # VLT
-    CRIMSON_CLIQUE = 14  # CRI
-    GOLD_CLIQUE = 15  # GLD
+    NO_CLIQUE = 0
+    SILVER_CLIQUE = 1  # SIL
+    GREEN_CLIQUE = 2  # GRN
+    RED_CLIQUE = 3  # RED
+    ORANGE_CLIQUE = 4  # ORN
+    YELLOW_CLIQUE = 5  # YEL
+    PURPLE_CLIQUE = 6  # PUR
+    BLUE_CLIQUE = 7  # BLU
+    GREY_CLIQUE = 8  # GRY
+    PINK_CLIQUE = 9  # PNK
+    BROWN_CLIQUE = 10  # BWN
+    WHITE_CLIQUE = 11  # WHI
+    BLACK_CLIQUE = 12  # BLK
+    TEAL_CLIQUE = 13  # TEA
+    VIOLET_CLIQUE = 14  # VLT
+    CRIMSON_CLIQUE = 15  # CRI
+    GOLD_CLIQUE = 16  # GLD
 
 
 class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
@@ -54,7 +54,8 @@ class HAKCCompartment(yaml.YAMLObject, HAKCPrintableObj):
     def add_division(self, division_id: int):
         if division_id >= self.division_count:
             raise RuntimeError(
-                f'Attempted to add an invalid division id {division_id} when the max division id is {self.division_count - 1}')
+                f'Attempted to add an invalid division id {division_id} when the max division id '
+                f'is {self.division_count - 1}')
 
         if division_id != CliqueColors.NO_CLIQUE.value:
             access_token = (self.compartment_id << self.division_count) | (1 << division_id)
@@ -180,18 +181,18 @@ class HAKCCompartmentalization(nx.DiGraph):
     def to_yaml(self) -> dict:
         result = dict()
         result['COMPARTMENTS'] = list()
-        result['FILES'] = list()
+        result['SYMBOLS'] = list()
 
         compartments = dict()
-        compilation_unit_symbols = dict()
-        for symbol in self.get_symbols():
+        for symbol in sorted(self.get_symbols(), key=lambda s, compartmentalization=self: (
+        s.name, compartmentalization.get_compartment_id(s), compartmentalization.get_division_id(s))):
             compartment_id = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
-            color = self.nodes[symbol][HAKCCompartmentalization.division_attr]
+            division = self.nodes[symbol][HAKCCompartmentalization.division_attr]
             if compartment_id not in compartments:
                 compartments[compartment_id] = HAKCCompartment(compartment_id, self.division_count)
 
             current_compartment = compartments[compartment_id]
-            current_compartment.add_division(color)
+            current_compartment.add_division(division)
 
             for nbr, _ in self.adj[symbol].items():
                 if not nbr.is_type():
@@ -205,25 +206,14 @@ class HAKCCompartmentalization(nx.DiGraph):
                     target_compartment = self.nodes[nbr][HAKCCompartmentalization.compartment_id_attr]
                     current_compartment.add_target(target_compartment)
 
-            for compilation_unit in symbol.compilation_units:
-                if compilation_unit not in compilation_unit_symbols:
-                    compilation_unit_symbols[compilation_unit] = set()
-
-                compilation_unit_symbols[compilation_unit].add(symbol)
+            symbol_info_dict = symbol.to_yaml_dict()
+            symbol_info_dict['compartment_id'] = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
+            symbol_info_dict['division_id'] = self.nodes[symbol][HAKCCompartmentalization.division_attr]
+            symbol_info_dict['compilation_units'] = [QuotedString(cu) for cu in sorted(list(symbol.compilation_units))]
+            result['SYMBOLS'].append(symbol_info_dict)
 
         for compartment_id in sorted(compartments.keys()):
             current_compartment = compartments[compartment_id]
             result['COMPARTMENTS'].append(current_compartment.to_yaml_dict())
-
-        for compilation_unit in sorted(compilation_unit_symbols.keys()):
-            compilation_unit_dict = dict()
-            compilation_unit_dict['file'] = compilation_unit
-            compilation_unit_dict['symbols'] = list()
-            for symbol in sorted(list(compilation_unit_symbols[compilation_unit]), key=lambda s: s.name):
-                symbol_dict = symbol.to_yaml_dict()
-                symbol_dict['compartment_id'] = self.nodes[symbol][HAKCCompartmentalization.compartment_id_attr]
-                symbol_dict['division_id'] = self.nodes[symbol][HAKCCompartmentalization.division_attr]
-                compilation_unit_dict['symbols'].append(symbol_dict)
-            result['FILES'].append(compilation_unit_dict)
 
         return result

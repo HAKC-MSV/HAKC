@@ -3,6 +3,10 @@ import re
 import yaml
 
 
+class QuotedString(str):
+    pass
+
+
 class HAKCPrintableObj:
     def __init__(self, **kwargs):
         pass
@@ -20,6 +24,8 @@ class HAKCPrintableObj:
         for key, value in self.get_info_tokens().items():
             if isinstance(value, HAKCPrintableObj):
                 result[key] = value.to_yaml_dict()
+            elif isinstance(value, str):
+                result[key] = QuotedString(value)
             else:
                 result[key] = value
         return result
