@@ -45,7 +45,7 @@ linux_v5-x86_rosdemo_dag_adjustment-job:
     - echo "Creating / Applying compartmentalization modifications"
     - sed "s+_KERNEL_SOURCE_+$(realpath linux)+g" scripts/ros2-demo/rosdemo-compartments.yml |
       sed "s+_KERNEL_BUILD_+$(realpath build-$BUILD_TYPE)+g" > $HAKC_DAG_ROOT/hakc-ros2-adjustments.yml
-    - python3 scripts/analysis/hakc-dag.py --c-in $HAKC_DAG_ROOT/dag.bin
+    - python3 python/analysis/hakc-dag.py --c-in $HAKC_DAG_ROOT/dag.bin
       --adjust --adjust-path $HAKC_DAG_ROOT/hakc-ros2-adjustments.yml
       --output-yaml --output-yaml-path $HAKC_DAG_ROOT/hakc-compartments.yml
     # copy to artifact_stage 
