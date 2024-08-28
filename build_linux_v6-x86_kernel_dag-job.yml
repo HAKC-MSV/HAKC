@@ -60,7 +60,7 @@ build_linux_v6-x86_kernel_dag-job:
       --set-str CONFIG_HAKC_PASS_PATH \
       $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
       -e CONFIG_HAKC_X86 \
-      -e CONFIG_HAKC_X86_SIGN_SSSE3=y \
+      -e CONFIG_HAKC_X86_SIGN_SSSE3 \
       -d CONFIG_HAKC_ARM_V9 \
       -d CONFIG_HAKC_ARM_V8 \
       -d CONFIG_HAKC_ALLOW_FAILED \
@@ -69,7 +69,7 @@ build_linux_v6-x86_kernel_dag-job:
       -e CONFIG_HAKC_X86_MEMORY \
       -d CONFIG_HAKC_DEBUG_PRINT \
       -d CONFIG_HAKC_ALLOW_FAILED \
-      -d CONFIG_HAKC_LOG_FAILURE \
+      -d CONFIG_HAKC_LOG_FAILURE
     - |
       export DEMO_NAME="rosdemo"
       cd ..
