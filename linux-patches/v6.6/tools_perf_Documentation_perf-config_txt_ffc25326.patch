@@ -1,0 +1,13 @@
+diff --git a/tools/perf/Documentation/perf-config.txt b/tools/perf/Documentation/perf-config.txt
+index 0b4e79dbd3f6..4da2957ca056 100644
+--- a/tools/perf/Documentation/perf-config.txt
++++ b/tools/perf/Documentation/perf-config.txt
+@@ -75,7 +75,7 @@ Given a $HOME/.perfconfig like this:
+ #
+ 
+ 	[colors]
+-		# Color variables
++		# DivisionID variables
+ 		top = red, default
+ 		medium = green, default
+ 		normal = lightgray, default

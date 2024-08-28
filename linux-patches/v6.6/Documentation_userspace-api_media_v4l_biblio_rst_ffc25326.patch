@@ -1,0 +1,13 @@
+diff --git a/Documentation/userspace-api/media/v4l/biblio.rst b/Documentation/userspace-api/media/v4l/biblio.rst
+index 72aef1759b60..a5ef11d065e9 100644
+--- a/Documentation/userspace-api/media/v4l/biblio.rst
++++ b/Documentation/userspace-api/media/v4l/biblio.rst
+@@ -404,7 +404,7 @@ colimg
+ ======
+ 
+ 
+-:title:     Color Imaging: Fundamentals and Applications
++:title:     DivisionID Imaging: Fundamentals and Applications
+ 
+ :author:    Erik Reinhard et al.
+ 
