@@ -1,11 +1,13 @@
 diff --git a/drivers/Kconfig b/drivers/Kconfig
-index efb66e25fa2d..d8adb97c5328 100644
+index efb66e25fa2d..ba49cf259987 100644
 --- a/drivers/Kconfig
 +++ b/drivers/Kconfig
-@@ -10,6 +10,8 @@ source "drivers/cxl/Kconfig"
+@@ -10,6 +10,10 @@ source "drivers/cxl/Kconfig"
  source "drivers/pcmcia/Kconfig"
  source "drivers/rapidio/Kconfig"
  
++source "drivers/rosdemo/Kconfig"
++source "drivers/tb-exploiter/Kconfig"
 +source "drivers/rosdemo/Kconfig"
 +source "drivers/tb-exploiter/Kconfig"
  

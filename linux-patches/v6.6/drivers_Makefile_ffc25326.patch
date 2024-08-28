@@ -1,26 +1,14 @@
 diff --git a/drivers/Makefile b/drivers/Makefile
-index 1bec7819a837..18b67d5f3a0a 100644
+index 1bec7819a837..ba988b4991ab 100644
 --- a/drivers/Makefile
 +++ b/drivers/Makefile
-@@ -11,6 +11,15 @@ ifdef building_out_of_srctree
+@@ -11,6 +11,9 @@ ifdef building_out_of_srctree
  MAKEFLAGS += --include-dir=$(srctree)
  endif
  
 +obj-y				+= rosdemo/
 +obj-y				+= tb-exploiter/
 +
-+obj-y				+= rosdemo/
-+obj-y				+= tb-exploiter/
-+
-+obj-y				+= rosdemo/
-+obj-y				+= tb-exploiter/
-+
  obj-y				+= cache/
  obj-y				+= irqchip/
  obj-y				+= bus/
-@@ -199,3 +208,5 @@ obj-$(CONFIG_DRM_ACCEL)		+= accel/
- obj-$(CONFIG_CDX_BUS)		+= cdx/
- 
- obj-$(CONFIG_S390)		+= s390/
-+
-+obj-$(CONFIG_HAKC_VULN_DRIVER) += vuln/ vuln_target/

@@ -1,9 +1,9 @@
 diff --git a/include/linux/hakc/hakc.h b/include/linux/hakc/hakc.h
 new file mode 100644
-index 000000000000..73bf34faef68
+index 000000000000..e87e0134c919
 --- /dev/null
 +++ b/include/linux/hakc/hakc.h
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,222 @@
 +#ifndef LINUX_HAKC_HAKC_H
 +#define LINUX_HAKC_HAKC_H
 +
@@ -108,6 +108,7 @@ index 000000000000..73bf34faef68
 +
 +extern bool hakc_initialized;// __read_mostly;
 +void hakc_init_tags(void);
++void initialize_hakc(void);
 +
 +#define VALID_COLOR(color) ((color) >= START_CLIQUE && (color) < END_CLIQUE)
 +

@@ -1,9 +1,9 @@
 diff --git a/kernel/hakc/hakc_common.c b/kernel/hakc/hakc_common.c
 new file mode 100644
-index 000000000000..31a447e20a88
+index 000000000000..c6f9ba5776c7
 --- /dev/null
 +++ b/kernel/hakc/hakc_common.c
-@@ -0,0 +1,740 @@
+@@ -0,0 +1,746 @@
 +#include <linux/hakc/hakc.h>
 +#include <linux/module.h>
 +#include <linux/net.h>
@@ -73,6 +73,12 @@ index 000000000000..31a447e20a88
 +	bool is_percpu, is_dynamic;
 +	void *percpu_addr;
 +};
++
++void initialize_hakc() {
++    pr_info("Initializing HAKC system");
++    hakc_init_tags();
++    hakc_init_kernel_globals();
++}
 +
 +const char *get_hakc_color_name(clique_color_t color)
 +{
