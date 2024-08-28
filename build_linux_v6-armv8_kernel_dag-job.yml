@@ -59,37 +59,8 @@ build_linux_v6-armv8_kernel_dag-job:
       -j$BUILD_PROCESSORS hakc_armv8_defconfig
     - |
       scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
-      -e CONFIG_HAKC \
       --set-str CONFIG_HAKC_PASS_PATH \
-      $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
-      -e CONFIG_HAKC_ARM_V8 \
-      -d CONFIG_HAKC_ALLOW_FAILED \
-      -e CONFIG_HAKC_SIGN_PTR \
-      -m CONFIG_ROSDEMO \
-      -e CONFIG_DEBUG_INFO \
-      -e CONFIG_DEBUG_INFO_SPLIT \
-      -e CONFIG_DEBUG_INFO_DWARF4 \
-      -e CONFIG_GDB_SCRIPTS \
-      -e CONFIG_HAKC_ARM_V8_MEMORY \
-      -d CONFIG_HAKC_ARM_V9 \
-      -d CONFIG_HAKC_DEBUG_PRINT \
-      -d CONFIG_HAKC_ALLOW_FAILED \
-      -d CONFIG_HAKC_LOG_FAILURE \
-      -d CONFIG_KPROBES \
-      -e CONFIG_JUMP_LABEL \
-      -d CONFIG_STATIC_KEYS_SELFTEST \
-      -e CONFIG_SECCOMP \
-      -d CONFIG_SECCOMP_CACHE_DEBUG \
-      -e CONFIG_STACKPROTECTOR \
-      -e CONFIG_STACKPROTECTOR_STRONG \
-      -d CONFIG_SHADOW_CALL_STACK \
-      -e CONFIG_LTO_NONE \
-      -e CONFIG_COMPAT_32BIT_TIME \
-      -e CONFIG_VMAP_STACK \
-      -e CONFIG_RANDOMIZE_KSTACK_OFFSET \
-      -d CONFIG_RANDOMIZE_KSTACK_OFFSET_DEFAULT \
-      -d CONFIG_LOCK_EVENT_COUNTS \
-      -e CONFIG_RELR 
+      $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so)
     - |
       export DEMO_NAME="rosdemo"
       cd ..
