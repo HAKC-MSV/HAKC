@@ -122,7 +122,8 @@ build-$BUILD_TYPE/hakc-dag-analysis/dag.bin --create-dag --dag-files-root
 1. `cd $ROOT`
 2. `python3 python/analysis/hakc-dag.py --c-in build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
    --adjust --adjust-path scripts/ros2-demo/rosdemo-compartments.yml --output-yaml 
-   --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml`
+   --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml
+   --core-count $(( $(nproc) * 9 / 10 ))` 
    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is 
      the compartmentalization policy that will be used to build a protected kernel.
 

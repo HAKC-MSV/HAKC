@@ -32,12 +32,13 @@ class LoggingLevelEnum(Enum):
     DEBUG = logging.DEBUG
 
 
-mp_compartmentalization = None
+shared_compartmentalization = None
 
 
 class HAKCDagState:
     def __init__(self):
-        self.compartmentalization = HAKCCompartmentalization()
+        global shared_compartmentalization
+        shared_compartmentalization = HAKCCompartmentalization()
         self.global_dict = dict()
         self.symbol_count = 0
 
@@ -65,6 +66,11 @@ class HAKCDagState:
                 self.symbol_count += 1
                 result = symbol
         return result
+
+    @property
+    def compartmentalization(self) -> HAKCCompartmentalization | None:
+        global shared_compartmentalization
+        return shared_compartmentalization
 
     def finalize_symbols(self):
         symbols = set()
@@ -129,14 +135,14 @@ def compute_dag_edge_weight(compartmentalization: HAKCCompartmentalization, head
 
 
 def compute_dag_edges_for_symbol(head: HAKCSymbol):
-    global mp_compartmentalization
+    global shared_compartmentalization
     results = list()
 
-    indirect_calls = mp_compartmentalization.get_indirect_calls(head)
-    for tail in mp_compartmentalization.get_symbols():
+    indirect_calls = shared_compartmentalization.get_indirect_calls(head)
+    for tail in shared_compartmentalization.get_symbols():
         try:
             if tail is not head:
-                edge_weight = compute_dag_edge_weight(mp_compartmentalization, head, tail, indirect_calls)
+                edge_weight = compute_dag_edge_weight(shared_compartmentalization, head, tail, indirect_calls)
                 if edge_weight > 0:
                     results.append((head, tail, edge_weight))
         except Exception as e:
@@ -184,8 +190,6 @@ def create_dag_single_thread(files: set[str]) -> HAKCCompartmentalization:
             add_symbols(state, compilation_unit, functions, global_variables)
 
     finalize_symbols(state)
-    global mp_compartmentalization
-    mp_compartmentalization = state.compartmentalization
     add_dag_edges(state.compartmentalization)
 
     return state.compartmentalization
@@ -227,11 +231,11 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
                 logger.info(f'Not changing Symbol {symbol}')
 
 
-def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
-    max_workers = mp.cpu_count() - 1
+def create_dag_multithread(files: set[str], core_count: int) -> HAKCCompartmentalization:
     state = HAKCDagState()
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    logger.info(f'Starting multiprocess DAG creation using {core_count} cores')
+    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
         with tqdm.tqdm(total=len(files)) as pbar:
             futures_to_files = {executor.submit(parse_yaml, file): file for file in sorted(files)}
             for future in concurrent.futures.as_completed(futures_to_files):
@@ -246,40 +250,48 @@ def create_dag_multithread(files: set[str]) -> HAKCCompartmentalization:
                     logger.error(f'Error parsing {file}: {str(e)}')
 
     finalize_symbols(state)
-    global mp_compartmentalization
-    mp_compartmentalization = state.compartmentalization
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
         logger.info(f'Starting DAG edge computation')
 
         symbols = state.compartmentalization.get_symbols()
         dag_edges_added = 0
-        try:
-            futures_to_symbol = {executor.submit(compute_dag_edges_for_symbol, symbol): symbol for symbol in symbols}
-            logger.info(f'{len(futures_to_symbol)} tasks submitted')
-        except Exception as e:
-            logger.error(f'Error submitting tasks: {str(e)}')
-            executor.shutdown(wait=False, cancel_futures=True)
-            raise e
+        futures_to_symbol = dict()
+        with tqdm.tqdm(total=len(symbols)) as pbar:
+            try:
+                for symbol in symbols:
+                    future = executor.submit(compute_dag_edges_for_symbol, symbol)
+                    futures_to_symbol[future] = symbol
+                    pbar.update(1)
+            except Exception as e:
+                logger.error(f'Error submitting tasks: {str(e)}')
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise e
 
         with tqdm.tqdm(total=len(futures_to_symbol)) as pbar:
-            for future in concurrent.futures.as_completed(futures_to_symbol):
-                pbar.update(1)
-                symbol = futures_to_symbol[future]
-                try:
-                    edge_weights = future.result()
-                    for (head, tail, dag_edge_weight) in edge_weights:
-                        logger.debug(
-                            f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
-                        dag_edges_added += 1
-                        state.compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
-                except Exception as e:
-                    logger.error(f'Error computing DAG edge for symbol {symbol}: {str(e)}')
+            try:
+                for future in concurrent.futures.as_completed(futures_to_symbol):
+                    pbar.update(1)
+                    symbol = futures_to_symbol[future]
+                    try:
+                        edge_weights = future.result()
+                        for (head, tail, dag_edge_weight) in edge_weights:
+                            logger.debug(
+                                f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
+                            dag_edges_added += 1
+                            state.compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+                    except Exception as e:
+                        logger.error(f'Error computing DAG edge for symbol {symbol}: {str(e)}')
+            except KeyboardInterrupt as ki:
+                logger.info(f'Stopping edge computation')
+                executor.shutdown(wait=False, cancel_futures=True)
+                raise ki
 
     logger.info(f'Finished adding {dag_edges_added} DAG edges')
     return state.compartmentalization
 
 
-def create_new_dag(analysis_root: str, single_thread: bool) -> HAKCCompartmentalization:
+def create_new_dag(analysis_root: str, single_thread: bool, core_count: int) -> HAKCCompartmentalization:
+    core_count = max(1, core_count)
     logger.info(f'Finding DAG files starting from {os.path.abspath(analysis_root)}')
     filenames = set()
     for root, subdirs, files in os.walk(analysis_root):
@@ -294,7 +306,7 @@ def create_new_dag(analysis_root: str, single_thread: bool) -> HAKCCompartmental
     if single_thread:
         compartmentalization = create_dag_single_thread(filenames)
     else:
-        compartmentalization = create_dag_multithread(filenames)
+        compartmentalization = create_dag_multithread(filenames, core_count)
 
     end = time.time()
     logger.info(f'Finished creating DAG.')
@@ -366,13 +378,17 @@ def main():
     parser.add_argument('--output-yaml', dest='output_yaml', action='store_true',
                         help='Output compartmentalization YAML')
     parser.add_argument('--output-yaml-path', dest='output_yaml_path', help='Path to output DAG YAML')
-    parser.add_argument('--output-symbol-dir', dest='output_symbol_dir', help='Directory to output DAG Symbol YAML')
+    parser.add_argument('--output-symbol-dir', dest='output_symbol_dir',
+                        help='Directory to output DAG Symbol YAML')
     parser.add_argument('--create-dag', dest='create_dag', action='store_true', help='Create new DAG')
     parser.add_argument("--adjust", help='Adjust compartmentalization', action='store_true')
     parser.add_argument('--adjust-path', dest='adjust_path', help='Path to adjustment YAML')
     parser.add_argument('--print-symbols', dest='print_symbols', action='store_true')
     parser.add_argument('--profile', dest='profile', action='store_true')
-    parser.add_argument('--print-symbols-with-same-name', dest='print_symbols_with_same_name', action='store_true')
+    parser.add_argument('--print-symbols-with-same-name', dest='print_symbols_with_same_name',
+                        action='store_true')
+    parser.add_argument('--core-count', help='Max cores to use for analysis', dest='core_count',
+                        default=mp.cpu_count() - 1, type=int)
 
     args = parser.parse_args()
 
@@ -391,7 +407,7 @@ def main():
     if args.create_dag:
         if profile:
             profile.enable()
-        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread)
+        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count)
         if profile:
             profile.disable()
             output_profile_stats(profile)
