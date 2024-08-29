@@ -113,17 +113,23 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## DAG Analysis
 
 1. `cd $ROOT`
-2. `python3 python/analysis/hakc-dag.py --c-out 
-build-$BUILD_TYPE/hakc-dag-analysis/dag.bin --create-dag --dag-files-root
-   build-$BUILD_TYPE/hakc-dag-analysis`
+2. ```
+   python3 python/analysis/hakc-dag.py \
+   --c-out build-$BUILD_TYPE/hakc-dag-analysis/dag.bin \ 
+   --create-dag --dag-files-root build-$BUILD_TYPE/hakc-dag-analysis \ 
+   --core-count $(( $(nproc) * 9 / 10 ))
+   ```
 
 ## Apply compartmentalization modifications and output compartmentalization policy
 
 1. `cd $ROOT`
-2. `python3 python/analysis/hakc-dag.py --c-in build-$BUILD_TYPE/hakc-dag-analysis/dag.bin
-   --adjust --adjust-path scripts/ros2-demo/rosdemo-compartments.yml --output-yaml 
+2. ```
+   python3 python/analysis/hakc-dag.py \
+   --c-in build-$BUILD_TYPE/hakc-dag-analysis/dag.bin \
+   --adjust --adjust-path scripts/ros2-demo/rosdemo-compartments.yml \ 
+   --output-yaml \ 
    --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml
-   --core-count $(( $(nproc) * 9 / 10 ))` 
+   ``` 
    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is 
      the compartmentalization policy that will be used to build a protected kernel.
 
