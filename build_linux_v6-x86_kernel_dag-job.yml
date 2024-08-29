@@ -56,7 +56,7 @@ build_linux_v6-x86_kernel_dag-job:
       -j$BUILD_PROCESSORS hakc_x86_defconfig
     - |
       scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
-      -e CONFIG_HAKC \
+      -m CONFIG_ROSDEMO \
       --set-str CONFIG_HAKC_PASS_PATH \
       $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so)
     - |

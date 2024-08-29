@@ -59,6 +59,7 @@ build_linux_v6-armv9_kernel_dag-job:
       -j$BUILD_PROCESSORS hakc_armv9_defconfig
     - |
       scripts/config --file $(realpath ../build-$BUILD_TYPE/.config) \
+      -m CONFIG_ROSDEMO \
       --set-str CONFIG_HAKC_PASS_PATH \
       $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so)
     - |
