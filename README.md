@@ -12,6 +12,17 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 1. `ROOT=$PWD`
 1. `git submodule update --init --recursive`
 
+## Build Kuzu
+1. `mkdir build-kuzu`
+2. `cd build-kuzu`
+3. ```
+   cmake -G Ninja -DHAKC_KUZU=True -DBUILD_PYTHON=True 
+   -DCMAKE_INSTALL_PREFIX=$(realpath ../install) 
+   -DCMAKE_BUILD_TYPE=Release ..
+   ```
+4. `cmake --build . -j$(nproc) --target install`
+5. `pip3 install -r $(realpath ../kuzu/tools/python_api/requirements_dev.txt`
+
 ## Build LLVM 12
 1. `cd llvm-project`
 2. `git apply ../llvm-patches/*.patch`

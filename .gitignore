@@ -1,6 +1,7 @@
 hakc-jg.log
 test.bc
 build-linux-*/
+build-kuzu/
 
 
 **/__pycache__/
