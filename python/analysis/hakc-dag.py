@@ -11,11 +11,14 @@ import time
 from enum import Enum
 from typing import Type
 
+import kuzu
 import tqdm
 import yaml
 
 from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
-from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol, HAKCType, QuotedString
+from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol, HAKCType, \
+    QuotedString
+from python.analysis.hakc.yaml.HAKCObjects import HAKCScope
 
 logger = logging.getLogger('hakc-dag')
 
@@ -32,15 +35,19 @@ class LoggingLevelEnum(Enum):
     DEBUG = logging.DEBUG
 
 
-shared_compartmentalization = None
+shared_state = None
 
 
 class HAKCDagState:
     def __init__(self):
-        global shared_compartmentalization
-        shared_compartmentalization = HAKCCompartmentalization()
         self.global_dict = dict()
         self.symbol_count = 0
+
+    def initialize_state(self):
+        pass
+
+    def initialize_new_compartmentalization(self):
+        pass
 
     def track_global(self, symbol: HAKCSymbol, compilation_unit: str) -> HAKCSymbol:
         if len(compilation_unit) > 0:
@@ -67,10 +74,50 @@ class HAKCDagState:
                 result = symbol
         return result
 
-    @property
-    def compartmentalization(self) -> HAKCCompartmentalization | None:
-        global shared_compartmentalization
-        return shared_compartmentalization
+    def add_symbol(self, symbol: HAKCSymbol):
+        raise NotImplementedError
+
+    def get_symbols(self):
+        raise NotImplementedError
+
+    def finalize_compartmentalization(self):
+        raise NotImplementedError
+
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
+        raise NotImplementedError
+
+    def persist_compartmentalization(self, path: str):
+        raise NotImplementedError
+
+    def get_compartment_id(self, symbol: HAKCSymbol) -> int:
+        raise NotImplementedError
+
+    def get_division_id(self, symbol: HAKCSymbol) -> int:
+        raise NotImplementedError
+
+    def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
+        raise NotImplementedError
+
+    def set_division_id(self, symbol: HAKCSymbol, division_id: int):
+        raise NotImplementedError
+
+    def get_types(self):
+        raise NotImplementedError
+
+    def get_global_variables(self):
+        raise NotImplementedError
+
+    def get_functions(self):
+        raise NotImplementedError
+
+    def to_yaml(self) -> dict:
+        raise NotImplementedError
+
+    def has_edge(self, head: HAKCSymbol, tail: HAKCSymbol) -> bool:
+        raise NotImplementedError
+
+    def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
+        raise NotImplementedError
 
     def finalize_symbols(self):
         symbols = set()
@@ -88,17 +135,158 @@ class HAKCDagState:
                 used_symbol.type = tracked_symbol.type
 
         for symbol in symbols:
-            self.compartmentalization.add_symbol(symbol)
+            self.add_symbol(symbol)
 
         self.global_dict.clear()
 
-        self.compartmentalization.finalize_symbols()
+        self.finalize_compartmentalization()
 
-        for symbol in self.compartmentalization.get_symbols():
+        for symbol in self.get_symbols():
             symbol.clear()
 
     def __len__(self):
         return self.symbol_count
+
+
+class NetworkXDagState(HAKCDagState):
+    def __init__(self, compartmentalization: HAKCCompartmentalization):
+        HAKCDagState.__init__(self)
+        if compartmentalization is None:
+            self._compartmentalization = HAKCCompartmentalization()
+        else:
+            self._compartmentalization = compartmentalization
+
+    def add_symbol(self, symbol: HAKCSymbol):
+        self._compartmentalization.add_symbol(symbol)
+
+    def get_symbols(self):
+        return self._compartmentalization.get_symbols()
+
+    def finalize_compartmentalization(self):
+        self._compartmentalization.finalize_symbols()
+
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
+        self._compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+
+    def persist_compartmentalization(self, path: str):
+        with open(path, 'wb') as f:
+            pickle.dump(self._compartmentalization, f)
+
+    def get_compartment_id(self, symbol: HAKCSymbol) -> int:
+        return self._compartmentalization.get_compartment_id(symbol)
+
+    def get_division_id(self, symbol: HAKCSymbol) -> int:
+        return self._compartmentalization.get_division_id(symbol)
+
+    def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
+        self._compartmentalization.set_compartment_id(symbol, compartment_id)
+
+    def set_division_id(self, symbol: HAKCSymbol, division_id: int):
+        self._compartmentalization.set_division_id(symbol, division_id)
+
+    def get_types(self):
+        return self._compartmentalization.get_types()
+
+    def get_global_variables(self):
+        return self._compartmentalization.get_global_variables()
+
+    def get_functions(self):
+        return self._compartmentalization.get_functions()
+
+    def to_yaml(self) -> dict:
+        return self._compartmentalization.to_yaml()
+
+    def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
+        return self._compartmentalization.get_indirect_calls(symbol)
+
+    def has_edge(self, head: HAKCSymbol, tail: HAKCSymbol) -> bool:
+        return self._compartmentalization.has_edge(head, tail)
+
+
+class KuzuDagState(HAKCDagState):
+    IsTypeTable = "IsType"
+    HasScopeTable = "HasScope"
+
+    def __init__(self, kuzu_db_dir: str):
+        HAKCDagState.__init__(self)
+        self._kuzu_db = kuzu.Database(kuzu_db_dir)
+        self._kuzu_conn = None
+
+    def initialize_state(self):
+        self._kuzu_conn = kuzu.Connection(self._kuzu_db)
+
+    def _create_table(self, table_name: str, cmd: str):
+        try:
+            self._kuzu_conn.execute(cmd)
+        except RuntimeError:
+            self._kuzu_conn.execute(f'DROP TABLE {table_name}')
+            self._kuzu_conn.execute(cmd)
+
+    def create_node_table(self, obj_name: str, primary_key: str, **kwargs):
+        if primary_key not in kwargs:
+            raise RuntimeError(f'Primary key {primary_key} not provided')
+        member_str = ",".join([" ".join([key, val]) for key, val in kwargs.items()])
+        create_cmd = f'CREATE NODE TABLE {obj_name}({member_str}, PRIMARY KEY ({primary_key}))'
+        self._create_table(obj_name, create_cmd)
+
+    def create_rel_table(self, table_name: str, from_name: str, to_name: str):
+        create_cmd = f'CREATE REL TABLE {table_name}(FROM {from_name} TO {to_name})'
+        self._create_table(table_name, create_cmd)
+
+    def initialize_new_compartmentalization(self):
+        self._kuzu_conn = kuzu.Connection(self._kuzu_db)
+        self.create_node_table(HAKCType.__class__.__name__, primary_key="type_hash",
+                               debug_type="STRING", llvm_type="STRING", type_hash="STRING")
+        self.create_node_table(HAKCScope.__class__.__name__, primary_key="scope_hash", scope="STRING",
+                               local_scope="STRING", scope_hash="STRING")
+        self.create_node_table(HAKCSymbol.__class__.__name__, primary_key="symbol_hash", name="STRING",
+                               defining_file="STRING", defining_line="INT32", compilation_units="STRING[]",
+                               symbol_hash="STRING")
+
+        self.create_rel_table(KuzuDagState.IsTypeTable, HAKCSymbol.__class__.__name__, HAKCType.__class__.__name__)
+        self.create_rel_table(KuzuDagState.HasScopeTable, HAKCSymbol.__class__.__name__, HAKCScope.__class__.__name__)
+
+        self._kuzu_conn.close()
+        self._kuzu_conn = None
+
+    def add_symbol(self, symbol: HAKCSymbol):
+
+
+    def get_symbols(self):
+        return []
+
+    def finalize_compartmentalization(self):
+        pass
+
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
+        pass
+
+    def get_compartment_id(self, symbol: HAKCSymbol) -> int:
+        return HAKCCompartmentalization.kernel_compartment_id
+
+    def get_division_id(self, symbol: HAKCSymbol) -> int:
+        return HAKCCompartmentalization.kernel_division
+
+    def set_division_id(self, symbol: HAKCSymbol, division_id: int):
+        pass
+
+    def set_compartment_id(self, symbol: HAKCSymbol, compartment_id: int):
+        pass
+
+    def get_types(self):
+        return []
+
+    def get_global_variables(self):
+        return []
+
+    def get_functions(self):
+        return []
+
+    def to_yaml(self) -> dict:
+        return dict()
+
+    def get_indirect_calls(self, symbol: HAKCSymbol) -> set[HAKCType]:
+        return set()
 
 
 def get_loader() -> Type[yaml.SafeLoader]:
@@ -119,11 +307,11 @@ def parse_yaml(filename: str):
     return compilation_unit, functions, global_variables
 
 
-def compute_dag_edge_weight(compartmentalization: HAKCCompartmentalization, head: HAKCSymbol, tail: HAKCSymbol,
+def compute_dag_edge_weight(state: HAKCDagState, head: HAKCSymbol, tail: HAKCSymbol,
                             indirect_calls: set[HAKCType]) -> int:
     edge_weight = 0
 
-    if compartmentalization.has_edge(head, tail):
+    if state.has_edge(head, tail):
         edge_weight += 1
 
     if head.is_function():
@@ -135,14 +323,14 @@ def compute_dag_edge_weight(compartmentalization: HAKCCompartmentalization, head
 
 
 def compute_dag_edges_for_symbol(head: HAKCSymbol):
-    global shared_compartmentalization
+    global shared_state
     results = list()
 
-    indirect_calls = shared_compartmentalization.get_indirect_calls(head)
-    for tail in shared_compartmentalization.get_symbols():
+    indirect_calls = shared_state.get_indirect_calls(head)
+    for tail in shared_state.get_symbols():
         try:
             if tail is not head:
-                edge_weight = compute_dag_edge_weight(shared_compartmentalization, head, tail, indirect_calls)
+                edge_weight = compute_dag_edge_weight(shared_state, head, tail, indirect_calls)
                 if edge_weight > 0:
                     results.append((head, tail, edge_weight))
         except Exception as e:
@@ -151,9 +339,9 @@ def compute_dag_edges_for_symbol(head: HAKCSymbol):
     return results
 
 
-def add_dag_edges(compartmentalization: HAKCCompartmentalization):
+def add_dag_edges(state: HAKCDagState):
     logger.info(f'Starting DAG edge computation')
-    symbols = compartmentalization.get_symbols()
+    symbols = state.get_symbols()
     dag_edge_count = 0
     with tqdm.tqdm(total=len(symbols)) as pbar:
         for symbol in symbols:
@@ -162,7 +350,7 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
             for (head, tail, dag_edge_weight) in edge_weights:
                 logger.debug(f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
                 dag_edge_count += 1
-                compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+                state.add_dag_edge(head, tail, dag_edge_weight)
     logger.info(f'Finished adding {dag_edge_count} DAG edges')
 
 
@@ -179,8 +367,7 @@ def add_symbols(state: HAKCDagState, compilation_unit: str, functions: set[HAKCF
         state.track_global(glob, compilation_unit)
 
 
-def create_dag_single_thread(files: set[str]) -> HAKCCompartmentalization:
-    state = HAKCDagState()
+def create_dag_single_thread(files: set[str], state: HAKCDagState) -> None:
     with tqdm.tqdm(total=len(files)) as pbar:
         for filename in sorted(files):
             compilation_unit, functions, global_variables = parse_yaml(filename)
@@ -190,20 +377,18 @@ def create_dag_single_thread(files: set[str]) -> HAKCCompartmentalization:
             add_symbols(state, compilation_unit, functions, global_variables)
 
     finalize_symbols(state)
-    add_dag_edges(state.compartmentalization)
-
-    return state.compartmentalization
+    add_dag_edges(state)
 
 
-def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, adjustments):
+def adjust_compartmentalization(state: HAKCDagState, adjustments):
     logger.info(f'Adjusting DAG')
 
     if 'kernel' in adjustments:
-        for symbol in compartmentalization.get_symbols():
+        for symbol in state.get_symbols():
             defining_unit = symbol.defining_file
-            compartment_id = compartmentalization.get_compartment_id(symbol)
+            compartment_id = state.get_compartment_id(symbol)
             original_compartment_id = compartment_id
-            division_id = compartmentalization.get_division_id(symbol)
+            division_id = state.get_division_id(symbol)
 
             change = defining_unit is None
             if defining_unit:
@@ -225,17 +410,21 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
             if change:
                 logger.debug(
                     f'Changing Symbol {symbol} Compartment from {original_compartment_id} to {compartment_id}')
-                compartmentalization.set_compartment_id(symbol, compartment_id)
-                compartmentalization.set_division_id(symbol, division_id)
+                state.set_compartment_id(symbol, compartment_id)
+                state.set_division_id(symbol, division_id)
             else:
                 logger.info(f'Not changing Symbol {symbol}')
 
 
-def create_dag_multithread(files: set[str], core_count: int) -> HAKCCompartmentalization:
-    state = HAKCDagState()
+def initialize_multithread_worker():
+    global shared_state
+    shared_state.initialize_state()
 
+
+def create_dag_multithread(files: set[str], core_count: int, state: HAKCDagState) -> None:
     logger.info(f'Starting multiprocess DAG creation using {core_count} cores')
-    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count,
+                                                initializer=initialize_multithread_worker) as executor:
         with tqdm.tqdm(total=len(files)) as pbar:
             futures_to_files = {executor.submit(parse_yaml, file): file for file in sorted(files)}
             for future in concurrent.futures.as_completed(futures_to_files):
@@ -250,10 +439,11 @@ def create_dag_multithread(files: set[str], core_count: int) -> HAKCCompartmenta
                     logger.error(f'Error parsing {file}: {str(e)}')
 
     finalize_symbols(state)
-    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count,
+                                                initializer=initialize_multithread_worker) as executor:
         logger.info(f'Starting DAG edge computation')
 
-        symbols = state.compartmentalization.get_symbols()
+        symbols = state.get_symbols()
         dag_edges_added = 0
         futures_to_symbol = dict()
         with tqdm.tqdm(total=len(symbols)) as pbar:
@@ -278,7 +468,7 @@ def create_dag_multithread(files: set[str], core_count: int) -> HAKCCompartmenta
                             logger.debug(
                                 f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
                             dag_edges_added += 1
-                            state.compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+                            state.add_dag_edge(head, tail, dag_edge_weight)
                     except Exception as e:
                         logger.error(f'Error computing DAG edge for symbol {symbol}: {str(e)}')
             except KeyboardInterrupt as ki:
@@ -287,10 +477,9 @@ def create_dag_multithread(files: set[str], core_count: int) -> HAKCCompartmenta
                 raise ki
 
     logger.info(f'Finished adding {dag_edges_added} DAG edges')
-    return state.compartmentalization
 
 
-def create_new_dag(analysis_root: str, single_thread: bool, core_count: int) -> HAKCCompartmentalization:
+def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, state: HAKCDagState) -> None:
     core_count = max(1, core_count)
     logger.info(f'Finding DAG files starting from {os.path.abspath(analysis_root)}')
     filenames = set()
@@ -303,29 +492,28 @@ def create_new_dag(analysis_root: str, single_thread: bool, core_count: int) -> 
 
     logger.info(f'Starting DAG construction from {len(filenames)} files')
     start = time.time()
+    state.initialize_new_compartmentalization()
     if single_thread:
-        compartmentalization = create_dag_single_thread(filenames)
+        create_dag_single_thread(filenames, state)
     else:
-        compartmentalization = create_dag_multithread(filenames, core_count)
+        create_dag_multithread(filenames, core_count, state)
 
     end = time.time()
     logger.info(f'Finished creating DAG.')
     logger.info(f'    Total Time: {end - start} seconds')
-    logger.info(f'    Type Count: {len(compartmentalization.get_types())}')
-    logger.info(f'  Global Count: {len(compartmentalization.get_global_variables())}')
-    logger.info(f'Function Count: {len(compartmentalization.get_functions())}')
-
-    return compartmentalization
+    logger.info(f'    Type Count: {len(state.get_types())}')
+    logger.info(f'  Global Count: {len(state.get_global_variables())}')
+    logger.info(f'Function Count: {len(state.get_functions())}')
 
 
-def print_symbols(compartmentalization: HAKCCompartmentalization):
-    for symbol in sorted(compartmentalization.get_symbols(), key=lambda node: node.name):
+def print_symbols(state: HAKCDagState):
+    for symbol in sorted(state.get_symbols(), key=lambda node: node.name):
         logger.info(f'{symbol}')
 
 
-def print_symbols_with_same_name(compartmentalization: HAKCCompartmentalization):
+def print_symbols_with_same_name(state: HAKCDagState):
     name_dict = dict()
-    for symbol in compartmentalization.get_symbols():
+    for symbol in state.get_symbols():
         if symbol.name not in name_dict:
             name_dict[symbol.name] = set()
         name_dict[symbol.name].add(symbol)
@@ -365,6 +553,8 @@ def output_profile_stats(profile):
 
 def main():
     parser = argparse.ArgumentParser(description='Kernel Data Access Analysis')
+    parser.add_argument('--networkx', help='Use NetworkX implementation', dest='use_networkx',
+                        action='store_true')
     parser.add_argument('--c-in', help='Input compartment path', dest='c_in')
     parser.add_argument('--c-out', help='Output compartment path', dest='c_out')
     parser.add_argument('--dag-files-root', help='Root of DAG Yaml files', dest='dag_files_root')
@@ -389,17 +579,37 @@ def main():
                         action='store_true')
     parser.add_argument('--core-count', help='Max cores to use for analysis', dest='core_count',
                         default=mp.cpu_count() - 1, type=int)
+    parser.add_argument('--kuzu', help='Use kuzu', dest='use_kuzu', action='store_true')
+    parser.add_argument('--kuzu-db-dir', help='Directory to use for the kuzu database', dest='kuzu_dir',
+                        default=None)
 
     args = parser.parse_args()
 
     profile = None
     setup_logging(log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
-    compartmentalization = None
-    if args.c_in:
-        with open(args.c_in, 'rb') as f:
-            logger.info(f'Reading compartmentalization from {args.c_in}')
-            compartmentalization = pickle.load(f)
-            logger.info('Done')
+
+    if args.use_kuzu and args.use_networkx:
+        raise RuntimeError(f'Cannot use both kuzu and NetworkX implementations')
+
+    if not args.use_kuzu and not args.use_networkx:
+        raise RuntimeError(f'Must use either kuzu or Networkx')
+
+    global shared_state
+    if args.use_kuzu:
+        if args.kuzu_dir is None or len(args.kuzu_dir) == 0:
+            raise RuntimeError(f'Must specify a kuzu directory')
+
+        logger.info(f'Using kuzu database at {args.kuzu_dir}')
+        shared_state = KuzuDagState(args.kuzu_dir)
+
+    if args.use_networkx:
+        compartmentalization = None
+        if args.c_in:
+            with open(args.c_in, 'rb') as f:
+                logger.info(f'Reading compartmentalization from {args.c_in}')
+                compartmentalization = pickle.load(f)
+                logger.info('Done')
+        shared_state = NetworkXDagState(compartmentalization)
 
     if args.profile:
         profile = cProfile.Profile()
@@ -407,7 +617,7 @@ def main():
     if args.create_dag:
         if profile:
             profile.enable()
-        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count)
+        create_new_dag(args.dag_files_root, args.single_thread, args.core_count, shared_state)
         if profile:
             profile.disable()
             output_profile_stats(profile)
@@ -415,35 +625,27 @@ def main():
         if args.c_out:
             with open(args.c_out, 'wb') as f:
                 logger.info(f'Writing compartmentalization to {args.c_out}')
-                pickle.dump(compartmentalization, f)
+                shared_state.persist_compartmentalization(args.c_out)
                 logger.info(f'Done')
 
     if args.adjust:
-        if compartmentalization is None:
-            raise RuntimeError("No compartmentalization")
         logger.info(f'Adjusting compartmentalization based on {args.adjust_path}')
         with open(args.adjust_path, 'r') as f:
             adjustments = yaml.safe_load(f)
-        adjust_compartmentalization(compartmentalization, adjustments)
+        adjust_compartmentalization(shared_state, adjustments)
         logger.info("Done")
 
     if args.print_symbols:
-        if compartmentalization is None:
-            raise RuntimeError("No compartmentalization")
-        print_symbols(compartmentalization)
+        print_symbols(shared_state)
 
     if args.print_symbols_with_same_name:
-        if compartmentalization is None:
-            raise RuntimeError("No compartmentalization")
-        print_symbols_with_same_name(compartmentalization)
+        print_symbols_with_same_name(shared_state)
 
     if args.output_yaml:
-        if compartmentalization is None:
-            raise RuntimeError("No input compartmentalization")
         with open(args.output_yaml_path, 'w') as f:
             logger.info(f"Outputting YAML to {args.output_yaml_path}")
             yaml.add_representer(QuotedString, quoted_presenter)
-            yaml.dump(compartmentalization.to_yaml(), f, width=float("inf"))
+            yaml.dump(shared_state.to_yaml(), f, width=float("inf"))
             logger.info('Done')
 
 
