@@ -191,7 +191,8 @@ def parse_yaml(filename: str):
     return compilation_unit, functions, global_variables
 
 
-def compute_dag_edge_weight(head: HAKCSymbol, tail: HAKCSymbol, head_uses_tail: bool, indirect_calls: list[HAKCType]) -> int:
+def compute_dag_edge_weight(head: HAKCSymbol, tail: HAKCSymbol, head_uses_tail: bool,
+                            indirect_calls: list[HAKCType]) -> int:
     edge_weight = 0
 
     if head_uses_tail:
@@ -223,6 +224,7 @@ def compute_dag_edges_for_symbol_with_conn(conn: HAKCDatabase, symbol_hash: int,
         except Exception as e:
             logger.error(f'Error computing edge weight between {head.name} and {tail.name}: {str(e)}')
     return results
+
 
 def compute_dag_edges_for_symbol(db_dir: str, symbol_hash: int, symbol_hashes: list[int]):
     conn = HAKCDatabase(db_dir, read_only=True)
@@ -385,14 +387,15 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 raise ki
 
     logger.info(f'Finished adding {dag_edges_added} DAG edges')
-    # conn.open()
-    # conn.persist_compartmentalization(compartmentalization)
-    # conn.close()
+    conn.open()
+    conn.persist_compartmentalization(compartmentalization)
+    conn.close()
 
     return compartmentalization
 
 
-def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_dir: str, delete_existing_db: bool) -> HAKCCompartmentalization:
+def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_dir: str,
+                   delete_existing_db: bool) -> HAKCCompartmentalization:
     logger.info(f'Finding DAG files starting from {os.path.abspath(analysis_root)}')
     filenames = set()
     for root, subdirs, files in os.walk(analysis_root):
@@ -492,7 +495,8 @@ def main():
     if args.create_dag:
         if profile:
             profile.enable()
-        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count, args.kuzu_dir, args.delete_db)
+        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count, args.kuzu_dir,
+                                              args.delete_db)
         if profile:
             profile.disable()
             output_profile_stats(profile)

@@ -3,7 +3,7 @@ import logging
 import kuzu
 import networkx as nx
 import polars as pl
-import tqdm
+import re
 from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType, CliqueColors, HAKCDivision, \
     HAKCCompartment, HAKCInfo, HAKCScope, HAKCCompilationUnit, HAKCFunction, HAKCDBColumn
 
@@ -118,10 +118,13 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         result = dict()
         for head, tail, table_name, attrs in self.edges(data=True, keys=True):
             if not attrs[HAKCCompartmentalization.persisted_attr]:
-                del attrs[HAKCCompartmentalization.persisted_attr]
+                edge_attributes = {}
+                for key, val in attrs.items():
+                    if key != HAKCCompartmentalization.persisted_attr:
+                        edge_attributes[key] = val
                 if table_name not in result:
                     result[table_name] = list()
-                result[table_name].append((head, tail, attrs))
+                result[table_name].append((head, tail, edge_attributes))
 
         return result
 
@@ -140,15 +143,59 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                 conn.execute(f'COPY {table_name} FROM df')
                 for node in nodes:
                     self.nodes[node][HAKCCompartmentalization.persisted_attr] = True
+                logger.info('Done')
             except Exception as e:
                 logger.error(f'Failed to persist to {table_name}: {str(e)}')
-            logger.info('Done')
 
     def _persist_edges(self, conn: kuzu.Connection):
         unpersisted_edges = self.get_unpersisted_edges()
-        for table_name, edge_data in unpersisted_edges:
+        for table_name, edge_data in unpersisted_edges.items():
+            head_primary_keys = list()
+            tail_primary_keys = list()
+            attr_list = list()
             for head, tail, attrs in edge_data:
-
+                head_primary_key = head.get_primary_key_data()
+                tail_primary_key = tail.get_primary_key_data()
+                head_primary_keys.append(head_primary_key)
+                tail_primary_keys.append(tail_primary_key)
+                if len(attrs) > 0:
+                    attr_list.append(attrs)
+            if len(attr_list) == 0:
+                df = pl.DataFrame([head_primary_keys, tail_primary_keys])
+            else:
+                df = pl.DataFrame([head_primary_keys, tail_primary_keys, attr_list])
+            logger.info(f'Persisting {len(head_primary_keys)} edges to {table_name}')
+            if table_name == 'HasScope':
+                hash_value = 495279411629152
+                in_primary = hash_value in head_primary_keys
+                in_tail = hash_value in tail_primary_keys
+                print(f'{in_primary}')
+                print(f'{in_tail}')
+            try:
+                conn.execute(f'COPY {table_name} FROM df')
+                for head, tail, _ in edge_data:
+                    self.edges[head, tail, table_name][HAKCCompartmentalization.persisted_attr] = True
+                logger.info('Done')
+            except Exception as e:
+                match = re.search('Runtime exception: Unable to find primary key value (-?[0-9]+)', str(e))
+                if match:
+                    missing_hash = int(match.group(1))
+                    found_hash = False
+                    for node in self.nodes:
+                        if hash(node) == missing_hash:
+                            logger.error(f'Failed to find {node} with hash {missing_hash} in database')
+                            resp = conn.execute(f'MATCH (n: {node.get_table_name()}) RETURN n.*;')
+                            logger.error(f'Nodes in database: ')
+                            while resp.has_next():
+                                data = resp.get_next()
+                                logger.error(f'{data} {data[0] == 495279411629152}')
+                            found_hash = True
+                            break
+                    if not found_hash:
+                        logger.error(f'Unexpected hash {missing_hash}')
+                else:
+                    logger.error(f'Failed to persist to {table_name}: {str(e)}')
+                raise e
 
 
     def persist_to_database(self, conn: kuzu.Connection):
@@ -164,15 +211,16 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                           columns: list[HAKCDBColumn]):
         if primary_key not in columns:
             raise RuntimeError(f'Primary key {primary_key} not provided')
+        logger.info(f'Creating node table {table_name}')
         member_str = ",".join([" ".join([column.column_name, column.db_type]) for column in columns])
         create_cmd = f'CREATE NODE TABLE IF NOT EXISTS {table_name}({member_str}, PRIMARY KEY ({primary_key.column_name}))'
         self._execute_prepared_stmt(conn, create_cmd)
 
-    def create_rel_table(self, conn: kuzu.Connection, table_name: str, from_name: str, to_name: str, **kwargs):
+    def create_rel_table(self, conn: kuzu.Connection, table_name: str, from_name: str, to_name: str, edge_property: str):
+        logger.info(f'Creating relation table {table_name}')
         create_cmd = f'CREATE REL TABLE IF NOT EXISTS {table_name}(FROM {from_name} TO {to_name}'
-        prop_str = ",".join([" ".join([key, val]) for key, val in kwargs.items()])
-        if len(prop_str) != 0:
-            create_cmd = ",".join([create_cmd, prop_str])
+        if edge_property is not None:
+            create_cmd = ", ".join([create_cmd, edge_property])
         create_cmd += ")"
 
         self._execute_prepared_stmt(conn, create_cmd)
@@ -196,7 +244,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             db_relations = cls.get_db_relations()
             for db_relation in db_relations:
                 self.create_rel_table(conn, db_relation.relation_name, db_relation.from_class.get_table_name(),
-                                      db_relation.to_class.get_table_name(), **db_relation.properties)
+                                      db_relation.to_class.get_table_name(), db_relation.properties)
 
     def get_symbol_hashes(self) -> list[int]:
         symbol_hashes = []
