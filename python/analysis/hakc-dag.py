@@ -57,7 +57,11 @@ class HAKCDatabase:
         logger.info(f'Done.')
 
     def get_symbol_by_hash(self, symbol_hash: int) -> HAKCSymbol | None:
-        result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash = {symbol_hash}')
+        try:
+            result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash = {symbol_hash}')
+        except Exception as e:
+            logger.error(f'get_symbol_by_hash failed')
+            raise e
         if len(result) == 0:
             return None
         if len(result) > 1:
@@ -138,13 +142,17 @@ class HAKCDatabase:
             RETURN ty.DebugType, ty.LLVMType
             ORDER BY ty.DebugType, ty.LLVMType;
         """
-        response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
-        types = []
-        if response.has_next():
-            info = response.get_as_df()
-            for data in info.to_dict(orient='records'):
-                ty = self._create_type_from_response(**data)
-                types.append(ty)
+        try:
+            response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
+            types = []
+            if response.has_next():
+                info = response.get_as_df()
+                for data in info.to_dict(orient='records'):
+                    ty = self._create_type_from_response(**data)
+                    types.append(ty)
+        except Exception as e:
+            logger.error(f'get_indirect_calls failed')
+            raise e
         return types
 
     def get_used_symbols(self, symbol: HAKCSymbol):
@@ -153,16 +161,20 @@ class HAKCDatabase:
             (sc:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(tail)-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
             WHERE head.symbol_hash=$symbol_hash
             RETURN tail.Name, tail.DefiningFile, tail.DefiningLine, tail.is_function AS is_function, sc.Scope,
-            sc.LocalScopeName, ty.DebugType AS DebugType, ty.LLVMType AS LLVMType;
+            sc.LocalScopeName, ty.DebugType, ty.LLVMType;
         """
-        response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
-        used_symbols = []
-        if response.has_next():
-            info = response.get_as_df()
-            for data in info.to_dict(orient='records'):
-                symbol = self._create_symbol_from_response(symbol_prefix='tail.', scope_prefix='sc.',
-                                                           type_prefix='ty.', **data)
-                used_symbols.append(symbol)
+        try:
+            response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
+            used_symbols = []
+            if response.has_next():
+                info = response.get_as_df()
+                for data in info.to_dict(orient='records'):
+                    symbol = self._create_symbol_from_response(symbol_prefix='tail.', scope_prefix='sc.',
+                                                               type_prefix='ty.', **data)
+                    used_symbols.append(symbol)
+        except Exception as e:
+            logger.error(f'get_used_symbols failed')
+            raise e
 
         return used_symbols
 
@@ -230,11 +242,14 @@ def compute_dag_edges_for_symbol(db_dir: str, symbol_hash: int, symbol_hashes: l
     conn = HAKCDatabase(db_dir, read_only=True)
 
     try:
+        conn = HAKCDatabase(db_dir, read_only=True)
         results = compute_dag_edges_for_symbol_with_conn(conn, symbol_hash, symbol_hashes)
     except Exception as e:
+        logger.error(f'compute_dag_edges_for_symbol failed for {symbol_hash}: {str(e)}')
         conn.close()
         raise e
 
+    logger.info(f'Finished computing DAG edges for {symbol_hash}')
     conn.close()
     return results
 

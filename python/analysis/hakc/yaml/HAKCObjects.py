@@ -532,7 +532,7 @@ class HAKCSymbol(HAKCInfo):
     def get_db_relations() -> list[HAKCDBRelation]:
         return [
             HAKCDBRelation(HAKCSymbol.IsTypeTable, HAKCSymbol, HAKCType),
-            HAKCDBRelation(HAKCSymbol.HasScopeTable, HAKCSymbol, HAKCSymbol),
+            HAKCDBRelation(HAKCSymbol.HasScopeTable, HAKCSymbol, HAKCScope),
             HAKCDBRelation(HAKCSymbol.UsesSymbolTable, HAKCSymbol, HAKCSymbol),
             HAKCDBRelation(HAKCSymbol.SymbolCompilationUnitTable, HAKCSymbol, HAKCCompilationUnit),
             HAKCDBRelation(HAKCSymbol.DagEdgeTable, HAKCSymbol, HAKCSymbol, weight="INT32"),

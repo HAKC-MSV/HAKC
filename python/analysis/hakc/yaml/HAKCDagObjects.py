@@ -146,6 +146,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                 logger.info('Done')
             except Exception as e:
                 logger.error(f'Failed to persist to {table_name}: {str(e)}')
+                raise e
 
     def _persist_edges(self, conn: kuzu.Connection):
         unpersisted_edges = self.get_unpersisted_edges()
@@ -165,12 +166,6 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             else:
                 df = pl.DataFrame([head_primary_keys, tail_primary_keys, attr_list])
             logger.info(f'Persisting {len(head_primary_keys)} edges to {table_name}')
-            if table_name == 'HasScope':
-                hash_value = 495279411629152
-                in_primary = hash_value in head_primary_keys
-                in_tail = hash_value in tail_primary_keys
-                print(f'{in_primary}')
-                print(f'{in_tail}')
             try:
                 conn.execute(f'COPY {table_name} FROM df')
                 for head, tail, _ in edge_data:
@@ -184,11 +179,6 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                     for node in self.nodes:
                         if hash(node) == missing_hash:
                             logger.error(f'Failed to find {node} with hash {missing_hash} in database')
-                            resp = conn.execute(f'MATCH (n: {node.get_table_name()}) RETURN n.*;')
-                            logger.error(f'Nodes in database: ')
-                            while resp.has_next():
-                                data = resp.get_next()
-                                logger.error(f'{data} {data[0] == 495279411629152}')
                             found_hash = True
                             break
                     if not found_hash:
