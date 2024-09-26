@@ -56,7 +56,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
         if symbol.is_function():
             for indirect_call in symbol.indirect_calls:
-                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCSymbol.IndirectCallsTable)
+                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
 
     def _get_neighbors(self, symbol: HAKCSymbol, edge_key: str) -> list:
         nbrs = list()
@@ -66,7 +66,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         return nbrs
 
     def get_indirect_calls(self, symbol: HAKCSymbol) -> list[HAKCType]:
-        return self._get_neighbors(symbol, HAKCSymbol.IndirectCallsTable)
+        return self._get_neighbors(symbol, HAKCFunction.IndirectCallTable)
 
     def set_division(self, symbol: HAKCSymbol, division_id: int, compartment_id: int):
         division = HAKCDivision(division_id, compartment_id)
