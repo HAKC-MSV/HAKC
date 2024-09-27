@@ -47,7 +47,7 @@ def hash_values(values: list) -> int:
 
 class HAKCPrintableObj:
     def __init__(self, **kwargs):
-        pass
+        self.computed_hash = None
 
     def __str__(self):
         cls = self.__class__.__name__
@@ -68,6 +68,15 @@ class HAKCPrintableObj:
                 result[key] = value
         return result
 
+    def __hash__(self):
+        if self.computed_hash is not None:
+            return self.computed_hash
+        self.computed_hash = hash_values(self.get_hash_inputs())
+        return self.computed_hash
+
+    def get_hash_inputs(self):
+        raise NotImplementedError
+
 
 class HAKCDBRelation:
     EdgePropertyName = 'EdgeData'
@@ -79,7 +88,8 @@ class HAKCDBRelation:
         self.properties = None
         if len(kwargs) > 0:
             struct_def = ",".join([" ".join([name, db_type]) for name, db_type in kwargs.items()])
-            self.properties = f'{HAKCDBRelation.EdgePropertyName} STRUCT({struct_def})'
+            self.properties = struct_def
+            # self.properties = f'{HAKCDBRelation.EdgePropertyName} STRUCT({struct_def})'
 
 
 class HAKCDBColumn:
@@ -111,7 +121,10 @@ class HAKCInfo(HAKCPrintableObj):
         return False
 
     def __hash__(self):
-        return hash_values([self.name])
+        return HAKCPrintableObj.__hash__(self)
+
+    def get_hash_inputs(self) -> list[object]:
+        return [self.name]
 
     def is_function(self) -> bool:
         return False
@@ -212,7 +225,10 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
         return False
 
     def __hash__(self):
-        return hash_values([self.compartment_id])
+        return HAKCInfo.__hash__(self)
+
+    def get_hash_inputs(self) -> list[object]:
+        return [self.compartment_id]
 
     def __lt__(self, other):
         if isinstance(other, HAKCCompartment):
@@ -286,13 +302,16 @@ class HAKCDivision(yaml.YAMLObject, HAKCInfo):
         self.compartment_id = compartment_id
         self.division_count = division_count
 
-    def __hash__(self):
-        return hash_values([self.division_id, self.compartment_id])
+    def get_hash_inputs(self) -> list[object]:
+        return [self.division_id, self.compartment_id]
 
     def __eq__(self, other):
         if isinstance(other, HAKCDivision):
             return self.compartment_id == other.compartment_id and self.division_id == other.division_id
         return False
+
+    def __hash__(self):
+        return HAKCInfo.__hash__(self)
 
     def __lt__(self, other):
         if isinstance(other, HAKCDivision):
@@ -358,11 +377,14 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
                 return False
         return False
 
-    def __hash__(self):
+    def get_hash_inputs(self) -> list[object]:
         if self._debug_type_is_known:
-            return hash_values([self._debug_type_transformed])
+            return [self._debug_type_transformed]
         else:
-            return hash_values([self.llvm_type])
+            return [self.llvm_type]
+
+    def __hash__(self):
+        return HAKCInfo.__hash__(self)
 
     def get_info_tokens(self) -> dict[str, object]:
         return {'debug_type': f'{self.debug_type}', 'llvm_type': f'{self.llvm_type}'}
@@ -427,6 +449,9 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
                 return other.is_global_scope
         return False
 
+    def __hash__(self):
+        return HAKCInfo.__hash__(self)
+
     def __lt__(self, other):
         if isinstance(other, HAKCScope):
             if self.is_local_scope and other.is_local_scope:
@@ -435,11 +460,11 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
                 return self.scope < other.scope
         raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
 
-    def __hash__(self):
+    def get_hash_inputs(self) -> list[object]:
         if self.is_global_scope:
-            return hash_values([self.scope])
+            return [self.scope]
         else:
-            return hash_values([self.scope, self.local_scope_name])
+            return [self.scope, self.local_scope_name]
 
     def get_info_tokens(self) -> dict[str, object]:
         result = {'scope': f'{self.scope}'}
@@ -490,7 +515,7 @@ class HAKCSymbol(HAKCInfo):
         self.defining_file = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
         self.defining_line = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
 
-        self.used_symbols = set(kwargs['UsedSymbols']) if 'UsedSymbols' in kwargs else set()
+        self.used_symbols = kwargs['UsedSymbols'] if 'UsedSymbols' in kwargs else list()
 
     def __eq__(self, other):
         if isinstance(other, HAKCSymbol):
@@ -498,7 +523,10 @@ class HAKCSymbol(HAKCInfo):
         return False
 
     def __hash__(self):
-        return hash_values([self.name, self.type, self.scope])
+        return HAKCInfo.__hash__(self)
+
+    def get_hash_inputs(self) -> list[object]:
+        return [self.name, self.type, self.scope]
 
     def get_info_tokens(self) -> dict[str, object]:
         result = HAKCInfo.get_info_tokens(self)
@@ -564,18 +592,18 @@ class HAKCIndirectSourceLink(yaml.YAMLObject, HAKCInfo):
         self.arg_num = kwargs['ArgNumber'] if 'ArgNumber' in kwargs else None
         self.function_name = kwargs['Function'] if 'Function' in kwargs else None
 
-    def __hash__(self):
-        result = hash_values([self.link_type])
+    def get_hash_inputs(self) -> list[object]:
+        result = [self.link_type]
         if self.type:
-            result = hash_values([result, self.type])
+            result.append(self.type)
         if self.global_name:
-            result = hash_values([result, self.global_name])
+            result.append(self.global_name)
         if self.offset:
-            result = hash_values([result, self.offset])
+            result.append(self.offset)
         if self.arg_num:
-            result = hash_values([result, self.arg_num])
+            result.append(self.arg_num)
         if self.function_name:
-            result = hash_values([result, self.function_name])
+            result.append(self.function_name)
         return result
 
 
@@ -588,22 +616,23 @@ class HAKCIndirectCallSource(yaml.YAMLObject, HAKCInfo):
         self.source = kwargs['Source'] if 'Source' in kwargs else list()
         self.type = Type
 
-    def __hash__(self):
-        result = hash_values([self.type])
+    def get_hash_inputs(self) -> list[object]:
+        result = [self.type]
         for link in self.source:
-            result = hash_values([result, link])
+            result.append(link)
         return result
 
 
 class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
     yaml_tag = "!HAKCFunction"
     IndirectCallTable = "IndirectCall"
+    DirectCallTable = "DirectCall"
 
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCSymbol.__init__(self, **kwargs)
-        self.direct_calls = set(kwargs['DirectCalls']) if 'DirectCalls' in kwargs else set()
-        self.indirect_calls = set(kwargs['IndirectCalls']) if 'IndirectCalls' in kwargs else set()
+        self.direct_calls = kwargs['DirectCalls'] if 'DirectCalls' in kwargs else list()
+        self.indirect_calls = kwargs['IndirectCalls'] if 'IndirectCalls' in kwargs else list()
 
     def is_function(self) -> bool:
         return True
@@ -611,7 +640,8 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
     @staticmethod
     def get_db_relations() -> list[HAKCDBRelation]:
         return [
-            HAKCDBRelation(HAKCFunction.IndirectCallTable, HAKCFunction, HAKCType)
+            HAKCDBRelation(HAKCFunction.IndirectCallTable, HAKCFunction, HAKCType),
+            HAKCDBRelation(HAKCFunction.DirectCallTable, HAKCFunction, HAKCSymbol)
         ]
 
 

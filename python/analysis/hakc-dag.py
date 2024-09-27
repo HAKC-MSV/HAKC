@@ -10,10 +10,12 @@ import shutil
 import time
 from enum import Enum
 from typing import Type
+import polars as pl
 
 import kuzu
 import tqdm
 import yaml
+import itertools
 
 from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
 from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol, HAKCType, \
@@ -33,18 +35,25 @@ class LoggingLevelEnum(Enum):
     INFO = logging.INFO
     DEBUG = logging.DEBUG
 
+def batched(iterable, n):
+    if n < 1:
+        raise ValueError('n must be at least one')
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        yield batch
+
 
 class HAKCDatabase:
-    def __init__(self, db_dir: str, read_only: bool = False):
+    def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.db_dir = db_dir
-        self.open(read_only=read_only)
+        self.open(read_only=read_only, max_num_threads=max_num_threads)
 
     def close(self):
         self.conn.close()
         self.database.close()
 
-    def open(self, read_only: bool = False):
-        self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=mp.cpu_count())
+    def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
+        self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
         self.conn = kuzu.Connection(self.database)
 
     def persist_compartmentalization(self, compartmentalization: HAKCCompartmentalization, create_schema: bool = False):
@@ -56,26 +65,60 @@ class HAKCDatabase:
         compartmentalization.persist_to_database(self.conn)
         logger.info(f'Done.')
 
-    def get_symbol_by_hash(self, symbol_hash: int) -> HAKCSymbol | None:
+
+    def persist_dag_edges(self, dag_edge_data):
+        head_hashes = list()
+        tail_hashes = list()
+        edge_weights = list()
+
+        for head_hash, edge_data in dag_edge_data.items():
+            for tail_hash, edge_weight in edge_data.items():
+                head_hashes.append(head_hash)
+                tail_hashes.append(tail_hash)
+                edge_weights.append(edge_weight)
+
+        df = pl.DataFrame({
+            "from": head_hashes,
+            "to": tail_hashes,
+            "weight": edge_weights
+        })
+        self.conn.execute(f'COPY {HAKCSymbol.DagEdgeTable} FROM df')
+
+    def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
         try:
-            result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash = {symbol_hash}')
+            result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
+            return result
         except Exception as e:
             logger.error(f'get_symbol_by_hash failed')
             raise e
-        if len(result) == 0:
-            return None
-        if len(result) > 1:
-            logger.error(f'Found {len(result)} symbols with hash {symbol_hash}')
-            for sym in result:
-                logger.error(f'{sym}')
-            raise RuntimeError(f'Found {len(result)} symbols with hash {symbol_hash}')
-        return result[0]
+
+    def get_dag_edges(self, symbol_hash: int) -> dict[int]:
+        cmd = f"""
+        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.DirectCallTable}]->(direct:{HAKCSymbol.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
+        UNION ALL
+        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.UsesSymbolTable}]->(uses:{HAKCSymbol.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN uses.{HAKCSymbol.get_primary_key().column_name} AS {HAKCSymbol.UsesSymbolTable}
+        UNION ALL
+        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.IndirectCallTable}]->(:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(indirect:{HAKCSymbol.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
+        ;
+        """
+
+        response = self._execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
+        if response.has_next():
+            return response.get_as_df().to_dict()
+        else:
+            return {}
 
     def _execute_prepared_stmt(self, prepared_stmt: str, **kwargs):
         response = self.conn.execute(prepared_stmt, parameters=kwargs)
         return response
 
-    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False) -> list[HAKCSymbol] | int:
+    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False, limit: int = 0) -> list[HAKCSymbol] | int:
         cmd = [f"""
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
         """]
@@ -92,8 +135,10 @@ class HAKCDatabase:
         else:
             cmd.append(f'{return_str}')
             cmd.append(f"""
-                ORDER BY sym.Name, ty.DebugType, scope.Scope, scope.LocalScopeName;
+                ORDER BY sym.Name, ty.DebugType, scope.Scope, scope.LocalScopeName
             """)
+        if limit > 0:
+            cmd.append(f'LIMIT {limit}')
         symbols = list()
         response = self._execute_prepared_stmt(prepared_stmt=" ".join(cmd))
         if response.has_next():
@@ -181,7 +226,7 @@ class HAKCDatabase:
     def get_symbol_count(self):
         return self._get_symbols(return_count=True)
 
-    def get_symbols(self):
+    def get_symbols(self, limit: int = 0):
         return self._get_symbols()
 
 
@@ -203,54 +248,60 @@ def parse_yaml(filename: str):
     return compilation_unit, functions, global_variables
 
 
-def compute_dag_edge_weight(head: HAKCSymbol, tail: HAKCSymbol, head_uses_tail: bool,
-                            indirect_calls: list[HAKCType]) -> int:
+def compute_dag_edge_weight(**kwargs) -> int:
     edge_weight = 0
 
-    if head_uses_tail:
+    if kwargs.get(HAKCFunction.DirectCallTable, False):
         edge_weight += 1
 
-    if head.is_function():
-        for indirect_call in indirect_calls:
-            if indirect_call == tail.type:
-                edge_weight += 1
+    if kwargs.get(HAKCSymbol.UsesSymbolTable, False):
+        edge_weight += 1
+
+    if kwargs.get(HAKCFunction.IndirectCallTable, False):
+        edge_weight += 1
 
     return edge_weight
 
 
-def compute_dag_edges_for_symbol_with_conn(conn: HAKCDatabase, symbol_hash: int, symbol_hashes: list[int]):
+def compute_dag_edges_for_symbol_with_conn(conn: HAKCDatabase, symbol_hash: int):
     results = list()
-    head = conn.get_symbol_by_hash(symbol_hash)
-    if head is None:
-        symbol_count = conn.get_symbol_count()
-        raise RuntimeError(f'No symbol with hash {symbol_hash} found from {symbol_count} symbols')
-    indirect_calls = conn.get_indirect_calls(head)
-    used_symbols = conn.get_used_symbols(head)
-    for tail_hash in symbol_hashes:
-        tail = conn.get_symbol_by_hash(tail_hash)
-        try:
-            if symbol_hash != tail_hash:
-                edge_weight = compute_dag_edge_weight(head, tail, tail in used_symbols, indirect_calls)
-                if edge_weight > 0:
-                    results.append((symbol_hash, tail_hash, edge_weight))
-        except Exception as e:
-            logger.error(f'Error computing edge weight between {head.name} and {tail.name}: {str(e)}')
+    tail_hash_types = conn.get_dag_edges(symbol_hash)
+    dag_info = dict()
+
+    for dag_edge_type, tail_hashes in tail_hash_types.items():
+        if dag_edge_type == HAKCFunction.IndirectCallTable:
+            logger.info(f'{symbol_hash}: {tail_hash_types}')
+        for _, tail_hash in tail_hashes.items():
+            if tail_hash not in dag_info:
+                dag_info[tail_hash] = dict()
+            dag_info[tail_hash][dag_edge_type] = True
+    for tail_hash, tail_info in dag_info.items():
+        dag_weight = compute_dag_edge_weight(**tail_info)
+        if dag_weight > 0:
+            results.append((symbol_hash, tail_hash, dag_weight))
+
     return results
 
 
-def compute_dag_edges_for_symbol(db_dir: str, symbol_hash: int, symbol_hashes: list[int]):
-    conn = HAKCDatabase(db_dir, read_only=True)
+mp_conn : HAKCDatabase | None = None
 
-    try:
-        conn = HAKCDatabase(db_dir, read_only=True)
-        results = compute_dag_edges_for_symbol_with_conn(conn, symbol_hash, symbol_hashes)
-    except Exception as e:
-        logger.error(f'compute_dag_edges_for_symbol failed for {symbol_hash}: {str(e)}')
-        conn.close()
-        raise e
+def init_mp_database(db_dir: str):
+    global mp_conn
+    logger.debug(f'Creating database at {db_dir}')
+    mp_conn = HAKCDatabase(db_dir, read_only=True)
 
-    logger.info(f'Finished computing DAG edges for {symbol_hash}')
-    conn.close()
+def compute_dag_edges_for_symbol(symbol_hashes):
+    global mp_conn
+    conn = mp_conn
+    results = list()
+    for symbol_hash in symbol_hashes:
+        try:
+            for t in compute_dag_edges_for_symbol_with_conn(conn, symbol_hash):
+                results.append(t)
+            logger.debug(f'Finished computing DAG edges for {symbol_hash}')
+        except Exception as e:
+            logger.error(f'compute_dag_edges_for_symbol failed for {symbol_hash}: {str(e)}')
+
     return results
 
 
@@ -260,10 +311,12 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
     symbols = compartmentalization.get_symbols()
     with tqdm.tqdm(total=len(symbols)) as pbar:
         for head in symbols:
-            indirect_calls = compartmentalization.get_indirect_calls(head)
             for tail in compartmentalization.get_symbols():
-                dag_edge_weight = compute_dag_edge_weight(head, tail, compartmentalization.has_edge(head, tail),
-                                                          indirect_calls)
+                edge_weight_info = dict()
+                edge_weight_info[HAKCFunction.DirectCallTable] = compartmentalization.has_edge(head, tail, key=HAKCFunction.DirectCallTable)
+                edge_weight_info[HAKCSymbol.UsesSymbolTable] = compartmentalization.has_edge(head, tail, key=HAKCSymbol.UsesSymbolTable)
+                edge_weight_info[HAKCFunction.IndirectCallTable] = compartmentalization.has_edge(head, tail.type, key=HAKCFunction.IndirectCallTable)
+                dag_edge_weight = compute_dag_edge_weight(**edge_weight_info)
                 if dag_edge_weight > 0:
                     logger.debug(f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
                     dag_edge_count += 1
@@ -343,7 +396,7 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 pbar.update(1)
         logger.info("Completed")
         compartmentalization = HAKCCompartmentalization()
-        conn = HAKCDatabase(db_dir)
+        conn = HAKCDatabase(db_dir, max_num_threads=core_count)
         compartmentalization.create_schema(conn.conn)
         with tqdm.tqdm(total=len(files)) as pbar:
             for future in concurrent.futures.as_completed(futures_to_files):
@@ -357,54 +410,70 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 except Exception as e:
                     logger.error(f'Error parsing {file}: {str(e)}')
 
-        conn.persist_compartmentalization(compartmentalization)
-        logger.info(f'Total symbols {len(conn.get_symbols())}')
-        conn.close()
-        logger.info(f'Starting DAG edge computation')
-
+    conn.persist_compartmentalization(compartmentalization)
+    logger.info(f'Total symbols {len(conn.get_symbols())}')
+    conn.close()
+    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count, initializer=init_mp_database,
+                                                initargs=(db_dir,)) as executor:
         dag_edges_added = 0
-        futures_to_symbol = dict()
         symbol_hashes = compartmentalization.get_symbol_hashes()
-
-        with tqdm.tqdm(total=len(symbol_hashes)) as pbar:
+        logger.info(f'Starting DAG edge computation')
+        batch_size = 100
+        futures = list()
+        with tqdm.tqdm(total=int(len(symbol_hashes) / batch_size) + 1) as pbar:
             try:
-                for symbol_hash in symbol_hashes:
-                    future = executor.submit(compute_dag_edges_for_symbol, db_dir, symbol_hash, symbol_hashes)
-                    futures_to_symbol[future] = symbol_hash
+                for symbol_hash_batch in batched(symbol_hashes, batch_size):
+                    future = executor.submit(compute_dag_edges_for_symbol, symbol_hash_batch)
+                    futures.append(future)
                     pbar.update(1)
             except Exception as e:
                 logger.error(f'Error submitting tasks: {str(e)}')
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise e
 
-        with tqdm.tqdm(total=len(futures_to_symbol)) as pbar:
+        with tqdm.tqdm(total=len(futures)) as pbar:
             try:
-                for future in concurrent.futures.as_completed(futures_to_symbol):
+                dag_edges = dict()
+                for future in concurrent.futures.as_completed(futures):
                     pbar.update(1)
-                    symbol_hash = futures_to_symbol[future]
                     try:
                         edge_weights = future.result()
                         for (head_hash, tail_hash, dag_edge_weight) in edge_weights:
-                            head = compartmentalization.get_symbol_by_hash(head_hash)
-                            tail = compartmentalization.get_symbol_by_hash(tail_hash)
-                            logger.debug(
-                                f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
-                            compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
+                            if head_hash not in dag_edges:
+                                dag_edges[head_hash] = dict()
+                            dag_edges[head_hash][tail_hash] = dag_edge_weight
                             dag_edges_added += 1
                     except Exception as e:
-                        symbol = compartmentalization.get_symbol_by_hash(symbol_hash)
-                        if symbol is None:
-                            symbol = symbol_hash
-                        logger.error(f'Error computing DAG edge for symbol {symbol}: {str(e)}')
+                        logger.error(f'Error computing DAG edge: {str(e)}')
             except KeyboardInterrupt as ki:
                 logger.info(f'Stopping edge computation')
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise ki
 
-    logger.info(f'Finished adding {dag_edges_added} DAG edges')
-    conn.open()
-    conn.persist_compartmentalization(compartmentalization)
+    logger.info(f'Adding {dag_edges_added} DAG edges to compartmentalization')
+    conn.open(max_num_threads=core_count)
+    conn.persist_dag_edges(dag_edges)
+    logger.info(f'Done')
     conn.close()
+
+    # with tqdm.tqdm(total=dag_edges_added) as pbar:
+    #     symbol_hash_map = dict()
+    #     for head_hash, edge_data in dag_edges.items():
+    #         if head_hash not in symbol_hash_map:
+    #             symbol_hash_map[head_hash] = compartmentalization.get_symbol_by_hash(head_hash)
+    #         head = symbol_hash_map[head_hash]
+    #         for tail_hash, dag_edge_weight in edge_data.items():
+    #             if tail_hash not in symbol_hash_map:
+    #                 symbol_hash_map[tail_hash] = compartmentalization.get_symbol_by_hash(tail_hash)
+    #             tail = symbol_hash_map[tail_hash]
+    #             logger.debug(
+    #                 f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
+    #             compartmentalization.add_dag_edge(head, tail, dag_edge_weight, add_nodes=False)
+    #             pbar.update(1)
+    #
+    # logger.info(f'Done')
+    # conn.persist_compartmentalization(compartmentalization)
+    # conn.close()
 
     return compartmentalization
 

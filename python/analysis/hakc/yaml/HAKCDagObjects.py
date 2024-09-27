@@ -4,11 +4,20 @@ import kuzu
 import networkx as nx
 import polars as pl
 import re
+import itertools
 from hakc.yaml.HAKCObjects import HAKCSymbol, HAKCType, CliqueColors, HAKCDivision, \
     HAKCCompartment, HAKCInfo, HAKCScope, HAKCCompilationUnit, HAKCFunction, HAKCDBColumn
 
 logger = logging.getLogger('hakc-dag')
 
+
+def batched(iterable, n):
+    # batched('ABCDEFG', 3) → ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        yield batch
 
 class HAKCCompartmentalization(nx.MultiDiGraph):
     kernel_compartment_id = 0
@@ -26,18 +35,19 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
         return compartmentalization
 
-    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int):
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:
-            self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, weight=dag_edge_weight)
+            self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, add_nodes=add_nodes, weight=dag_edge_weight)
 
     def add_persistent_node(self, node):
         if not self.has_node(node):
             attrs = {HAKCCompartmentalization.persisted_attr: False}
             self.add_node(node, **attrs)
 
-    def add_persistent_edge(self, u_for_edge, v_for_edge, key=None, **attr):
-        self.add_persistent_node(u_for_edge)
-        self.add_persistent_node(v_for_edge)
+    def add_persistent_edge(self, u_for_edge, v_for_edge, key, add_nodes: bool = True, **attr):
+        if add_nodes:
+            self.add_persistent_node(u_for_edge)
+            self.add_persistent_node(v_for_edge)
         if not self.has_edge(u_for_edge, v_for_edge, key):
             attr[HAKCCompartmentalization.persisted_attr] = False
             self.add_edge(u_for_edge, v_for_edge, key, **attr)
@@ -57,6 +67,8 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         if symbol.is_function():
             for indirect_call in symbol.indirect_calls:
                 self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
+            for direct_call in symbol.direct_calls:
+                self.add_persistent_edge(symbol, direct_call, key=HAKCFunction.DirectCallTable)
 
     def _get_neighbors(self, symbol: HAKCSymbol, edge_key: str) -> list:
         nbrs = list()
@@ -153,18 +165,30 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         for table_name, edge_data in unpersisted_edges.items():
             head_primary_keys = list()
             tail_primary_keys = list()
-            attr_list = list()
+            attr_list = dict()
             for head, tail, attrs in edge_data:
                 head_primary_key = head.get_primary_key_data()
                 tail_primary_key = tail.get_primary_key_data()
                 head_primary_keys.append(head_primary_key)
                 tail_primary_keys.append(tail_primary_key)
                 if len(attrs) > 0:
-                    attr_list.append(attrs)
+                    for key, val in attrs.items():
+                        if key not in attr_list:
+                            attr_list[key] = list()
+                        attr_list[key].append(val)
             if len(attr_list) == 0:
-                df = pl.DataFrame([head_primary_keys, tail_primary_keys])
+                df = pl.DataFrame({
+                    'from': head_primary_keys,
+                    'to': tail_primary_keys
+                })
             else:
-                df = pl.DataFrame([head_primary_keys, tail_primary_keys, attr_list])
+                df_data = {
+                    'from': head_primary_keys,
+                    'to': tail_primary_keys
+                }
+                for key, val in attr_list.items():
+                    df_data[key] = val
+                df = pl.DataFrame(df_data)
             logger.info(f'Persisting {len(head_primary_keys)} edges to {table_name}')
             try:
                 conn.execute(f'COPY {table_name} FROM df')
