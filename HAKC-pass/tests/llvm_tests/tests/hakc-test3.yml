@@ -3,7 +3,7 @@ COMPARTMENTS:
       - ACCESS_TOKEN: 393218
         COLOR: GREEN_CLIQUE
     ENTRY_TOKEN: 393218
-    ID: 6
+    ID: 0
     TARGETS:
       - 7
   - CLIQUES:
@@ -14,10 +14,10 @@ COMPARTMENTS:
     TARGETS:
 FILES:
   - GUID: 0
-    PATH: hakc-test0.c
+    PATH: hakc-test3.c
     SYMBOLS:
       - CLIQUE: GREEN_CLIQUE
-        COMPARTMENT: 6
+        COMPARTMENT: 0
         NAME: foo
         IS_GLOBAL: true
   - GUID: 0

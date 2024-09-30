@@ -5,20 +5,18 @@ struct data_struct {
     int a;
 };
 
-int bar(struct data_struct *);
+struct data_struct2 {
+    int (*f)(struct data_struct *);
+};
 
-int foo(struct data_struct *a) {
+int foo(struct data_struct2 *a) {
     if (a) {
-        (a->a)++;
-        return bar(a);
+        struct data_struct b;
+        b.a = 0;
+        return a->f(&b);
     }
     return 0;
 }
-// todo: add better checking
-
-// CHECK-LABEL: HAKC_ORIG_foo
-// CHECK: %2 = icmp eq %struct.data_struct* %0, null
-// CHECK: br i1 %2, label %12, label %3
 
 // CHECK-LABEL: HAKC_XFER_foo
-// CHECK: %2 = bitcast %struct.data_struct* %0 to i8*
+// CHECK: %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6)

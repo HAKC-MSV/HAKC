@@ -14,16 +14,9 @@ COMPARTMENTS:
     TARGETS:
 FILES:
   - GUID: 0
-    PATH: hakc-test0.c
+    PATH: hakc-test1.c
     SYMBOLS:
       - CLIQUE: GREEN_CLIQUE
         COMPARTMENT: 6
         NAME: foo
-        IS_GLOBAL: true
-  - GUID: 0
-    PATH: nothing.c
-    SYMBOLS:
-      - CLIQUE: RED_CLIQUE
-        COMPARTMENT: 7
-        NAME: bar
         IS_GLOBAL: true
