@@ -1,226 +1,287 @@
-import bisect
+import logging
+import tqdm
 import networkx as nx
+import polars as pl
+import re
+from typing import Type
+
+from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
+from .HAKCDatabase import HAKCDatabase
+from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
+    HAKCScope, HAKCGlobalVariable
+
+logger = logging.getLogger('hakc-dag')
 
 
-class HAKCCompartmentalization:
-    static_weights = ["type_diff_count", "direct_call_count",
-                      "indirect_call_count", "same_origin_of_indirect_calls",
-                      "accessed_globals"]
-    dynamic_weights = ["func_called", "shared_mem", "mem_loads", "mem_stores"]
+class HAKCCompartmentalization(nx.MultiDiGraph):
+    kernel_compartment_id = 0
+    kernel_division = HAKCDivisionEnum.NO_DIVISION.value
+    default_division = HAKCDivisionEnum.TEAL_DIVISION.value
+    DefaultDivisionCount = max(1, len(HAKCDivisionEnum) - 1)
+    persisted_attr = 'persisted'
 
-    other_weights = ["kernel_edge"]
+    def __init__(self, division_count=16):
+        super().__init__(self)
+        self.division_count = division_count
 
-    def __init__(self):
-        self.compartment_topo = nx.DiGraph()
-        self.use_symbols = True
-        self.use_same_origin = not self.use_symbols
-        self.dynamic_files = set()
+    @classmethod
+    def from_database(cls, db_dir: str):
+        raise NotImplementedError
 
-    def __len__(self):
-        return len(self.compartment_topo)
+    def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
+        if dag_edge_weight > 0:
+            self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, add_nodes=add_nodes,
+                                     weight=dag_edge_weight)
 
-    def uses_symbols(self) -> bool:
-        return self.use_symbols
+    def add_persistent_node(self, node: HAKCDBNode):
+        if not self.has_node(node):
+            attrs = {HAKCCompartmentalization.persisted_attr: False}
+            self.add_node(node, **attrs)
 
-    def valid_weight(self, weight_name: str) -> bool:
-        all_weights = (*HAKCCompartmentalization.static_weights,
-                       *HAKCCompartmentalization.dynamic_weights,
-                       *HAKCCompartmentalization.other_weights)
-        return weight_name in all_weights
+    def add_persistent_edge(self, u_for_edge: HAKCDBNode, v_for_edge: HAKCDBNode, key, add_nodes: bool = True, **attr):
+        if add_nodes:
+            self.add_persistent_node(u_for_edge)
+            self.add_persistent_node(v_for_edge)
+        if not self.has_edge(u_for_edge, v_for_edge, key):
+            attr[HAKCCompartmentalization.persisted_attr] = False
+            self.add_edge(u_for_edge, v_for_edge, key, **attr)
 
-    def set_use_symbols(self, use_symbols: bool):
-        self.use_symbols = use_symbols
-        self.use_same_origin = not use_symbols
+    def add_symbol(self, symbol: HAKCSymbol, compilation_unit: HAKCCompilationUnit):
+        self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
+        self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
+        self.add_persistent_edge(symbol, compilation_unit, key=HAKCSymbol.SymbolCompilationUnitTable)
+        if symbol.defining_file is not None:
+            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.defining_file),
+                                     key=HAKCSymbol.DefinedInTable, line=symbol.defining_line)
 
-    def uses_same_origin(self) -> bool:
-        return self.use_same_origin
+        for used_symbol in symbol.used_symbols:
+            self.add_persistent_edge(symbol, used_symbol, key=HAKCSymbol.UsesSymbolTable)
 
-    def set_use_same_origin(self, use_same_origin: bool):
-        self.set_use_symbols(not use_same_origin)
+        if isinstance(symbol, HAKCFunction):
+            for indirect_call in symbol.indirect_calls:
+                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
+            for direct_call in symbol.direct_calls:
+                self.add_persistent_edge(symbol, direct_call, key=HAKCFunction.DirectCallTable)
 
-    def add_compartment(self, compartment):
-        if compartment is None:
-            raise RuntimeError("Compartment is None")
-        self.compartment_topo.add_node(compartment)
+    def _get_neighbors(self, symbol: HAKCSymbol, edge_key: str) -> list:
+        nbrs = list()
+        for nbr, edges in self.adj[symbol].items():
+            if edge_key in edges:
+                nbrs.append(nbr)
+        return nbrs
 
-    def merge_compartments(self, compartment_a, compartment_b, edge_capacity_func, **func_args):
-        compartment_a.merge_compartment_data(compartment_b)
+    def get_indirect_calls(self, symbol: HAKCSymbol) -> list[HAKCType]:
+        return self._get_neighbors(symbol, HAKCFunction.IndirectCallTable)
 
-        # Move edges from compartment_b to compartment_a
-        for neighbor in [n for n in self.compartment_topo.nodes if n != compartment_a and
-                                                                   self.compartment_topo.has_edge(n, compartment_b)]:
-            if neighbor.get_compartment_id() == 4247:
-                print("Found it")
-            if self.compartment_topo.has_edge(neighbor, compartment_a):
-                original_edge_data = self.compartment_topo.get_edge_data(neighbor, compartment_a)
-            edge_data = edge_capacity_func(neighbor, compartment_a, **func_args)
-            self.compartment_topo.add_edge(neighbor, compartment_a, **edge_data)
-
-        self.compartment_topo.remove_node(compartment_b)
-
-    def _check_edge(self, head, tail):
-        if head is None:
-            raise RuntimeError("head is None")
-        if tail is None:
-            raise RuntimeError("tail is None")
-
-        if head not in self.compartment_topo:
-            raise RuntimeError("Head is not in compartmentalization")
-        if tail not in self.compartment_topo:
-            raise RuntimeError("Tail is not in compartmentalization")
-
-    def add_compartment_transition(self, head, tail, **weights):
-        if sum(weights.values()) == 0:
-            return
-        for weight_name in weights.keys():
-            if not self.valid_weight(weight_name):
-                raise RuntimeError(f"Invalid weight: {weight_name}")
-        self._check_edge(head, tail)
-        self.compartment_topo.add_edge(head, tail, **weights)
-
-    def remove_compartment_transition(self, head, tail):
-        self._check_edge(head, tail)
-        self.compartment_topo.remove_edge(head, tail)
-
-    def get_compartment_transition(self, head, tail):
-        if head not in self.compartment_topo or tail not in self.compartment_topo:
-            return None
-        edge = self.compartment_topo.get_edge_data(head, tail)
-        return edge
-
-    def get_compartments(self):
-        return self.compartment_topo.nodes
-
-    def get_compartment(self, compartment_id: int):
-        for compartment in self.get_compartments():
-            if compartment.get_compartment_id() == compartment_id:
+    def get_compartment_node(self, compartment_id: int):
+        for compartment in nx.subgraph_view(self, filter_node=lambda n: n.is_compartment()).nodes:
+            if compartment.compartment_id == compartment_id:
                 return compartment
         return None
 
-    def set_compartmentalization(self, compartment_topo: nx.DiGraph):
-        self.compartment_topo = compartment_topo
+    def get_division_node(self, division_id: int, compartment_id: int):
+        for division in nx.subgraph_view(self, filter_node=lambda n: n.is_division()).nodes:
+            if division_id == division.division_id and division.compartment_id == compartment_id:
+                return division
+        return None
 
-    def set_dynamic_files(self, files):
-        self.dynamic_files = files
+    def set_division(self, symbol: HAKCSymbol, division_id: int, compartment_id: int):
+        division = self.get_division_node(division_id, compartment_id)
+        compartment = self.get_compartment_node(compartment_id)
+        if compartment is None:
+            compartment = HAKCCompartment(compartment_id)
+        if division is None:
+            division = HAKCDivision(division_id, compartment_id, division_count=compartment.division_count)
+        self.set_symbol_division(symbol, division, compartment)
 
-    def get_dynamic_files(self):
-        return self.dynamic_files
+    def set_symbol_division(self, symbol: HAKCSymbol, division: HAKCDivision, compartment: HAKCCompartment):
+        compartment.add_division(division)
 
-    def _compute_capacity(self, edge_attrs):
-        type_diff_count = 0
-        direct_call_count = 0
-        indirect_call_count = 0
-        same_origin_of_indirect_calls = 0
-        accessed_globals = 0
-        if "type_diff_count" in edge_attrs:
-            type_diff_count = int(edge_attrs['type_diff_count'])
-        if 'direct_call_count' in edge_attrs:
-            direct_call_count = int(edge_attrs['direct_call_count'])
-        if 'indirect_call_count' in edge_attrs:
-            indirect_call_count = int(edge_attrs['indirect_call_count'])
-        if 'same_origin_of_indirect_calls' in edge_attrs:
-            same_origin_of_indirect_calls = int(edge_attrs['same_origin_of_indirect_calls'])
-        if 'accessed_globals' in edge_attrs:
-            accessed_globals = int(edge_attrs['accessed_globals'])
+        self.add_persistent_edge(division, compartment, key=HAKCDivision.InCompartmentTable)
+        self.add_persistent_edge(symbol, division, key=HAKCSymbol.InDivisionTable)
 
-        if self.use_symbols:
-            capacity_to_use = type_diff_count * (direct_call_count + indirect_call_count)
-        elif self.use_same_origin:
-            capacity_to_use = type_diff_count * (direct_call_count + same_origin_of_indirect_calls)
+    def get_division(self, symbol: HAKCSymbol) -> HAKCDivision | None:
+        nbrs = self._get_neighbors(symbol, HAKCSymbol.InDivisionTable)
+        if len(nbrs) == 0:
+            return None
+        elif len(nbrs) > 1:
+            logger.error(f'Symbol {symbol} is in {len(nbrs)} divisions.')
+            for division in nbrs:
+                logger.error(f'{division}')
+            raise RuntimeError(f'Symbol {symbol} is in {len(nbrs)} divisions.')
         else:
-            capacity_to_use = type_diff_count
+            return nbrs[0]
 
-        if capacity_to_use == 0 and (direct_call_count > 0 or accessed_globals > 0):
-            capacity_to_use = direct_call_count + accessed_globals
-        else:
-            capacity_to_use += accessed_globals
+    def get_types(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCType)).nodes
 
-        return capacity_to_use
+    def get_functions(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCFunction)).nodes
 
-    def add_weight_edges(self,
-                         weight_edge_name="weight"):
-        for (u, v, edge_attrs) in self.compartment_topo.edges.data():
-            weight = self._compute_capacity(edge_attrs)
-            new_attr = dict()
-            new_attr[weight_edge_name] = weight
-            self.compartment_topo.add_edge(u, v, **new_attr)
+    def get_global_variables(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCGlobalVariable)).nodes
 
-    def get_kernel_compartment(self):
-        kernel_compartment = self.get_compartment(0)
-        if kernel_compartment is None:
-            kernel_compartment = hakc.HAKCCompartment.HAKCCompartment()
-            kernel_compartment.set_compartment_id(0)
-            self.add_compartment(kernel_compartment)
-        return kernel_compartment
+    def get_symbols(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCFunction) or isinstance(n,
+                                                                                                      HAKCGlobalVariable)).nodes
 
-    def add_to_kernel_compartment(self, compartment, edge_capcity_func, **func_args):
-        kernel_compartment = self.get_kernel_compartment()
-        self.merge_compartments(kernel_compartment, compartment, edge_capcity_func, **func_args)
+    def get_scopes(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCScope)).nodes
 
-    def to_yaml(self) -> dict:
+    def get_compilation_units(self):
+        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCCompilationUnit)).nodes
+
+    def get_unpersisted_nodes(self) -> dict[str, list[HAKCDBNode]]:
         result = dict()
-
-        result['COMPARTMENTS'] = list()
-        result['FILES'] = list()
-        for compartment in sorted(self.compartment_topo.nodes, key=lambda x: int(x.get_compartment_id())):
-            compartment_yaml, files_yaml = compartment.to_yaml()
-            if len(compartment_yaml) > 0:
-                for neighbor, edge_weights in \
-                        self.compartment_topo.adj[compartment].items():
-                    if sum(edge_weights.values()) == 0:
-                        continue
-                    if 'TARGETS' not in compartment_yaml:
-                        compartment_yaml['TARGETS'] = list()
-                    bisect.insort(compartment_yaml['TARGETS'], neighbor.get_compartment_id())
-                result['COMPARTMENTS'].append(compartment_yaml)
-            if len(files_yaml) > 0:
-                for file_yaml in files_yaml:
-                    result['FILES'].append(file_yaml)
+        for node, is_persisted in self.nodes(data=HAKCCompartmentalization.persisted_attr):
+            if not is_persisted:
+                table_name = node.get_table_name()
+                if table_name not in result:
+                    result[table_name] = list()
+                result[table_name].append(node)
         return result
 
-    def merge_compartmentalization(self, compartmentalization):
-        for new_u, new_v, new_weights in \
-                compartmentalization.compartment_topo.edges.data():
-            found_head = None
-            found_tail = None
-            for compartment in self.get_compartments():
-                if found_head is None:
-                    for atom in new_u.get_all_atoms():
-                        if compartment.contains_atom(atom):
-                            found_head = compartment
-                            break
-                if found_tail is None:
-                    for atom in new_v.get_all_atoms():
-                        if compartment.contains_atom(atom):
-                            found_tail = compartment
-                            break
-                if found_head and found_tail:
-                    break
+    def get_unpersisted_edges(self) -> dict[str, list[tuple[HAKCDBNode, HAKCDBNode, dict]]]:
+        result = dict()
+        for head, tail, table_name, attrs in self.edges(data=True, keys=True):
+            if not attrs[HAKCCompartmentalization.persisted_attr]:
+                edge_attributes = {}
+                for key, val in attrs.items():
+                    if key != HAKCCompartmentalization.persisted_attr:
+                        edge_attributes[key] = val
+                if table_name not in result:
+                    result[table_name] = list()
+                result[table_name].append((head, tail, edge_attributes))
 
-            if found_head is None:
-                print(f"Could not find head compartment containing "
-                      f"{new_u.get_all_atoms()}")
-                continue
-            if found_tail is None:
-                print(f"Could not find tail compartment containing "
-                      f"{new_v.get_all_atoms()}")
-                continue
-            if found_head != found_tail:
-                if self.compartment_topo.has_edge(found_head, found_tail):
-                    existing_weights = self.compartment_topo.get_edge_data(
-                        found_head, found_tail)
-                    for weight_name, weight_value in new_weights.items():
-                        if weight_name in existing_weights:
-                            self.compartment_topo.edges[found_head, found_tail][weight_name] += weight_value
-                        else:
-                            self.compartment_topo.edges[found_head, found_tail][weight_name] = weight_value
-                        print(f"{found_head.get_all_atoms()} -> "
-                              f"{found_tail.get_all_atoms()}[{weight_name}] = "
-                              f"{self.compartment_topo.edges[found_head, found_tail][weight_name]}")
+        return result
+
+    def _persist_nodes(self, conn: HAKCDatabase):
+        unpersisted_nodes = self.get_unpersisted_nodes()
+        with tqdm.tqdm(total=len(unpersisted_nodes)) as pbar:
+            for table_name, nodes in unpersisted_nodes.items():
+                data_to_persist = dict()
+                for node in nodes:
+                    for column, data in node.get_db_data().items():
+                        if column.column_name not in data_to_persist:
+                            data_to_persist[column.column_name] = list()
+                        data_to_persist[column.column_name].append(data)
+                df = pl.DataFrame(data_to_persist)
+                logger.debug(f'Persisting {len(nodes)} Nodes to {table_name}')
+                try:
+                    conn.insert_from_dataframe(table_name, df)
+                    for node in nodes:
+                        self.nodes[node][HAKCCompartmentalization.persisted_attr] = True
+                    pbar.update(1)
+                except Exception as e:
+                    logger.error(f'Failed to persist to {table_name}: {str(e)}')
+                    raise e
+
+    def _persist_edges(self, conn: HAKCDatabase):
+        unpersisted_edges = self.get_unpersisted_edges()
+        with tqdm.tqdm(total=len(unpersisted_edges)) as pbar:
+            for table_name, edge_data in unpersisted_edges.items():
+                head_primary_keys = list()
+                tail_primary_keys = list()
+                attr_list = dict()
+                for head, tail, attrs in edge_data:
+                    head_primary_key = head.get_primary_key_data()
+                    tail_primary_key = tail.get_primary_key_data()
+                    head_primary_keys.append(head_primary_key)
+                    tail_primary_keys.append(tail_primary_key)
+                    if len(attrs) > 0:
+                        for key, val in attrs.items():
+                            if key not in attr_list:
+                                attr_list[key] = list()
+                            attr_list[key].append(val)
+                if len(attr_list) == 0:
+                    df = pl.DataFrame({
+                        'from': head_primary_keys,
+                        'to': tail_primary_keys
+                    })
                 else:
-                    print(f"!!! No edge between {found_head.get_all_atoms()} "
-                          f"and {found_tail.get_all_atoms()}")
-                    self.compartment_topo.add_edge(found_head, found_tail,
-                                                   **new_weights)
+                    df_data = {
+                        'from': head_primary_keys,
+                        'to': tail_primary_keys
+                    }
+                    for key, val in attr_list.items():
+                        df_data[key] = val
+                    df = pl.DataFrame(df_data)
+                logger.debug(f'Persisting {len(head_primary_keys)} edges to {table_name}')
+                try:
+                    conn.insert_from_dataframe(table_name, df)
+                    for head, tail, _ in edge_data:
+                        self.edges[head, tail, table_name][HAKCCompartmentalization.persisted_attr] = True
+                    pbar.update(1)
+                except Exception as e:
+                    match = re.search('Runtime exception: Unable to find primary key value (-?[0-9]+)', str(e))
+                    if match:
+                        missing_hash = int(match.group(1))
+                        for head_primary_key in head_primary_keys:
+                            if head_primary_key == missing_hash:
+                                logger.error(f'{missing_hash} found in head_primary_keys')
+                        for tail_primary_key in tail_primary_keys:
+                            if tail_primary_key == missing_hash:
+                                logger.error(f'{missing_hash} found in tail_primary_keys')
+                    else:
+                        logger.error(f'Failed to persist to {table_name}: {str(e)}')
+                    raise e
+
+    def persist_to_database(self, conn: HAKCDatabase, create_schema: bool = False):
+        if create_schema:
+            logger.info(f'Creating schema')
+            self.create_schema(conn)
+        logger.info('Persisting new nodes to database')
+        self._persist_nodes(conn)
+        logger.info('Persisting new edges to database')
+        self._persist_edges(conn)
 
 
+    def create_node_table(self, conn: HAKCDatabase, node_class: Type[HAKCDBNode]):
+        logger.debug(f'Creating node table {node_class.get_table_name()}')
+        create_cmd = f'CREATE NODE TABLE IF NOT EXISTS {node_class.get_table_definition()}'
+        conn.execute_prepared_stmt(create_cmd)
+
+    def create_rel_table(self, conn: HAKCDatabase, database_relation: HAKCDBRelation):
+        logger.debug(f'Creating relation table {database_relation}')
+        create_cmd = f'CREATE REL TABLE IF NOT EXISTS {database_relation.get_definition()}'
+        conn.execute_prepared_stmt(create_cmd)
+
+    def create_schema(self, conn: HAKCDatabase):
+        node_tables = [
+            HAKCType,
+            HAKCScope,
+            HAKCSymbol,
+            HAKCCompartment,
+            HAKCDivision,
+            HAKCCompilationUnit,
+            HAKCFunction
+        ]
+        logger.info(f'Creating tables')
+        with tqdm.tqdm(total=len(node_tables)) as pbar:
+            for cls in node_tables:
+                self.create_node_table(conn, node_class=cls)
+                pbar.update(1)
+
+        logger.info(f'Creating relationship tables')
+        with tqdm.tqdm(total=len(node_tables)) as pbar:
+            for cls in node_tables:
+                db_relations = cls.get_db_relations()
+                for db_relation in db_relations:
+                    self.create_rel_table(conn, db_relation)
+                pbar.update(1)
+
+    def get_symbol_hashes(self) -> list[int]:
+        symbol_hashes = []
+        for symbol in self.get_symbols():
+            symbol_hashes.append(hash(symbol))
+        return sorted(symbol_hashes)
+
+    def get_symbol_by_hash(self, symbol_hash: int) -> HAKCSymbol | None:
+        for symbol in self.get_symbols():
+            if hash(symbol) == symbol_hash:
+                return symbol
+
+        return None
+
+    def to_yaml(self):
+        raise NotImplementedError

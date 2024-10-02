@@ -1,197 +1,28 @@
 import re
-from enum import Enum
-import hashlib
 
 import yaml
 
-
-class QuotedString(str):
-    pass
+from .HAKCBase import HAKCDivisionEnum, HAKCDBColumn, HAKCDBRelation, HAKCDBNode, HAKCPrintableObj
 
 
-class CliqueColors(Enum):
-    NO_CLIQUE = 0
-    SILVER_CLIQUE = 1  # SIL
-    GREEN_CLIQUE = 2  # GRN
-    RED_CLIQUE = 3  # RED
-    ORANGE_CLIQUE = 4  # ORN
-    YELLOW_CLIQUE = 5  # YEL
-    PURPLE_CLIQUE = 6  # PUR
-    BLUE_CLIQUE = 7  # BLU
-    GREY_CLIQUE = 8  # GRY
-    PINK_CLIQUE = 9  # PNK
-    BROWN_CLIQUE = 10  # BWN
-    WHITE_CLIQUE = 11  # WHI
-    BLACK_CLIQUE = 12  # BLK
-    TEAL_CLIQUE = 13  # TEA
-    VIOLET_CLIQUE = 14  # VLT
-    CRIMSON_CLIQUE = 15  # CRI
-    GOLD_CLIQUE = 16  # GLD
-
-
-def get_bytes(value) -> bytes:
-    if isinstance(value, str):
-        return value.encode('utf-8')
-    elif isinstance(value, int):
-        return value.to_bytes(8, byteorder='big')
-    else:
-        hash_value = hash(value)
-        return hash_value.to_bytes(8, byteorder='big')
-
-def hash_values(values: list) -> int:
-    h = hashlib.sha256(get_bytes(values[0]))
-    if len(values) > 1:
-        for value in values[1:]:
-            h.update(get_bytes(value))
-    return int.from_bytes(h.digest()[:8], 'big')
-
-class HAKCPrintableObj:
-    def __init__(self, **kwargs):
-        self.computed_hash = None
-
-    def __str__(self):
-        cls = self.__class__.__name__
-        inside_strings = [f'{key}={str(value)}' for key, value in self.get_info_tokens().items()]
-        return f'{cls}({", ".join(sorted(inside_strings))})'
-
-    def get_info_tokens(self) -> dict[str, object]:
-        raise NotImplementedError
-
-    def to_yaml_dict(self) -> dict[str, object]:
-        result = dict()
-        for key, value in self.get_info_tokens().items():
-            if isinstance(value, HAKCPrintableObj):
-                result[key] = value.to_yaml_dict()
-            elif isinstance(value, str):
-                result[key] = QuotedString(value)
-            else:
-                result[key] = value
-        return result
-
-    def __hash__(self):
-        if self.computed_hash is not None:
-            return self.computed_hash
-        self.computed_hash = hash_values(self.get_hash_inputs())
-        return self.computed_hash
-
-    def get_hash_inputs(self):
-        raise NotImplementedError
-
-
-class HAKCDBRelation:
-    EdgePropertyName = 'EdgeData'
-
-    def __init__(self, relation_name: str, from_class, to_class, **kwargs):
-        self.relation_name = relation_name
-        self.from_class = from_class
-        self.to_class = to_class
-        self.properties = None
-        if len(kwargs) > 0:
-            struct_def = ",".join([" ".join([name, db_type]) for name, db_type in kwargs.items()])
-            self.properties = struct_def
-            # self.properties = f'{HAKCDBRelation.EdgePropertyName} STRUCT({struct_def})'
-
-
-class HAKCDBColumn:
-    def __init__(self, column_name: str, db_type: str):
-        self.column_name = column_name
-        self.db_type = db_type
-
-    def __hash__(self):
-        return hash_values([self.column_name, self.db_type])
-
-    def __str__(self):
-        return f'{self.column_name}'
-
-    def __eq__(self, other):
-        if isinstance(other, HAKCDBColumn):
-            return self.column_name == other.column_name
-        return False
-
-
-class HAKCInfo(HAKCPrintableObj):
-    def __init__(self, Name: str, **kwargs):
-        HAKCPrintableObj.__init__(self, **kwargs)
-        self.name = str(Name)
-
-    def __eq__(self, other):
-        if isinstance(other, HAKCInfo):
-            return other.name == self.name
-
-        return False
-
-    def __hash__(self):
-        return HAKCPrintableObj.__hash__(self)
-
-    def get_hash_inputs(self) -> list[object]:
-        return [self.name]
-
-    def is_function(self) -> bool:
-        return False
-
-    def is_global_variable(self) -> bool:
-        return False
-
-    def is_type(self) -> bool:
-        return False
-
-    def is_scope(self) -> bool:
-        return False
-
-    def is_compilation_unit(self) -> bool:
-        return False
-
-    def is_symbol(self) -> bool:
-        return self.is_function() or self.is_global_variable()
-
-    def get_info_tokens(self) -> dict[str, object]:
-        return {'name': f'{self.name}'}
-
-    def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_primary_key() -> HAKCDBColumn:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        raise NotImplementedError
-
-    @staticmethod
-    def get_db_relations() -> list[HAKCDBRelation]:
-        return []
-
-    @staticmethod
-    def get_table_name() -> str:
-        raise NotImplementedError
-
-    def get_primary_key_data(self) -> object:
-        primary_key = self.get_primary_key()
-        for column, data in self.get_db_data().items():
-            if column == primary_key:
-                return data
-        raise RuntimeError(
-            f'Could not find data for primary key {primary_key} in object for table {self.get_table_name()}')
-
-
-class HAKCCompilationUnit(HAKCInfo, yaml.YAMLObject):
+class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCCompilationUnit"
 
-    def __init__(self, **kwargs):
+    def __init__(self, filename: str, **kwargs):
         yaml.YAMLObject.__init__(self)
-        HAKCInfo.__init__(self, **kwargs)
+        HAKCDBNode.__init__(self, **kwargs)
+        self.filename = filename
 
-    def is_compilation_unit(self) -> bool:
-        return True
+    def get_hash_inputs(self) -> list[object]:
+        return [self.filename]
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
         return HAKCDBColumn('filename', "STRING")
 
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCCompilationUnit.get_primary_key()]
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return []
 
     @staticmethod
     def get_table_name() -> str:
@@ -199,24 +30,85 @@ class HAKCCompilationUnit(HAKCInfo, yaml.YAMLObject):
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
         return {
-            HAKCCompilationUnit.get_primary_key(): self.name
+            HAKCCompilationUnit.get_primary_key(): self.filename
         }
 
 
-class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
+class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
+    yaml_tag = u'!HAKCDivision'
+    InCompartmentTable = 'InCompartment'
+
+    def __init__(self, division_id: int, compartment_id: int,
+                 division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
+        yaml.YAMLObject.__init__(self)
+        if 'Name' not in kwargs:
+            kwargs['Name'] = f'Division {division_id} in Compartment {compartment_id}'
+
+        HAKCDBNode.__init__(self, **kwargs)
+        self.division_id = division_id
+        self.compartment_id = compartment_id
+        self.division_count = division_count
+        self.access_token = HAKCCompartment.compute_access_token(division_id, compartment_id, division_count)
+
+    def __eq__(self, other):
+        if isinstance(other, HAKCDivision):
+            return self.compartment_id == other.compartment_id and self.division_id == other.division_id
+        return False
+
+    def __hash__(self):
+        return self.access_token
+
+    def __lt__(self, other):
+        if isinstance(other, HAKCDivision):
+            return self.compartment_id < other.compartment_id and self.division_id < other.division_id
+        raise RuntimeError(f'{other} is not a class of {self.__class__.__name__}!')
+
+    def get_info_tokens(self) -> dict[str, object]:
+        result = dict()
+        result['division_id'] = self.division_id
+        result['compartment_id'] = self.compartment_id
+        result['access_token'] = self.access_token
+        return result
+
+    @staticmethod
+    def get_primary_key() -> HAKCDBColumn:
+        return HAKCDBColumn('AccessToken', 'UINT64')
+
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return [HAKCDBColumn('DivisionID', 'UINT64')]
+
+    @staticmethod
+    def get_table_name() -> str:
+        return HAKCDivision.yaml_tag[1:]
+
+    @staticmethod
+    def get_db_relations() -> list[HAKCDBRelation]:
+        return [
+            HAKCDBRelation(HAKCDivision.InCompartmentTable, HAKCDivision, HAKCCompartment)
+        ]
+
+    def get_db_data(self) -> dict[HAKCDBColumn, object]:
+        schema = HAKCDivision.get_db_table_columns()
+        return {
+            schema[0]: self.access_token,
+            schema[1]: self.division_id
+        }
+
+
+class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = u'!HAKCCompartment'
-    DefaultDivisionCount = 16
     TargetTable = 'Target'
 
-    def __init__(self, compartment_id: int, division_count: int, **kwargs):
+    def __init__(self, compartment_id: int, division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
         if 'Name' not in kwargs:
             kwargs['Name'] = str(compartment_id)
-        HAKCInfo.__init__(self, **kwargs)
+        HAKCDBNode.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.division_count = division_count
         self.targets = set()
-        self.divisions = dict()
+        self.divisions = set()
         self.entry_token = self.compute_entry_token()
 
     def __eq__(self, other):
@@ -225,10 +117,11 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
         return False
 
     def __hash__(self):
-        return HAKCInfo.__hash__(self)
+        return self.compartment_id
 
-    def get_hash_inputs(self) -> list[object]:
-        return [self.compartment_id]
+    def add_division(self, division: HAKCDivision):
+        self.divisions.add(division)
+        self.entry_token = self.compute_entry_token()
 
     def __lt__(self, other):
         if isinstance(other, HAKCCompartment):
@@ -237,7 +130,7 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
 
     @staticmethod
     def compute_access_token(division_id: int, compartment_id: int, division_count: int) -> int:
-        if division_id != CliqueColors.NO_CLIQUE.value:
+        if division_id != HAKCDivisionEnum.NO_DIVISION.value:
             access_token = (compartment_id << division_count) | (1 << division_id)
         else:
             access_token = 0xFFFF
@@ -245,8 +138,8 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
 
     def compute_entry_token(self) -> int:
         token = self.compartment_id << self.division_count
-        for division_id in self.divisions.keys():
-            token |= (1 << division_id)
+        for division in self.divisions:
+            token |= (1 << division.division_id)
         return token
 
     def get_info_tokens(self) -> dict[str, object]:
@@ -256,21 +149,21 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
         result['divisions'] = list()
         result['entry_token'] = self.entry_token
 
-        for division in sorted(self.divisions.keys()):
-            access_token = self.divisions[division]
+        for division in sorted(self.divisions):
+            access_token = division.access_token
             division_dict = dict()
-            division_dict['division_id'] = division
+            division_dict['division_id'] = division.division_id
             division_dict['access_token'] = access_token
             result['divisions'].append(division_dict)
         return result
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('CompartmentID', 'INT32')
+        return HAKCDBColumn('CompartmentID', 'UINT64')
 
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCCompartment.get_primary_key(), HAKCDBColumn('EntryToken', 'INT64')]
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return [HAKCDBColumn('EntryToken', 'UINT64')]
 
     @staticmethod
     def get_table_name() -> str:
@@ -283,76 +176,14 @@ class HAKCCompartment(yaml.YAMLObject, HAKCInfo):
         ]
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        schema = HAKCCompartment.get_db_table_schema()
+        schema = HAKCCompartment.get_db_table_columns()
         return {
             schema[0]: self.compartment_id,
             schema[1]: self.entry_token
         }
 
 
-class HAKCDivision(yaml.YAMLObject, HAKCInfo):
-    yaml_tag = u'!HAKCDivision'
-    InDivisionTable = "InDivision"
-
-    def __init__(self, division_id: int, compartment_id: int,
-                 division_count: int = HAKCCompartment.DefaultDivisionCount, **kwargs):
-        yaml.YAMLObject.__init__(self)
-        HAKCPrintableObj.__init__(self, **kwargs)
-        self.division_id = division_id
-        self.compartment_id = compartment_id
-        self.division_count = division_count
-
-    def get_hash_inputs(self) -> list[object]:
-        return [self.division_id, self.compartment_id]
-
-    def __eq__(self, other):
-        if isinstance(other, HAKCDivision):
-            return self.compartment_id == other.compartment_id and self.division_id == other.division_id
-        return False
-
-    def __hash__(self):
-        return HAKCInfo.__hash__(self)
-
-    def __lt__(self, other):
-        if isinstance(other, HAKCDivision):
-            return self.compartment_id < other.compartment_id and self.division_id < other.division_id
-        raise RuntimeError(f'{other} is not a class of {self.__class__.__name__}!')
-
-    def get_info_tokens(self) -> dict[str, object]:
-        result = dict()
-        result['division_id'] = self.division_id
-        result['compartment_id'] = self.compartment_id
-        result['access_token'] = HAKCCompartment.compute_access_token(self.division_id, self.compartment_id,
-                                                                      self.division_count)
-        return result
-
-    @staticmethod
-    def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('AccessToken', 'UINT64')
-
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCDivision.get_primary_key(), HAKCDBColumn('DivisionID', 'UINT32')]
-
-    @staticmethod
-    def get_table_name() -> str:
-        return HAKCDivision.yaml_tag[1:]
-
-    @staticmethod
-    def get_db_relations() -> list[HAKCDBRelation]:
-        return [
-            HAKCDBRelation(HAKCDivision.InDivisionTable, HAKCDivision, HAKCCompartment)
-        ]
-
-    def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        schema = HAKCDivision.get_db_table_schema()
-        return {
-            schema[0]: HAKCCompartment.compute_access_token(self.division_id, self.compartment_id, self.division_count),
-            schema[1]: self.division_id
-        }
-
-
-class HAKCType(HAKCInfo, yaml.YAMLObject):
+class HAKCType(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCType"
     unknown_type = "@UNKNOWN@"
 
@@ -360,7 +191,7 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         yaml.YAMLObject.__init__(self)
         if 'Name' not in kwargs:
             kwargs['Name'] = DebugType if DebugType is not None and DebugType != HAKCType.unknown_type else LLVMType
-        HAKCInfo.__init__(self, **kwargs)
+        HAKCDBNode.__init__(self, **kwargs)
         self.debug_type = DebugType
         self.llvm_type = LLVMType
         self._debug_type_transformed = HAKCType.transform_type_str(self.debug_type)
@@ -384,13 +215,10 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
             return [self.llvm_type]
 
     def __hash__(self):
-        return HAKCInfo.__hash__(self)
+        return HAKCDBNode.__hash__(self)
 
     def get_info_tokens(self) -> dict[str, object]:
         return {'debug_type': f'{self.debug_type}', 'llvm_type': f'{self.llvm_type}'}
-
-    def is_type(self) -> bool:
-        return True
 
     @staticmethod
     def transform_type_str(type_str: str) -> str:
@@ -406,18 +234,18 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('type_hash', 'INT64')
+        return HAKCDBColumn('type_hash', 'UINT64')
 
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCType.get_primary_key(), HAKCDBColumn('DebugType', "STRING"), HAKCDBColumn('LLVMType', 'STRING')]
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return [HAKCDBColumn('DebugType', "STRING"), HAKCDBColumn('LLVMType', 'STRING')]
 
     @staticmethod
     def get_table_name() -> str:
         return HAKCType.yaml_tag[1:]
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        schema = HAKCType.get_db_table_schema()
+        schema = HAKCType.get_db_table_columns()
         return {
             schema[0]: hash(self),
             schema[1]: self.debug_type,
@@ -425,7 +253,7 @@ class HAKCType(HAKCInfo, yaml.YAMLObject):
         }
 
 
-class HAKCScope(yaml.YAMLObject, HAKCInfo):
+class HAKCScope(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCScope"
     global_scope = "global"
     local_scope = "local"
@@ -435,7 +263,7 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
         if 'Name' not in kwargs:
             name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else kwargs['Scope']
             kwargs['Name'] = name
-        HAKCPrintableObj.__init__(self, **kwargs)
+        HAKCDBNode.__init__(self, **kwargs)
         self.scope = kwargs['Scope'] if 'Scope' in kwargs else None
         self.local_scope_name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else HAKCScope.global_scope
         self.is_global_scope = self.scope == HAKCScope.global_scope
@@ -450,7 +278,7 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
         return False
 
     def __hash__(self):
-        return HAKCInfo.__hash__(self)
+        return HAKCDBNode.__hash__(self)
 
     def __lt__(self, other):
         if isinstance(other, HAKCScope):
@@ -472,23 +300,20 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
             result['local_scope_name'] = self.local_scope_name
         return result
 
-    def is_scope(self) -> bool:
-        return True
-
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('scope_hash', 'INT64')
+        return HAKCDBColumn('scope_hash', 'UINT64')
 
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCScope.get_primary_key(), HAKCDBColumn('Scope', "STRING"), HAKCDBColumn('LocalScopeName', "STRING")]
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return [HAKCDBColumn('Scope', "STRING"), HAKCDBColumn('LocalScopeName', "STRING")]
 
     @staticmethod
     def get_table_name() -> str:
         return HAKCScope.yaml_tag[1:]
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        schema = HAKCScope.get_db_table_schema()
+        schema = HAKCScope.get_db_table_columns()
         return {
             schema[0]: hash(self),
             schema[1]: self.scope,
@@ -496,7 +321,7 @@ class HAKCScope(yaml.YAMLObject, HAKCInfo):
         }
 
 
-class HAKCSymbol(HAKCInfo):
+class HAKCSymbol(HAKCDBNode):
     IsTypeTable = "IsType"
     HasScopeTable = "HasScope"
     UsesSymbolTable = "UsesSymbol"
@@ -505,8 +330,9 @@ class HAKCSymbol(HAKCInfo):
     InDivisionTable = "InDivision"
     DefinedInTable = "DefinedIn"
 
-    def __init__(self, Type: HAKCType, Scope: HAKCScope, **kwargs):
-        HAKCInfo.__init__(self, **kwargs)
+    def __init__(self, Name: str, Type: HAKCType, Scope: HAKCScope, **kwargs):
+        HAKCDBNode.__init__(self, **kwargs)
+        self.name = Name
         self.type = Type
         self.scope = Scope
         self.defining_file = None
@@ -523,32 +349,30 @@ class HAKCSymbol(HAKCInfo):
         return False
 
     def __hash__(self):
-        return HAKCInfo.__hash__(self)
+        return HAKCDBNode.__hash__(self)
 
     def get_hash_inputs(self) -> list[object]:
         return [self.name, self.type, self.scope]
 
     def get_info_tokens(self) -> dict[str, object]:
-        result = HAKCInfo.get_info_tokens(self)
-        result['type'] = self.type
-        result['scope'] = self.scope
-        result['definition'] = f'{self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"}'
-        return result
+        return {
+            'name': self.name,
+            'type': self.type,
+            'scope': self.scope,
+            'definition': f'{self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"}'
+        }
 
     @property
     def is_definition(self):
         return self.defining_file is not None
 
-    def clear(self):
-        self.used_symbols.clear()
-
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('symbol_hash', 'INT64')
+        return HAKCDBColumn('symbol_hash', 'UINT64')
 
-    @staticmethod
-    def get_db_table_schema() -> list[HAKCDBColumn]:
-        return [HAKCSymbol.get_primary_key(), HAKCDBColumn('DefiningFile', 'STRING'),
+    @classmethod
+    def get_data_columns(cls) -> list[HAKCDBColumn]:
+        return [HAKCDBColumn('DefiningFile', 'STRING'),
                 HAKCDBColumn('DefiningLine', 'INT32'), HAKCDBColumn('is_function', 'BOOL'),
                 HAKCDBColumn('Name', 'STRING')]
 
@@ -569,22 +393,22 @@ class HAKCSymbol(HAKCInfo):
         ]
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
-        schema = HAKCSymbol.get_db_table_schema()
+        schema = HAKCSymbol.get_db_table_columns()
         return {
             schema[0]: hash(self),
             schema[1]: self.defining_file,
             schema[2]: self.defining_line,
-            schema[3]: self.is_function(),
+            schema[3]: isinstance(self, HAKCFunction),
             schema[4]: self.name
         }
 
 
-class HAKCIndirectSourceLink(yaml.YAMLObject, HAKCInfo):
+class HAKCIndirectSourceLink(HAKCPrintableObj, yaml.YAMLObject):
     yaml_tag = "!HAKCIndirectSourceLink"
 
     def __init__(self, LinkType: str, **kwargs):
         yaml.YAMLObject.__init__(self)
-        HAKCInfo.__init__(self, **kwargs)
+        HAKCPrintableObj.__init__(self, **kwargs)
         self.link_type = LinkType
         self.type = kwargs['Type'] if 'Type' in kwargs else None
         self.global_name = kwargs['GlobalName'] if 'GlobalName' in kwargs else None
@@ -607,12 +431,12 @@ class HAKCIndirectSourceLink(yaml.YAMLObject, HAKCInfo):
         return result
 
 
-class HAKCIndirectCallSource(yaml.YAMLObject, HAKCInfo):
+class HAKCIndirectCallSource(HAKCPrintableObj, yaml.YAMLObject):
     yaml_tag = "!HAKCIndirectSource"
 
     def __init__(self, Type: HAKCType, **kwargs):
         yaml.YAMLObject.__init__(self)
-        HAKCInfo.__init__(self, **kwargs)
+        HAKCPrintableObj.__init__(self, **kwargs)
         self.source = kwargs['Source'] if 'Source' in kwargs else list()
         self.type = Type
 
@@ -634,9 +458,6 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
         self.direct_calls = kwargs['DirectCalls'] if 'DirectCalls' in kwargs else list()
         self.indirect_calls = kwargs['IndirectCalls'] if 'IndirectCalls' in kwargs else list()
 
-    def is_function(self) -> bool:
-        return True
-
     @staticmethod
     def get_db_relations() -> list[HAKCDBRelation]:
         return [
@@ -651,9 +472,6 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCSymbol.__init__(self, **kwargs)
-
-    def is_global_variable(self) -> bool:
-        return True
 
 
 def construct_scope(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCScope:

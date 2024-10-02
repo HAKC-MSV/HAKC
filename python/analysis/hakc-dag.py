@@ -10,16 +10,15 @@ import shutil
 import time
 from enum import Enum
 from typing import Type
-import polars as pl
-
-import kuzu
 import tqdm
 import yaml
 import itertools
 
-from hakc.yaml.HAKCDagObjects import HAKCCompartmentalization
-from hakc.yaml.HAKCObjects import HAKCObject_constructors, HAKCFunction, HAKCGlobalVariable, HAKCSymbol, HAKCType, \
-    QuotedString, HAKCScope
+from hakc.HAKCCompartmentalization import HAKCCompartmentalization
+from hakc.HAKCBase import QuotedString
+from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, HAKCDivision
+from hakc.HAKCDatabase import HAKCDatabase
+from python.analysis.hakc.HAKCObjects import HAKCCompilationUnit
 
 logger = logging.getLogger('hakc-dag')
 
@@ -41,193 +40,6 @@ def batched(iterable, n):
     iterator = iter(iterable)
     while batch := tuple(itertools.islice(iterator, n)):
         yield batch
-
-
-class HAKCDatabase:
-    def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
-        self.db_dir = db_dir
-        self.open(read_only=read_only, max_num_threads=max_num_threads)
-
-    def close(self):
-        self.conn.close()
-        self.database.close()
-
-    def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
-        self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
-        self.conn = kuzu.Connection(self.database)
-
-    def persist_compartmentalization(self, compartmentalization: HAKCCompartmentalization, create_schema: bool = False):
-        if create_schema:
-            logger.info(f'Creating schema')
-            compartmentalization.create_schema(self.conn)
-
-        logger.info(f'Persisting compartmentalization to database.')
-        compartmentalization.persist_to_database(self.conn)
-        logger.info(f'Done.')
-
-
-    def persist_dag_edges(self, dag_edge_data):
-        head_hashes = list()
-        tail_hashes = list()
-        edge_weights = list()
-
-        for head_hash, edge_data in dag_edge_data.items():
-            for tail_hash, edge_weight in edge_data.items():
-                head_hashes.append(head_hash)
-                tail_hashes.append(tail_hash)
-                edge_weights.append(edge_weight)
-
-        df = pl.DataFrame({
-            "from": head_hashes,
-            "to": tail_hashes,
-            "weight": edge_weights
-        })
-        self.conn.execute(f'COPY {HAKCSymbol.DagEdgeTable} FROM df')
-
-    def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
-        try:
-            result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
-            return result
-        except Exception as e:
-            logger.error(f'get_symbol_by_hash failed')
-            raise e
-
-    def get_dag_edges(self, symbol_hash: int) -> dict[int]:
-        cmd = f"""
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.DirectCallTable}]->(direct:{HAKCSymbol.get_table_name()})
-        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
-        UNION ALL
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.UsesSymbolTable}]->(uses:{HAKCSymbol.get_table_name()})
-        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN uses.{HAKCSymbol.get_primary_key().column_name} AS {HAKCSymbol.UsesSymbolTable}
-        UNION ALL
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.IndirectCallTable}]->(:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(indirect:{HAKCSymbol.get_table_name()})
-        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
-        ;
-        """
-
-        response = self._execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        if response.has_next():
-            return response.get_as_df().to_dict()
-        else:
-            return {}
-
-    def _execute_prepared_stmt(self, prepared_stmt: str, **kwargs):
-        response = self.conn.execute(prepared_stmt, parameters=kwargs)
-        return response
-
-    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False, limit: int = 0) -> list[HAKCSymbol] | int:
-        cmd = [f"""
-        MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
-        """]
-        if where_clause is not None:
-            cmd.append(where_clause)
-
-        cmd.append("RETURN")
-        return_str = """
-            sym.Name, sym.DefiningFile, sym.DefiningLine, sym.is_function AS is_function, scope.Scope, 
-            scope.LocalScopeName, ty.DebugType, ty.LLVMType
-            """
-        if return_count:
-            cmd.append(f'COUNT(*)')
-        else:
-            cmd.append(f'{return_str}')
-            cmd.append(f"""
-                ORDER BY sym.Name, ty.DebugType, scope.Scope, scope.LocalScopeName
-            """)
-        if limit > 0:
-            cmd.append(f'LIMIT {limit}')
-        symbols = list()
-        response = self._execute_prepared_stmt(prepared_stmt=" ".join(cmd))
-        if response.has_next():
-            if return_count:
-                return int(response.get_next()[0])
-            info = response.get_as_df()
-            for data in info.to_dict(orient='records'):
-                symbol = self._create_symbol_from_response(**data)
-                symbols.append(symbol)
-
-        return symbols
-
-    def _create_type_from_response(self, type_prefix: str = "ty.", **kwargs) -> HAKCType:
-        type_data = {key.removeprefix(type_prefix): val for key, val in kwargs.items() if key.startswith(type_prefix)}
-        if len(type_data) == 0:
-            raise RuntimeError('No type data provided')
-        ty = HAKCType(**type_data)
-        return ty
-
-    def _create_symbol_from_response(self, is_function: bool, type_prefix: str = "ty.", scope_prefix: str = "scope.",
-                                     symbol_prefix: str = "sym.", **kwargs) -> HAKCSymbol:
-        ty = self._create_type_from_response(type_prefix=type_prefix, **kwargs)
-        scope_data = {key.removeprefix(scope_prefix): val for key, val in kwargs.items() if
-                      key.startswith(scope_prefix)}
-        if len(scope_data) == 0:
-            raise RuntimeError('No scope data provided')
-        scope = HAKCScope(**scope_data)
-        symbol_data = {key.removeprefix(symbol_prefix): val for key, val in kwargs.items() if
-                       key.startswith(symbol_prefix)}
-        if len(symbol_data) == 0:
-            raise RuntimeError('No symbol data provided')
-        symbol_data['Type'] = ty
-        symbol_data['Scope'] = scope
-
-        if is_function:
-            symbol = HAKCFunction(**symbol_data)
-        else:
-            symbol = HAKCGlobalVariable(**symbol_data)
-
-        return symbol
-
-    def get_indirect_calls(self, symbol: HAKCSymbol) -> list[HAKCType]:
-        cmd = f"""
-            MATCH (head: {HAKCSymbol.get_table_name()})-[:{HAKCFunction.IndirectCallTable}]->(ty: {HAKCType.get_table_name()})
-            WHERE head.symbol_hash = $symbol_hash
-            RETURN ty.DebugType, ty.LLVMType
-            ORDER BY ty.DebugType, ty.LLVMType;
-        """
-        try:
-            response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
-            types = []
-            if response.has_next():
-                info = response.get_as_df()
-                for data in info.to_dict(orient='records'):
-                    ty = self._create_type_from_response(**data)
-                    types.append(ty)
-        except Exception as e:
-            logger.error(f'get_indirect_calls failed')
-            raise e
-        return types
-
-    def get_used_symbols(self, symbol: HAKCSymbol):
-        cmd = f"""
-            MATCH (head:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.UsesSymbolTable}]->(tail:{HAKCSymbol.get_table_name()}),
-            (sc:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(tail)-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
-            WHERE head.symbol_hash=$symbol_hash
-            RETURN tail.Name, tail.DefiningFile, tail.DefiningLine, tail.is_function AS is_function, sc.Scope,
-            sc.LocalScopeName, ty.DebugType, ty.LLVMType;
-        """
-        try:
-            response = self._execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
-            used_symbols = []
-            if response.has_next():
-                info = response.get_as_df()
-                for data in info.to_dict(orient='records'):
-                    symbol = self._create_symbol_from_response(symbol_prefix='tail.', scope_prefix='sc.',
-                                                               type_prefix='ty.', **data)
-                    used_symbols.append(symbol)
-        except Exception as e:
-            logger.error(f'get_used_symbols failed')
-            raise e
-
-        return used_symbols
-
-    def get_symbol_count(self):
-        return self._get_symbols(return_count=True)
-
-    def get_symbols(self, limit: int = 0):
-        return self._get_symbols()
 
 
 def get_loader() -> Type[yaml.SafeLoader]:
@@ -327,10 +139,11 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
 
 def add_symbols(compartmentalization: HAKCCompartmentalization, compilation_unit: str, functions: set[HAKCFunction],
                 global_variables: set[HAKCGlobalVariable]):
+    cu = HAKCCompilationUnit(filename=compilation_unit)
     for func in functions:
-        compartmentalization.add_symbol(func, compilation_unit)
+        compartmentalization.add_symbol(func, cu)
     for glob in global_variables:
-        compartmentalization.add_symbol(glob, compilation_unit)
+        compartmentalization.add_symbol(glob, cu)
 
 
 def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentalization:
@@ -343,9 +156,16 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
             add_symbols(compartmentalization, compilation_unit, functions, global_variables)
             pbar.update(1)
 
+    suspicious = list()
+    for cu in compartmentalization.get_compilation_units():
+        if cu.filename == '$HAKC_SOURCE_PATH$/include/linux/spinlock_api_smp.h':
+            suspicious.append(cu)
+    print(suspicious)
+
     add_dag_edges(compartmentalization)
+
     conn = HAKCDatabase(db_dir)
-    conn.persist_compartmentalization(compartmentalization, create_schema=True)
+    add_default_compartmentalization(conn, compartmentalization, create_schema=True)
     conn.close()
     return compartmentalization
 
@@ -385,6 +205,20 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
                 logger.info(f'Not changing Symbol {symbol}')
 
 
+def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: HAKCCompartmentalization, create_schema: bool = False):
+    logger.info(f'Adding default compartmentalization')
+    compartment_id = HAKCCompartmentalization.kernel_compartment_id + 1
+    division_id = HAKCCompartmentalization.default_division
+    symbols = list(compartmentalization.get_symbols())
+    with tqdm.tqdm(total=len(symbols)) as pbar:
+        for sym in symbols:
+            compartment = HAKCCompartment(compartment_id)
+            division = HAKCDivision(division_id, compartment_id)
+            compartmentalization.set_symbol_division(sym, division, compartment)
+            compartment_id += 1
+            pbar.update(1)
+    compartmentalization.persist_to_database(conn, create_schema=create_schema)
+
 def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAKCCompartmentalization:
     logger.info(f'Starting multiprocess DAG creation using {core_count} cores')
     with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
@@ -394,10 +228,10 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
             for file in sorted(files):
                 futures_to_files[executor.submit(parse_yaml, file)] = file
                 pbar.update(1)
-        logger.info("Completed")
         compartmentalization = HAKCCompartmentalization()
         conn = HAKCDatabase(db_dir, max_num_threads=core_count)
-        compartmentalization.create_schema(conn.conn)
+        compartmentalization.create_schema(conn)
+        logger.info(f'Reading yaml parsing results')
         with tqdm.tqdm(total=len(files)) as pbar:
             for future in concurrent.futures.as_completed(futures_to_files):
                 pbar.update(1)
@@ -410,16 +244,16 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 except Exception as e:
                     logger.error(f'Error parsing {file}: {str(e)}')
 
-    conn.persist_compartmentalization(compartmentalization)
+    compartmentalization.persist_to_database(conn)
     logger.info(f'Total symbols {len(conn.get_symbols())}')
     conn.close()
     with concurrent.futures.ProcessPoolExecutor(max_workers=core_count, initializer=init_mp_database,
                                                 initargs=(db_dir,)) as executor:
         dag_edges_added = 0
         symbol_hashes = compartmentalization.get_symbol_hashes()
-        logger.info(f'Starting DAG edge computation')
         batch_size = 100
         futures = list()
+        logger.info(f'Submitting DAG edge computation tasks')
         with tqdm.tqdm(total=int(len(symbol_hashes) / batch_size) + 1) as pbar:
             try:
                 for symbol_hash_batch in batched(symbol_hashes, batch_size):
@@ -431,6 +265,7 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise e
 
+        logger.info(f'Reading DAG edge computation')
         with tqdm.tqdm(total=len(futures)) as pbar:
             try:
                 dag_edges = dict()
@@ -454,26 +289,9 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
     conn.open(max_num_threads=core_count)
     conn.persist_dag_edges(dag_edges)
     logger.info(f'Done')
+    logger.info(f'Adding compartmentalization')
+    add_default_compartmentalization(conn, compartmentalization)
     conn.close()
-
-    # with tqdm.tqdm(total=dag_edges_added) as pbar:
-    #     symbol_hash_map = dict()
-    #     for head_hash, edge_data in dag_edges.items():
-    #         if head_hash not in symbol_hash_map:
-    #             symbol_hash_map[head_hash] = compartmentalization.get_symbol_by_hash(head_hash)
-    #         head = symbol_hash_map[head_hash]
-    #         for tail_hash, dag_edge_weight in edge_data.items():
-    #             if tail_hash not in symbol_hash_map:
-    #                 symbol_hash_map[tail_hash] = compartmentalization.get_symbol_by_hash(tail_hash)
-    #             tail = symbol_hash_map[tail_hash]
-    #             logger.debug(
-    #                 f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
-    #             compartmentalization.add_dag_edge(head, tail, dag_edge_weight, add_nodes=False)
-    #             pbar.update(1)
-    #
-    # logger.info(f'Done')
-    # conn.persist_compartmentalization(compartmentalization)
-    # conn.close()
 
     return compartmentalization
 
@@ -589,7 +407,7 @@ def main():
         logger.info(f'Adjusting compartmentalization based on {args.adjust_path}')
         with open(args.adjust_path, 'r') as f:
             adjustments = yaml.safe_load(f)
-        compartmentalization = HAKCCompartmentalization.CreateFromDatabase(args.kuzu_dir)
+        compartmentalization = HAKCCompartmentalization.from_database(args.kuzu_dir)
         adjust_compartmentalization(compartmentalization, adjustments)
         logger.info("Done")
 
