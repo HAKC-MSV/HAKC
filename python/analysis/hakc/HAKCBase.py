@@ -148,6 +148,7 @@ class HAKCDBNode(HAKCPrintableObj):
         raise RuntimeError(
             f'Could not find data for primary key {primary_key} in object for table {self.get_table_name()}')
 
+
 class HAKCDBRelation:
     def __init__(self, relation_name: str, from_class: Type[HAKCDBNode], to_class: Type[HAKCDBNode], **kwargs):
         self.relation_name = relation_name

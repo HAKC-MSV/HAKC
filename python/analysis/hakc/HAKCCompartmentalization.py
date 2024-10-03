@@ -1,9 +1,10 @@
 import logging
-import tqdm
-import networkx as nx
-import polars as pl
 import re
 from typing import Type
+
+import networkx as nx
+import polars as pl
+import tqdm
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
@@ -234,7 +235,6 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         self._persist_nodes(conn)
         logger.info('Persisting new edges to database')
         self._persist_edges(conn)
-
 
     def create_node_table(self, conn: HAKCDatabase, node_class: Type[HAKCDBNode]):
         logger.debug(f'Creating node table {node_class.get_table_name()}')

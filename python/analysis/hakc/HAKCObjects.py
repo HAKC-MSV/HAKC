@@ -13,6 +13,14 @@ class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
         HAKCDBNode.__init__(self, **kwargs)
         self.filename = filename
 
+    def __eq__(self, other):
+        if isinstance(other, HAKCCompilationUnit):
+            return self.filename == other.filename
+        return False
+
+    def __hash__(self):
+        return HAKCDBNode.__hash__(self)
+
     def get_hash_inputs(self) -> list[object]:
         return [self.filename]
 

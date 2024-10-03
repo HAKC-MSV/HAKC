@@ -2,6 +2,7 @@ import argparse
 import cProfile
 import concurrent.futures
 import io
+import itertools
 import logging
 import multiprocessing as mp
 import os
@@ -10,15 +11,15 @@ import shutil
 import time
 from enum import Enum
 from typing import Type
+
 import tqdm
 import yaml
-import itertools
 
-from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCBase import QuotedString
-from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, HAKCDivision
+from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
-from python.analysis.hakc.HAKCObjects import HAKCCompilationUnit
+from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
+    HAKCDivision, HAKCCompilationUnit
 
 logger = logging.getLogger('hakc-dag')
 
@@ -33,6 +34,7 @@ class LoggingLevelEnum(Enum):
     WARNING = logging.WARNING
     INFO = logging.INFO
     DEBUG = logging.DEBUG
+
 
 def batched(iterable, n):
     if n < 1:
@@ -95,12 +97,14 @@ def compute_dag_edges_for_symbol_with_conn(conn: HAKCDatabase, symbol_hash: int)
     return results
 
 
-mp_conn : HAKCDatabase | None = None
+mp_conn: HAKCDatabase | None = None
+
 
 def init_mp_database(db_dir: str):
     global mp_conn
     logger.debug(f'Creating database at {db_dir}')
     mp_conn = HAKCDatabase(db_dir, read_only=True)
+
 
 def compute_dag_edges_for_symbol(symbol_hashes):
     global mp_conn
@@ -125,9 +129,12 @@ def add_dag_edges(compartmentalization: HAKCCompartmentalization):
         for head in symbols:
             for tail in compartmentalization.get_symbols():
                 edge_weight_info = dict()
-                edge_weight_info[HAKCFunction.DirectCallTable] = compartmentalization.has_edge(head, tail, key=HAKCFunction.DirectCallTable)
-                edge_weight_info[HAKCSymbol.UsesSymbolTable] = compartmentalization.has_edge(head, tail, key=HAKCSymbol.UsesSymbolTable)
-                edge_weight_info[HAKCFunction.IndirectCallTable] = compartmentalization.has_edge(head, tail.type, key=HAKCFunction.IndirectCallTable)
+                edge_weight_info[HAKCFunction.DirectCallTable] = compartmentalization.has_edge(head, tail,
+                                                                                               key=HAKCFunction.DirectCallTable)
+                edge_weight_info[HAKCSymbol.UsesSymbolTable] = compartmentalization.has_edge(head, tail,
+                                                                                             key=HAKCSymbol.UsesSymbolTable)
+                edge_weight_info[HAKCFunction.IndirectCallTable] = compartmentalization.has_edge(head, tail.type,
+                                                                                                 key=HAKCFunction.IndirectCallTable)
                 dag_edge_weight = compute_dag_edge_weight(**edge_weight_info)
                 if dag_edge_weight > 0:
                     logger.debug(f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
@@ -155,12 +162,6 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
                 f'{compilation_unit} found {len(functions)} functions and {len(global_variables)} globals')
             add_symbols(compartmentalization, compilation_unit, functions, global_variables)
             pbar.update(1)
-
-    suspicious = list()
-    for cu in compartmentalization.get_compilation_units():
-        if cu.filename == '$HAKC_SOURCE_PATH$/include/linux/spinlock_api_smp.h':
-            suspicious.append(cu)
-    print(suspicious)
 
     add_dag_edges(compartmentalization)
 
@@ -205,7 +206,8 @@ def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, 
                 logger.info(f'Not changing Symbol {symbol}')
 
 
-def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: HAKCCompartmentalization, create_schema: bool = False):
+def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: HAKCCompartmentalization,
+                                     create_schema: bool = False):
     logger.info(f'Adding default compartmentalization')
     compartment_id = HAKCCompartmentalization.kernel_compartment_id + 1
     division_id = HAKCCompartmentalization.default_division
@@ -218,6 +220,7 @@ def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: H
             compartment_id += 1
             pbar.update(1)
     compartmentalization.persist_to_database(conn, create_schema=create_schema)
+
 
 def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAKCCompartmentalization:
     logger.info(f'Starting multiprocess DAG creation using {core_count} cores')

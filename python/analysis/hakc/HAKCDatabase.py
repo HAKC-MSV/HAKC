@@ -1,11 +1,13 @@
 import logging
-import polars as pl
-import kuzu
 import multiprocessing as mp
+
+import kuzu
+import polars as pl
 
 from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable
 
 logger = logging.getLogger('hakc-dag')
+
 
 class HAKCDatabase:
     def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
@@ -23,7 +25,6 @@ class HAKCDatabase:
     def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
         self.conn = kuzu.Connection(self.database)
-
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
@@ -45,7 +46,8 @@ class HAKCDatabase:
 
     def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
         try:
-            result = self._get_symbols(where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
+            result = self._get_symbols(
+                where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
             return result
         except Exception as e:
             logger.error(f'get_symbol_by_hash failed')
@@ -77,7 +79,8 @@ class HAKCDatabase:
     def insert_from_dataframe(self, table_name: str, df: pl.DataFrame):
         self.conn.execute(f'COPY {table_name} FROM df')
 
-    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False, limit: int = 0) -> list[HAKCSymbol] | int:
+    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False, limit: int = 0) -> list[
+                                                                                                               HAKCSymbol] | int:
         cmd = [f"""
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
         """]
