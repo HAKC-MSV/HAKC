@@ -8,6 +8,7 @@ clear
 rm -rf $ROOT/llvm-project/compiler-rt-build/test/hakc/X86_64LinuxConfig/TestCases/Output/*
 
 # copy test case to llvm compiler-rt xray test directory 
+mkdir $ROOT/llvm-project/compiler-rt/test
 cp -rf tests/* $ROOT/llvm-project/compiler-rt/test/hakc/TestCases
 
 # make tests
