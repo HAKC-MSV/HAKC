@@ -49,14 +49,10 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
     def __init__(self, division_id: int, compartment_id: int,
                  division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
-        if 'Name' not in kwargs:
-            kwargs['Name'] = f'Division {division_id} in Compartment {compartment_id}'
-
         HAKCDBNode.__init__(self, **kwargs)
         self.division_id = division_id
         self.compartment_id = compartment_id
         self.division_count = division_count
-        self.access_token = HAKCCompartment.compute_access_token(division_id, compartment_id, division_count)
 
     def __eq__(self, other):
         if isinstance(other, HAKCDivision):
@@ -64,23 +60,25 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         return False
 
     def __hash__(self):
-        return self.access_token
+        return HAKCDBNode.__hash__(self)
 
     def __lt__(self, other):
         if isinstance(other, HAKCDivision):
             return self.compartment_id < other.compartment_id and self.division_id < other.division_id
         raise RuntimeError(f'{other} is not a class of {self.__class__.__name__}!')
 
+    def get_hash_inputs(self) -> list[object]:
+        return [self.division_id, self.compartment_id]
+
     def get_info_tokens(self) -> dict[str, object]:
         result = dict()
         result['division_id'] = self.division_id
         result['compartment_id'] = self.compartment_id
-        result['access_token'] = self.access_token
         return result
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
-        return HAKCDBColumn('AccessToken', 'UINT64')
+        return HAKCDBColumn('division_hash', 'UINT64')
 
     @classmethod
     def get_data_columns(cls) -> list[HAKCDBColumn]:
@@ -99,14 +97,13 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
         schema = HAKCDivision.get_db_table_columns()
         return {
-            schema[0]: self.access_token,
-            schema[1]: self.division_id
+            schema[0]: hash(self),
+            schema[1]: self.division_id,
         }
 
 
 class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = u'!HAKCCompartment'
-    TargetTable = 'Target'
 
     def __init__(self, compartment_id: int, division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
@@ -115,7 +112,6 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
         HAKCDBNode.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.division_count = division_count
-        self.targets = set()
         self.divisions = set()
         self.entry_token = self.compute_entry_token()
 
@@ -153,7 +149,6 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
     def get_info_tokens(self) -> dict[str, object]:
         result = dict()
         result['compartment_id'] = self.compartment_id
-        result['targets'] = sorted(list(self.targets))
         result['divisions'] = list()
         result['entry_token'] = self.entry_token
 
@@ -179,9 +174,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
 
     @staticmethod
     def get_db_relations() -> list[HAKCDBRelation]:
-        return [
-            HAKCDBRelation(HAKCCompartment.TargetTable, HAKCCompartment, HAKCCompartment)
-        ]
+        return []
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
         schema = HAKCCompartment.get_db_table_columns()

@@ -53,24 +53,39 @@ class HAKCDatabase:
             logger.error(f'get_symbol_by_hash failed')
             raise e
 
-    def get_dag_edges(self, symbol_hash: int) -> dict[int]:
+    def get_dag_computation_edges(self, symbol_hash: int) -> dict[str, list[int]]:
+        result = dict()
         cmd = f"""
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.DirectCallTable}]->(direct:{HAKCSymbol.get_table_name()})
-        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
-        UNION ALL
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.UsesSymbolTable}]->(uses:{HAKCSymbol.get_table_name()})
-        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN uses.{HAKCSymbol.get_primary_key().column_name} AS {HAKCSymbol.UsesSymbolTable}
-        UNION ALL
         MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCFunction.IndirectCallTable}]->(:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(indirect:{HAKCSymbol.get_table_name()})
         WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
-        RETURN indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
-        ;
+        RETURN DISTINCT indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
         """
-
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        return response.get_as_df().to_dict()
+        df = response.get_as_pl()
+        for table_name, entries in df.to_dict(as_series=False).items():
+            if len(entries) > 0:
+                result[table_name] = entries
+        cmd = f"""
+        MATCH (sym: {HAKCSymbol.get_table_name()})-[:{HAKCFunction.DirectCallTable}]->(direct:{HAKCSymbol.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN DISTINCT direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
+        """
+        response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
+        df = response.get_as_pl()
+        for table_name, entries in df.to_dict(as_series=False).items():
+            if len(entries) > 0:
+                result[table_name] = entries
+        cmd = f"""
+        MATCH (sym: {HAKCSymbol.get_table_name()})-[:{HAKCSymbol.UsesSymbolTable}]->(uses:{HAKCSymbol.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN DISTINCT uses.{HAKCSymbol.get_primary_key().column_name} AS {HAKCSymbol.UsesSymbolTable}
+        """
+        response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
+        df = response.get_as_pl()
+        for table_name, entries in df.to_dict(as_series=False).items():
+            if len(entries) > 0:
+                result[table_name] = entries
+        return result
 
     def execute_prepared_stmt(self, prepared_stmt: str, **kwargs):
         response = self.conn.execute(prepared_stmt, parameters=kwargs)

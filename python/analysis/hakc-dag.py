@@ -79,13 +79,11 @@ def compute_dag_edge_weight(**kwargs) -> int:
 
 def compute_dag_edges_for_symbol_with_conn(conn: HAKCDatabase, symbol_hash: int):
     results = list()
-    tail_hash_types = conn.get_dag_edges(symbol_hash)
+    tail_hash_types = conn.get_dag_computation_edges(symbol_hash)
     dag_info = dict()
 
     for dag_edge_type, tail_hashes in tail_hash_types.items():
-        if dag_edge_type == HAKCFunction.IndirectCallTable:
-            logger.info(f'{symbol_hash}: {tail_hash_types}')
-        for _, tail_hash in tail_hashes.items():
+        for tail_hash in tail_hashes:
             if tail_hash not in dag_info:
                 dag_info[tail_hash] = dict()
             dag_info[tail_hash][dag_edge_type] = True
@@ -121,29 +119,6 @@ def compute_dag_edges_for_symbol(symbol_hashes):
     return results
 
 
-def add_dag_edges(compartmentalization: HAKCCompartmentalization):
-    logger.info(f'Starting DAG edge computation')
-    dag_edge_count = 0
-    symbols = compartmentalization.get_symbols()
-    with tqdm.tqdm(total=len(symbols)) as pbar:
-        for head in symbols:
-            for tail in compartmentalization.get_symbols():
-                edge_weight_info = dict()
-                edge_weight_info[HAKCFunction.DirectCallTable] = compartmentalization.has_edge(head, tail,
-                                                                                               key=HAKCFunction.DirectCallTable)
-                edge_weight_info[HAKCSymbol.UsesSymbolTable] = compartmentalization.has_edge(head, tail,
-                                                                                             key=HAKCSymbol.UsesSymbolTable)
-                edge_weight_info[HAKCFunction.IndirectCallTable] = compartmentalization.has_edge(head, tail.type,
-                                                                                                 key=HAKCFunction.IndirectCallTable)
-                dag_edge_weight = compute_dag_edge_weight(**edge_weight_info)
-                if dag_edge_weight > 0:
-                    logger.debug(f'Adding DAG Edge between {head} -> {tail} with weight {dag_edge_weight}')
-                    dag_edge_count += 1
-                    compartmentalization.add_dag_edge(head, tail, dag_edge_weight)
-            pbar.update(1)
-    logger.info(f'Finished adding {dag_edge_count} DAG edges')
-
-
 def add_symbols(compartmentalization: HAKCCompartmentalization, compilation_unit: str, functions: set[HAKCFunction],
                 global_variables: set[HAKCGlobalVariable]):
     cu = HAKCCompilationUnit(filename=compilation_unit)
@@ -163,10 +138,24 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
             add_symbols(compartmentalization, compilation_unit, functions, global_variables)
             pbar.update(1)
 
-    add_dag_edges(compartmentalization)
-
     conn = HAKCDatabase(db_dir)
-    add_default_compartmentalization(conn, compartmentalization, create_schema=True)
+    compartmentalization.persist_to_database(conn, create_schema=True)
+    dag_edges = dict()
+    dag_edges_added = 0
+    logger.info(f'Computing DAG edges')
+    symbols = compartmentalization.get_symbols()
+    with tqdm.tqdm(total=len(symbols)) as pbar:
+        for symbol in symbols:
+            for (head_hash, tail_hash, dag_edge_weight) in compute_dag_edges_for_symbol_with_conn(conn, hash(symbol)):
+                if head_hash not in dag_edges:
+                    dag_edges[head_hash] = dict()
+                dag_edges[head_hash][tail_hash] = dag_edge_weight
+                dag_edges_added += 1
+            pbar.update(1)
+    logger.info(f'Adding {dag_edges_added} DAG edges to compartmentalization')
+    conn.persist_dag_edges(dag_edges)
+    logger.info(f'Adding compartmentalization')
+    add_default_compartmentalization(conn, compartmentalization)
     conn.close()
     return compartmentalization
 
@@ -291,7 +280,6 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
     logger.info(f'Adding {dag_edges_added} DAG edges to compartmentalization')
     conn.open(max_num_threads=core_count)
     conn.persist_dag_edges(dag_edges)
-    logger.info(f'Done')
     logger.info(f'Adding compartmentalization')
     add_default_compartmentalization(conn, compartmentalization)
     conn.close()
