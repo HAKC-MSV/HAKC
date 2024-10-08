@@ -43,6 +43,20 @@ namespace hakc {
         std::vector<YamlFile> files;
     };
 
+    struct YamlMethodsInformation {
+        std::string NAME;
+        std::vector<std::string> FUNCTIONS;
+    };
+    
+    struct YamlArchInformation {
+        std::string ARCH;
+        std::string PLATFORM;
+        std::vector<YamlMethodsInformation> METHODS;
+    };
+
+    struct YamlHAKCInformation {
+        YamlArchInformation SYSTEMINFO;
+    };
 }
 
 #endif //HAKC_HAKCYAML_H

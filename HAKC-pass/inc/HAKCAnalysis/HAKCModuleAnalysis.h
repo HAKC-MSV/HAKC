@@ -28,6 +28,7 @@ namespace hakc {
         bool moduleModified;
         std::set<int64_t> used_compartments;
         Module &M;
+        HAKCSystemInformation SysInfo; 
 
         explicit HAKCModuleAnalysis(Module &M);
 
@@ -116,6 +117,8 @@ namespace hakc {
         std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() override;
 
         virtual std::set<hakc_custom_transfer_def_t> GetHAKCCustomTransferFunctions();
+
+        virtual void InitSystemInformation(std::string a, std::string b, std::string c);
 
         virtual void InitAnalysis();
 

@@ -48,6 +48,7 @@ namespace hakc {
     const StringRef HAKC_DEBUG_ENV_VAR = "HAKC_DEBUG_NAME";
     const StringRef DAG_ANALYSIS_ROOT_ENV_VAR = "HAKC_DAG_ANALYSIS_ROOT";
     const StringRef HAKC_ENV_VAR = "HAKC_ANALYSIS";
+    const StringRef HAKC_ARCH_CONFIG = "HAKC_ARCH_CONFIG";
     const StringRef HAKC_NO_KERNEL_TRANSFERS = "HAKC_NO_KERNEL_TRANSFERS";
     const StringRef HAKC_MORELLO_HYBRID_ENV_VAR = "HAKC_MORELLO_HYBRID";
 

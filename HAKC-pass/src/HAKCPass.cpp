@@ -7,6 +7,7 @@
 #include "HAKCSymbolGenerator.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
+#include "HAKCSystemInformation.h"
 
 #if defined(HAKC_CHERIBSD_MORELLO)
 #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
@@ -27,6 +28,11 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/PassPlugin.h"
+#include "llvm/Support/CommandLine.h"
+
+static cl::opt<std::string> HAKCPassMode("HAKCPassMode", cl::desc("Specify HAKC Pass Mode"), cl::value_desc("dag, compartmentalize, or custom"), cl::Required);
+static cl::opt<std::string> CompartmentYamlPath("CompartmentYamlPath", cl::desc("CompartmentYamlPath"), cl::value_desc("HAKC Compartment Path"), cl::Required);
+static cl::opt<std::string> ArchYamlPath("ArchYamlPath", cl::desc("ArchYamlPath"), cl::value_desc("Architecture specific yaml configuration file"), cl::Required);
 
 namespace hakc {
 
@@ -43,6 +49,8 @@ namespace hakc {
 #else
 #error "HAKC Architecture Unspecified"
 #endif
+        // TODO: add error checking 
+        ModuleAnalysis->InitSystemInformation(ArchYamlPath, CompartmentYamlPath, HAKCPassMode);
         ModuleAnalysis->InitAnalysis();
         return ModuleAnalysis;
     }
@@ -94,6 +102,12 @@ namespace hakc {
         return false;
     }
 
+    bool runCustom(Module &M){
+        CommonHAKCAnalysis::getWriter() << "running my custom code with HAKCPassMode of " << HAKCPassMode << "! \n";
+        HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
+        return true; 
+    }
+
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
         HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
@@ -136,13 +150,14 @@ namespace hakc {
                 std::function<bool(Module &)>>>
                 available_options = {
                 {"dag",              runDataAccessGraphAnalysis},
-                {"compartmentalize", runCompartmentalization}};
+                {"compartmentalize", runCompartmentalization},
+                {"custom", runCustom}};
 
         PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
             const char *preload = std::getenv(HAKC_ENV_VAR.str().c_str());
-            if (preload) {
+            if (HAKCPassMode.getValue() != "") {
                 for (const auto &opt: available_options) {
-                    if (opt.first == preload) {
+                    if (opt.first == HAKCPassMode.c_str()) {
                         return opt.second(M) ? PreservedAnalyses::none() : PreservedAnalyses::all();
                     }
                 }
@@ -163,6 +178,7 @@ namespace hakc {
     };
 }// namespace hakc
 
+// env HAKC_ANALYSIS=custom HAKC_ARCH_CONFIG=x86config.yaml HAKC_COMPARTMENT_PATH=tests/hakc-test0.yml $TEST_CLANG -fexperimental-new-pass-manager -Xclang -load -Xclang $TEST_PASS -fpass-plugin=$TEST_PASS -mllvm -mypass_option=abc  -g -S -emit-llvm -O2 -o tests/hakc-test0.c.ll -c tests/hakc-test0.c
 llvm::PassPluginLibraryInfo getHAKCPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "HAKCPass", LLVM_VERSION_STRING,
             [](PassBuilder &PB) {

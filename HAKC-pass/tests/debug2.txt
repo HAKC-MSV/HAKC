@@ -1,0 +1,699 @@
+Compartmentalizing foo
+Running setup for foo
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %10, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %6, align 4, !dbg !33, !tbaa !34
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !44
+  br label %10
+
+10:                                               ; preds = %1, %4
+  %11 = phi i32 [ %9, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %11, !dbg !45
+}
+
+Checking comparison   %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+	Comparisons with null do not need authentication
+Adding GEP Operator pointer   %2 = alloca %struct.data_struct, align 4
+Checking if   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32 should be registered
+Definition   %2 = alloca %struct.data_struct, align 4 from   store i32 0, i32* %6, align 4, !dbg !33, !tbaa !34 is registered
+ManagedHAKCPointer found BaseDefinition:   %2 = alloca %struct.data_struct, align 4
+Adding GEP Operator pointer %struct.data_struct2* %0
+Checking if   %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39 should be registered
+Definition %struct.data_struct2* %0 from   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40 is registered
+ManagedHAKCPointer found BaseDefinition: %struct.data_struct2* %0
+Handling call   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43 does not need authenticated args
+Indirect call:   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43
+ManagedHAKCPointer found BaseDefinition:   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39 should be cloned
+Argument 0 of   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40 should use authenticated Base Definition
+Argument 0 of   %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28 is being ignored
+Argument 1 of   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43 should use authenticated Base Definition
+Argument 0 of   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43 should use signed Base Definition
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32 should be cloned
+Argument 1 of   store i32 0, i32* %6, align 4, !dbg !33, !tbaa !34 should use authenticated Base Definition
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30 should be cloned
+Intrinsic (154)   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !44 is not in { 181 184 186 }
+Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !44 should use signed Base Definition
+Intrinsic (155)   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !30 is not in { 181 184 186 }
+Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !30 should use signed Base Definition
+Managed Pointers:
+%struct.data_struct2* %0
++++
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40
++++
+  %2 = alloca %struct.data_struct, align 4
++++
+---- createMissingTransfers ----
+Function prior to making transfers:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %10, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %6, align 4, !dbg !33, !tbaa !34
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !44
+  br label %10
+
+10:                                               ; preds = %1, %4
+  %11 = phi i32 [ %9, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %11, !dbg !45
+}
+
+No protected pointer use of %struct.data_struct2* %0, so creation is not needed
+No protected pointer use of   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !39, !tbaa !40, so creation is not needed
+Finding insertion point for   %2 = alloca %struct.data_struct, align 4
+isData: 1 for   %2 = alloca %struct.data_struct, align 4
+%struct.data_struct*
+Created transfer for   %2 = alloca %struct.data_struct, align 4:   %7 = bitcast i8* %6 to %struct.data_struct*
+Replacing argument 0 of   %12 = call i32 %11(%struct.data_struct* nonnull %2) #3, !dbg !43 to ProtectedPointer   %7 = bitcast i8* %6 to %struct.data_struct*
+Replacing argument 0 of   %8 = bitcast %struct.data_struct* %2 to i8*, !dbg !30 to ProtectedPointer   %7 = bitcast i8* %6 to %struct.data_struct*
+Replacing argument 0 of   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32 to ProtectedPointer   %7 = bitcast i8* %6 to %struct.data_struct*
+Registering   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30 as a Protected Copy of Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Registering   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32 as a Protected Copy of Argument 0 of   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+---- createAllAuthenticatedPointers ----
+Function prior to making authenticated copies:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %13, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %11 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %10, align 8, !dbg !39, !tbaa !40
+  %12 = call i32 %11(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %13
+
+13:                                               ; preds = %1, %4
+  %14 = phi i32 [ %12, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %14, !dbg !45
+}
+
+Creating Base Authenticated Pointer of %struct.data_struct2* %0 with Users
+  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+Finding insertion point for %struct.data_struct2* %0
+Authenticated Pointer for %struct.data_struct2* %0:   %12 = bitcast i8* %11 to %struct.data_struct2*, !dbg !39
+
+
+Creating Authenticated Copies of uses of %struct.data_struct2* %0:
+	Argument 0 of   %14 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %13, align 8, !dbg !39, !tbaa !40
+	Argument 0 of   %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+Creating copy of Argument 0 of   %14 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %13, align 8, !dbg !39, !tbaa !40
+Created Authenticated Copy of   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39:   %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+Authenticated Replacement of Argument 0 of   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40:   %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %12, i64 0, i32 0, !dbg !39
+Creating copy of Argument 0 of   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+Authenticated Replacement of Argument 0 of   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39:   %12 = bitcast i8* %11 to %struct.data_struct2*, !dbg !39
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %17, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %10 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %11 = call i8* @check_hakc_data_access(i8* %10, i32 6, i64 393218), !dbg !39
+  %12 = bitcast i8* %11 to %struct.data_struct2*, !dbg !39
+  %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %12, i64 0, i32 0, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %16 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %17
+
+17:                                               ; preds = %1, %4
+  %18 = phi i32 [ %16, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %18, !dbg !45
+}
+
+AuthenticatedPointerReplacements:
+Argument 0 of   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40:   %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %12, i64 0, i32 0, !dbg !39
+Argument 0 of   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39:   %12 = bitcast i8* %11 to %struct.data_struct2*, !dbg !39
+
+
+ProtectedPointerReplacements:
+Argument 0 of   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39: nullptr
+Created Authenticated and Protected Copies for %struct.data_struct2* %0
+Creating Base Authenticated Pointer of   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40 with Users
+  %16 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43
+Finding insertion point for   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+Setting initializer for entry_tokens_6 to be [1 x %HAKCEntryToken] [%HAKCEntryToken { i64 7, i64 458756 }, %HAKCEntryToken { i64 6, i64 393218 }] from token values 
+	%HAKCEntryToken { i64 7, i64 458756 }
+	%HAKCEntryToken { i64 6, i64 393218 }
+Authenticated Pointer for   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40:   %18 = bitcast i8* %17 to i32 (%struct.data_struct*)*, !dbg !43
+
+
+Creating Authenticated Copies of uses of   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40:
+	Argument 1 of   %19 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43
+Creating copy of Argument 1 of   %19 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43
+Authenticated Replacement of Argument 1 of   %19 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43:   %18 = bitcast i8* %17 to i32 (%struct.data_struct*)*, !dbg !43
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %20, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %10 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %11 = call i8* @check_hakc_data_access(i8* %10, i32 6, i64 393218), !dbg !39
+  %12 = bitcast i8* %11 to %struct.data_struct2*, !dbg !39
+  %13 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %12, i64 0, i32 0, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %16 = bitcast i32 (%struct.data_struct*)* %15 to i8*, !dbg !43
+  %17 = call i8* @check_hakc_code_access(i8* %16, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %18 = bitcast i8* %17 to i32 (%struct.data_struct*)*, !dbg !43
+  %19 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %20
+
+20:                                               ; preds = %1, %4
+  %21 = phi i32 [ %19, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %21, !dbg !45
+}
+
+AuthenticatedPointerReplacements:
+Argument 1 of   %19 = call i32 %15(%struct.data_struct* nonnull %7) #3, !dbg !43:   %18 = bitcast i8* %17 to i32 (%struct.data_struct*)*, !dbg !43
+
+
+ProtectedPointerReplacements:
+Created Authenticated and Protected Copies for   %15 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+Authenticated Pointer for   %2 = alloca %struct.data_struct, align 4:   %2 = alloca %struct.data_struct, align 4
+
+
+Creating Authenticated Copies of uses of   %2 = alloca %struct.data_struct, align 4:
+	Argument 1 of   store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+	Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+	Argument 0 of   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+Creating copy of Argument 1 of   store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+Created Authenticated Copy of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32:   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+Authenticated Replacement of Argument 1 of   store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34:   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+Creating copy of Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Authenticated Replacement of Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30:   %2 = alloca %struct.data_struct, align 4
+Creating copy of Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+Authenticated Replacement of Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32:   %2 = alloca %struct.data_struct, align 4
+
+
+Creating Protected Copies of uses of   %2 = alloca %struct.data_struct, align 4:
+	Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+	Argument 0 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+	Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+Creating copy of Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+Protected Replacement of Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30:   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Creating copy of Argument 0 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+Protected Replacement of Argument 0 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43:   %7 = bitcast i8* %6 to %struct.data_struct*
+Creating copy of Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+Protected Replacement of Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44:   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %15, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+AuthenticatedPointerReplacements:
+Argument 1 of   store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34:   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30:   %2 = alloca %struct.data_struct, align 4
+Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32:   %2 = alloca %struct.data_struct, align 4
+
+
+ProtectedPointerReplacements:
+Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30:   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43:   %7 = bitcast i8* %6 to %struct.data_struct*
+Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44:   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30:   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32:   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+Created Authenticated and Protected Copies for   %2 = alloca %struct.data_struct, align 4
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----- transformPointerDereferences ------
+Function prior to transforming pointer dereferences
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %15, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+Setting Argument 0 of ReplacementI   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32 to be   %2 = alloca %struct.data_struct, align 4
+Could not find ReplacementOperand
+Could not find ReplacementOperand
+Setting Argument 0 of ReplacementI   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39 to be   %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+Could not find ReplacementOperand
+Could not find ReplacementOperand
+Setting Argument 0 of ReplacementI   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30 to be   %7 = bitcast i8* %6 to %struct.data_struct*
+Setting Argument 0 of ReplacementI   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32 to be   %7 = bitcast i8* %6 to %struct.data_struct*
+Could not find ReplacementOperand
+Could not find ReplacementOperand
+Replacing the following operands with values from AuthenticatedPointerReplacements
+	Argument 0 of   %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %15, align 8, !dbg !39, !tbaa !40
+
+Items in AuthenticatedPointerReplacements:
+Argument 0 of   %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %15, align 8, !dbg !39, !tbaa !40 ->   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+Argument 0 of   %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39 ->   %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+Setting Argument 0 of   %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %15, align 8, !dbg !39, !tbaa !40 to be   %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+Function after pointer transformation:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+Replacing the following operands with values from AuthenticatedPointerReplacements
+	Argument 1 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43
+
+Items in AuthenticatedPointerReplacements:
+Argument 1 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43 ->   %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+Setting Argument 1 of   %20 = call i32 %16(%struct.data_struct* nonnull %7) #3, !dbg !43 to be   %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+Function after pointer transformation:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+Replacing the following operands with values from AuthenticatedPointerReplacements
+	Argument 1 of   store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34
+
+Items in AuthenticatedPointerReplacements:
+Argument 1 of   store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34 ->   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30 ->   %2 = alloca %struct.data_struct, align 4
+Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32 ->   %2 = alloca %struct.data_struct, align 4
+Setting Argument 1 of   store i32 0, i32* %10, align 4, !dbg !33, !tbaa !34 to be   %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+Replacing the following operands with values from ProtectedPointerReplacements
+	Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+	Argument 0 of   %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+	Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+	Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+	Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+
+Items in ProtectedPointerReplacements:
+Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30 ->   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43 ->   %7 = bitcast i8* %6 to %struct.data_struct*
+Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44 ->   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30 ->   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Argument 0 of   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32 ->   %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+Setting Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30 to be   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Setting Argument 0 of   %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43 to be   %7 = bitcast i8* %6 to %struct.data_struct*
+Setting Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44 to be   %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+Function after pointer transformation:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+- ReplaceDirectFunctionUsesWithTransfers -
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------ CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls -----
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+Retrieved transfer function HAKC_XFER_foo in compartment i32 6
+Replacing uses of foo with HAKC_XFER_foo
+Use foo in   %7 = call i32 @foo(%struct.data_struct2* %6), !dbg !7 does not escape
+Done
+; ModuleID = 'test-0.c'
+source_filename = "test-0.c"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+%HAKCEntryToken = type { i64, i64 }
+%struct.data_struct2 = type { i32 (%struct.data_struct*)* }
+%struct.data_struct = type { i32 }
+
+@entry_tokens_6 = internal constant [1 x %HAKCEntryToken] [%HAKCEntryToken { i64 7, i64 458756 }, %HAKCEntryToken { i64 6, i64 393218 }]
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !23, metadata !DIExpression()), !dbg !27
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !28
+  br i1 %3, label %21, label %4, !dbg !29
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !30
+  %6 = call i8* @hakc_transfer_to_clique(i8* %5, i64 4, i32 6, i32 241, i1 false), !dbg !30
+  %7 = bitcast i8* %6 to %struct.data_struct*
+  %8 = bitcast %struct.data_struct* %7 to i8*, !dbg !30
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %8) #3, !dbg !30
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !24, metadata !DIExpression()), !dbg !31
+  %9 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !32
+  %10 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %7, i64 0, i32 0, !dbg !32
+  store i32 0, i32* %9, align 4, !dbg !33, !tbaa !34
+  %11 = bitcast %struct.data_struct2* %0 to i8*, !dbg !39
+  %12 = call i8* @check_hakc_data_access(i8* %11, i32 6, i64 393218), !dbg !39
+  %13 = bitcast i8* %12 to %struct.data_struct2*, !dbg !39
+  %14 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %13, i64 0, i32 0, !dbg !39
+  %15 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !39
+  %16 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %14, align 8, !dbg !39, !tbaa !40
+  %17 = bitcast i32 (%struct.data_struct*)* %16 to i8*, !dbg !43
+  %18 = call i8* @check_hakc_code_access(i8* %17, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !43
+  %19 = bitcast i8* %18 to i32 (%struct.data_struct*)*, !dbg !43
+  %20 = call i32 %19(%struct.data_struct* nonnull %7) #3, !dbg !43
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %8) #3, !dbg !44
+  br label %21
+
+21:                                               ; preds = %1, %4
+  %22 = phi i32 [ %20, %4 ], [ 0, %1 ], !dbg !27
+  ret i32 %22, !dbg !45
+}
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.declare(metadata, metadata, metadata) #1
+
+; Function Attrs: argmemonly nofree nosync nounwind willreturn
+declare void @llvm.lifetime.start.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: argmemonly nofree nosync nounwind willreturn
+declare void @llvm.lifetime.end.p0i8(i64 immarg, i8* nocapture) #2
+
+; Function Attrs: nofree nosync nounwind readnone speculatable willreturn
+declare void @llvm.dbg.value(metadata, metadata, metadata) #1
+
+declare i8* @hakc_transfer_to_clique(i8*, i64, i32, i32, i1)
+
+declare i8* @check_hakc_data_access(i8*, i32, i64)
+
+declare i8* @check_hakc_code_access(i8*, i32, i64, %HAKCEntryToken*, i64)
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @HAKC_XFER_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" {
+  %2 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !43
+  %4 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 6, i32 241, i1 false), !dbg !43
+  %6 = bitcast i8* %5 to %struct.data_struct2*, !dbg !43
+  %7 = call i32 @foo(%struct.data_struct2* %6), !dbg !43
+  %8 = bitcast %struct.data_struct2* %0 to i8*, !dbg !43
+  call void @hakc_color_address(i8* %8, i32 %3, i64 8), !dbg !43
+  ret i32 %7, !dbg !43
+}
+
+declare i32 @get_hakc_address_color(i8*)
+
+declare void @hakc_color_address(i8*, i32, i64)
+
+attributes #0 = { nounwind uwtable "disable-tail-calls"="false" "frame-pointer"="none" "less-precise-fpmad"="false" "min-legal-vector-width"="0" "no-infs-fp-math"="false" "no-jump-tables"="false" "no-nans-fp-math"="false" "no-signed-zeros-fp-math"="false" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" "unsafe-fp-math"="false" "use-soft-float"="false" }
+attributes #1 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #2 = { argmemonly nofree nosync nounwind willreturn }
+attributes #3 = { nounwind }
+
+!llvm.dbg.cu = !{!0}
+!llvm.module.flags = !{!3, !4, !5}
+!llvm.ident = !{!6}
+
+!0 = distinct !DICompileUnit(language: DW_LANG_C99, file: !1, producer: "clang version 12.0.1 (https://github.com/llvm/llvm-project.git fed41342a82f5a3a9201819a82bf7a48313e296b)", isOptimized: true, runtimeVersion: 0, emissionKind: FullDebug, enums: !2, splitDebugInlining: false, nameTableKind: None)
+!1 = !DIFile(filename: "test-0.c", directory: "/home/al32163/hakc/HAKC/HAKC-pass/tests/General/test1")
+!2 = !{}
+!3 = !{i32 7, !"Dwarf Version", i32 4}
+!4 = !{i32 2, !"Debug Info Version", i32 3}
+!5 = !{i32 1, !"wchar_size", i32 4}
+!6 = !{!"clang version 12.0.1 (https://github.com/llvm/llvm-project.git fed41342a82f5a3a9201819a82bf7a48313e296b)"}
+!7 = distinct !DISubprogram(name: "foo", scope: !1, file: !1, line: 9, type: !8, scopeLine: 9, flags: DIFlagPrototyped | DIFlagAllCallsDescribed, spFlags: DISPFlagDefinition | DISPFlagOptimized, unit: !0, retainedNodes: !22)
+!8 = !DISubroutineType(types: !9)
+!9 = !{!10, !11}
+!10 = !DIBasicType(name: "int", size: 32, encoding: DW_ATE_signed)
+!11 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !12, size: 64)
+!12 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "data_struct2", file: !1, line: 5, size: 64, elements: !13)
+!13 = !{!14}
+!14 = !DIDerivedType(tag: DW_TAG_member, name: "f", scope: !12, file: !1, line: 6, baseType: !15, size: 64)
+!15 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !16, size: 64)
+!16 = !DISubroutineType(types: !17)
+!17 = !{!10, !18}
+!18 = !DIDerivedType(tag: DW_TAG_pointer_type, baseType: !19, size: 64)
+!19 = distinct !DICompositeType(tag: DW_TAG_structure_type, name: "data_struct", file: !1, line: 1, size: 32, elements: !20)
+!20 = !{!21}
+!21 = !DIDerivedType(tag: DW_TAG_member, name: "a", scope: !19, file: !1, line: 2, baseType: !10, size: 32)
+!22 = !{!23, !24}
+!23 = !DILocalVariable(name: "a", arg: 1, scope: !7, file: !1, line: 9, type: !11)
+!24 = !DILocalVariable(name: "b", scope: !25, file: !1, line: 11, type: !19)
+!25 = distinct !DILexicalBlock(scope: !26, file: !1, line: 10, column: 12)
+!26 = distinct !DILexicalBlock(scope: !7, file: !1, line: 10, column: 9)
+!27 = !DILocation(line: 0, scope: !7)
+!28 = !DILocation(line: 10, column: 9, scope: !26)
+!29 = !DILocation(line: 10, column: 9, scope: !7)
+!30 = !DILocation(line: 11, column: 9, scope: !25)
+!31 = !DILocation(line: 11, column: 28, scope: !25)
+!32 = !DILocation(line: 12, column: 11, scope: !25)
+!33 = !DILocation(line: 12, column: 13, scope: !25)
+!34 = !{!35, !36, i64 0}
+!35 = !{!"data_struct", !36, i64 0}
+!36 = !{!"int", !37, i64 0}
+!37 = !{!"omnipotent char", !38, i64 0}
+!38 = !{!"Simple C/C++ TBAA"}
+!39 = !DILocation(line: 13, column: 19, scope: !25)
+!40 = !{!41, !42, i64 0}
+!41 = !{!"data_struct2", !42, i64 0}
+!42 = !{!"any pointer", !37, i64 0}
+!43 = !DILocation(line: 13, column: 16, scope: !25)
+!44 = !DILocation(line: 14, column: 5, scope: !26)
+!45 = !DILocation(line: 16, column: 1, scope: !7)
+
+Changing name from foo to HAKC_ORIG_foo
+Final Transfer:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @HAKC_XFER_foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 section ".hakc.GREEN_CLIQUE.text" {
+  %2 = bitcast %struct.data_struct2* %0 to i8*, !dbg !7
+  %3 = call i32 @get_hakc_address_color(i8* %2), !dbg !7
+  %4 = bitcast %struct.data_struct2* %0 to i8*, !dbg !7
+  %5 = call i8* @hakc_transfer_to_clique(i8* %4, i64 8, i32 6, i32 241, i1 false), !dbg !7
+  %6 = bitcast i8* %5 to %struct.data_struct2*, !dbg !7
+  %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6), !dbg !7
+  %8 = bitcast %struct.data_struct2* %0 to i8*, !dbg !7
+  call void @hakc_color_address(i8* %8, i32 %3, i64 8), !dbg !7
+  ret i32 %7, !dbg !7
+}
+
+Alias: @foo = alias i32 (%struct.data_struct2*), i32 (%struct.data_struct2*)* @HAKC_XFER_foo
+
