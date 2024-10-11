@@ -1,10 +1,13 @@
 import logging
 import multiprocessing as mp
+from typing import Type
 
 import kuzu
 import polars as pl
 
-from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable
+from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable, HAKCDivision, \
+    HAKCCompartment, HAKCCompilationUnit
+from .HAKCBase import HAKCDBNode, HAKCDBRelation
 
 logger = logging.getLogger('hakc-dag')
 
@@ -53,6 +56,30 @@ class HAKCDatabase:
             logger.error(f'get_symbol_by_hash failed')
             raise e
 
+    def delete_all_compartments(self):
+        cmd = f"""
+        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
+        DETACH DELETE div;
+        """
+        self.execute_prepared_stmt(cmd)
+        cmd = f"""
+        MATCH (c:{HAKCCompartment.get_table_name()})
+        DETACH DELETE c;
+        """
+        self.execute_prepared_stmt(cmd)
+
+    def get_symbol_definition_location(self, symbol: HAKCSymbol) -> tuple[HAKCCompilationUnit, int] | None:
+        cmd = f"""
+        MATCH (sym:{HAKCSymbol.get_table_name()})-[e:{HAKCSymbol.DefinedInTable}]->(cu:{HAKCCompilationUnit.get_table_name()})
+        WHERE sym.{HAKCSymbol.get_primary_key().column_name} = $symbol_hash
+        RETURN cu.filename as filename, e.line as line;
+        """
+        response = self.execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
+        if response.has_next():
+            resp_dict = response.get_as_pl().to_dict(as_series=False)
+            return HAKCCompilationUnit(filename=resp_dict['filename'][0]), resp_dict['line'][0]
+        return None
+
     def get_dag_computation_edges(self, symbol_hash: int) -> dict[str, list[int]]:
         result = dict()
         cmd = f"""
@@ -94,8 +121,7 @@ class HAKCDatabase:
     def insert_from_dataframe(self, table_name: str, df: pl.DataFrame):
         self.conn.execute(f'COPY {table_name} FROM df')
 
-    def _get_symbols(self, where_clause: None | str = None, return_count: bool = False, limit: int = 0) -> list[
-                                                                                                               HAKCSymbol] | int:
+    def _get_symbols(self, where_clause: None | str = None, limit: int = 0) -> list[HAKCSymbol] | int:
         cmd = [f"""
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
         """]
@@ -104,23 +130,17 @@ class HAKCDatabase:
 
         cmd.append("RETURN")
         return_str = """
-            sym.Name, sym.DefiningFile, sym.DefiningLine, sym.is_function AS is_function, scope.Scope, 
-            scope.LocalScopeName, ty.DebugType, ty.LLVMType
-            """
-        if return_count:
-            cmd.append(f'COUNT(*)')
-        else:
-            cmd.append(f'{return_str}')
-            cmd.append(f"""
-                ORDER BY sym.Name, ty.DebugType, scope.Scope, scope.LocalScopeName
-            """)
+        sym.Name, sym.is_function AS is_function, scope.Scope, scope.LocalScopeName, ty.DebugType, ty.LLVMType
+        """
+        cmd.append(f'{return_str}')
+        cmd.append(f"""
+            ORDER BY sym.Name, ty.DebugType, scope.Scope, scope.LocalScopeName
+        """)
         if limit > 0:
             cmd.append(f'LIMIT {limit}')
         symbols = list()
         response = self.execute_prepared_stmt(prepared_stmt=" ".join(cmd))
         if response.has_next():
-            if return_count:
-                return int(response.get_next()[0])
             info = response.get_as_df()
             for data in info.to_dict(orient='records'):
                 symbol = self._create_symbol_from_response(**data)
@@ -200,8 +220,13 @@ class HAKCDatabase:
 
         return used_symbols
 
-    def get_symbol_count(self):
-        return self._get_symbols(return_count=True)
-
     def get_symbols(self, limit: int = 0):
-        return self._get_symbols()
+        return self._get_symbols(limit=limit)
+
+    def create_node_table(self, node_type: Type[HAKCDBNode]):
+        create_cmd = f'CREATE NODE TABLE IF NOT EXISTS {node_type.get_table_definition()}'
+        self.execute_prepared_stmt(create_cmd)
+
+    def create_relationship_table(self, edge_type: HAKCDBRelation):
+        create_cmd = f'CREATE REL TABLE IF NOT EXISTS {edge_type.get_definition()}'
+        self.execute_prepared_stmt(create_cmd)

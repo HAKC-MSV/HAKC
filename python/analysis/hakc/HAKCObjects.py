@@ -475,6 +475,58 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
         HAKCSymbol.__init__(self, **kwargs)
 
 
+class HAKCAdjustment(yaml.YAMLObject):
+    yaml_tag = "!HAKCAdjustment"
+
+    def __init__(self, path: str, division_id: int, compartment_id: int):
+        yaml.YAMLObject.__init__(self)
+        self.path = path
+        self.division = HAKCDivision(division_id, compartment_id)
+
+
+class HAKCCompartmentalizationAdjustment(yaml.YAMLObject):
+    yaml_tag = "!HAKCAdjustments"
+    kernel_entry = 'kernel'
+    compartmentalize_entry = 'compartmentalize'
+
+    def __init__(self, **kwargs):
+        yaml.YAMLObject.__init__(self)
+        self.kernel_paths = kwargs.get(HAKCCompartmentalizationAdjustment.kernel_entry, set())
+        self.adjustments = kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set())
+
+
+    def get_adjusted_compartment(self, defining_path: str, kernel_division: int,
+                                 kernel_compartment: int) -> HAKCDivision | None:
+        if defining_path is None:
+            return None
+
+        found_match = None
+        adjusted_division = None
+        for adjustment in self.adjustments:
+            match = re.match(f'({adjustment.path})', defining_path)
+            if match:
+                found_match = match
+                adjusted_division = adjustment.division
+                break
+
+        if found_match is not None:
+            match_str = found_match.group(1)
+            for kernel_path in self.kernel_paths:
+                if match_str == kernel_path:
+                    adjusted_division = HAKCDivision(kernel_division, kernel_compartment)
+                    break
+
+        return adjusted_division
+
+
+def construct_adjustment(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCAdjustment:
+    return HAKCAdjustment(**loader.construct_mapping(node, deep=True))
+
+
+def construct_adjustments(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCCompartmentalizationAdjustment:
+    return HAKCCompartmentalizationAdjustment(**loader.construct_mapping(node, deep=True))
+
+
 def construct_scope(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCScope:
     return HAKCScope(**loader.construct_mapping(node, deep=True))
 
@@ -507,4 +559,6 @@ HAKCObject_constructors = {
     HAKCIndirectSourceLink.yaml_tag: construct_indirect_call_source_link,
     HAKCType.yaml_tag: construct_type,
     HAKCScope.yaml_tag: construct_scope,
+    HAKCAdjustment.yaml_tag: construct_adjustment,
+    HAKCCompartmentalizationAdjustment.yaml_tag: construct_adjustments
 }

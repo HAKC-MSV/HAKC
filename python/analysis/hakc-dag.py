@@ -15,11 +15,10 @@ from typing import Type
 import tqdm
 import yaml
 
-from hakc.HAKCBase import QuotedString
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
-    HAKCDivision, HAKCCompilationUnit
+    HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
 
 logger = logging.getLogger('hakc-dag')
 
@@ -160,39 +159,35 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
     return compartmentalization
 
 
-def adjust_compartmentalization(compartmentalization: HAKCCompartmentalization, adjustments):
+def adjust_compartmentalization(db_dir: str, adjustment: HAKCCompartmentalizationAdjustment):
     logger.info(f'Adjusting DAG')
+    conn = HAKCDatabase(db_dir)
 
-    if 'kernel' in adjustments:
-        for symbol in compartmentalization.get_symbols():
-            defining_unit = symbol.defining_file
-            compartment_id = compartmentalization.get_compartment_id(symbol)
-            original_compartment_id = compartment_id
-            division_id = compartmentalization.get_division_id(symbol)
+    symbols = conn.get_symbols()
+    compartmentalization = HAKCCompartmentalization()
+    kernel_compartment = HAKCCompartment(HAKCCompartmentalization.kernel_compartment_id)
+    kernel_division = HAKCDivision(HAKCCompartmentalization.kernel_division, kernel_compartment.compartment_id)
+    with tqdm.tqdm(total=len(symbols)) as pbar:
+        for symbol in symbols:
+            compartmentalization.add_persistent_node(symbol, already_persisted=True)
+            tup = conn.get_symbol_definition_location(symbol)
+            if tup is not None:
+                compilation_unit, line = tup
+                adjusted_division = adjustment.get_adjusted_compartment(compilation_unit.filename,
+                                                                    kernel_division=kernel_division.division_id,
+                                                                    kernel_compartment=kernel_division.compartment_id)
+            if adjusted_division is None:
+                adjusted_division = kernel_division
 
-            change = defining_unit is None
-            if defining_unit:
-                for kernel_path in adjustments['kernel']:
-                    if kernel_path in defining_unit:
-                        compartment_id = HAKCCompartmentalization.kernel_compartment_id
-                        division_id = HAKCCompartmentalization.kernel_division
-                        change = True
+            logger.debug(f'{symbol} is moving to {adjusted_division}')
 
-                if change and 'compartmentalize' in adjustments and adjustments['compartmentalize'] is not None:
-                    for compartmentalize_path in adjustments['compartmentalize']:
-                        if compartmentalize_path in defining_unit:
-                            change = False
-                            break
-            else:
-                compartment_id = HAKCCompartmentalization.kernel_compartment_id
-                division_id = HAKCCompartmentalization.kernel_division
-
-            if change:
-                logger.debug(
-                    f'Changing Symbol {symbol} Compartment from {original_compartment_id} to {compartment_id}')
-                compartmentalization.set_division(symbol, division_id, compartment_id)
-            else:
-                logger.info(f'Not changing Symbol {symbol}')
+            compartmentalization.set_division(symbol, adjusted_division.division_id, adjusted_division.compartment_id)
+            pbar.update(1)
+    logger.info(f'Removing existing compartments')
+    conn.delete_all_compartments()
+    compartmentalization.persist_to_database(conn)
+    logger.info(f'Done adjusting compartmentalization')
+    conn.close()
 
 
 def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: HAKCCompartmentalization,
@@ -356,16 +351,13 @@ def main():
     parser.add_argument('--log-mode', default='w', dest='log_mode')
     parser.add_argument('--single-thread', dest='single_thread', action='store_true',
                         help='Run analysis without multiprocessing')
-    parser.add_argument('--output-yaml', dest='output_yaml', action='store_true',
-                        help='Output compartmentalization YAML')
-    parser.add_argument('--output-yaml-path', dest='output_yaml_path', help='Path to output DAG YAML')
     parser.add_argument('--create-dag', dest='create_dag', action='store_true', help='Create new DAG')
     parser.add_argument("--adjust", help='Adjust compartmentalization', action='store_true')
     parser.add_argument('--adjust-path', dest='adjust_path', help='Path to adjustment YAML')
     parser.add_argument('--profile', dest='profile', action='store_true')
     parser.add_argument('--core-count', help='Max cores to use for analysis', dest='core_count',
                         default=mp.cpu_count() - 1, type=int)
-    parser.add_argument('--db-dir', help='Directory to use for the kuzu database', dest='kuzu_dir',
+    parser.add_argument('--db-dir', help='Directory to use for the kuzu database', dest='db_dir',
                         default=None)
     parser.add_argument('--delete-existing-db', action='store_true',
                         help='Deletes existing database when creating a new compartmentalization', dest='delete_db',
@@ -376,10 +368,10 @@ def main():
     profile = None
     setup_logging(log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
 
-    if args.kuzu_dir is None or len(args.kuzu_dir) == 0:
-        raise RuntimeError(f'Must specify a kuzu directory')
+    if args.db_dir is None or len(args.db_dir) == 0:
+        raise RuntimeError(f'Must specify a database directory')
 
-    logger.info(f'Using kuzu database at {args.kuzu_dir}')
+    logger.info(f'Using database at {args.db_dir}')
     compartmentalization = None
 
     if args.profile:
@@ -388,7 +380,7 @@ def main():
     if args.create_dag:
         if profile:
             profile.enable()
-        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count, args.kuzu_dir,
+        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count, args.db_dir,
                                               args.delete_db)
         if profile:
             profile.disable()
@@ -397,19 +389,9 @@ def main():
     if args.adjust:
         logger.info(f'Adjusting compartmentalization based on {args.adjust_path}')
         with open(args.adjust_path, 'r') as f:
-            adjustments = yaml.safe_load(f)
-        compartmentalization = HAKCCompartmentalization.from_database(args.kuzu_dir)
-        adjust_compartmentalization(compartmentalization, adjustments)
+            adjustments = yaml.load(f, Loader=get_loader())
+        adjust_compartmentalization(args.db_dir, adjustments)
         logger.info("Done")
-
-    if args.output_yaml:
-        if compartmentalization is None:
-            raise RuntimeError(f'No compartmentalization')
-        with open(args.output_yaml_path, 'w') as f:
-            logger.info(f"Outputting YAML to {args.output_yaml_path}")
-            yaml.add_representer(QuotedString, quoted_presenter)
-            yaml.dump(compartmentalization.to_yaml(), f, width=float("inf"))
-            logger.info('Done')
 
 
 if __name__ == "__main__":

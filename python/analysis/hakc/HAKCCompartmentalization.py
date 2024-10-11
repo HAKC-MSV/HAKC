@@ -25,18 +25,14 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         super().__init__(self)
         self.division_count = division_count
 
-    @classmethod
-    def from_database(cls, db_dir: str):
-        raise NotImplementedError
-
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:
             self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, add_nodes=add_nodes,
                                      weight=dag_edge_weight)
 
-    def add_persistent_node(self, node: HAKCDBNode):
+    def add_persistent_node(self, node: HAKCDBNode, already_persisted: bool = False):
         if not self.has_node(node):
-            attrs = {HAKCCompartmentalization.persisted_attr: False}
+            attrs = {HAKCCompartmentalization.persisted_attr: already_persisted}
             self.add_node(node, **attrs)
 
     def add_persistent_edge(self, u_for_edge: HAKCDBNode, v_for_edge: HAKCDBNode, key, add_nodes: bool = True, **attr):
@@ -75,13 +71,13 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         return self._get_neighbors(symbol, HAKCFunction.IndirectCallTable)
 
     def get_compartment_node(self, compartment_id: int):
-        for compartment in nx.subgraph_view(self, filter_node=lambda n: n.is_compartment()).nodes:
+        for compartment in self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCCompartment)):
             if compartment.compartment_id == compartment_id:
                 return compartment
         return None
 
     def get_division_node(self, division_id: int, compartment_id: int):
-        for division in nx.subgraph_view(self, filter_node=lambda n: n.is_division()).nodes:
+        for division in self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCDivision)):
             if division_id == division.division_id and division.compartment_id == compartment_id:
                 return division
         return None
@@ -90,7 +86,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         division = self.get_division_node(division_id, compartment_id)
         compartment = self.get_compartment_node(compartment_id)
         if compartment is None:
-            compartment = HAKCCompartment(compartment_id)
+            compartment = HAKCCompartment(compartment_id, division_count=self.division_count)
         if division is None:
             division = HAKCDivision(division_id, compartment_id, division_count=compartment.division_count)
         self.set_symbol_division(symbol, division, compartment)
@@ -113,24 +109,27 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         else:
             return nbrs[0]
 
+    def get_filtered_nodes(self, node_filter):
+        return nx.subgraph_view(self, filter_node=node_filter).nodes
+
     def get_types(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCType)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCType))
 
     def get_functions(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCFunction)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCFunction))
 
     def get_global_variables(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCGlobalVariable)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCGlobalVariable))
 
     def get_symbols(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCFunction) or isinstance(n,
-                                                                                                      HAKCGlobalVariable)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCFunction) or isinstance(n,
+                                                                                                      HAKCGlobalVariable))
 
     def get_scopes(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCScope)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCScope))
 
     def get_compilation_units(self):
-        return nx.subgraph_view(self, filter_node=lambda n: isinstance(n, HAKCCompilationUnit)).nodes
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCCompilationUnit))
 
     def get_unpersisted_nodes(self) -> dict[str, list[HAKCDBNode]]:
         result = dict()
@@ -238,24 +237,14 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
     def create_node_table(self, conn: HAKCDatabase, node_class: Type[HAKCDBNode]):
         logger.debug(f'Creating node table {node_class.get_table_name()}')
-        create_cmd = f'CREATE NODE TABLE IF NOT EXISTS {node_class.get_table_definition()}'
-        conn.execute_prepared_stmt(create_cmd)
+        conn.create_node_table(node_class)
 
     def create_rel_table(self, conn: HAKCDatabase, database_relation: HAKCDBRelation):
         logger.debug(f'Creating relation table {database_relation}')
-        create_cmd = f'CREATE REL TABLE IF NOT EXISTS {database_relation.get_definition()}'
-        conn.execute_prepared_stmt(create_cmd)
+        conn.create_relationship_table(database_relation)
 
     def create_schema(self, conn: HAKCDatabase):
-        node_tables = [
-            HAKCType,
-            HAKCScope,
-            HAKCSymbol,
-            HAKCCompartment,
-            HAKCDivision,
-            HAKCCompilationUnit,
-            HAKCFunction
-        ]
+        node_tables = HAKCCompartmentalization.get_table_classes()
         logger.info(f'Creating tables')
         with tqdm.tqdm(total=len(node_tables)) as pbar:
             for cls in node_tables:
@@ -283,5 +272,14 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
         return None
 
-    def to_yaml(self):
-        raise NotImplementedError
+    @staticmethod
+    def get_table_classes() -> list[Type[HAKCDBNode]]:
+        return [
+            HAKCType,
+            HAKCScope,
+            HAKCSymbol,
+            HAKCCompartment,
+            HAKCDivision,
+            HAKCCompilationUnit,
+            HAKCFunction
+        ]

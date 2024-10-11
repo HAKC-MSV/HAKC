@@ -1,5 +1,14 @@
+---
+!HAKCAdjustments
 kernel:
   - "$HAKC_SOURCE_PATH$"
   - "$HAKC_BUILD_PATH$"
 compartmentalize:
-  - "$HAKC_SOURCE_PATH$/drivers/rosdemo"
+  - !HAKCAdjustment
+    path: "$HAKC_SOURCE_PATH$/drivers/rosdemo/rosdemo-consumer.c"
+    division_id: 7
+    compartment_id: 1
+  - !HAKCAdjustment
+    path: "$HAKC_SOURCE_PATH$/drivers/rosdemo/rosdemo-leaker.c"
+    division_id: 2
+    compartment_id: 2
