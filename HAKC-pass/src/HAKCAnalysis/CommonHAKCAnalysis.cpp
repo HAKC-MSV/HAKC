@@ -412,7 +412,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::NoKernelTransferFunctionsSet() {
-        const char *env = std::getenv(HAKC_NO_KERNEL_TRANSFERS.str().c_str());
+        const char *env = std::getenv(HAKC_NO_KERNEL_TRANSFERS.c_str());
         return env != nullptr;
     }
 
@@ -426,7 +426,7 @@ namespace hakc {
     }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
-        const char *name = std::getenv(HAKC_DEBUG_ENV_VAR.str().c_str());
+        const char *name = std::getenv(HAKC_DEBUG_NAME.c_str());
         if (name == nullptr) {
             name = "****UNUSED****";
         }

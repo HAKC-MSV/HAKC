@@ -18,23 +18,21 @@ namespace hakc {
             : CommonHAKCAnalysis(false),
               moduleModified(false),
               M(M),
-              SysInfo(HAKCSystemInformation(M)),
               AnalysisFunctions(),
               transformer(nullptr),
               Transfers(), NonTransferHAKCFunctions(),
               totalDataChecks(0),
               totalCodeChecks(0), totalTransfers(0) {
     }
-
     
     void HAKCModuleAnalysis::InitSystemInformation(std::string a, std::string b, std::string c) {
 
-        HAKCSystemInformation SysInfo = HAKCSystemInformation(M);
-        SysInfo.setArchYamlPath(a);
-        SysInfo.setCompartmentYamlPath(b);
-        SysInfo.setHAKCPassMode(c);
-        SysInfo.Init();
-        SysInfo.getCustomYamlPath();
+        // HAKCSystemInformation SysInfo = HAKCSystemInformation(M);
+        // SysInfo.setArchYamlPath(a);
+        // SysInfo.setCompartmentYamlPath(b);
+        // SysInfo.setHAKCPassMode(c);
+        // SysInfo.Init();
+        // SysInfo.getCustomYamlPath();
 
     }
     

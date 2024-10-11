@@ -14,6 +14,11 @@
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
 
+// extern std::string HAKC_ANALYSIS; 
+// extern std::string HAKC_DEBUG_NAME;
+// extern std::string HAKC_ARCH_CONFIG;
+// extern std::string HAKC_COMPARTMENT_PATH; 
+
 using namespace llvm;
 
 namespace hakc {
@@ -23,9 +28,8 @@ namespace hakc {
         Module &M;
         std::set<std::shared_ptr<HAKCCompartment>> compartments;
         std::set<std::shared_ptr<HAKCSymbol>> symbols;
-        std::string ArchYamlPath;
-        std::string HAKCPassMode;
-        std::string CompartmentYamlPath;
+        std::string ARCH;
+        std::string PLATFORM;
 
         bool PathContainsPath(StringRef Path1, StringRef Path2);
 
@@ -34,6 +38,7 @@ namespace hakc {
         static std::string getColorStringFromValue(ConstantInt *color);
 
     public:
+        // HAKCSystemInformation(Module &M, std::string a, std::string b, std::string c);
         HAKCSystemInformation(Module &M);
 
         std::set<std::shared_ptr<HAKCSymbol>> getSymbols(StringRef name);
@@ -50,12 +55,7 @@ namespace hakc {
         
         std::string getHAKCPassMode();
 
-        virtual void setCompartmentYamlPath(std::string s);
-
-        virtual void setArchYamlPath(std::string s);
-        
-        virtual void setHAKCPassMode(std::string s);
-
+        // std::string getCustomYamlPath(std::string str);
         std::string getCustomYamlPath();
 
         void ProcessCompartmentYaml();

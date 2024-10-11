@@ -11,6 +11,8 @@
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 
+
+// moving system information into module analysis
 hakc::HAKCTransformer::HAKCTransformer(Module &Module, HAKCModuleAnalysis *HAKCAnalysis) :
         HAKCIRBuilder(Module.getContext()),
         DebugInfoProcessor(Module),

@@ -28,7 +28,7 @@ namespace hakc {
         bool moduleModified;
         std::set<int64_t> used_compartments;
         Module &M;
-        HAKCSystemInformation SysInfo; 
+        // HAKCSystemInformation SysInfo; 
 
         explicit HAKCModuleAnalysis(Module &M);
 

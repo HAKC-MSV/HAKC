@@ -127,24 +127,10 @@ namespace hakc {
     //     return path_env_var;
     // }
 
-    void HAKCSystemInformation::setArchYamlPath(std::string s) {
-        ArchYamlPath = s;
-    }
-    void HAKCSystemInformation::setCompartmentYamlPath(std::string s) {
-        CompartmentYamlPath = s;
-    }
-    void HAKCSystemInformation::setHAKCPassMode(std::string s) {
-        HAKCPassMode = s;
-    }
-    std::string HAKCSystemInformation::getArchYamlPath() {return ArchYamlPath;}
-    std::string HAKCSystemInformation::getCompartmentYamlPath() {return CompartmentYamlPath;}
-    std::string HAKCSystemInformation::getHAKCPassMode() {return HAKCPassMode;}
-
     std::string HAKCSystemInformation::getCustomYamlPath() {
-        const char *path_env_var = ArchYamlPath.c_str();
-        const char *yaml_file = path_env_var;
+        const char *yaml_file = HAKC_ARCH_CONFIG.c_str();
         if (!sys::fs::exists(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
+            CommonHAKCAnalysis::getWriter() << "Could not find YAML file aoeu" << yaml_file << "\n";
             throw std::exception();
         } else if (!sys::fs::is_regular_file(yaml_file)) {
             CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
@@ -168,36 +154,38 @@ namespace hakc {
             }
         }
 
-        return path_env_var;
+        return yaml_file;
     }
 
     void HAKCSystemInformation::ProcessArchYaml() {
-        // const char *yaml_file = HAKCPassMode.c_str();
-        // CommonHAKCAnalysis::getWriter() << "Found Custom HAKC_ARCH_CONFIG config path: " << HAKCPassMode.c_str() << " \n";
-        // if (!sys::fs::exists(yaml_file)) {
-        //     CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
-        //     throw std::exception();
-        // } else if (!sys::fs::is_regular_file(yaml_file)) {
-        //     CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
-        //     throw std::exception();
-        // }
+        const char *yaml_file = HAKC_ARCH_CONFIG.c_str();
+        if (!sys::fs::exists(yaml_file)) {
+            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
+            throw std::exception();
+        } else if (!sys::fs::is_regular_file(yaml_file)) {
+            CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
+            throw std::exception();
+        }
 
-        // YamlHAKCInformation yi;
-        // ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
-        // yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
+        YamlHAKCInformation yi;
+        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
+        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
 
-        // assert(!yin.error() && "Error parsing yaml file");
-        // // yaml is actually parsed here, for some reason 
-        // yin >> yi;
+        assert(!yin.error() && "Error parsing yaml file");
+        // yaml is actually parsed here, for some reason 
+        yin >> yi;
 
-        // CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.ARCH << " found\n";
-        // CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.PLATFORM << " found\n";
+        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.ARCH << " found\n";
+        ARCH = yi.SYSTEMINFO.ARCH;
+        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.PLATFORM << " found\n";
+        PLATFORM = yi.SYSTEMINFO.PLATFORM; 
         // for (YamlMethodsInformation &method: yi.SYSTEMINFO.METHODS) {
         //     CommonHAKCAnalysis::getWriter() << method.NAME << ":\n";
         //     for (std::string &function: method.FUNCTIONS) {
         //         CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
         //     }
         // }
+
     }
 
     void HAKCSystemInformation::ProcessCompartmentYaml() {
@@ -259,17 +247,18 @@ namespace hakc {
     void HAKCSystemInformation::Init() {
         // add error checking 
         // process Arch Yaml
-        ProcessArchYaml();
+        // ProcessArchYaml();
 
         // process Compartment Yaml
-        ProcessCompartmentYaml();
+        // ProcessCompartmentYaml();
 
         // process HAKC Pass 
+
     }
     
+    // HAKCSystemInformation::HAKCSystemInformation(Module &M, std::string a, std::string b, std::string c) : M(M), ArchYamlPath(a), CompartmentYamlPath(b), HAKCPassMode(c) {
     HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
-        
-        
+        Init(); 
     }
 
     StringRef GetModifiedName(StringRef Path) {

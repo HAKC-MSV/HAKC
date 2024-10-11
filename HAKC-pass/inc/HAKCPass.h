@@ -17,5 +17,4 @@
 #include "llvm/IR/Constants.h"
 
 using namespace llvm;
-
 #endif//PMC_HAKCPASS_H

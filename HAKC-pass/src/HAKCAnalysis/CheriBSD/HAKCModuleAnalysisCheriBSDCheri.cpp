@@ -166,7 +166,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysisCheriBSDCheri::HybridModeEnabled() {
-        const auto *env_var = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
+        const auto *env_var = std::getenv(HAKC_COMPARTMENT_PATH.c_str());
         if (env_var) {
             return std::strcmp(env_var, "1") == 0;
         }

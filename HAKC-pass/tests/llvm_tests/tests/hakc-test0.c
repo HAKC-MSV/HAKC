@@ -1,4 +1,4 @@
-// RUN: env HAKC_ANALYSIS=compartmentalize HAKC_COMPARTMENT_PATH=$(dirname %s)/$(basename %s .c).yml $TEST_CLANG -fexperimental-new-pass-manager -fpass-plugin=$TEST_PASS -g -S -emit-llvm -O2 -o %t.ll -c %s
+// RUN: $TEST_CLANG -fexperimental-new-pass-manager -Xclang -load -Xclang $TEST_PASS -fpass-plugin=$TEST_PASS -mllvm -ArchYamlPath=/home/al32163/hakc/HAKC/HAKC-pass/tests/llvm_tests/x86config.yaml -mllvm -CompartmentYamlPath=$(dirname %s)/$(basename %s .c).yml -mllvm -HAKCPassMode=compartmentalize  -g -S -emit-llvm -O2 -o %t.ll -c %s
 // RUN: cat %t.ll | FileCheck %s || exit 1
 
 struct data_struct {
