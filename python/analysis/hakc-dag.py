@@ -127,7 +127,7 @@ def add_symbols(compartmentalization: HAKCCompartmentalization, compilation_unit
         compartmentalization.add_symbol(glob, cu)
 
 
-def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentalization:
+def create_dag_single_thread(files: set[str], conn: HAKCDatabase) -> HAKCCompartmentalization:
     compartmentalization = HAKCCompartmentalization()
     with tqdm.tqdm(total=len(files)) as pbar:
         for filename in sorted(files):
@@ -137,7 +137,6 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
             add_symbols(compartmentalization, compilation_unit, functions, global_variables)
             pbar.update(1)
 
-    conn = HAKCDatabase(db_dir)
     compartmentalization.persist_to_database(conn, create_schema=True)
     dag_edges = dict()
     dag_edges_added = 0
@@ -155,7 +154,6 @@ def create_dag_single_thread(files: set[str], db_dir: str) -> HAKCCompartmentali
     conn.persist_dag_edges(dag_edges)
     logger.info(f'Adding compartmentalization')
     add_default_compartmentalization(conn, compartmentalization)
-    conn.close()
     return compartmentalization
 
 
@@ -165,21 +163,19 @@ def adjust_compartmentalization(db_dir: str, adjustment: HAKCCompartmentalizatio
 
     symbols = conn.get_symbols()
     compartmentalization = HAKCCompartmentalization()
-    kernel_compartment = HAKCCompartment(HAKCCompartmentalization.kernel_compartment_id)
-    kernel_division = HAKCDivision(HAKCCompartmentalization.kernel_division, kernel_compartment.compartment_id)
+    kernel_division = HAKCDivision(HAKCCompartmentalization.kernel_division,
+                                   HAKCCompartmentalization.kernel_compartment_id)
     with tqdm.tqdm(total=len(symbols)) as pbar:
         for symbol in symbols:
             compartmentalization.add_persistent_node(symbol, already_persisted=True)
-            tup = conn.get_symbol_definition_location(symbol)
-            if tup is not None:
-                compilation_unit, line = tup
-                adjusted_division = adjustment.get_adjusted_compartment(compilation_unit.filename,
-                                                                    kernel_division=kernel_division.division_id,
-                                                                    kernel_compartment=kernel_division.compartment_id)
+            adjusted_division = adjustment.get_adjusted_compartment(symbol.defining_file)
             if adjusted_division is None:
                 adjusted_division = kernel_division
 
-            logger.debug(f'{symbol} is moving to {adjusted_division}')
+            if adjusted_division != kernel_division:
+                logger.info(f'{symbol} is moving to {adjusted_division}')
+            else:
+                logger.debug(f'{symbol} is moving to {adjusted_division}')
 
             compartmentalization.set_division(symbol, adjusted_division.division_id, adjusted_division.compartment_id)
             pbar.update(1)
@@ -187,6 +183,11 @@ def adjust_compartmentalization(db_dir: str, adjustment: HAKCCompartmentalizatio
     conn.delete_all_compartments()
     compartmentalization.persist_to_database(conn)
     logger.info(f'Done adjusting compartmentalization')
+    divisions = conn.get_all_divisions()
+    compartments = set()
+    for division in divisions:
+        compartments.add(division.compartment_id)
+    logger.info(f'Compartmentalization now has {len(divisions)} divisions across {len(compartments)} compartments')
     conn.close()
 
 
@@ -206,7 +207,7 @@ def add_default_compartmentalization(conn: HAKCDatabase, compartmentalization: H
     compartmentalization.persist_to_database(conn, create_schema=create_schema)
 
 
-def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAKCCompartmentalization:
+def create_dag_multithread(files: set[str], core_count: int, conn: HAKCDatabase) -> HAKCCompartmentalization:
     logger.info(f'Starting multiprocess DAG creation using {core_count} cores')
     with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
         logger.info(f'Submitting {len(files)} parsing yaml tasks')
@@ -216,7 +217,6 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
                 futures_to_files[executor.submit(parse_yaml, file)] = file
                 pbar.update(1)
         compartmentalization = HAKCCompartmentalization()
-        conn = HAKCDatabase(db_dir, max_num_threads=core_count)
         compartmentalization.create_schema(conn)
         logger.info(f'Reading yaml parsing results')
         with tqdm.tqdm(total=len(files)) as pbar:
@@ -235,7 +235,7 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
     logger.info(f'Total symbols {len(conn.get_symbols())}')
     conn.close()
     with concurrent.futures.ProcessPoolExecutor(max_workers=core_count, initializer=init_mp_database,
-                                                initargs=(db_dir,)) as executor:
+                                                initargs=(conn.db_dir,)) as executor:
         dag_edges_added = 0
         symbol_hashes = compartmentalization.get_symbol_hashes()
         batch_size = 100
@@ -277,7 +277,6 @@ def create_dag_multithread(files: set[str], core_count: int, db_dir: str) -> HAK
     conn.persist_dag_edges(dag_edges)
     logger.info(f'Adding compartmentalization')
     add_default_compartmentalization(conn, compartmentalization)
-    conn.close()
 
     return compartmentalization
 
@@ -298,13 +297,14 @@ def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_
             logger.info(f'Removing existing database at {db_dir}')
             shutil.rmtree(db_dir)
 
+    conn = HAKCDatabase(db_dir, max_num_threads=core_count)
     logger.info(f'Starting DAG construction from {len(filenames)} files')
     start = time.time()
     if single_thread:
-        compartmentalization = create_dag_single_thread(filenames, db_dir)
+        compartmentalization = create_dag_single_thread(filenames, conn)
     else:
         core_count = max(1, core_count)
-        compartmentalization = create_dag_multithread(filenames, core_count, db_dir)
+        compartmentalization = create_dag_multithread(filenames, core_count, conn)
 
     end = time.time()
     logger.info(f'Finished creating DAG.')
@@ -312,6 +312,7 @@ def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_
     logger.info(f'    Type Count: {len(compartmentalization.get_types())}')
     logger.info(f'  Global Count: {len(compartmentalization.get_global_variables())}')
     logger.info(f'Function Count: {len(compartmentalization.get_functions())}')
+    conn.close()
     return compartmentalization
 
 
@@ -370,6 +371,9 @@ def main():
 
     if args.db_dir is None or len(args.db_dir) == 0:
         raise RuntimeError(f'Must specify a database directory')
+
+    if args.single_thread:
+        args.core_count = 1
 
     logger.info(f'Using database at {args.db_dir}')
     compartmentalization = None

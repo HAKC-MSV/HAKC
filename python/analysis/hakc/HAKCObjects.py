@@ -486,35 +486,25 @@ class HAKCAdjustment(yaml.YAMLObject):
 
 class HAKCCompartmentalizationAdjustment(yaml.YAMLObject):
     yaml_tag = "!HAKCAdjustments"
-    kernel_entry = 'kernel'
     compartmentalize_entry = 'compartmentalize'
 
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
-        self.kernel_paths = kwargs.get(HAKCCompartmentalizationAdjustment.kernel_entry, set())
-        self.adjustments = kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set())
+        self.adjustment_regexes = dict()
+        for adjustment in sorted(kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set()), key=lambda e: e.path):
+            escaped_path = re.escape(adjustment.path)
+            self.adjustment_regexes[re.compile(escaped_path)] = adjustment
 
 
-    def get_adjusted_compartment(self, defining_path: str, kernel_division: int,
-                                 kernel_compartment: int) -> HAKCDivision | None:
+    def get_adjusted_compartment(self, defining_path: str) -> HAKCDivision | None:
         if defining_path is None:
             return None
 
-        found_match = None
         adjusted_division = None
-        for adjustment in self.adjustments:
-            match = re.match(f'({adjustment.path})', defining_path)
+        for adjustment_regex, adjustment in self.adjustment_regexes.items():
+            match = adjustment_regex.search(defining_path)
             if match:
-                found_match = match
                 adjusted_division = adjustment.division
-                break
-
-        if found_match is not None:
-            match_str = found_match.group(1)
-            for kernel_path in self.kernel_paths:
-                if match_str == kernel_path:
-                    adjusted_division = HAKCDivision(kernel_division, kernel_compartment)
-                    break
 
         return adjusted_division
 

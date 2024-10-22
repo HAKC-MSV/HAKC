@@ -47,14 +47,18 @@ class HAKCDatabase:
         })
         self.insert_from_dataframe(HAKCSymbol.DagEdgeTable, df)
 
+    def get_all_symbol_hashes(self) -> list[int]:
+        cmd = f"""
+        MATCH (sym:{HAKCSymbol.get_table_name()})
+        RETURN sym.{HAKCSymbol.get_primary_key().column_name} AS symbol_hash;
+        """
+        response = self.execute_prepared_stmt(cmd)
+        return response.get_as_pl()['symbol_hash'].to_list()
+
     def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
-        try:
-            result = self._get_symbols(
-                where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
-            return result
-        except Exception as e:
-            logger.error(f'get_symbol_by_hash failed')
-            raise e
+        result = self._get_symbols(
+            where_clause=f'WHERE sym.symbol_hash in [{", ".join([str(sh) for sh in symbol_hashes])}]')
+        return result
 
     def delete_all_compartments(self):
         cmd = f"""
@@ -67,6 +71,19 @@ class HAKCDatabase:
         DETACH DELETE c;
         """
         self.execute_prepared_stmt(cmd)
+
+    def get_all_divisions(self):
+        cmd = f"""
+        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
+        RETURN div.DivisionID AS division_id, c.CompartmentID AS compartment_id
+        """
+        divisions = set()
+        response = self.execute_prepared_stmt(cmd)
+        if response.has_next():
+            info = response.get_as_df()
+            for data in info.to_dict(orient='records'):
+                divisions.add(HAKCDivision(**data))
+        return divisions
 
     def get_symbol_definition_location(self, symbol: HAKCSymbol) -> tuple[HAKCCompilationUnit, int] | None:
         cmd = f"""
@@ -123,14 +140,15 @@ class HAKCDatabase:
 
     def _get_symbols(self, where_clause: None | str = None, limit: int = 0) -> list[HAKCSymbol] | int:
         cmd = [f"""
-        MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()})
+        OPTIONAL MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.IsTypeTable}]->(ty:{HAKCType.get_table_name()}),
+        (sym)-[def:{HAKCSymbol.DefinedInTable}]->(cu:{HAKCCompilationUnit.get_table_name()})
         """]
         if where_clause is not None:
             cmd.append(where_clause)
 
         cmd.append("RETURN")
         return_str = """
-        sym.Name, sym.is_function AS is_function, scope.Scope, scope.LocalScopeName, ty.DebugType, ty.LLVMType
+        sym.Name, sym.is_function AS is_function, scope.Scope, scope.LocalScopeName, ty.DebugType, ty.LLVMType, cu.filename AS DefiningFile, def.line AS DefiningLine
         """
         cmd.append(f'{return_str}')
         cmd.append(f"""
@@ -149,7 +167,7 @@ class HAKCDatabase:
         return symbols
 
     def _create_type_from_response(self, type_prefix: str = "ty.", **kwargs) -> HAKCType:
-        type_data = {key.removeprefix(type_prefix): val for key, val in kwargs.items() if key.startswith(type_prefix)}
+        type_data = {key.removeprefix(type_prefix): val for key, val in kwargs.items()}
         if len(type_data) == 0:
             raise RuntimeError('No type data provided')
         ty = HAKCType(**type_data)
@@ -158,13 +176,11 @@ class HAKCDatabase:
     def _create_symbol_from_response(self, is_function: bool, type_prefix: str = "ty.", scope_prefix: str = "scope.",
                                      symbol_prefix: str = "sym.", **kwargs) -> HAKCSymbol:
         ty = self._create_type_from_response(type_prefix=type_prefix, **kwargs)
-        scope_data = {key.removeprefix(scope_prefix): val for key, val in kwargs.items() if
-                      key.startswith(scope_prefix)}
+        scope_data = {key.removeprefix(scope_prefix): val for key, val in kwargs.items()}
         if len(scope_data) == 0:
             raise RuntimeError('No scope data provided')
         scope = HAKCScope(**scope_data)
-        symbol_data = {key.removeprefix(symbol_prefix): val for key, val in kwargs.items() if
-                       key.startswith(symbol_prefix)}
+        symbol_data = {key.removeprefix(symbol_prefix): val for key, val in kwargs.items()}
         if len(symbol_data) == 0:
             raise RuntimeError('No symbol data provided')
         symbol_data['Type'] = ty
