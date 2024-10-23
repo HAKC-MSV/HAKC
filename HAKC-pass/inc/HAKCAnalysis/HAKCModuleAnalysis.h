@@ -28,33 +28,40 @@ namespace hakc {
         bool moduleModified;
         std::set<int64_t> used_compartments;
         Module &M;
-        // HAKCSystemInformation SysInfo; 
+        bool MajorityColorSet;
+        sym_color_t MajorityColor;
 
-        explicit HAKCModuleAnalysis(Module &M);
+        ConstantInt *getSymbolColor(GlobalValue *GV);
+
+        ConstantInt *GetColorValue(sym_color_t Color);
+
+        GlobalValue *ExtractGlobalFromKernelParam(GlobalVariable *GV);
+
+        void emitModParamGetCtx(GlobalValue *kernparam);
 
         bool functionEscapes(Function *F);
 
         void registerUsedCompartment(int64_t compartment);
 
-        virtual std::string getGlobalHAKCSectionName(GlobalVariable *GV);
+        std::string getGlobalHAKCSectionName(GlobalVariable *GV);
 
-        virtual void updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map);
+        void updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map);
 
-        virtual void CompartmentalizeFunction(Function *F);
+        void CompartmentalizeFunction(Function *F);
 
-        virtual HAKCFunctionAnalysis *GetFunctionTransformation(Function *F) = 0;
+        HAKCFunctionAnalysis *GetFunctionTransformation(Function *F);
 
-        virtual bool isModuleCompartmentalized();
+        bool isModuleCompartmentalized();
 
-        virtual void GetAnalysisFunctions();
+        void GetAnalysisFunctions();
 
-        virtual std::shared_ptr<HAKCTransformer> CreateTransformer() = 0;
+        std::shared_ptr<HAKCTransformer> CreateTransformer();
 
-        virtual void compartmentalizeModule();
+        void compartmentalizeModule();
 
-        virtual void removeSignatures();
+        void removeSignatures();
 
-        virtual void addTransferFunctions();
+        void addTransferFunctions();
 
         void RegisterCustomTransfer(hakc_custom_transfer_def_t CustomTransfer);
 
@@ -62,7 +69,7 @@ namespace hakc {
 
         void RegisterNonTransferHAKCFunction(hakc_function_def_t HAKCFunction);
 
-        virtual bool FunctionNeedsAnalysis(Function *F);
+        bool FunctionNeedsAnalysis(Function *F);
 
         std::set<Function *> AnalysisFunctions;
 
@@ -85,64 +92,87 @@ namespace hakc {
     public:
         unsigned totalDataChecks, totalCodeChecks, totalTransfers;
         std::map<Function *, std::set<CallInst *>> HAKCFunctions;
+        HAKCSystemInformation SysInfo;
 
-        virtual ~HAKCModuleAnalysis() = default;
+        explicit HAKCModuleAnalysis(Module &M);
 
-        virtual bool isModuleTransformed();;
+        bool functionIsTransferCandidate(Function *F);
 
-        virtual void performTransformations();
+        ConstantInt *getFunctionColor(Function *F);
+
+        ConstantInt *getGlobalColor(GlobalVariable *GV);
+
+        std::set<StringRef> GetIgnoredGlobals();
+
+        std::map<StringRef, std::tuple<void*, std::vector<int>>> GetKernelAllocationSizeMap();
+
+        bool valueIsReadonlyPtr(Value *value);
+
+        std::set<StringRef> GetIgnoredTypes();
+
+        std::set<StringRef> GetNoTransferFunctions();
+
+        sym_color_t GetMajoritySymbolColor();
+
+        static std::string getColorStringFromValue(ConstantInt *color);
+
+        static sym_color_t getColorFromValue(ConstantInt *Color);
+
+        ~HAKCModuleAnalysis() = default;
+
+        bool isModuleTransformed();;
+
+        void performTransformations();
 
         bool functionInAnalysisSet(Function *F);
 
-        virtual void addCompartmentMetadata();
+        void addCompartmentMetadata();
 
-        HAKCTransformer &getTransformer() override;
+        HAKCTransformer &getTransformer();
 
-        virtual std::set<StringRef> GetHAKCSourcePaths() = 0;
+        std::set<StringRef> GetHAKCSourcePaths();
 
-        virtual std::set<StringRef> GetSeparateNamespacePaths() = 0;
+        std::set<StringRef> GetSeparateNamespacePaths();
 
-        std::set<StringRef> GetSafeTransitionFunctions() override;
+        std::set<StringRef> GetSafeTransitionFunctions();
 
-        virtual std::vector<StringRef> GetSafeTransitionFunctions_Arch() = 0;
+        std::set<StringRef> GetSafeTransitionFunctions_Arch();
 
-        virtual bool TransferFunctionShouldBeCreated(Function *F);
+        bool TransferFunctionShouldBeCreated(Function *F);
 
-        virtual bool AliasShouldBeCreated(Function *F);
+        bool AliasShouldBeCreated(Function *F);
 
-        virtual bool FunctionDefinedInAssembly(Function *F);
+        bool FunctionDefinedInAssembly(Function *F);
 
-        std::set<hakc_function_def_t> GetHAKCFunctions() override;
+        std::set<hakc_function_def_t> GetHAKCFunctions();
 
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() override;
+        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
-        virtual std::set<hakc_custom_transfer_def_t> GetHAKCCustomTransferFunctions();
+        std::set<hakc_custom_transfer_def_t> GetHAKCCustomTransferFunctions();
+        
+        void InitHAKCFunctions();
 
-        virtual void InitSystemInformation(std::string a, std::string b, std::string c);
+        void InitAnalysis();
 
-        virtual void InitAnalysis();
+        StringRef HACKCodeAuthenticationName();
 
-        virtual void InitHAKCFunctions() = 0;
+        StringRef HAKCDataAuthenticationName();
 
-        virtual StringRef HACKCodeAuthenticationName();
+        StringRef HAKCCompartmentTransferName();
 
-        virtual StringRef HAKCDataAuthenticationName();
+        StringRef HAKCPerCPUCompartmentTransferName();
 
-        virtual StringRef HAKCCompartmentTransferName();
+        StringRef HAKCEntryTokenName();
 
-        virtual StringRef HAKCPerCPUCompartmentTransferName();
+        Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy);
 
-        virtual StringRef HAKCEntryTokenName();
+        FunctionCallee GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy);
 
-        virtual Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy);
+        StructType *GetKernelParamType();
 
-        virtual FunctionCallee GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy);
+        void generateModuleParamGetCtxFunction(GlobalVariable *GV);
 
-        virtual StructType *GetKernelParamType() = 0;
-
-        virtual void generateModuleParamGetCtxFunction(GlobalVariable *GV) = 0;
-
-        virtual void transferModuleParams() = 0;
+        void transferModuleParams();
     };
 
 } // hakc

@@ -22,24 +22,21 @@ namespace hakc {
         HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
                            ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
 
-        virtual ~HAKCCustomTransfer() = default;
+        ~HAKCCustomTransfer() = default;
 
         Type *GetType() const;
 
         Function *GetFunction() const;
 
-        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
-                                            Value *HAKCPointer, Value *Size, bool IsData) = 0;
+        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment, Value *HAKCPointer, Value *Size, bool IsData);
 
-        virtual Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
-                                            Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy) = 0;
+        Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment, Value *HAKCPointer, Value *Size, Type *srcTy, Type *dstTy);
 
     protected:
         Type *TargetType;
         Function *CustomTransfer;
 
-        void FindTargetTypeAndTransfer(Module &M, StringRef TransferFunctionName, StringRef TypeName,
-                                       Type *ReturnTy, ArrayRef<Type *> ArgTys);
+        void FindTargetTypeAndTransfer(Module &M, StringRef TransferFunctionName, StringRef TypeName, Type *ReturnTy, ArrayRef<Type *> ArgTys);
     };
 
     typedef std::shared_ptr<HAKCCustomTransfer> hakc_custom_transfer_def_t;

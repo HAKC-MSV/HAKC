@@ -14,22 +14,16 @@
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
 
-// extern std::string HAKC_ANALYSIS; 
-// extern std::string HAKC_DEBUG_NAME;
-// extern std::string HAKC_ARCH_CONFIG;
-// extern std::string HAKC_COMPARTMENT_PATH; 
-
 using namespace llvm;
 
 namespace hakc {
-
     class HAKCSystemInformation {
     protected:
         Module &M;
         std::set<std::shared_ptr<HAKCCompartment>> compartments;
         std::set<std::shared_ptr<HAKCSymbol>> symbols;
-        std::string ARCH;
-        std::string PLATFORM;
+        StringRef ARCH;
+        StringRef PLATFORM;
 
         bool PathContainsPath(StringRef Path1, StringRef Path2);
 
@@ -38,7 +32,9 @@ namespace hakc {
         static std::string getColorStringFromValue(ConstantInt *color);
 
     public:
-        // HAKCSystemInformation(Module &M, std::string a, std::string b, std::string c);
+        std::map<StringRef, std::set<StringRef>> METHODS; 
+        std::map<StringRef, std::tuple<void*, std::vector<int> > > KernelAllocationSizeMap;
+
         HAKCSystemInformation(Module &M);
 
         std::set<std::shared_ptr<HAKCSymbol>> getSymbols(StringRef name);
@@ -67,6 +63,8 @@ namespace hakc {
         hakc_access_token_t getEntryToken(hakc_compartment_id_t CompartmentID);
 
         bool ContainsCompartmentalizedSymbols(Module &M);
+
+        void* GetAllocationSizeMapFromString(std::string input);
 
     };
 

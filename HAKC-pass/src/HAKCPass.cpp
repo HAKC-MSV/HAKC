@@ -9,19 +9,6 @@
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCSystemInformation.h"
 
-// #if defined(HAKC_CHERIBSD_MORELLO)
-// #include "HAKCAnalysis/CheriBSD/HAKCModuleAnalysisCheriBSDCheri.h"
-// #elif defined(HAKC_LINUX_X86)
-// #if defined(HAKC_LINUX_X86)
-#include "HAKCAnalysis/Linux/X86/HAKCModuleAnalysisLinuxX86.h"
-// #elif defined(HAKC_LINUX_ARMV8)
-// #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV8.h"
-// #elif defined(HAKC_LINUX_ARMV9)
-// #include "HAKCAnalysis/Linux/Arm/HAKCModuleAnalysisLinuxArmV9.h"
-// #else
-// #error "HAKC Architecture Unspecified"
-// #endif
-
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/VirtualFileSystem.h"
 #include "llvm/Support/raw_ostream.h"
@@ -40,30 +27,18 @@ std::string HAKC_COMPARTMENT_PATH;
 std::string HAKC_NO_KERNEL_TRANSFERS; 
 std::string HAKC_MORELLO_HYBRID; 
 
-static cl::opt<std::string, true> arg0("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"), cl::location(HAKC_ANALYSIS), cl::Required);
-static cl::opt<std::string, true> arg1("HAKC_DEBUG_NAME", cl::desc("Enable debug output for a specific function"), cl::location(HAKC_DEBUG_NAME));
-static cl::opt<std::string, true> arg2("HAKC_DAG_ANALYSIS_ROOT", cl::desc(""), cl::location(HAKC_DAG_ANALYSIS_ROOT));
-static cl::opt<std::string, true> arg3("HAKC_ARCH_CONFIG", cl::desc("Path to HAKC arch yaml"), cl::location(HAKC_ARCH_CONFIG), cl::Required);
-static cl::opt<std::string, true> arg4("HAKC_COMPARTMENT_PATH", cl::desc("Path to HAKC compartment yaml"), cl::location(HAKC_COMPARTMENT_PATH), cl::Required);
-static cl::opt<std::string, true> arg5("HAKC_NO_KERNEL_TRANSFERS", cl::desc(""), cl::location(HAKC_NO_KERNEL_TRANSFERS));
-static cl::opt<std::string, true> arg6("HAKC_MORELLO_HYBRID", cl::desc(""), cl::location(HAKC_MORELLO_HYBRID));
+static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"), cl::location(HAKC_ANALYSIS), cl::Required);
+static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME", cl::desc("Enable debug output for a specific function"), cl::location(HAKC_DEBUG_NAME));
+static cl::opt<std::string, true> HAKC_DAG_ANALYSIS_ROOT_CL("HAKC_DAG_ANALYSIS_ROOT", cl::desc(""), cl::location(HAKC_DAG_ANALYSIS_ROOT));
+static cl::opt<std::string, true> HAKC_ARCH_CONFIG_CL("HAKC_ARCH_CONFIG", cl::desc("Path to HAKC arch yaml"), cl::location(HAKC_ARCH_CONFIG), cl::Required);
+static cl::opt<std::string, true> HAKC_COMPARTMENT_PATH_CL("HAKC_COMPARTMENT_PATH", cl::desc("Path to HAKC compartment yaml"), cl::location(HAKC_COMPARTMENT_PATH), cl::Required);
+static cl::opt<std::string, true> HAKC_NO_KERNEL_TRANSFERS_CL("HAKC_NO_KERNEL_TRANSFERS", cl::desc(""), cl::location(HAKC_NO_KERNEL_TRANSFERS));
+static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", cl::desc(""), cl::location(HAKC_MORELLO_HYBRID));
 
 namespace hakc {
-    // HAKCModuleAnalysis *GetModuleAnalysis(Module &M, std::vector<cl::opt<std::string>> *args) {
     HAKCModuleAnalysis *GetModuleAnalysis(Module &M) {
         HAKCModuleAnalysis *ModuleAnalysis;
-// #if defined(HAKC_CHERIBSD_MORELLO)
-//         ModuleAnalysis = new HAKCModuleAnalysisCheriBSDCheri(M);
-// #elif defined(HAKC_LINUX_X86)
-        ModuleAnalysis = new HAKCModuleAnalysisLinuxX86(M);
-// #elif defined(HAKC_LINUX_ARMV8)
-//         ModuleAnalysis = new HAKCModuleAnalysisLinuxArmV8(M);
-// #elif defined(HAKC_LINUX_ARMV9)
-//         ModuleAnalysis = new HAKCModuleAnalysisLinuxArmV9(M);
-// #else
-// #error "HAKC Architecture Unspecified"
-// #endif
-        // TODO: add error checking 
+        ModuleAnalysis = new HAKCModuleAnalysis(M);
         ModuleAnalysis->InitAnalysis();
         return ModuleAnalysis;
     }
@@ -78,7 +53,7 @@ namespace hakc {
         SmallString<512> Path = P;
         auto *Transformation = GetModuleAnalysis(M);
         HAKCTypeIdentifier typeIdentifier(M, Transformation);
-        const char *root = std::getenv(HAKC_DAG_ANALYSIS_ROOT.c_str());
+        const char *root = HAKC_DAG_ANALYSIS_ROOT.c_str();
         if (!root || std::strlen(root) == 0) {
             CommonHAKCAnalysis::getWriter() << HAKC_DAG_ANALYSIS_ROOT << " is not set!\n";
             throw std::exception();
@@ -111,15 +86,13 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
             throw std::exception();
         }
-        delete Transformation;
+        // delete Transformation;
         return false;
     }
 
     bool runCustom(Module &M){
         CommonHAKCAnalysis::getWriter() << "running my custom code with HAKC_ANALYSIS of " << HAKC_ANALYSIS << "! \n";
         CommonHAKCAnalysis::getWriter() << "YAML: " << HAKC_ARCH_CONFIG << "! \n";
-        // parse system information 
-        // HAKCSystemInformation SysInfo = HAKCSystemInformation(HAKC_ARCH_CONFIG, CompartmentYamlPath, HAKC_ANALYSIS);
         HAKCSystemInformation SysInfo = HAKCSystemInformation(M);
         SysInfo.getCustomYamlPath();
         // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
@@ -160,7 +133,7 @@ namespace hakc {
 
         bool moduleTransformed = Transformation->isModuleTransformed();
 
-        delete Transformation;
+        // delete Transformation;
         return moduleTransformed;
     }
 
@@ -175,7 +148,6 @@ namespace hakc {
         PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
             for (const auto &opt: available_options) {
                 if (opt.first == HAKC_ANALYSIS) {
-                    // return opt.second(M, args) ? PreservedAnalyses::none() : PreservedAnalyses::all();
                     return opt.second(M) ? PreservedAnalyses::none() : PreservedAnalyses::all();
                 }
             }
@@ -186,7 +158,6 @@ namespace hakc {
     };
 }// namespace hakc
 
-// env HAKC_ANALYSIS=custom HAKC_ARCH_CONFIG=x86config.yaml HAKC_COMPARTMENT_PATH=tests/hakc-test0.yml $TEST_CLANG -fexperimental-new-pass-manager -Xclang -load -Xclang $TEST_PASS -fpass-plugin=$TEST_PASS -mllvm -mypass_option=abc  -g -S -emit-llvm -O2 -o tests/hakc-test0.c.ll -c tests/hakc-test0.c
 llvm::PassPluginLibraryInfo getHAKCPluginInfo() {
     return {LLVM_PLUGIN_API_VERSION, "HAKCPass", LLVM_VERSION_STRING,
             [](PassBuilder &PB) {

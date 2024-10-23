@@ -25,13 +25,13 @@ namespace hakc {
 
         StringRef getDefinitionFile();
 
-        virtual std::string getTypeStringRepresentation() = 0;
+        std::string getTypeStringRepresentation() ;
 
-        virtual std::string getYaml();
+        std::string getYaml();
 
-        virtual std::string getName() = 0;
+        std::string getName() ;
 
-        virtual std::string getHash();
+        std::string getHash();
 
     protected:
         HAKCTypeIdentifier &identifier;

@@ -7,6 +7,7 @@
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 
 #include <memory>
 
@@ -118,43 +119,13 @@ namespace hakc {
         return M;
     }
 
-    // std::string HAKCSystemInformation::getCompartmentYamlPath() {
-    //     const char *path_env_var = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
-    //     if (path_env_var == nullptr) {
-    //         CommonHAKCAnalysis::getWriter() << COMPARTMENT_PATH_ENV_VAR << " is not set!\n";
-    //         throw std::exception();
-    //     }
-    //     return path_env_var;
-    // }
-
-    std::string HAKCSystemInformation::getCustomYamlPath() {
-        const char *yaml_file = HAKC_ARCH_CONFIG.c_str();
-        if (!sys::fs::exists(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file aoeu" << yaml_file << "\n";
-            throw std::exception();
-        } else if (!sys::fs::is_regular_file(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
+    std::string HAKCSystemInformation::getCompartmentYamlPath() {
+        const char *path_env_var = HAKC_COMPARTMENT_PATH.c_str();
+        if (path_env_var == nullptr) {
+            CommonHAKCAnalysis::getWriter() << HAKC_COMPARTMENT_PATH << " is not set!\n";
             throw std::exception();
         }
-
-        YamlHAKCInformation yi;
-        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
-        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
-
-        assert(!yin.error() && "Error parsing yaml file");
-        // yaml is actually parsed here, for some reason 
-        yin >> yi;
-
-        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.ARCH << " found\n";
-        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.PLATFORM << " found\n";
-        for (YamlMethodsInformation &method: yi.SYSTEMINFO.METHODS) {
-            CommonHAKCAnalysis::getWriter() << method.NAME << ":\n";
-            for (std::string &function: method.FUNCTIONS) {
-                CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
-            }
-        }
-
-        return yaml_file;
+        return path_env_var;
     }
 
     void HAKCSystemInformation::ProcessArchYaml() {
@@ -179,13 +150,50 @@ namespace hakc {
         ARCH = yi.SYSTEMINFO.ARCH;
         CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.PLATFORM << " found\n";
         PLATFORM = yi.SYSTEMINFO.PLATFORM; 
-        // for (YamlMethodsInformation &method: yi.SYSTEMINFO.METHODS) {
-        //     CommonHAKCAnalysis::getWriter() << method.NAME << ":\n";
-        //     for (std::string &function: method.FUNCTIONS) {
-        //         CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
-        //     }
-        // }
+        for (YamlMethodsInformation &method: yi.SYSTEMINFO.METHODS) {
+            // if method name is not in map
+            if(METHODS.find(method.NAME) == METHODS.end()){
+                METHODS[method.NAME] = std::set<StringRef>();
+            }
+            CommonHAKCAnalysis::getWriter() << method.NAME << ":\n";
+            for (StringRef function: method.FUNCTIONS) {
+                METHODS[method.NAME].insert(function); 
+                CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
+            }
 
+        }
+
+        std::set<StringRef> KernelAllocationSizeMapStrings = METHODS["GetKernelAllocationSizeMap"];
+        
+        for(std::set<StringRef>::iterator ptr = KernelAllocationSizeMapStrings.begin(); ptr != KernelAllocationSizeMapStrings.end(); ptr++){
+            std::string stri = (*ptr).str(); 
+            const char* str = stri.c_str(); 
+            // extract tokens
+            printf("original string: %s\n", str);
+            char * pch;
+            std::vector<std::string> readBuff; 
+            pch = strtok((char*)str, "|");
+            printf("found token: ");
+            while (pch != NULL)
+            {
+                printf("%s ",pch);
+                readBuff.push_back(pch);
+                pch = strtok (NULL, "|");
+            }
+            printf("\n");
+
+            if(readBuff.size() == 3){
+                std::vector<int> args = {stoi(readBuff[2])};
+                KernelAllocationSizeMap[readBuff[0]] = std::tuple<void*, std::vector<int>>(GetAllocationSizeMapFromString(readBuff[1]), args);
+            }
+            else if(readBuff.size() == 4){
+                std::vector<int> args = {stoi(readBuff[2]), stoi(readBuff[3])};
+                KernelAllocationSizeMap[readBuff[0]] = std::tuple<void*, std::vector<int>>(GetAllocationSizeMapFromString(readBuff[1]), args);
+            }
+            else{
+                CommonHAKCAnalysis::getWriter() << "incorrect YAML format 'GetKernelAllocationSizeMap'\n";
+            }
+        }
     }
 
     void HAKCSystemInformation::ProcessCompartmentYaml() {
@@ -247,16 +255,15 @@ namespace hakc {
     void HAKCSystemInformation::Init() {
         // add error checking 
         // process Arch Yaml
-        // ProcessArchYaml();
+        ProcessArchYaml();
 
         // process Compartment Yaml
-        // ProcessCompartmentYaml();
+        ProcessCompartmentYaml();
 
         // process HAKC Pass 
 
     }
     
-    // HAKCSystemInformation::HAKCSystemInformation(Module &M, std::string a, std::string b, std::string c) : M(M), ArchYamlPath(a), CompartmentYamlPath(b), HAKCPassMode(c) {
     HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
         Init(); 
     }
@@ -434,4 +441,39 @@ namespace hakc {
                 return "INVALID_CLIQUE";
         }
     }
+
+        void* HAKCSystemInformation::GetAllocationSizeMapFromString(std::string input) {
+        // simple require 1 additional argument
+        if(input == "simpleArgumentSize"){
+            llvm::Value *(*fptr) (llvm::Value *, unsigned);
+            fptr = simpleArgumentSize;
+            return (void*) fptr;
+        }
+        else if(input == "simpleStaticSize"){
+            llvm::Value *(*fptr) (llvm::Value *, unsigned);
+            fptr = simpleStaticSize;
+            return (void*) fptr;
+        }
+        // multiply and static both require 2 additional arguments
+        else if(input == "multiplyTwoArguments"){
+            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
+            fptr = multiplyTwoArguments;
+            return (void*) fptr; 
+        }
+        else if(input == "staticPlusArgument"){
+            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
+            fptr = staticPlusArgument;
+            return (void*) fptr; 
+        }
+        else if(input == "argumentGEP"){
+            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
+            fptr = argumentGEP;
+            return (void*) fptr; 
+        }
+        else{
+            CommonHAKCAnalysis::getWriter() << "input: " << input << " is not valid type\n";
+            return NULL; 
+        }
+    }
+
 } // hakc

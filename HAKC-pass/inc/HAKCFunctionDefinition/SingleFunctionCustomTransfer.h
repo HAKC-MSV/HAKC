@@ -22,11 +22,11 @@ namespace hakc {
                                      SignedPtrIdx, unsigned CompartmentIDIdx);
 
         Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, std::shared_ptr<HAKCSymbol> TargetCompartment,
-                                    Value *HAKCPointer, Value *Size, bool IsData) override;
+                                    Value *HAKCPointer, Value *Size, bool IsData);
 
         Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
                                              std::shared_ptr<HAKCSymbol> TargetCompartment,
-                                             Value *HAKCPointer, Value *Size, Type *SrcTy, Type *DestTy) override;
+                                             Value *HAKCPointer, Value *Size, Type *SrcTy, Type *DestTy);
 
 
     protected:

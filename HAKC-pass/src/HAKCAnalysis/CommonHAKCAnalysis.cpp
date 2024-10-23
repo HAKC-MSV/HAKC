@@ -6,7 +6,7 @@
 
 namespace hakc {
 
-    /**
+/**
  * @brief Collective analysis functionality
  * @param debug
  */
@@ -412,8 +412,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::NoKernelTransferFunctionsSet() {
-        const char *env = std::getenv(HAKC_NO_KERNEL_TRANSFERS.c_str());
-        return env != nullptr;
+        return strlen(HAKC_NO_KERNEL_TRANSFERS.c_str()) != 0;
     }
 
     bool CommonHAKCAnalysis::IsKernelCompartment(hakc_compartment_id_t ID) {
@@ -426,18 +425,17 @@ namespace hakc {
     }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
-        const char *name = std::getenv(HAKC_DEBUG_NAME.c_str());
-        if (name == nullptr) {
+        const char *name = HAKC_DEBUG_NAME.c_str();
+        if (strlen(name) == 0) {
             name = "****UNUSED****";
         }
         return name;
     }
 
-    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, ArrayRef<StringRef> NewAdditions) {
+    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, std::set<StringRef> NewAdditions) {
         for (auto NewAddition: NewAdditions) {
             Existing.insert(NewAddition);
         }
-
         return Existing;
     }
 

@@ -51,23 +51,6 @@ namespace hakc {
     const StringRef HAKC_MODPARAM_TEXT_SECTION = ".hakc.modparam_ctx.text";
     const StringRef HAKC_MODPARAM_FUNCP_SECTION = ".hakc.modparam_ctx_fp";
 
-    /* Environment Variables */
-    // const StringRef COMPARTMENT_PATH_ENV_VAR = "HAKC_COMPARTMENT_PATH";
-    // const StringRef HAKC_DEBUG_ENV_VAR = "HAKC_DEBUG_NAME";
-    // const StringRef DAG_ANALYSIS_ROOT_ENV_VAR = "HAKC_DAG_ANALYSIS_ROOT";
-    // const StringRef HAKC_ENV_VAR = "HAKC_ANALYSIS";
-    // const StringRef HAKC_ARCH_CONFIG = "HAKC_ARCH_CONFIG";
-    // const StringRef HAKC_NO_KERNEL_TRANSFERS = "HAKC_NO_KERNEL_TRANSFERS";
-    // const StringRef HAKC_MORELLO_HYBRID_ENV_VAR = "HAKC_MORELLO_HYBRID";
-    // extern std::string HAKC_ANALYSIS; 
-    // extern std::string HAKC_DEBUG_NAME;
-    // extern std::string HAKC_DAG_ANALYSIS_ROOT;
-    // extern std::string HAKC_ARCH_CONFIG;
-    // extern std::string HAKC_COMPARTMENT_PATH; 
-    // extern std::string HAKC_NO_KERNEL_TRANSFERS; 
-    // extern std::string HAKC_MORELLO_HYBRID; 
-
-
     typedef enum {
         SILVER_CLIQUE = 0xF0,
         GREEN_CLIQUE,

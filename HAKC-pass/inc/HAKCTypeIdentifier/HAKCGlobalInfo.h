@@ -19,19 +19,19 @@ namespace hakc {
         HAKCGlobalInfo(GlobalObject *GO, HAKCTypeIdentifier &identifier, StringRef directory, StringRef file,
                        unsigned line);
 
-        virtual ~HAKCGlobalInfo() = default;
+        ~HAKCGlobalInfo() = default;
 
         void addEscapingSymbol(std::string escapingSymbol);
 
-        virtual bool isDefinedInCU();
+        bool isDefinedInCU();
 
-        virtual GlobalObject *getValue();
+        GlobalObject *getValue();
 
-        virtual std::string getTypeStringRepresentation() override;
+        std::string getTypeStringRepresentation() ;
 
-        virtual std::string getYaml() override;
+        std::string getYaml();
 
-        virtual std::string getName() override;
+        std::string getName();
 
         void setUsedInIndirectCalls();
 

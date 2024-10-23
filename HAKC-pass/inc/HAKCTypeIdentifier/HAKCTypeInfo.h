@@ -18,13 +18,13 @@ namespace hakc {
 
         HAKCTypeInfo(Type *Ty, HAKCTypeIdentifier &identifier);
 
-        virtual ~HAKCTypeInfo() = default;
+        ~HAKCTypeInfo() = default;
 
-        virtual std::string getTypeStringRepresentation() override;
+        std::string getTypeStringRepresentation();
 
-        virtual std::string getYaml() override;
+        std::string getYaml();
 
-        virtual std::string getName() override;
+        std::string getName();
 
         std::set<GlobalObject *> getUsers();
 
@@ -36,7 +36,7 @@ namespace hakc {
 
         Type *getType();
 
-        virtual std::string getHash() override;
+        std::string getHash();
 
         static std::string hashType(Type *Ty);
 

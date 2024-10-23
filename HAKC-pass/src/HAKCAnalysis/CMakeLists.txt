@@ -5,9 +5,3 @@ target_sources(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHAKCPointer.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCPointerManager.cpp
         )
-
-if (HAKC_CHERIBSD_MORELLO)
-    add_subdirectory(CheriBSD)
-else ()
-    add_subdirectory(Linux)
-endif ()

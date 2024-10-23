@@ -64,6 +64,51 @@ namespace hakc {
         return TransferCall;
     }
 
+    std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName() {
+        // linux
+        std::string sectionName = HAKC_SECTION_PREFIX.str();
+        auto *Color = getColor();
+
+        sectionName += HAKCModuleAnalysis::getColorStringFromValue(Color);
+        if (getFunction().getSection().empty()) {
+            sectionName += ".text";
+        } else {
+            sectionName += getFunction().getSection().str();
+        }
+        return sectionName;
+    }
+
+    // bool HAKCFunctionAnalysis::pointerShouldBeChecked(Value *ptr) {
+    //     // linux
+    //     if (auto *call = dyn_cast<CallInst>(ptr)) {
+    //         if (call->getCalledFunction() &&
+    //             call->getCalledFunction()->getName() == "hakc_safe_ptr") {
+    //             return false;
+    //         }
+    //     }
+    //     return HAKCFunctionAnalysis::pointerShouldBeChecked(ptr);
+    // }
+
+    // llvm::Value *HAKCFunctionAnalysis::simpleArgumentSize(llvm::Value *allocation, unsigned argNo) {
+    //     if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
+    //         IRBuilder<> irBuilder(call);
+    //         Value *size = call->getArgOperand(argNo);
+    //         size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
+    //         return size;
+    //     }
+
+    //     return nullptr;
+    // }
+    // llvm::Value *HAKCFunctionAnalysis::simpleStaticSize(llvm::Value *allocation, unsigned size) {
+    //     return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), size, false);
+    // }
+
+    bool HAKCFunctionAnalysis::isSafeTransitionFunction(Function *F) {
+        // linux
+        auto isSafe = CommonHAKCAnalysis::isSafeTransitionFunction(F);
+        return isSafe || F->getName().contains("__lse_atomic_") || F->getName().contains("get_pid_ns") || F->getName().contains("get_user_ns") || F->getName().contains("static_branch_");
+    }
+
     /**
          * @brief Checks if a user is in the current function
          * @param user
@@ -337,6 +382,10 @@ namespace hakc {
         return result;
     }
 
+    HAKCModuleAnalysis &HAKCFunctionAnalysis::getModuleAnalysis() {
+        return *ModAnalysis;
+    }
+
     std::set<StringRef> HAKCFunctionAnalysis::GetNoTransferFunctions() {
         return getModuleAnalysis().GetNoTransferFunctions();
     }
@@ -349,7 +398,7 @@ namespace hakc {
         return getModuleAnalysis().GetHAKCTransferFunctions();
     }
 
-    std::map<StringRef, hakc_allocation_size_map_t> HAKCFunctionAnalysis::GetKernelAllocationSizeMap() {
+    std::map<StringRef, std::tuple<void*, std::vector<int>>> HAKCFunctionAnalysis::GetKernelAllocationSizeMap() {
         return getModuleAnalysis().GetKernelAllocationSizeMap();
     }
 
@@ -994,22 +1043,16 @@ namespace hakc {
         }
     }
 
+    ConstantInt *HAKCFunctionAnalysis::getColor() {
+        // TODO: update get color functionality
+        return getTransformer().getInt64(TEAL_CLIQUE);
+    }
+
     /**
          * @brief Sets the function section to the correct PMC ELF section
          */
     void HAKCFunctionAnalysis::relocateFunctionSection() {
         getFunction().setSection(getHAKCFunctionSectionName());
-    }
-
-    std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName() {
-        std::string sectionName = HAKC_SECTION_PREFIX.str();
-        sectionName += std::to_string(getTransformer().getFunctionCompartmentID(&getFunction()));
-        if (getFunction().getSection().empty()) {
-            sectionName += ".text";
-        } else {
-            sectionName += getFunction().getSection().str();
-        }
-        return sectionName;
     }
 
     HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, bool debug)
@@ -1182,9 +1225,27 @@ namespace hakc {
         ConstantInt *Size = nullptr;
         if (auto *Call = dyn_cast<CallInst>(PointerNeedingTransfer)) {
             if (Call->getCalledFunction()) {
+                // std::map<llvm::StringRef, std::tuple<void *, std::vector<int>>> 
                 const auto &SizeFunction = Allocations.find(Call->getCalledFunction()->getName());
                 if (SizeFunction != Allocations.end()) {
-                    Size = dyn_cast<ConstantInt>((*SizeFunction).second(Call));
+                    // TODO: make sure this new scheme function pointer actually works 
+                    // Size = dyn_cast<ConstantInt>((*SizeFunction).second(Call));
+                    void* fptr = std::get<0>((*SizeFunction).second);
+                    std::vector<int> args = std::get<1>((*SizeFunction).second);
+                    if(args.size() == 1){
+                        // llvm::Value *(*func) (llvm::Value *, unsigned);
+                        auto func = reinterpret_cast<llvm::Value*(*)(llvm::Value *, unsigned)>(fptr);
+                        Size = dyn_cast<ConstantInt>(func(Call, args[0]));
+                    }
+                    else if(args.size() == 2){
+                        auto func = reinterpret_cast<llvm::Value*(*)(llvm::Value *, unsigned, unsigned)>(fptr);
+                        Size = dyn_cast<ConstantInt>(func(Call, args[0], args[1]));
+                    }
+                    else{
+                        // TODO put some error here 
+                        CommonHAKCAnalysis::getWriter() << "ERROR PARSING\n";
+                    }
+                    
                 }
             }
         }

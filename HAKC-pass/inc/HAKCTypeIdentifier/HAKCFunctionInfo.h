@@ -22,7 +22,7 @@ namespace hakc {
 
         void addCall(CallInst *call);
 
-        virtual std::string getYaml() override;
+        std::string getYaml();
 
     protected:
         std::set<std::pair<std::string, std::string>> indirectCalls;

@@ -19,36 +19,30 @@ namespace hakc {
 
     class HAKCPointerManager;
 
-    template<unsigned argNo>
-    llvm::Value *simpleArgumentSize(llvm::Value *allocation) {
+    static llvm::Value *simpleArgumentSize(llvm::Value *allocation, unsigned argNo) {
         if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
             IRBuilder<> irBuilder(call);
             Value *size = call->getArgOperand(argNo);
             size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
             return size;
         }
-
         return nullptr;
     }
 
-    template<unsigned size>
-    llvm::Value *simpleStaticSize(llvm::Value *allocation) {
+    static llvm::Value *simpleStaticSize(llvm::Value *allocation, unsigned size) {
         return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), size, false);
     }
 
-    template<unsigned size, unsigned argNo>
-    llvm::Value *staticPlusArgument(llvm::Value *allocation) {
+    static llvm::Value *staticPlusArgument(llvm::Value *allocation, unsigned size, unsigned argNo) {
         if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
             ConstantInt *argumentSize = dyn_cast<ConstantInt>(call->getArgOperand(argNo));
             return ConstantInt::get(Type::getInt64Ty(allocation->getContext()), argumentSize->getZExtValue() + size,
                                     false);
         }
-
         return nullptr;
     }
 
-    template<unsigned argNo1, unsigned argNo2>
-    Value *multiplyTwoArguments(Value *allocation) {
+    static llvm::Value *multiplyTwoArguments(Value *allocation, unsigned argNo1, unsigned argNo2) {
         if (CallInst *call = dyn_cast<CallInst>(allocation)) {
             IRBuilder<> irBuilder(call);
             auto *int64Ty = irBuilder.getInt64Ty();
@@ -75,8 +69,7 @@ namespace hakc {
         return nullptr;
     }
 
-    template<unsigned argNo, unsigned index0>
-    Value *argumentGEP(Value *allocation) {
+    static llvm::Value *argumentGEP(Value *allocation, unsigned argNo, unsigned index0) {
         if (CallInst *call = dyn_cast<CallInst>(allocation)) {
             /*HAKCIRBuilder<> irBuilder(call);
             IntegerType *sizeTy = irBuilder.getInt64Ty();
@@ -164,37 +157,41 @@ namespace hakc {
 
         bool isPHIofGlobalsOnly(Value *ptr, std::set<PHINode *> &nodes);
 
-        virtual bool pointerShouldBeChecked(Value *ptr);
+        bool pointerShouldBeChecked(Value *ptr);
 
         void registerPointerDereference(Use &use);
 
-        virtual void handleLoad(LoadInst *load);
+        bool isSafeTransitionFunction(Function *F);
 
-        virtual void handleStore(StoreInst *store);
+        void handleLoad(LoadInst *load);
 
-        virtual void handleComparison(CmpInst *compare);
+        void handleStore(StoreInst *store);
 
-        virtual void handleCall(CallInst *call);
+        void handleComparison(CmpInst *compare);
 
-        virtual void handleBinaryOperator(BinaryOperator *binOp);
+        void handleCall(CallInst *call);
+
+        void handleBinaryOperator(BinaryOperator *binOp);
 
         bool globalShouldBeTransferred(Use &globalValueArg);
 
-        virtual void relocateFunctionSection();
+        void relocateFunctionSection();
 
-        virtual std::string getHAKCFunctionSectionName();
+        std::string getHAKCFunctionSectionName();
 
         void CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls();
 
-        virtual HAKCModuleAnalysis &getModuleAnalysis() = 0;
+        HAKCModuleAnalysis &getModuleAnalysis();
 
-        HAKCTransformer &getTransformer() override;
+        ConstantInt *getColor();
 
-        virtual std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
+        HAKCTransformer &getTransformer() ;
 
-        virtual std::set<Intrinsic::ID> GetInstrinsicsToSkip();
+        std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
 
-        virtual void AddManagedPointer(Value *HAKCPointer);
+        std::set<Intrinsic::ID> GetInstrinsicsToSkip();
+
+        void AddManagedPointer(Value *HAKCPointer);
 
         void ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value *NewValue);
 
@@ -204,10 +201,12 @@ namespace hakc {
 
         void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
 
+        HAKCModuleAnalysis *ModAnalysis;
+
     public:
         HAKCFunctionAnalysis(Function *F, bool debug);
 
-        virtual ~HAKCFunctionAnalysis() = default;
+        ~HAKCFunctionAnalysis() = default;
 
         bool modifiedFunction();
 
@@ -215,21 +214,21 @@ namespace hakc {
 
         void InstrumentKernelCode();
 
-        virtual void setup();
+        void setup();
 
-        std::set<StringRef> GetNoTransferFunctions() override;
+        std::set<StringRef> GetNoTransferFunctions() ;
 
-        std::set<StringRef> GetSafeTransitionFunctions() override;
+        std::set<StringRef> GetSafeTransitionFunctions() ;
 
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() override;
+        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() ;
 
-        std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() override;
+        std::map<StringRef, std::tuple<void*, std::vector<int>>> GetKernelAllocationSizeMap();
 
-        std::set<StringRef> GetIgnoredTypes() override;
+        std::set<StringRef> GetIgnoredTypes() ;
 
-        std::set<hakc_function_def_t> GetHAKCFunctions() override;
+        std::set<hakc_function_def_t> GetHAKCFunctions() ;
 
-        Value *getDef(Value *, bool, bool) override;
+        Value *getDef(Value *, bool, bool) ;
 
         Instruction *
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
@@ -247,11 +246,11 @@ namespace hakc {
 
         Instruction *CreateMissingTransfer(Instruction *PointerNeedingTransfer);
 
-        virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
+        Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
-        virtual bool isIntrinsicNeedingAuthentication(CallInst *);
+        bool isIntrinsicNeedingAuthentication(CallInst *);
 
-        virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
+        bool PointerIsAuthenticated_Arch(Value *Pointer);
 
         unsigned GetCompartmentTransferCount();
 
@@ -259,7 +258,7 @@ namespace hakc {
 
         unsigned GetCodeAuthenticationCount();
 
-        virtual bool PointerShouldBeConsideredCode(Value *Pointer);
+        bool PointerShouldBeConsideredCode(Value *Pointer);
 
     };
 
