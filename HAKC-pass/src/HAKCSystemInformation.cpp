@@ -8,7 +8,7 @@
 #include "HAKCSymbol.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
-
+#include "HAKCAllocationSize.h"
 #include <memory>
 
 #include "llvm/Support/YAMLParser.h"
@@ -166,33 +166,10 @@ namespace hakc {
         std::set<StringRef> KernelAllocationSizeMapStrings = METHODS["GetKernelAllocationSizeMap"];
         
         for(std::set<StringRef>::iterator ptr = KernelAllocationSizeMapStrings.begin(); ptr != KernelAllocationSizeMapStrings.end(); ptr++){
-            std::string stri = (*ptr).str(); 
-            const char* str = stri.c_str(); 
-            // extract tokens
-            printf("original string: %s\n", str);
-            char * pch;
-            std::vector<std::string> readBuff; 
-            pch = strtok((char*)str, "|");
-            printf("found token: ");
-            while (pch != NULL)
-            {
-                printf("%s ",pch);
-                readBuff.push_back(pch);
-                pch = strtok (NULL, "|");
-            }
-            printf("\n");
-
-            if(readBuff.size() == 3){
-                std::vector<int> args = {stoi(readBuff[2])};
-                KernelAllocationSizeMap[readBuff[0]] = std::tuple<void*, std::vector<int>>(GetAllocationSizeMapFromString(readBuff[1]), args);
-            }
-            else if(readBuff.size() == 4){
-                std::vector<int> args = {stoi(readBuff[2]), stoi(readBuff[3])};
-                KernelAllocationSizeMap[readBuff[0]] = std::tuple<void*, std::vector<int>>(GetAllocationSizeMapFromString(readBuff[1]), args);
-            }
-            else{
-                CommonHAKCAnalysis::getWriter() << "incorrect YAML format 'GetKernelAllocationSizeMap'\n";
-            }
+            CommonHAKCAnalysis::getWriter() << "\t in kernel alloc " << *ptr << "\n";
+            HAKCAllocationSize Size(*ptr);
+            // TODO: ensure no duplicate key names here 
+            KernelAllocationSizeMap.insert({*ptr,Size});
         }
     }
 
@@ -439,40 +416,6 @@ namespace hakc {
             default:
                 CommonHAKCAnalysis::getWriter() << "number " << color->getZExtValue() << "isn't a valid color\n";
                 return "INVALID_CLIQUE";
-        }
-    }
-
-        void* HAKCSystemInformation::GetAllocationSizeMapFromString(std::string input) {
-        // simple require 1 additional argument
-        if(input == "simpleArgumentSize"){
-            llvm::Value *(*fptr) (llvm::Value *, unsigned);
-            fptr = simpleArgumentSize;
-            return (void*) fptr;
-        }
-        else if(input == "simpleStaticSize"){
-            llvm::Value *(*fptr) (llvm::Value *, unsigned);
-            fptr = simpleStaticSize;
-            return (void*) fptr;
-        }
-        // multiply and static both require 2 additional arguments
-        else if(input == "multiplyTwoArguments"){
-            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
-            fptr = multiplyTwoArguments;
-            return (void*) fptr; 
-        }
-        else if(input == "staticPlusArgument"){
-            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
-            fptr = staticPlusArgument;
-            return (void*) fptr; 
-        }
-        else if(input == "argumentGEP"){
-            llvm::Value *(*fptr) (llvm::Value *, unsigned, unsigned);
-            fptr = argumentGEP;
-            return (void*) fptr; 
-        }
-        else{
-            CommonHAKCAnalysis::getWriter() << "input: " << input << " is not valid type\n";
-            return NULL; 
         }
     }
 

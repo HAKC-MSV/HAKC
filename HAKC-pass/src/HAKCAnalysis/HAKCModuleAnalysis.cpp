@@ -988,8 +988,7 @@ namespace hakc {
 //         }
 //         return HAKCModuleAnalysis::FunctionNeedsAnalysis(F);
 //     }
-
-    std::map<StringRef, std::tuple<void*, std::vector<int>>> HAKCModuleAnalysis::GetKernelAllocationSizeMap() {
+    std::map<StringRef, HAKCAllocationSize> HAKCModuleAnalysis::GetKernelAllocationSizeMap() {
         // linux
         return SysInfo.KernelAllocationSizeMap;
     }

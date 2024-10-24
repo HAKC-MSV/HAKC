@@ -13,6 +13,7 @@
 #include "HAKCCompartment.h"
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
+#include "HAKCAllocationSize.h"
 
 using namespace llvm;
 
@@ -33,7 +34,7 @@ namespace hakc {
 
     public:
         std::map<StringRef, std::set<StringRef>> METHODS; 
-        std::map<StringRef, std::tuple<void*, std::vector<int> > > KernelAllocationSizeMap;
+        std::map<StringRef, HAKCAllocationSize> KernelAllocationSizeMap;
 
         HAKCSystemInformation(Module &M);
 
@@ -63,8 +64,6 @@ namespace hakc {
         hakc_access_token_t getEntryToken(hakc_compartment_id_t CompartmentID);
 
         bool ContainsCompartmentalizedSymbols(Module &M);
-
-        void* GetAllocationSizeMapFromString(std::string input);
 
     };
 

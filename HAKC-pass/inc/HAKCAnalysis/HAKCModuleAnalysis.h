@@ -103,8 +103,8 @@ namespace hakc {
         ConstantInt *getGlobalColor(GlobalVariable *GV);
 
         std::set<StringRef> GetIgnoredGlobals();
-
-        std::map<StringRef, std::tuple<void*, std::vector<int>>> GetKernelAllocationSizeMap();
+        
+        std::map<StringRef, HAKCAllocationSize> GetKernelAllocationSizeMap();
 
         bool valueIsReadonlyPtr(Value *value);
 

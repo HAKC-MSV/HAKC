@@ -398,7 +398,7 @@ namespace hakc {
         return getModuleAnalysis().GetHAKCTransferFunctions();
     }
 
-    std::map<StringRef, std::tuple<void*, std::vector<int>>> HAKCFunctionAnalysis::GetKernelAllocationSizeMap() {
+    std::map<StringRef, HAKCAllocationSize> HAKCFunctionAnalysis::GetKernelAllocationSizeMap() {
         return getModuleAnalysis().GetKernelAllocationSizeMap();
     }
 
@@ -1225,27 +1225,14 @@ namespace hakc {
         ConstantInt *Size = nullptr;
         if (auto *Call = dyn_cast<CallInst>(PointerNeedingTransfer)) {
             if (Call->getCalledFunction()) {
-                // std::map<llvm::StringRef, std::tuple<void *, std::vector<int>>> 
+
                 const auto &SizeFunction = Allocations.find(Call->getCalledFunction()->getName());
+                // todo: ask derrick about this 
+                // const auto &SizeFunction = Allocations.find(Call->op);
                 if (SizeFunction != Allocations.end()) {
                     // TODO: make sure this new scheme function pointer actually works 
-                    // Size = dyn_cast<ConstantInt>((*SizeFunction).second(Call));
-                    void* fptr = std::get<0>((*SizeFunction).second);
-                    std::vector<int> args = std::get<1>((*SizeFunction).second);
-                    if(args.size() == 1){
-                        // llvm::Value *(*func) (llvm::Value *, unsigned);
-                        auto func = reinterpret_cast<llvm::Value*(*)(llvm::Value *, unsigned)>(fptr);
-                        Size = dyn_cast<ConstantInt>(func(Call, args[0]));
-                    }
-                    else if(args.size() == 2){
-                        auto func = reinterpret_cast<llvm::Value*(*)(llvm::Value *, unsigned, unsigned)>(fptr);
-                        Size = dyn_cast<ConstantInt>(func(Call, args[0], args[1]));
-                    }
-                    else{
-                        // TODO put some error here 
-                        CommonHAKCAnalysis::getWriter() << "ERROR PARSING\n";
-                    }
-                    
+                    // Value val = dyn_cast<Value>(Call);
+                    Size = (*SizeFunction).second.GetSize(Call);
                 }
             }
         }
