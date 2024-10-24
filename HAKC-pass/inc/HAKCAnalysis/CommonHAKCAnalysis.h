@@ -10,6 +10,8 @@
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
+#include <map>
+
 namespace hakc {
 
     class HAKCTransformer;

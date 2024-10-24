@@ -5,7 +5,8 @@
 #ifndef HAKC_HAKCFUNCTIONDEFINITION_H
 #define HAKC_HAKCFUNCTIONDEFINITION_H
 
-#include <llvm/ADT/StringRef.h>
+#include "llvm/ADT/StringRef.h"
+#include <memory>
 
 using namespace llvm;
 

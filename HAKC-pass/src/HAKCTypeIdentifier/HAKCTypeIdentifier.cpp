@@ -15,6 +15,8 @@
 
 #include "llvm/Support/Path.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/BinaryFormat/Dwarf.h"
+#include "llvm/ADT/StringRef.h"
 
 #include <sstream>
 #include <algorithm>
@@ -32,27 +34,27 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIT
     }
 }
 
-std::string hakc::HAKCTypeIdentifier::ConstructStructName(StructType *StructTy) {
-    std::string StructName;
-    if (StructTy->hasName()) {
-        llvm::raw_string_ostream sstream(StructName);
-        sstream << StructTy->getName();
-
-        StructName.erase(std::remove(StructName.begin(), StructName.end(), '%'), StructName.end());
-        for (unsigned i = 0; i < StructName.size(); i++) {
-            if (StructName[i] == '.') {
-                StructName[i] = ' ';
-            }
-        }
-    }
-    return StructName;
-}
+//std::string hakc::HAKCTypeIdentifier::ConstructStructName(StructType *StructTy) {
+//    std::string StructName;
+//    if (StructTy->hasName()) {
+//        llvm::raw_string_ostream sstream(StructName);
+//        sstream << StructTy->getName();
+//
+//        StructName.erase(std::remove(StructName.begin(), StructName.end(), '%'), StructName.end());
+//        for (unsigned i = 0; i < StructName.size(); i++) {
+//            if (StructName[i] == '.') {
+//                StructName[i] = ' ';
+//            }
+//        }
+//    }
+//    return StructName;
+//}
 
 void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::shared_ptr<HAKCTypeInfo> &HAKCType) {
     if (debug) {
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *type << " -> " << HAKCType->GetName() << "\n";
     }
-    std::set<unsigned> TagsToSize = {
+    std::set<dwarf::Tag> TagsToSize = {
             dwarf::DW_TAG_structure_type,
             dwarf::DW_TAG_union_type,
     };
@@ -293,7 +295,7 @@ void hakc::HAKCTypeIdentifier::AddGlobalMapping(const DIGlobalVariable *DIGV,
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *DIGV << " -> " << HAKCSymbol->GetName() << "\n";
     }
     globals[DIGV] = HAKCSymbol;
-    AddLLVMTypeMapping(HAKCSymbol->GetType(), HAKCSymbol->GetGlobalVariable()->getValueType());
+//    AddLLVMTypeMapping(HAKCSymbol->GetType(), HAKCSymbol->GetGlobalVariable()->getValueType());
 }
 
 std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction(const DISubprogram *SubProg) {
@@ -352,7 +354,8 @@ void hakc::HAKCTypeIdentifier::AddFunctionMapping(const DISubprogram *SubProg,
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *SubProg << " -> " << *HAKCFunction << "\n";
     }
     functions[SubProg] = HAKCFunction;
-    AddLLVMTypeMapping(HAKCFunction->GetType(), HAKCFunction->GetFunction()->getFunctionType());
+    HAKCFunction->GetType()->SetLLVMType(HAKCFunction->GetFunction()->getFunctionType());
+//    AddLLVMTypeMapping(HAKCFunction->GetType(), HAKCFunction->GetFunction()->getFunctionType());
 }
 
 void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObject *> &GlobalSet) {
@@ -400,7 +403,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFun
     auto HAKCType = FindCalledFunctionType(F->getFunctionType());
     if (!HAKCType) {
         HAKCType = CreateNoDebugType(F->getFunctionType());
-        AddLLVMTypeMapping(HAKCType, HAKCType->GetLLVMType());
+//        AddLLVMTypeMapping(HAKCType, HAKCType->GetLLVMType());
     } else if (debug) {
         CommonHAKCAnalysis::getWriter() << "HAKCType exists for " << F->getName() << "\n";
     }
@@ -431,7 +434,7 @@ std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGloba
         auto HAKCType = FindType(GlobalObj->getValueType());
         if (!HAKCType) {
             HAKCType = CreateNoDebugType(GlobalObj->getValueType());
-            AddLLVMTypeMapping(HAKCType, HAKCType->GetLLVMType());
+//            AddLLVMTypeMapping(HAKCType, HAKCType->GetLLVMType());
         } else if (debug) {
             CommonHAKCAnalysis::getWriter() << "HAKCType exists for " << GV->getName() << "\n";
         }
@@ -588,7 +591,8 @@ FunctionType *hakc::HAKCTypeIdentifier::GetIndirectCallFunctionType(CallInst *Ca
         CommonHAKCAnalysis::getWriter() << "Trying to get type from a Call that is not an indirect call\n";
         throw std::exception();
     }
-    return dyn_cast<FunctionType>(CallI->getCalledOperand()->getType()->getPointerElementType());
+//    return dyn_cast<FunctionType>(CallI->getCalledOperand()->getType()->getPointerElementType());
+    return CallI->getFunctionType();
 }
 
 void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
@@ -660,18 +664,23 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
 }
 
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(Type *Ty) {
-    auto Search = [Ty](Type *T) {
-        return Ty == T;
-    };
+//    auto Search = [Ty](Type *T) {
+//        return Ty == T;
+//    };
 
-    for (auto &it: LLVMTypeMapping) {
-        if (std::any_of(it.second.begin(), it.second.end(), Search)) {
-            if (Ty->isIntegerTy()) {
-                if (it.first->GetDbgType() && !isa<DIBasicType>(it.first->GetDbgType())) {
-                    continue;
-                }
-            }
-            return it.first;
+//    for (auto &it: LLVMTypeMapping) {
+//        if (std::any_of(it.second.begin(), it.second.end(), Search)) {
+//            if (Ty->isIntegerTy()) {
+//                if (it.first->GetDbgType() && !isa<DIBasicType>(it.first->GetDbgType())) {
+//                    continue;
+//                }
+//            }
+//            return it.first;
+//        }
+//    }
+    for (auto &it : types) {
+        if(it.second->GetLLVMType() && it.second->GetLLVMType() == Ty) {
+            return it.second;
         }
     }
 
@@ -762,7 +771,7 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
         for (auto InstIt = inst_begin(F); InstIt != inst_end(F); ++InstIt) {
             auto *I = &(*InstIt);
             if (auto *DbgIntrinsic = dyn_cast<DbgVariableIntrinsic>(I)) {
-                auto *V = DbgIntrinsic->getVariableLocation();
+                auto *V = DbgIntrinsic->getVariableLocationOp(0);
                 if (isa<UndefValue>(V)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Skipping undef Value in Instruction " << *I << "\n";
@@ -792,14 +801,14 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
                         continue;
                     }
                 }
-                AddLLVMTypeMapping(HAKCType, LLVMTy);
+//                AddLLVMTypeMapping(HAKCType, LLVMTy);
             } else if (auto *CallI = dyn_cast<CallInst>(I)) {
                 if (CallI->isIndirectCall()) {
                     auto *FunctionTy = GetIndirectCallFunctionType(CallI);
                     auto HAKCType = FindCalledFunctionType(FunctionTy);
                     if (!HAKCType) {
                         HAKCType = CreateNoDebugType(FunctionTy);
-                        AddLLVMTypeMapping(HAKCType, FunctionTy);
+//                        AddLLVMTypeMapping(HAKCType, FunctionTy);
                     }
                 }
             }
@@ -825,148 +834,148 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(
     return HAKCType;
 }
 
-bool hakc::HAKCTypeIdentifier::LLVMTypeMappingSanityCheck(const DIType *type, Type *Ty) {
-    if (!type) {
-        CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " type is null\n";
-        throw std::exception();
-    }
-    if (!Ty) {
-        CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " Ty is null\n";
-        throw std::exception();
-    }
+//bool hakc::HAKCTypeIdentifier::LLVMTypeMappingSanityCheck(const DIType *type, Type *Ty) {
+//    if (!type) {
+//        CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " type is null\n";
+//        throw std::exception();
+//    }
+//    if (!Ty) {
+//        CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " Ty is null\n";
+//        throw std::exception();
+//    }
+//
+//    if (debug) {
+//        CommonHAKCAnalysis::getWriter() << "Running sanity check on DIType " << GetTypeName(type) << " and LLVM Type "
+//                                        << *Ty << "\n";
+//    }
+//    if (auto *BasicTy = dyn_cast<DIBasicType>(type)) {
+//        if (debug) {
+//            CommonHAKCAnalysis::getWriter() << "DIBasicType Sanity Checks\n";
+//        }
+//        return BasicTy->getSizeInBits() == Ty->getScalarSizeInBits();
+//    } else if (auto *DerivedTy = dyn_cast<DIDerivedType>(type)) {
+//        if (debug) {
+//            CommonHAKCAnalysis::getWriter() << "DIDerivedType Sanity Checks\n";
+//        }
+//        std::set<unsigned> BaseTypeCheckTags = {
+//                dwarf::DW_TAG_const_type,
+//                dwarf::DW_TAG_typedef,
+//                dwarf::DW_TAG_volatile_type,
+//                dwarf::DW_TAG_restrict_type,
+//        };
+//        if (BaseTypeCheckTags.find(type->getTag()) != BaseTypeCheckTags.end()) {
+//            if (!DerivedTy->getBaseType()) {
+//                return type->getTag() == dwarf::DW_TAG_const_type && Ty->isPointerTy() &&
+//                       Ty->getPointerElementType()->isIntegerTy(8);
+//            }
+//            return LLVMTypeMappingSanityCheck(DerivedTy->getBaseType(), Ty);
+//        } else if (type->getTag() == dwarf::DW_TAG_pointer_type) {
+//            if (!Ty->isPointerTy()) {
+//                return false;
+//            }
+//            if (DerivedTy->getBaseType()) {
+//                return LLVMTypeMappingSanityCheck(DerivedTy->getBaseType(), Ty->getPointerElementType());
+//            } else {
+//                return Ty->getPointerElementType()->isIntegerTy(8);
+//            }
+//        }
+//    } else if (isa<DISubroutineType>(type)) {
+//        if (debug) {
+//            CommonHAKCAnalysis::getWriter() << "DISubroutineType Sanity Checks\n";
+//        }
+//        return Ty->isFunctionTy();
+//    } else if (auto *CompositeTy = dyn_cast<DICompositeType>(type)) {
+//        if (debug) {
+//            CommonHAKCAnalysis::getWriter() << "DICompositeType Sanity Checks\n";
+//            printDIType(type, 0);
+//            CommonHAKCAnalysis::getWriter() << "\n";
+//        }
+//        if (type->getTag() == dwarf::DW_TAG_structure_type || type->getTag() == dwarf::DW_TAG_union_type) {
+//            if (!Ty->isStructTy()) {
+//                return false;
+//            }
+//            auto *StructTy = dyn_cast<StructType>(Ty);
+//            if (!type->getName().empty()) {
+//                auto StructName = ConstructStructName(StructTy);
+//                return type->getName() != StructName;
+//            }
+//        } else if (type->getTag() == dwarf::DW_TAG_array_type) {
+//            if (!Ty->isArrayTy()) {
+//                return false;
+//            }
+//            if (CompositeTy->getBaseType()) {
+//                return LLVMTypeMappingSanityCheck(CompositeTy->getBaseType(), Ty->getArrayElementType());
+//            }
+//        } else if (type->getTag() == dwarf::DW_TAG_enumeration_type) {
+//            return Ty->isIntegerTy();
+//        }
+//    }
+//
+//    return true;
+//}
 
-    if (debug) {
-        CommonHAKCAnalysis::getWriter() << "Running sanity check on DIType " << GetTypeName(type) << " and LLVM Type "
-                                        << *Ty << "\n";
-    }
-    if (auto *BasicTy = dyn_cast<DIBasicType>(type)) {
-        if (debug) {
-            CommonHAKCAnalysis::getWriter() << "DIBasicType Sanity Checks\n";
-        }
-        return BasicTy->getSizeInBits() == Ty->getScalarSizeInBits();
-    } else if (auto *DerivedTy = dyn_cast<DIDerivedType>(type)) {
-        if (debug) {
-            CommonHAKCAnalysis::getWriter() << "DIDerivedType Sanity Checks\n";
-        }
-        std::set<unsigned> BaseTypeCheckTags = {
-                dwarf::DW_TAG_const_type,
-                dwarf::DW_TAG_typedef,
-                dwarf::DW_TAG_volatile_type,
-                dwarf::DW_TAG_restrict_type,
-        };
-        if (BaseTypeCheckTags.find(type->getTag()) != BaseTypeCheckTags.end()) {
-            if (!DerivedTy->getBaseType()) {
-                return type->getTag() == dwarf::DW_TAG_const_type && Ty->isPointerTy() &&
-                       Ty->getPointerElementType()->isIntegerTy(8);
-            }
-            return LLVMTypeMappingSanityCheck(DerivedTy->getBaseType(), Ty);
-        } else if (type->getTag() == dwarf::DW_TAG_pointer_type) {
-            if (!Ty->isPointerTy()) {
-                return false;
-            }
-            if (DerivedTy->getBaseType()) {
-                return LLVMTypeMappingSanityCheck(DerivedTy->getBaseType(), Ty->getPointerElementType());
-            } else {
-                return Ty->getPointerElementType()->isIntegerTy(8);
-            }
-        }
-    } else if (isa<DISubroutineType>(type)) {
-        if (debug) {
-            CommonHAKCAnalysis::getWriter() << "DISubroutineType Sanity Checks\n";
-        }
-        return Ty->isFunctionTy();
-    } else if (auto *CompositeTy = dyn_cast<DICompositeType>(type)) {
-        if (debug) {
-            CommonHAKCAnalysis::getWriter() << "DICompositeType Sanity Checks\n";
-            printDIType(type, 0);
-            CommonHAKCAnalysis::getWriter() << "\n";
-        }
-        if (type->getTag() == dwarf::DW_TAG_structure_type || type->getTag() == dwarf::DW_TAG_union_type) {
-            if (!Ty->isStructTy()) {
-                return false;
-            }
-            auto *StructTy = dyn_cast<StructType>(Ty);
-            if (!type->getName().empty()) {
-                auto StructName = ConstructStructName(StructTy);
-                return type->getName() != StructName;
-            }
-        } else if (type->getTag() == dwarf::DW_TAG_array_type) {
-            if (!Ty->isArrayTy()) {
-                return false;
-            }
-            if (CompositeTy->getBaseType()) {
-                return LLVMTypeMappingSanityCheck(CompositeTy->getBaseType(), Ty->getArrayElementType());
-            }
-        } else if (type->getTag() == dwarf::DW_TAG_enumeration_type) {
-            return Ty->isIntegerTy();
-        }
-    }
-
-    return true;
-}
-
-void hakc::HAKCTypeIdentifier::AddLLVMTypeMapping(const std::shared_ptr<HAKCTypeInfo> &HAKCType, Type *Ty) {
-    if (!Ty) {
-        CommonHAKCAnalysis::getWriter() << "Trying to add null LLVM Type mapping to " << HAKCType->GetName() << "\n";
-        throw std::exception();
-    }
-    if (!HAKCType) {
-        CommonHAKCAnalysis::getWriter() << "Trying to add null HAKCType mapping for LLVM Type " << *Ty << "\n";
-        throw std::exception();
-    }
-
-    if (HAKCType->GetDbgType()) {
-        if (!LLVMTypeMappingSanityCheck(HAKCType->GetDbgType(), Ty)) {
-            if (debug) {
-                CommonHAKCAnalysis::getWriter() << "Mapping \"" << HAKCType->GetName() << "\" -> " << *Ty
-                                                << " did not pass sanity check\n";
-            }
-            return;
-        }
-    }
-
-    if (debug) {
-        CommonHAKCAnalysis::getWriter() << "Adding LLVM Type Mapping \"" << HAKCType->GetName() << "\" -> " << *Ty
-                                        << "\n";
-    }
-
-    auto it = LLVMTypeMapping.find(HAKCType);
-    if (it == LLVMTypeMapping.end()) {
-        LLVMTypeMapping[HAKCType].push_back(Ty);
-    } else {
-        auto *ExistingTy = *it->second.begin();
-        if (ExistingTy->getTypeID() != Ty->getTypeID()) {
-            CommonHAKCAnalysis::getWriter() << "Trying to change LLVM Type Mapping from " << *ExistingTy << " to "
-                                            << *Ty << "\n";
-            throw std::exception();
-        }
-        LLVMTypeMapping[HAKCType].push_back(Ty);
-    }
-    if (HAKCType->GetDbgType()) {
-        if (auto *DerivedTy = dyn_cast<DIDerivedType>(HAKCType->GetDbgType())) {
-            if (!DerivedTy->getBaseType()) {
-                return;
-            }
-            auto DerivedHAKCType = FindType(DerivedTy->getBaseType());
-            if (DerivedHAKCType) {
-                if (DerivedTy->getTag() == dwarf::DW_TAG_typedef ||
-                    DerivedTy->getTag() == dwarf::DW_TAG_const_type ||
-                    DerivedTy->getTag() == dwarf::DW_TAG_volatile_type ||
-                    DerivedTy->getTag() == dwarf::DW_TAG_restrict_type) {
-                    AddLLVMTypeMapping(DerivedHAKCType, Ty);
-                } else if (DerivedTy->getTag() == dwarf::DW_TAG_pointer_type) {
-                    AddLLVMTypeMapping(DerivedHAKCType, Ty->getPointerElementType());
-                } else if (DerivedTy->getTag() == dwarf::DW_TAG_array_type) {
-                    AddLLVMTypeMapping(DerivedHAKCType, Ty->getArrayElementType());
-                }
-            }
-        }
-    }
-}
+//void hakc::HAKCTypeIdentifier::AddLLVMTypeMapping(const std::shared_ptr<HAKCTypeInfo> &HAKCType, Type *Ty) {
+//    if (!Ty) {
+//        CommonHAKCAnalysis::getWriter() << "Trying to add null LLVM Type mapping to " << HAKCType->GetName() << "\n";
+//        throw std::exception();
+//    }
+//    if (!HAKCType) {
+//        CommonHAKCAnalysis::getWriter() << "Trying to add null HAKCType mapping for LLVM Type " << *Ty << "\n";
+//        throw std::exception();
+//    }
+//
+//    if (HAKCType->GetDbgType()) {
+//        if (!LLVMTypeMappingSanityCheck(HAKCType->GetDbgType(), Ty)) {
+//            if (debug) {
+//                CommonHAKCAnalysis::getWriter() << "Mapping \"" << HAKCType->GetName() << "\" -> " << *Ty
+//                                                << " did not pass sanity check\n";
+//            }
+//            return;
+//        }
+//    }
+//
+//    if (debug) {
+//        CommonHAKCAnalysis::getWriter() << "Adding LLVM Type Mapping \"" << HAKCType->GetName() << "\" -> " << *Ty
+//                                        << "\n";
+//    }
+//
+//    auto it = LLVMTypeMapping.find(HAKCType);
+//    if (it == LLVMTypeMapping.end()) {
+//        LLVMTypeMapping[HAKCType].push_back(Ty);
+//    } else {
+//        auto *ExistingTy = *it->second.begin();
+//        if (ExistingTy->getTypeID() != Ty->getTypeID()) {
+//            CommonHAKCAnalysis::getWriter() << "Trying to change LLVM Type Mapping from " << *ExistingTy << " to "
+//                                            << *Ty << "\n";
+//            throw std::exception();
+//        }
+//        LLVMTypeMapping[HAKCType].push_back(Ty);
+//    }
+//    if (HAKCType->GetDbgType()) {
+//        if (auto *DerivedTy = dyn_cast<DIDerivedType>(HAKCType->GetDbgType())) {
+//            if (!DerivedTy->getBaseType()) {
+//                return;
+//            }
+//            auto DerivedHAKCType = FindType(DerivedTy->getBaseType());
+//            if (DerivedHAKCType) {
+//                if (DerivedTy->getTag() == dwarf::DW_TAG_typedef ||
+//                    DerivedTy->getTag() == dwarf::DW_TAG_const_type ||
+//                    DerivedTy->getTag() == dwarf::DW_TAG_volatile_type ||
+//                    DerivedTy->getTag() == dwarf::DW_TAG_restrict_type) {
+//                    AddLLVMTypeMapping(DerivedHAKCType, Ty);
+//                } else if (DerivedTy->getTag() == dwarf::DW_TAG_pointer_type) {
+//                    AddLLVMTypeMapping(DerivedHAKCType, Ty->getPointerElementType());
+//                } else if (DerivedTy->getTag() == dwarf::DW_TAG_array_type) {
+//                    AddLLVMTypeMapping(DerivedHAKCType, Ty->getArrayElementType());
+//                }
+//            }
+//        }
+//    }
+//}
 
 hakc::HAKCTypeIdentifier::HAKCTypeIdentifier(Module &M, CommonHAKCAnalysis *AnalysisHelper)
         : HAKCDebugInfoProcessor(M), AnalysisHelper(AnalysisHelper), types(), globals(), functions(),
-          LLVMTypeMapping(), CurrentAnonID(0) {
+          /*LLVMTypeMapping(),*/ CurrentAnonID(0) {
 //    debug = true;
     if (debug) {
         M.print(CommonHAKCAnalysis::getWriter(), nullptr);
@@ -1027,10 +1036,10 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
 
     unsigned length;
     std::string Replacement;
-    if (Path.startswith(BuildPath)) {
+    if (Path.starts_with(BuildPath)) {
         length = std::strlen(BuildPath);
         Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
-    } else if (Path.startswith(SourcePath)) {
+    } else if (Path.starts_with(SourcePath)) {
         length = std::strlen(SourcePath);
         Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
     } else {

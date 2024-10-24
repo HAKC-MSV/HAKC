@@ -505,7 +505,7 @@ namespace hakc {
 
     void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers(HAKCCompartmentalizationPolicy &Policy) {
         std::vector<GlobalVariable *> GlobalsToModifyDuringInit;
-        for (auto &GV: M.getGlobalList()) {
+        for (auto &GV: M.globals()) {
             if (TransferIsNeeded(&GV, Policy)) {
                 GlobalsToModifyDuringInit.push_back(&GV);
             }

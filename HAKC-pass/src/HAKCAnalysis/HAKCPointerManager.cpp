@@ -203,7 +203,7 @@ namespace hakc {
                 UseAuthenticatedPointer = false;
             }
         } else if (auto *ConstExpr = dyn_cast<ConstantExpr>(UserP)) {
-            if (ConstExpr->isCompare() || ConstExpr->getOpcode() == Instruction::GetElementPtr) {
+            if (/*ConstExpr->isCompare() || */ConstExpr->getOpcode() == Instruction::GetElementPtr) {
                 UseAuthenticatedPointer = true;
             }
         } else if (isa<GetElementPtrInst>(UserP)) {
@@ -220,7 +220,7 @@ namespace hakc {
                                 isa<BitCastOperator>(UserP) ||
                                 isa<GEPOperator>(UserP) ||
                                 isa<PtrToIntOperator>(UserP) ||
-                                isa<ZExtOperator>(UserP) ||
+                                /*isa<ZExtOperator>(UserP) ||*/
                                 isa<ReturnInst>(UserP) ||
                                 isa<SwitchInst>(UserP) ||
                                 isa<InsertValueInst>(UserP);

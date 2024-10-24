@@ -2,6 +2,9 @@
 // Created by de29664 on 8/6/24.
 //
 
+
+#include "llvm/IR/Module.h"
+
 #include "HAKCCompartmentalizationPolicy/HAKCCompartment.h"
 
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"

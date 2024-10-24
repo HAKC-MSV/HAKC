@@ -149,8 +149,6 @@ namespace hakc {
 
         void SetProtectedPointer(Value *NewProtectedPointer);
 
-        void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
-
         void
         SetUseOperand(User *U, Value *Replacement, const ManagedHAKCPointerUseP &PointerUse, bool IsAuthenticatedUse);
 
@@ -212,6 +210,8 @@ namespace hakc {
         bool PointerSetsCanBeEqual();
 
         void UpdateUserCounts();
+
+        void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
 
     private:
         void InitBaseDefinition(Value *Pointer);

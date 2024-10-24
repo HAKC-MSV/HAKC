@@ -70,7 +70,7 @@ namespace hakc {
              * the lowest argument value.
              */
             Value *fullSize = nullptr;
-            if (argNo1 >= call->getNumArgOperands() || argNo2 >= call->getNumArgOperands()) {
+            if (argNo1 >= call->arg_size() || argNo2 >= call->arg_size()) {
                 if (argNo1 <= argNo2) {
                     fullSize = call->getArgOperand(argNo1);
                 } else {

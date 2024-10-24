@@ -87,7 +87,7 @@ namespace hakc {
     }
 
     bool HAKCTransformerCheriBSDCheri::ValidateHAKCIntegerPointerSize(Value *HAKCPointer) {
-        return HAKCTransformer::ValidateHAKCIntegerPointerSize(HAKCPointer) ||
+        return /*HAKCTransformer::ValidateHAKCIntegerPointerSize(HAKCPointer) ||*/
                HAKCPointer->getType() == GetCapabilityType();
     }
 

@@ -371,8 +371,8 @@ namespace hakc {
             /* A pointer to a pointer is used by the kernel to allow setting
              * the value of a user pointer. See ___sys_recvmsg in net/socket.c
              */
-            result = arg->hasAttribute(Kind) &&
-                     !arg->getType()->getPointerElementType()->isPointerTy();
+            result = arg->hasAttribute(Kind) /*&&
+                     !arg->getType()->getPointerElementType()->isPointerTy()*/;
         } else if (auto *I = dyn_cast<Instruction>(V)) {
             auto *metadata = I->getMetadata(LLVMContext::MD_annotation);
             if (metadata) {
@@ -395,7 +395,7 @@ namespace hakc {
                 auto *call = cast<CallInst>(V);
                 if (call->getCalledFunction()) {
                     Function *func = call->getCalledFunction();
-                    result = func->hasFnAttribute(Attribute::PerCPUPtr);
+                    result = func->hasFnAttribute(Kind);
                 }
             }
         }
@@ -415,9 +415,9 @@ namespace hakc {
                 auto IgnoredTypes = GetIgnoredTypes();
                 return IgnoredTypes.find(Ty->getStructName()) != IgnoredTypes.end();
             }
-        } else if (Ty->isPointerTy()) {
+        } /*else if (Ty->isPointerTy()) {
             return isIgnoredType(Ty->getPointerElementType());
-        }
+        }*/
 
         return false;
     }
@@ -433,19 +433,27 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::isKernelUserPointer(Use &U) {
-        return useHasAttribute(U, Attribute::KernelUserPtr);
+//        return useHasAttribute(U, Attribute::KernelUserPtr);
+        // TODO: Fix this when attributes are added in again
+        return false;
     }
 
     bool CommonHAKCAnalysis::isPerCPUPointer(Use &U) {
-        return useHasAttribute(U, Attribute::PerCPUPtr);
+//        return useHasAttribute(U, Attribute::PerCPUPtr);
+        // TODO: Fix this when attributes are added in again
+        return false;
     }
 
     bool CommonHAKCAnalysis::isPerCPUPointer(Value *V) {
-        return valueHasAttribute(V, Attribute::PerCPUPtr);
+//        return valueHasAttribute(V, Attribute::PerCPUPtr);
+        // TODO: Fix this when attributes are added in again
+        return false;
     }
 
     bool CommonHAKCAnalysis::isKernelUserPointer(Value *V) {
-        return valueHasAttribute(V, Attribute::KernelUserPtr);
+//        return valueHasAttribute(V, Attribute::KernelUserPtr);
+        // TODO: Fix this when attributes are added in again
+        return false;
     }
 
     bool CommonHAKCAnalysis::isFunctionStatic(Function *F) {
@@ -491,11 +499,11 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::isOutsideTransferFunc(Function *F) {
-        return (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX));
+        return (F->getName().starts_with(OUTSIDE_TRANSFER_PREFIX));
     }
 
     bool CommonHAKCAnalysis::isCapabilityReassignmentFunc(Function *F) {
-        return F->getName().startswith(CAPABILITY_REASSIGNMENT_PREFIX);
+        return F->getName().starts_with(CAPABILITY_REASSIGNMENT_PREFIX);
     }
 
     void CommonHAKCAnalysis::VerifyFunction(Function *F) {
@@ -511,7 +519,7 @@ namespace hakc {
 
     std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
         auto NoTransferFunctions = GetNoTransferFunctions();
-        if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX) ||
+        if (F->getName().starts_with(OUTSIDE_TRANSFER_PREFIX) ||
             NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
             return F->getName().str();
         }
@@ -533,7 +541,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::functionIsModParamGetCtx(Function *F) {
-        return F->getName().startswith(MODPARAM_GETCTX_PREFIX);
+        return F->getName().starts_with(MODPARAM_GETCTX_PREFIX);
     }
 
     bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
@@ -597,19 +605,16 @@ namespace hakc {
             }
         }
 
-        return V->getType()->isPointerTy() && !isa<FunctionType>(V->getType()->getPointerElementType()) &&
+        return V->getType()->isPointerTy() && !isa<FunctionType>(V->getType()) &&
                !isa<ConstantPointerNull>(V) && !isKernelUserPointer(V);
     }
 
     bool CommonHAKCAnalysis::valueIsReadonlyPtr(Value *value) {
         Type *Ty = value->getType();
         if (auto *Call = dyn_cast<CallInst>(value)) {
-            if (Call->getCalledFunction()) {
-                Ty = Call->getCalledFunction()->getFunctionType()->getReturnType();
-            }
+            Ty = Call->getFunctionType()->getReturnType();
         }
-        bool result = isa<PointerType>(Ty) &&
-                      isa<FunctionType>(Ty->getPointerElementType());
+        bool result = isa<FunctionType>(Ty);
         return result;
     }
 

@@ -26,16 +26,16 @@ namespace hakc {
         return DbgType;
     }
 
-    void HAKCTypeInfo::SetDbgType(const DIType *DbgType) {
-        this->DbgType = DbgType;
+    void HAKCTypeInfo::SetDbgType(const DIType *DiDbgType) {
+        this->DbgType = DiDbgType;
     }
 
     void HAKCTypeInfo::AddMember(const std::shared_ptr<HAKCTypeInfo> &TypeUse, unsigned int BitOffset) {
         Members[BitOffset].insert(TypeUse);
     }
 
-    void HAKCTypeInfo::SetDbgTypeName(std::string DbgTypeName) {
-        this->DbgTypeName = DbgTypeName;
+    void HAKCTypeInfo::SetDbgTypeName(std::string DbgTypeNameStr) {
+        this->DbgTypeName = DbgTypeNameStr;
     }
 
     Type *HAKCTypeInfo::GetLLVMType() {

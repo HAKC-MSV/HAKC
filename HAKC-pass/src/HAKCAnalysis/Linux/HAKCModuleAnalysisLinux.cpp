@@ -201,7 +201,7 @@ namespace hakc {
 
         // trying to find globals of type GetKernelParamType()
         if (auto *F = dyn_cast<StructType>(GV->getValueType())) {
-            if (!(F->getName().equals(KernelParamType->getName()))) {
+            if (!(F->getName() == KernelParamType->getName())) {
                 return nullptr; // someone passed us a struct that wasn't a kernel param struct
             }
         } else {
@@ -283,7 +283,7 @@ namespace hakc {
         }
 
         std::vector<GlobalVariable *> GlobalList;
-        for (auto &Global: M.getGlobalList()) {
+        for (auto &Global: M.globals()) {
             if (auto *StructTy = dyn_cast<StructType>(Global.getValueType())) {
                 if (StructTy == KernelParamType) {
                     if (debug_output) {
@@ -361,9 +361,9 @@ namespace hakc {
         auto AddrSpace = getTransformer(Policy).GetPointerAddrSpace(kernparam);
 
         if (kernparam->getType()->isIntegerTy()) {
-            voidCast = builder.CreateIntToPtr(kernparam, builder.getInt8PtrTy(AddrSpace));
+            voidCast = builder.CreateIntToPtr(kernparam, builder.getPtrTy(AddrSpace));
         } else {
-            voidCast = builder.CreateBitCast(kernparam, builder.getInt8PtrTy(AddrSpace));
+            voidCast = builder.CreateBitCast(kernparam, builder.getPtrTy(AddrSpace));
         }
 
 
@@ -483,7 +483,7 @@ namespace hakc {
                 if (callInst->getCalledFunction() &&
                     callInst->getCalledFunction()->getName() == "hakc_sign_pointer_with_color") {
                     auto *isCode = dyn_cast<ConstantInt>(
-                            callInst->getArgOperand(callInst->getNumArgOperands() - 1));
+                            callInst->getArgOperand(callInst->arg_size() - 1));
                     result = isCode->isOne();
                 }
             }

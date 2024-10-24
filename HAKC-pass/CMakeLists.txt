@@ -51,7 +51,6 @@ add_definitions(${LLVM_DEFINITIONS})
 # 3. LLVM-TUTOR BUILD CONFIGURATION
 #===============================================================================
 # Use the same C++ standard as LLVM does
-set(CMAKE_CXX_STANDARD 14 CACHE STRING "")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # Build type
@@ -100,9 +99,11 @@ endif ()
 # Doing this at the end so that all definitions and link/include paths are
 # available for the sub-projects.
 #===============================================================================
+include_directories(${PROJECT_SOURCE_DIR}/kuzu/src/include)
 add_library(${HAKC_PASS_LIB} SHARED)
 set_target_properties(${HAKC_PASS_LIB} PROPERTIES
         SOVERSION ${PROJECT_VERSION_MAJOR})
 target_include_directories(${HAKC_PASS_LIB} PRIVATE inc)
 install(TARGETS ${HAKC_PASS_LIB} DESTINATION lib)
 add_subdirectory(src)
+target_link_libraries(${HAKC_PASS_LIB} kuzu)

@@ -29,9 +29,9 @@ namespace hakc {
 
         const DIType *GetDbgType();
 
-        void SetDbgType(const DIType *DbgType);
+        void SetDbgType(const DIType *DiDbgType);
 
-        void SetDbgTypeName(std::string DbgTypeName);
+        void SetDbgTypeName(std::string DbgTypeNameStr);
 
         Type *GetLLVMType();
 

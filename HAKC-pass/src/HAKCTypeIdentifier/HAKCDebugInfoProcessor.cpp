@@ -8,6 +8,8 @@
 #include "HAKC-defs.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
+#include "llvm/BinaryFormat/Dwarf.h"
+
 namespace hakc {
     HAKCDebugInfoProcessor::HAKCDebugInfoProcessor(Module &M) :
             M(M), debug(false), infoFinder() {

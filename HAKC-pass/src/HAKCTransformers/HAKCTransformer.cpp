@@ -33,49 +33,62 @@ void hakc::HAKCTransformer::ValidateLocation(Instruction *I) {
     HAKCIRBuilder.SetInsertPoint(I);
 }
 
-void hakc::HAKCTransformer::ValidateHAKCPointer(Value *HAKCPointer) {
-    if (HAKCPointer == nullptr) {
+void hakc::HAKCTransformer::ValidateHAKCPointer(ManagedHAKCPointerP HAKCPointer) {
+    if (!HAKCPointer) {
         CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer is null\n";
         throw std::exception();
     }
 
-    bool IsPointerLike = (HAKCPointer->getType()->isPointerTy() || ValidateHAKCIntegerPointerSize(HAKCPointer));
-
-    if (!IsPointerLike) {
-        CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer ";
-        HAKCPointer->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << " is not Pointer-like!\n";
-        for (auto *deflink: ModuleAnalysis.findDefChain(HAKCPointer, false, true)) {
-            CommonHAKCAnalysis::getWriter() << "\t";
-            deflink->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-        }
-        throw std::exception();
-    }
+//    bool IsPointerLike = (HAKCPointer->getType()->isPointerTy() || ValidateHAKCIntegerPointerSize(HAKCPointer));
+//
+//    if (!IsPointerLike) {
+//        CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer ";
+//        HAKCPointer->print(CommonHAKCAnalysis::getWriter());
+//        CommonHAKCAnalysis::getWriter() << " is not Pointer-like!\n";
+//        for (auto *deflink: ModuleAnalysis.findDefChain(HAKCPointer, false, true)) {
+//            CommonHAKCAnalysis::getWriter() << "\t";
+//            deflink->print(CommonHAKCAnalysis::getWriter());
+//            CommonHAKCAnalysis::getWriter() << "\n";
+//        }
+//        throw std::exception();
+//    }
 }
 
-bool hakc::HAKCTransformer::ValidateHAKCIntegerPointerSize(Value *HAKCPointer) {
-    return HAKCPointer->getType()->isIntegerTy(64);
-}
+//bool hakc::HAKCTransformer::ValidateHAKCIntegerPointerSize(ManagedHAKCPointerP HAKCPointer) {
+//    return HAKCPointer->getType()->isIntegerTy(64);
+//}
 
-void hakc::HAKCTransformer::ValidateHAKCPointerAndLocation(Value *HAKCPointer, Instruction *I) {
+void hakc::HAKCTransformer::ValidateHAKCPointerAndLocation(const ManagedHAKCPointerP &HAKCPointer, Instruction *I) {
     try {
         ValidateHAKCPointer(HAKCPointer);
         ValidateLocation(I);
     } catch (std::exception &e) {
         if (I) {
-            I->getFunction()->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Validation failed for " << *HAKCPointer << " for Instruction in "
+                                            << I->getFunction()->getName() << ": " << *I << "\n";
             throw e;
         }
     }
 }
 
-Value *hakc::HAKCTransformer::CreateSafePointer(Value *HAKCPointer, Instruction *I) {
+Value *hakc::HAKCTransformer::CreateSafePointer(ManagedHAKCPointerP HAKCPointer, Instruction *I) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
 
+    if (isa<PHINode>(I)) {
+        CommonHAKCAnalysis::getWriter() << "Trying to insert data auth check at " << *I << " for " << *HAKCPointer
+                                        << "\n" << *I->getFunction() << "\n";
+        throw std::exception();
+    } else if (isa<ConstantPointerNull>(HAKCPointer->GetBaseDefinition())) {
+        CommonHAKCAnalysis::getWriter() << "ManagedHAKCPointer is a ConstantPointerNull: " << *HAKCPointer << "\n";
+        throw std::exception();
+    }
+
+    if (HAKCPointer->GetAuthenticatedPointer()) {
+        return HAKCPointer->GetAuthenticatedPointer();
+    }
+
     auto *SafePtr = CreateSafePointer_Arch(HAKCPointer, I);
-    if (SafePtr->getType() != HAKCPointer->getType()) {
+/*    if (SafePtr->getType() != HAKCPointer->getType()) {
         CommonHAKCAnalysis::getWriter() << "SafePtr and ManagedHAKCPointer are not the same Type!\n"
                                         << "SafePtr: ";
         SafePtr->print(CommonHAKCAnalysis::getWriter());
@@ -83,57 +96,79 @@ Value *hakc::HAKCTransformer::CreateSafePointer(Value *HAKCPointer, Instruction 
         HAKCPointer->print(CommonHAKCAnalysis::getWriter());
         CommonHAKCAnalysis::getWriter() << "\n";
         throw std::exception();
-    }
+    }*/
+    HAKCPointer->SetAuthenticatedPointer(SafePtr);
     return SafePtr;
 }
 
-Value *hakc::HAKCTransformer::CreateDataAuthentication(Value *HAKCPointer, Instruction *I) {
+Value *hakc::HAKCTransformer::CreateDataAuthentication(ManagedHAKCPointerP HAKCPointer, Instruction *I) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
 
+    if(HAKCPointer->GetAuthenticatedPointer()) {
+        return HAKCPointer->GetAuthenticatedPointer();
+    }
+
     if (isa<PHINode>(I)) {
-        CommonHAKCAnalysis::getWriter() << "Trying to insert data auth check at ";
-        I->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << " for ";
-        HAKCPointer->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << "Trying to insert data auth check at " << *I << " for " << *HAKCPointer
+                                        << "\n";
         I->getFunction()->print(CommonHAKCAnalysis::getWriter());
         throw std::exception();
     }
 
     Value *HAKCPointerBitCast;
+    SmallVector<Value *> Args;
     unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
     auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
-    auto Args = CreateDataAuthArguments(HAKCPointer, I);
+    CreateDataAuthArguments(HAKCPointer, I, Args);
     for (unsigned i = 0; i < DataAuthFuncTy->getNumParams(); i++) {
         if (Args[i]->getType() != DataAuthFuncTy->getParamType(i)) {
-            CommonHAKCAnalysis::getWriter() << "Types do not match at index " << std::to_string(i) << "\n";
-            DataAuthFuncTy->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            Args[i]->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Types do not match at index " << std::to_string(i) << "\n"
+                                            << *DataAuthFuncTy << "\n" << *Args[i] << "\n";
             throw std::exception();
         }
     }
 
     auto *DataAuthCall = CreateCall(ModuleAnalysis.HAKCDataAuthenticationName(), DataAuthFuncTy->getReturnType(), Args);
-
-    if (HAKCPointer->getType()->isIntegerTy()) {
-        HAKCPointerBitCast = HAKCIRBuilder.CreatePtrToInt(DataAuthCall, HAKCPointer->getType());
-    } else {
-        HAKCPointerBitCast = HAKCIRBuilder.CreateBitCast(DataAuthCall, HAKCPointer->getType());
-    }
+    HAKCPointerBitCast = CreateReturnCast(HAKCPointer, DataAuthCall);
+    HAKCPointer->SetAuthenticatedPointer(HAKCPointerBitCast);
 
     return HAKCPointerBitCast;
 }
 
-Value *hakc::HAKCTransformer::CreateCodeAuthentication(Value *HAKCPointer, Instruction *I) {
+Value *hakc::HAKCTransformer::CreateReturnCast(hakc::ManagedHAKCPointerP HAKCPointer, Value *V) {
+    if(!V) {
+        CommonHAKCAnalysis::getWriter() << "NULL V\n";
+        throw std::exception();
+    }
+    if(HAKCPointer->GetBaseDefinition()->getType()->isIntegerTy()) {
+        return HAKCIRBuilder.CreatePtrToInt(V, HAKCPointer->GetBaseDefinition()->getType());
+    } else {
+        return HAKCIRBuilder.CreateBitCast(V, HAKCPointer->GetBaseDefinition()->getType());
+    }
+}
+
+Value *hakc::HAKCTransformer::CreatePointerCast(hakc::ManagedHAKCPointerP HAKCPointer, PointerType *PointerTy) {
+    if (!PointerTy) {
+        CommonHAKCAnalysis::getWriter() << "NULL PointerTy\n";
+        throw std::exception();
+    }
+
+    if (HAKCPointer->GetBaseDefinition()->getType()->isIntegerTy()) {
+        return HAKCIRBuilder.CreateIntToPtr(HAKCPointer->GetBaseDefinition(), PointerTy);
+    } else {
+        return HAKCIRBuilder.CreateBitCast(HAKCPointer->GetBaseDefinition(), PointerTy);
+    }
+}
+
+Value *hakc::HAKCTransformer::CreateCodeAuthentication(ManagedHAKCPointerP HAKCPointer, Instruction *I) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
 
-    auto Args = CreateCodeAuthArguments(HAKCPointer, I);
+    SmallVector<Value*> Args;
+    CreateCodeAuthArguments(HAKCPointer, I, Args);
     auto *AuthResult = CreateCall(ModuleAnalysis.HACKCodeAuthenticationName(), HAKCAuthenticationRetType(AddrSpace),
                                   Args);
-    return HAKCIRBuilder.CreateBitCast(AuthResult, HAKCPointer->getType());
+    auto *BitCast = HAKCIRBuilder.CreateBitCast(AuthResult, HAKCPointer->getType());
 }
 
 GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
@@ -302,7 +337,7 @@ hakc::HAKCTransformer::CreateSignWithColor(Value *HAKCPointer, Instruction *I, G
 
     auto *CompartmentIDValue = GetHAKCCompartmentValue(CompartmentID);
     auto *IsCodeValue = HAKCIRBuilder.getInt1(!IsData);
-    auto *OperandCast = HAKCIRBuilder.CreateBitCast(HAKCPointer, HAKCIRBuilder.getInt8PtrTy(AddrSpace));
+    auto *OperandCast = HAKCIRBuilder.CreateBitCast(HAKCPointer, HAKCIRBuilder.getPtrTy(AddrSpace));
     SmallVector<Value *> Args = {
             OperandCast, CompartmentIDValue, IsCodeValue
     };
@@ -487,7 +522,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(Value *HAKCPointer, Ins
         }
         auto *FinalLocation = &*HAKCIRBuilder.GetInsertPoint();
         auto *SafePtr = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
-        auto *Load = HAKCIRBuilder.CreateLoad(TypeToUse->getPointerElementType(), SafePtr);
+        auto *Load = HAKCIRBuilder.CreateLoad(PointerType::get(), SafePtr);
         CreateVoidCastCompartmentTransfer(Load,
                                           Load->getNextNonDebugInstruction(), Target,
                                           TypeToUse->getPointerElementType());
@@ -982,7 +1017,7 @@ ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(Value *V) {
 }
 
 Type *hakc::HAKCTransformer::HAKCAuthenticationRetType(unsigned AddrSpace) {
-    return HAKCIRBuilder.getInt8PtrTy(AddrSpace);
+    return HAKCIRBuilder.getPtrTy(AddrSpace);
 }
 
 hakc::hakc_compartment_id_t hakc::HAKCTransformer::getFunctionCompartmentID(Function *F) {
@@ -1036,9 +1071,9 @@ void hakc::HAKCTransformer::CreateTransferFunctionArg_PreCall(Function *F, Funct
 
 void hakc::HAKCTransformer::CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg) {}
 
-//bool hakc::HAKCTransformer::FunctionIsExported(Function *F) {
-//    return false;
-//}
+unsigned hakc::HAKCTransformer::GetPointerAddrSpace(hakc::ManagedHAKCPointerP HAKCPointer) {
+    return GetPointerAddrSpace(HAKCPointer->GetBaseDefinition());
+}
 
 unsigned hakc::HAKCTransformer::GetPointerAddrSpace(Value *V) {
     unsigned AddrSpace = 0;

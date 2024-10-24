@@ -401,7 +401,7 @@ namespace hakc {
     std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetInstrinsicsToSkip() {
         return {
                 Intrinsic::IndependentIntrinsics::dbg_declare,
-                Intrinsic::IndependentIntrinsics::dbg_addr,
+                /*Intrinsic::IndependentIntrinsics::dbg_addr,*/
                 Intrinsic::IndependentIntrinsics::dbg_label,
                 Intrinsic::IndependentIntrinsics::dbg_value,
                 Intrinsic::IndependentIntrinsics::read_register,
@@ -958,7 +958,7 @@ namespace hakc {
     void HAKCFunctionAnalysis::handleCall(CallInst *call, HAKCCompartmentalizationPolicy &Policy) {
         auto IntrinsicsToSkip = GetInstrinsicsToSkip();
         if (call->getCalledFunction() &&
-            (call->getCalledFunction()->isDebugInfoForProfiling() ||
+            (/*call->getCalledFunction()->isDebugInfoForProfiling() ||*/
              IntrinsicsToSkip.find(call->getIntrinsicID()) !=
              IntrinsicsToSkip.end())) {
             return;
@@ -1387,7 +1387,8 @@ namespace hakc {
 
     bool HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Value *Pointer) {
         if (Pointer->getType()->isPointerTy()) {
-            return Pointer->getType()->getPointerElementType()->isFunctionTy();
+            /*return Pointer->getType()->getPointerElementType()->isFunctionTy();*/
+            return Pointer->getType()->isFunctionTy();
         }
         return false;
     }

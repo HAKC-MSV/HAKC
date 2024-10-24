@@ -14,6 +14,7 @@
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
+#include "HAKCAnalysis/ManagedHAKCPointer.h"
 
 using namespace llvm;
 
@@ -35,7 +36,7 @@ namespace hakc {
          * @param I
          * @return The last Instruction created, placed immediately prior to I
          */
-        virtual Value *CreateSafePointer(Value *HAKCPointer, Instruction *I);
+        virtual Value *CreateSafePointer(ManagedHAKCPointerP HAKCPointer, Instruction *I);
 
         /**
          * Create a HAKC Pointer check at I
@@ -43,7 +44,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual Value *CreateDataAuthentication(Value *HAKCPointer, Instruction *I);
+        virtual Value *CreateDataAuthentication(ManagedHAKCPointerP HAKCPointer, Instruction *I);
 
         /**
          * Create a HAKC Code Pointer check at I
@@ -51,7 +52,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual Value *CreateCodeAuthentication(Value *HAKCPointer, Instruction *I);
+        virtual Value *CreateCodeAuthentication(ManagedHAKCPointerP HAKCPointer, Instruction *I);
 
         /**
          * Computes the size of the transfer and then calls CreateSizedCompartmentTransfer
@@ -172,7 +173,9 @@ namespace hakc {
         * Returns true if ManagedHAKCPointer is an appropriately sized integer for use as a pointer
         * @param HAKCPointer
         */
-        virtual bool ValidateHAKCIntegerPointerSize(Value *HAKCPointer);
+//        virtual bool ValidateHAKCIntegerPointerSize(ManagedHAKCPointerP HAKCPointer);
+
+        virtual unsigned GetPointerAddrSpace(ManagedHAKCPointerP HAKCPointer);
 
         virtual unsigned GetPointerAddrSpace(Value *V);
 
@@ -197,7 +200,7 @@ namespace hakc {
          * @param HAKCPointer
          * @param I
          */
-        void ValidateHAKCPointerAndLocation(Value *HAKCPointer, Instruction *I);
+        void ValidateHAKCPointerAndLocation(const ManagedHAKCPointerP& HAKCPointer, Instruction *I);
 
         /**
          * Performs the transformations needed for creating a safe pointer
@@ -205,7 +208,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual Value *CreateSafePointer_Arch(Value *HAKCPointer, Instruction *I) = 0;
+        virtual Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) = 0;
 
         /**
          * Creates a Call to the specified function
@@ -248,7 +251,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual std::vector<Value *> CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) = 0;
+        virtual void CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) = 0;
 
         /**
          * Create the argument set for a HAKC code check
@@ -256,7 +259,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual std::vector<Value *> CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) = 0;
+        void CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) = 0;
 
         /**
          * Create the argument set for a HAKC Compartment transfer
@@ -298,6 +301,10 @@ namespace hakc {
 
         bool HAKCPointerHasCustomTransfer(Value *HAKCPointer);
 
+        Value* CreatePointerCast(ManagedHAKCPointerP HAKCPointer, PointerType *PointerTy);
+
+        Value* CreateReturnCast(ManagedHAKCPointerP HAKCPointer, Value* V);
+
         /**
          * Return the custom transfer function if one exists
          * @param HAKCPointer
@@ -307,7 +314,7 @@ namespace hakc {
 
         virtual void ValidateLocation(Instruction *I);
 
-        virtual void ValidateHAKCPointer(Value *HAKCPointer);
+        virtual void ValidateHAKCPointer(ManagedHAKCPointerP HAKCPointer);
 
         virtual hakc_compartment_id_t getSymbolCompartmentID(GlobalValue *GV);
 

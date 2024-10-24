@@ -1,7 +1,7 @@
 [submodule "llvm-project"]
 	path = llvm-project
 	url = https://github.com/llvm/llvm-project.git
-	branch = release/12.x
+	branch = tags/llvmorg-19.1.2
 [submodule "linux"]
 	path = linux
 	url = https://github.com/torvalds/linux.git

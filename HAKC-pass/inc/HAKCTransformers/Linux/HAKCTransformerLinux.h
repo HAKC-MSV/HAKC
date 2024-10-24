@@ -19,7 +19,7 @@ namespace hakc {
 
         HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinux &ModuleAnalysis);
 
-        Value *CreateSafePointer_Arch(Value *HAKCPointer, Instruction *I) override;
+        Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) override;
 
         Type *GetEntryTokenType(unsigned AddrSpace) override;
 
@@ -43,9 +43,9 @@ namespace hakc {
 
         virtual std::string getUniqueAddressable_Name(Function *F);
 
-        std::vector<Value *> CreateDataAuthArguments(Value *HAKCPointer, Instruction *I) override;
+        void CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) override;
 
-        std::vector<Value *> CreateCodeAuthArguments(Value *HAKCPointer, Instruction *I) override;
+        void CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) override;
 
         std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
                                                      ConstantInt *Size) override;
