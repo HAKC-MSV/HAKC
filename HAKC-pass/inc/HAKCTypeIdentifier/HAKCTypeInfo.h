@@ -47,6 +47,10 @@ namespace hakc {
 
         std::shared_ptr<HAKCTypeInfo> GetPointeeType();
 
+        bool IsIntegerType();
+
+        bool IsPointerType();
+
     protected:
         std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;
         unsigned SizeInBits;

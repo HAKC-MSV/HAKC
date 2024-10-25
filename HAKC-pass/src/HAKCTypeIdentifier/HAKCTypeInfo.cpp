@@ -44,6 +44,35 @@ namespace hakc {
         return LLVMType;
     }
 
+    bool HAKCTypeInfo::IsIntegerType() {
+        if(DbgType) {
+            if(auto *DiBasicTy = dyn_cast<DIBasicType>(DbgType)) {
+                ArrayRef<unsigned> IntegerEncodings = {
+                        dwarf::DW_ATE_address,
+                        dwarf::DW_ATE_signed,
+                        dwarf::DW_ATE_unsigned
+                };
+                auto Encoding = DiBasicTy->getEncoding();
+                auto Search = [Encoding](unsigned E) {
+                    return Encoding == E;
+                };
+                return llvm::any_of(IntegerEncodings, Search);
+            }
+        } else if(LLVMType) {
+            return LLVMType->isPointerTy();
+        }
+        return false;
+    }
+
+    bool HAKCTypeInfo::IsPointerType() {
+        if(DbgType) {
+            return DbgType->getTag() == dwarf::DW_TAG_pointer_type;
+        } else if(LLVMType) {
+            return LLVMType->isPointerTy();
+        }
+        return false;
+    }
+
     std::shared_ptr<HAKCTypeInfo> HAKCTypeInfo::GetPointeeType() {
         /* TODO: Implement me */
         return nullptr;

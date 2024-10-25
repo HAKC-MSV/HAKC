@@ -244,6 +244,8 @@ namespace hakc {
 
         virtual ConstantInt *GetObjectSizeInBytes(hakc::ManagedHAKCPointerP HAKCPointer);
 
+        virtual ConstantInt *GetObjectSizeInBytes(hakc::HAKCTypeP HAKCType);
+
         virtual FunctionType *GetHAKCDataAuthenticationFunctionType(unsigned AddrSpace) = 0;
 
         /**
@@ -343,7 +345,7 @@ namespace hakc {
 
         virtual Type *FindEntryBitcast(Value *V, Instruction *I, Function *Target);
 
-        virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(Type *HAKCType);
+        virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(HAKCTypeP HAKCType);
 
         virtual Instruction *
         CreateVoidCastCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target,

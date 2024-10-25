@@ -34,8 +34,8 @@ namespace hakc {
 
         virtual Instruction *
         CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                Value *HAKCPointer, Value *Size, Type *srcTy,
-                                Type *dstTy) = 0;
+                                hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
+                                HAKCTypeP dstTy) = 0;
 
     protected:
         Type *TargetType;

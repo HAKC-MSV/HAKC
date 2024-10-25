@@ -528,29 +528,19 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(hakc::ManagedHAKCPointe
         }
         auto *FinalLocation = &*HAKCIRBuilder.GetInsertPoint();
         auto *SafePtr = CreateSafePointer(HAKCPointer, &*HAKCIRBuilder.GetInsertPoint());
-        auto *Load = HAKCIRBuilder.CreateLoad(PointerType::get(), SafePtr);
+        auto *Load = HAKCIRBuilder.CreateLoad(PointerType::get(getModule().getContext(), ), SafePtr);
         CreateVoidCastCompartmentTransfer(Load,
                                           Load->getNextNonDebugInstruction(), Target,
-                                          TypeToUse->getPointerElementType());
+                                          TypeToUse->GetPointeeType());
         auto *FinalTransfer = CreateSizedCompartmentTransfer(HAKCPointer, FinalLocation,
                                                              Target, true, HAKCIRBuilder.getInt64(64));
         return FinalTransfer;
     }
 
-    uint64_t size = 64;
+    auto *size = GetObjectSizeInBytes(TypeToUse->GetPointeeType());
 
-    /* the type has to be a struct */
-    if (auto *StructTy = dyn_cast<StructType>(TypeToUse->getPointerElementType())) {
-        auto *StructDITy = CompartmentalizationPolicy.GetTypeIdentifier().findDiType(StructTy);
-        if (StructDITy) {
-            size = CompartmentalizationPolicy.GetTypeIdentifier().getDITypeSizeInBits(StructDITy);
-        } else {
-            size = StructTy->getScalarSizeInBits();
-        }
-    }
-
-    if (size == 0) {
-        CommonHAKCAnalysis::getWriter() << "Unexpected (zero) dest-cast struct size:\n" << std::to_string(size) << "\n";
+    if (size->equalsInt(0)) {
+        CommonHAKCAnalysis::getWriter() << "Zero size for HAKCType " << *TypeToUse->GetPointeeType() << "\n";
         throw std::exception();
     }
 
@@ -564,15 +554,13 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(hakc::ManagedHAKCPointe
      */
     Instruction *Transfer;
     if (DebugIsActive()) {
-        CommonHAKCAnalysis::getWriter() << "LLVM type: " << *TypeToUse << "\nsize of type: " << std::to_string(size)
-                                        << "\n";
+        CommonHAKCAnalysis::getWriter() << "LLVM type: " << *TypeToUse << "\nsize of type: " << *size << "\n";
     }
 
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
-        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetDivision, HAKCPointer,
-                                                           HAKCIRBuilder.getInt64(size / BITS_PER_BYTE),
-                                                           HAKCPointer->getType(), TypeToUse);
+        Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetDivision, HAKCPointer, size,
+                                                           HAKCPointer->GetType(), TypeToUse);
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "custom xfer result:\n";
@@ -970,19 +958,23 @@ Value *hakc::HAKCTransformer::CreateBitCast(hakc::ManagedHAKCPointerP Operand, T
         throw std::exception();
     }
     Value *BitCast;
-    if (Operand->getType()->isIntegerTy() && TargetType->isPointerTy()) {
-        BitCast = HAKCIRBuilder.CreateIntToPtr(Operand, TargetType);
-    } else if (Operand->getType()->isPointerTy() && TargetType->isIntegerTy()) {
-        BitCast = HAKCIRBuilder.CreatePtrToInt(Operand, TargetType);
+    if (Operand->GetType()->IsIntegerType() && TargetType->isPointerTy()) {
+        BitCast = HAKCIRBuilder.CreateIntToPtr(Operand->GetBaseDefinition(), TargetType);
+    } else if (Operand->GetType()->IsPointerType() && TargetType->isIntegerTy()) {
+        BitCast = HAKCIRBuilder.CreatePtrToInt(Operand->GetBaseDefinition(), TargetType);
     } else {
-        BitCast = HAKCIRBuilder.CreateBitCast(Operand, TargetType);
+        BitCast = HAKCIRBuilder.CreateBitCast(Operand->GetBaseDefinition(), TargetType);
     }
     return BitCast;
 }
 
 
 ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(hakc::ManagedHAKCPointerP HAKCPointer) {
-    auto bit_size = HAKCPointer->GetType()->GetPointeeType()->GetSizeInBits();
+    return GetObjectSizeInBytes(HAKCPointer->GetType()->GetPointeeType());
+}
+
+ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(hakc::HAKCTypeP HAKCType) {
+    auto bit_size = HAKCType->GetSizeInBits();
     return getInt64(bit_size / BITS_PER_BYTE);
 }
 
