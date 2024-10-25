@@ -5,6 +5,8 @@
 #include "HAKCTypeIdentifier/HAKCTypeInfo.h"
 
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/BinaryFormat/Dwarf.h"
+
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
@@ -40,6 +42,58 @@ namespace hakc {
 
     Type *HAKCTypeInfo::GetLLVMType() {
         return LLVMType;
+    }
+
+    std::shared_ptr<HAKCTypeInfo> HAKCTypeInfo::GetPointeeType() {
+        /* TODO: Implement me */
+        return nullptr;
+    }
+
+    const DIType *HAKCTypeInfo::StripTypeModifiers(const DIType *DiType) {
+        auto *Result = DiType;
+
+        if(auto *DiDerivedType = dyn_cast<DIDerivedType>(DiType)) {
+            auto TagToFind = DiDerivedType->getTag();
+
+            auto Search = [TagToFind](dwarf::Tag Tag) {
+                return Tag == TagToFind;
+            };
+
+            ArrayRef<dwarf::Tag> TagsToRemove = {
+                    dwarf::DW_TAG_volatile_type,
+                    dwarf::DW_TAG_const_type,
+                    dwarf::DW_TAG_restrict_type
+            };
+            if(llvm::any_of(TagsToRemove, Search)) {
+                if(DiDerivedType->getBaseType()) {
+                    Result = StripTypeModifiers(DiDerivedType->getBaseType());
+                }
+            }
+        }
+
+        return Result;
+    }
+
+    bool HAKCTypeInfo::IsPointerToPointer(const DIType *DiType) {
+        DiType = StripTypeModifiers(DiType);
+        if (auto *DerivedTy = dyn_cast<DIDerivedType>(DiType)) {
+            if(DerivedTy->getTag() == dwarf::DW_TAG_pointer_type) {
+                if(DerivedTy->getBaseType()) {
+                    auto *BaseTy = StripTypeModifiers(DerivedTy->getBaseType());
+                    return BaseTy->getTag() == dwarf::DW_TAG_pointer_type;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    bool HAKCTypeInfo::IsPointerToPointer() {
+        if(DbgType) {
+            return IsPointerToPointer(DbgType);
+        }
+
+        return false;
     }
 
     void HAKCTypeInfo::SetLLVMType(Type *Ty) {

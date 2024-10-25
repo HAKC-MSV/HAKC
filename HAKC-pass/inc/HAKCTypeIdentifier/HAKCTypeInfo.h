@@ -43,12 +43,20 @@ namespace hakc {
 
         static StringRef UnknownType;
 
+        bool IsPointerToPointer();
+
+        std::shared_ptr<HAKCTypeInfo> GetPointeeType();
+
     protected:
         std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;
         unsigned SizeInBits;
         const DIType *DbgType;
         Type *LLVMType;
         std::string DbgTypeName;
+
+        bool IsPointerToPointer(const DIType *DiType);
+
+        const DIType* StripTypeModifiers(const DIType *DiType);
 
     public:
         friend bool operator==(const HAKCTypeInfo &lhs, const HAKCTypeInfo &rhs) {
@@ -95,6 +103,8 @@ namespace hakc {
             return !(YamlType == TypeInfo);
         }
     };
+
+    typedef std::shared_ptr<HAKCTypeInfo> HAKCTypeP;
 
 } // hakc
 

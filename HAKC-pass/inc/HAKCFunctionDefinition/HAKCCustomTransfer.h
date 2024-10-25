@@ -9,6 +9,7 @@
 #include "llvm/IR/Module.h"
 #include "HAKCTransferFunction.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
+#include "HAKCAnalysis/ManagedHAKCPointer.h"
 
 using namespace llvm;
 
@@ -28,7 +29,7 @@ namespace hakc {
         Function *GetFunction() const;
 
         virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                            Value *HAKCPointer, Value *Size,
+                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size,
                                             bool IsData) = 0;
 
         virtual Instruction *

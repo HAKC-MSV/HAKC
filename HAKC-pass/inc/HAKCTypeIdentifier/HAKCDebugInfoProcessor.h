@@ -30,7 +30,7 @@ namespace hakc {
 
         bool derivedTypeIsPointer(const DIType *diType);
 
-        const DIType *unwrapDIType(const DIType *diType);
+        static const DIType *unwrapDIType(const DIType *diType);
 
         static void printDIType(const DIType *type, unsigned indents);
 

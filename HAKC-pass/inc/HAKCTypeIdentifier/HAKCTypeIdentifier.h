@@ -30,7 +30,6 @@ namespace hakc {
     typedef std::shared_ptr<HAKCFunctionInfo> HAKCFunctionP;
     typedef std::shared_ptr<HAKCSymbolInfo> HAKCSymbolP;
     typedef std::shared_ptr<HAKCGlobalInfo> HAKCGlobalP;
-    typedef std::shared_ptr<HAKCTypeInfo> HAKCTypeP;
 
     class HAKCTypeIdentifier : public HAKCDebugInfoProcessor {
     public:

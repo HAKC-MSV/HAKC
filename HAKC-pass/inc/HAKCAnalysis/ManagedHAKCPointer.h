@@ -14,6 +14,7 @@
 #include "llvm/IR/Dominators.h"
 
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include "HAKCTypeIdentifier/HAKCTypeInfo.h"
 
 namespace hakc {
     using namespace llvm;
@@ -116,6 +117,8 @@ namespace hakc {
 
         unsigned ID;
 
+        HAKCTypeP HAKCTy;
+
         /**
          * Pointer uses and their replacements
          */
@@ -212,6 +215,10 @@ namespace hakc {
         void UpdateUserCounts();
 
         void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
+
+        HAKCTypeP GetType();
+
+        void SetType(HAKCTypeP HAKCTy);
 
     private:
         void InitBaseDefinition(Value *Pointer);

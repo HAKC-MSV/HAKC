@@ -28,6 +28,14 @@ namespace hakc {
         return UserP->getOperand(OperandNo);
     }
 
+    HAKCTypeP ManagedHAKCPointer::GetType() {
+        return hakc::HAKCTypeP();
+    }
+
+    void ManagedHAKCPointer::SetType(HAKCTypeP HAKCTy) {
+
+    }
+
     void ManagedHAKCPointerUse::setUser(User *U) {
         if (!U) {
             CommonHAKCAnalysis::getWriter() << "Trying to set a null user for " << *UserP << "\n";
@@ -70,6 +78,7 @@ namespace hakc {
             PurposefullyIgnored(false),
             AuthenticatedIsCopyOfBase(false),
             ID(ID),
+            HAKCTy(nullptr),
             AuthenticatedUses(),
             ProtectedUses(),
             CloneUses() {
