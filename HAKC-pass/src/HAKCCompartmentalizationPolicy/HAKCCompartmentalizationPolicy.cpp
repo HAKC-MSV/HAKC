@@ -3,115 +3,103 @@
 //
 
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
-#include "HAKCAnalysis/HAKCModuleAnalysis.h"
 
 #include "llvm/Support/FileSystem.h"
 
-#include "HAKCCompartmentalizationPolicy/yaml/HAKCMappings.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
 namespace hakc {
-    HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(Module &M, HAKCModuleAnalysis *HAKCAnalysis)
-            : YamlPolicy(), LLVMModule(M),
-              KernelCompartment(KERNEL_COMPARTMENT, KERNEL_ACCESS_TOKEN, M.getContext()),
-              TypeIdentifier(M, HAKCAnalysis), Compartments(), GlobalValueDivisionMapping() {
-        HAKCCompartmentDivision KernelDivision(KernelCompartment, KERNEL_DIVISION, KERNEL_ACCESS_TOKEN, M.getContext());
-        KernelCompartment.AddDivision(KernelDivision);
-        Compartments[KernelCompartment.GetCompartmentIDValue()] = KernelCompartment;
+    HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(bool Debug)
+            : Database(nullptr), Conn(nullptr), Debug(Debug) {
     }
 
-    void HAKCCompartmentalizationPolicy::ReadCompartmentalizationPolicy(const std::string &YamlPath) {
-        if (!sys::fs::exists(YamlPath)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << YamlPath << "\n";
-            throw std::exception();
-        } else if (!sys::fs::is_regular_file(YamlPath)) {
-            CommonHAKCAnalysis::getWriter() << YamlPath << " is not a regular file\n";
-            throw std::exception();
+    HAKCCompartmentalizationPolicy::~HAKCCompartmentalizationPolicy() {
+        Reset();
+    }
+
+    void HAKCCompartmentalizationPolicy::Reset() {
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Resetting Connection\n";
         }
-
-        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(YamlPath);
-        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
-
-        yin >> YamlPolicy;
-        if (yin.error()) {
-            CommonHAKCAnalysis::getWriter() << "Error parsing " << YamlPath << "\n";
-            throw std::exception();
+        if (Conn) {
+            Conn.reset();
         }
-
-        for (auto &YamlCompartment: YamlPolicy.Compartments) {
-            HAKCCompartment CurrentCompartment(YamlCompartment.CompartmentID, YamlCompartment.EntryToken,
-                                               LLVMModule.getContext());
-            for (auto &Target: YamlCompartment.Targets) {
-                CurrentCompartment.AddTarget(HAKCCompartment::CreateID(Target, LLVMModule));
-            }
-            for (auto &YamlDivision: YamlCompartment.Cliques) {
-                HAKCCompartmentDivision Div(CurrentCompartment, YamlDivision.DivisionID, YamlDivision.AccessToken,
-                                            LLVMModule.getContext());
-                CurrentCompartment.AddDivision(Div);
-            }
-
-            Compartments[YamlCompartment.CompartmentID] = CurrentCompartment;
+        if (Database) {
+            Database.reset();
         }
     }
 
-    HAKCTypeIdentifier &HAKCCompartmentalizationPolicy::GetTypeIdentifier() {
-        return TypeIdentifier;
+    void HAKCCompartmentalizationPolicy::ConnectToDatabase(StringRef DatabasePath) {
+        if (Database || Conn) {
+            Reset();
+        }
+        if (Debug) {
+            CommonHAKCAnalysis::getWriter() << "Connecting to " << DatabasePath << "\n";
+        }
+
+        kuzu::main::SystemConfig SysConfig;
+        SysConfig.readOnly = true;
+        Database = std::make_shared<kuzu::main::Database>(DatabasePath, SysConfig);
+        Conn = std::make_unique<kuzu::main::Connection>(Database.get());
     }
 
-    HAKCCompartment HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
-        auto Division = GetDivision(GV);
-        return Division.GetHAKCCompartment();
-    }
-
-    HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
-        if (!GV) {
-            CommonHAKCAnalysis::getWriter() << "Trying to find Division for null GlobalValue!\n";
+    void HAKCCompartmentalizationPolicy::CheckConnection() {
+        if (!Conn) {
+            CommonHAKCAnalysis::getWriter() << "Connection is not valid\n";
             throw std::exception();
         }
-
-        auto it = GlobalValueDivisionMapping.find(GV);
-        if (it == GlobalValueDivisionMapping.end()) {
-            auto SymbolInfo = TypeIdentifier.FindSymbol(GV, true);
-            if (SymbolInfo) {
-                for (auto &YamlSymbol: YamlPolicy.Symbols) {
-                    if (YamlSymbol == SymbolInfo) {
-                        auto Div = GetDivision(YamlSymbol.CompartmentID, YamlSymbol.DivisionID);
-                        GlobalValueDivisionMapping[SymbolInfo->GetGlobalObj()] = Div;
-                        return Div;
-                    }
-                }
-            }
-            return KernelCompartment.GetDivisions()[0];
-        } else {
-            return it->second;
-        }
     }
 
-    HAKCCompartmentDivision HAKCCompartmentalizationPolicy::GetDivision(hakc_compartment_id_t CompartmentID,
-                                                                        hakc_compartment_division_t DivisionID) {
-        auto Result = KernelCompartment.GetDivisions()[0];
+    HAKCCompartmentP HAKCCompartmentalizationPolicy::GetCompartment(GlobalValue *GV) {
+        return nullptr;
+    }
 
-        auto Compartment = GetCompartment(CompartmentID);
-        for (auto &Div: Compartment.GetDivisions()) {
-            if (Div.GetDivisionID()->getSExtValue() == DivisionID) {
-                Result = Div;
-            }
+    HAKCDivisionP HAKCCompartmentalizationPolicy::GetDivision(GlobalValue *GV) {
+        return nullptr;
+    }
+
+    HAKCDivisionP HAKCCompartmentalizationPolicy::GetDivision(hakc_compartment_id_t CompartmentID,
+                                                              hakc_compartment_division_t DivisionID) {
+        auto Statement = CreatePreparedStatement(
+                "MATCH (d:HAKCDivision)-[:InCompartment]->(c:HAKCCompartment) WHERE d.DivisionID = $division_id AND c.CompartmentID = $compartment_id RETURN d.*, c.*");
+        std::unordered_map<std::string, HAKCDBValueP> Arguments;
+        Arguments["division_id"] = std::make_unique<HAKCDBValue>(DivisionID);
+        Arguments["compartment_id"] = std::make_unique<HAKCDBValue>(CompartmentID);
+        auto Result = Execute(Statement, Arguments);
+        if (!Result->isSuccess()) {
+            CommonHAKCAnalysis::getWriter() << "Failed to execute query: " << Result->getErrorMessage() << "\n";
+            throw std::exception();
         }
-        return Result;
+        if (!Result->hasNext()) {
+            return nullptr;
+        }
+
+
     }
 
     HAKC_Division_ID HAKCCompartmentalizationPolicy::GetDivisionID(GlobalValue *GV) {
-        auto Division = GetDivision(GV);
-        return Division.GetDivisionID();
+        return nullptr;
     }
 
-    HAKCCompartment HAKCCompartmentalizationPolicy::GetCompartment(hakc_compartment_id_t ID) {
-        auto it = Compartments.find(ID);
-        if (it == Compartments.end()) {
-            return KernelCompartment;
-        } else {
-            return it->second;
+    HAKCCompartmentP HAKCCompartmentalizationPolicy::GetCompartment(hakc_compartment_id_t ID) {
+        return nullptr;
+    }
+
+    HAKCPreparedStatementP HAKCCompartmentalizationPolicy::CreatePreparedStatement(StringRef query) {
+        CheckConnection();
+        auto Statement = Conn->prepare(query);
+        if (!Statement) {
+            CommonHAKCAnalysis::getWriter() << "Could not create PreparedStatement\n";
+            throw std::exception();
         }
+        return Statement;
+    }
+
+    std::unique_ptr<kuzu::main::QueryResult>
+    HAKCCompartmentalizationPolicy::Execute(HAKCPreparedStatementP &PreparedStmt,
+                                            std::unordered_map<std::string, HAKCDBValueP> &Arguments) {
+        CheckConnection();
+        return Conn->executeWithParams(PreparedStmt.get(), Arguments);
     }
 
 } // hakc
