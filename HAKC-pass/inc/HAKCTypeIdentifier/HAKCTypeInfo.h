@@ -10,6 +10,7 @@
 
 #include <map>
 #include <llvm/IR/DebugInfoMetadata.h>
+#include "HAKCAnalysis/HAKCOstream.h"
 
 namespace hakc {
 
@@ -105,6 +106,11 @@ namespace hakc {
 
         friend bool operator!=(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
             return !(YamlType == TypeInfo);
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, HAKCTypeInfo &TypeInfo) {
+            hos.GetOS() << TypeInfo;
+            return hos;
         }
     };
 

@@ -29,8 +29,7 @@ namespace hakc {
         Function *GetFunction() const;
 
         virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size,
-                                            bool IsData) = 0;
+                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) = 0;
 
         virtual Instruction *
         CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
@@ -41,8 +40,8 @@ namespace hakc {
         Type *TargetType;
         Function *CustomTransfer;
 
-        void FindTargetTypeAndTransfer(Module &M, StringRef TransferFunctionName, StringRef TypeName,
-                                       Type *ReturnTy, ArrayRef<Type *> ArgTys);
+        void FindTargetTypeAndTransfer(Module &M, StringRef TransferFunctionName, StringRef TypeName, Type *ReturnTy,
+                                       ArrayRef<Type *> ArgTys);
     };
 
     typedef std::shared_ptr<HAKCCustomTransfer> hakc_custom_transfer_def_t;

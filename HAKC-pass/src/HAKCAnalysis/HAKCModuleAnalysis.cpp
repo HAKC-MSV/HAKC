@@ -212,14 +212,7 @@ namespace hakc {
         std::set<Value *> examined;
         bool escapes = _useEscapes(U, examined);
         if (in_debug) {
-            CommonHAKCAnalysis::getWriter() << "Use ";
-            if (auto *f = dyn_cast<Function>(U.get())) {
-                CommonHAKCAnalysis::getWriter() << f->getName();
-            } else {
-                U->print(CommonHAKCAnalysis::getWriter());
-            }
-            CommonHAKCAnalysis::getWriter() << " in ";
-            U.getUser()->print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "Use " << U.get() << " in " << U.getUser();
             if (escapes) {
                 CommonHAKCAnalysis::getWriter() << " escapes\n";
             } else {
@@ -257,9 +250,7 @@ namespace hakc {
 
         TransformModule(Policy);
         if (IsCompartmentalizedAndContainsDebugName) {
-            CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n";
-            M.print(CommonHAKCAnalysis::getWriter(), nullptr);
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n" << M << "\n";
         }
     }
 
@@ -272,9 +263,7 @@ namespace hakc {
                 return true;
             }
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Use ";
-                U.getUser()->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " does not escape\n";
+                CommonHAKCAnalysis::getWriter() << "Use " << U.getUser() << " does not escape\n";
             }
         }
         Function *transfer = GetModule().getFunction(getOutsideTransferName(F));
@@ -416,9 +405,7 @@ namespace hakc {
                     in_debug = debug_output;
                     F.replaceUsesWithIf(transferFunc, useEscapes);
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Done\n";
-                        GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "Done\n" << GetModule() << "\n";
                     }
                 }
             }
@@ -536,8 +523,7 @@ namespace hakc {
     Function *
     HAKCModuleAnalysis::CreateInitTransfer(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy) {
         if (!GlobalVar->hasInitializer()) {
-            CommonHAKCAnalysis::PrettyPrintValue(GlobalVar, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " has no initializer\n";
+            CommonHAKCAnalysis::getWriter() << GlobalVar << " has no initializer\n";
             throw std::exception();
         }
 
@@ -559,9 +545,7 @@ namespace hakc {
         if (GlobalInitFunc->empty()) {
             PopulateGlobalInitTransferFunc(GlobalInitFunc, GlobalVar, Policy);
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Finished Populating Global Init Transfer\n";
-                GlobalInitFunc->print(CommonHAKCAnalysis::getWriter(), nullptr);
-                CommonHAKCAnalysis::getWriter() << "\n";
+                CommonHAKCAnalysis::getWriter() << "Finished Populating Global Init Transfer\n" << *GlobalInitFunc << "\n";
             }
         }
 
@@ -607,10 +591,9 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Starting Global Init Population\n";
         }
         getTransformer(Policy).PopulateGlobalTransfer(GlobTransfer, GlobalVar, debug_output);
-        if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter())) {
+        if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter().GetOS())) {
             CommonHAKCAnalysis::getWriter() << "\nFaulty Global Transfer function "
-                                            << GlobTransfer->getName() << "\n";
-            GetModule().print(CommonHAKCAnalysis::getWriter(), nullptr);
+                                            << GlobTransfer->getName() << "\n" << GetModule();
             throw std::exception();
         }
 

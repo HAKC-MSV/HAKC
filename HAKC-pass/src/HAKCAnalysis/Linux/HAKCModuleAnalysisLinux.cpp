@@ -381,9 +381,8 @@ namespace hakc {
         builder.CreateRet(ctxSelect);
 
         if (debug_output) {
-            getctx->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            CommonHAKCAnalysis::getWriter() << llvm::verifyFunction(*getctx, &CommonHAKCAnalysis::getWriter()) << "\n";
+            CommonHAKCAnalysis::getWriter() << getctx << "\n";
+            CommonHAKCAnalysis::getWriter() << llvm::verifyFunction(*getctx, &CommonHAKCAnalysis::getWriter().GetOS()) << "\n";
         }
 
         // generate function pointer and place in modparam fp section
@@ -406,9 +405,7 @@ namespace hakc {
         GlobalValue *kernparam = ExtractGlobalFromKernelParam(GV);
 
         if (!kernparam) {
-            CommonHAKCAnalysis::getWriter() << "Could not extract global from kernel param:\n" << *GV << "\n";
-            M.print(CommonHAKCAnalysis::getWriter(), nullptr);
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Could not extract global from kernel param:\n" << *GV << "\n" << M << "\n";
             throw std::exception();
         }
 

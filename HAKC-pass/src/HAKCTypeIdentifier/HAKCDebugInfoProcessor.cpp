@@ -3,7 +3,6 @@
 //
 
 #include "HAKCTypeIdentifier/HAKCDebugInfoProcessor.h"
-#include "llvm/Transforms/Utils/Local.h"
 
 #include "HAKC-defs.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
@@ -139,7 +138,7 @@ namespace hakc {
         for (unsigned i = 0; i < indents; i++) {
             CommonHAKCAnalysis::getWriter() << "\t";
         }
-        type->print(CommonHAKCAnalysis::getWriter());
+        CommonHAKCAnalysis::getWriter() << type << "\n";
         if (auto *diDerivedType = dyn_cast<DIDerivedType>(type)) {
             if (diDerivedType->getBaseType()) {
                 CommonHAKCAnalysis::getWriter() << "\n";
@@ -188,9 +187,7 @@ namespace hakc {
         findDbgValues(dbg, v);
         for (DbgValueInst *d: dbg) {
             if (debug) {
-                CommonHAKCAnalysis::getWriter() << "Debug value instruction: ";
-                d->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << "\n";
+                CommonHAKCAnalysis::getWriter() << "Debug value instruction: " << d << "\n";
             }
             if (DILocalVariable *localVar = d->getVariable()) {
                 return localVar->getType();

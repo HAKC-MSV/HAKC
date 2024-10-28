@@ -259,8 +259,7 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
     auto *GV = FindGlobal(DIGV);
     if (!GV) {
         if (debug) {
-            M.print(CommonHAKCAnalysis::getWriter(), nullptr);
-            CommonHAKCAnalysis::getWriter() << "\nCould not find Global " << DIGV->getName() << "\n";
+            CommonHAKCAnalysis::getWriter() << M << "\nCould not find Global " << DIGV->getName() << "\n";
         }
         return nullptr;
     }
@@ -327,8 +326,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     }
     auto DIGVTy = FindType(SubProg->getType());
     if (!DIGVTy) {
-        M.print(CommonHAKCAnalysis::getWriter(), nullptr);
-        CommonHAKCAnalysis::getWriter() << "Could not find HAKCType of " << F->getName() << " with DIType "
+        CommonHAKCAnalysis::getWriter() << M << "Could not find HAKCType of " << F->getName() << " with DIType "
                                         << *SubProg->getType() << "\n";
         throw std::exception();
     }
@@ -565,9 +563,7 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
         CreateIndirectCallSourceLink(CallI->getCalledOperand(), Path);
     } else {
         if (debug) {
-            CommonHAKCAnalysis::getWriter() << "Unhandled Link type: ";
-            CommonHAKCAnalysis::PrettyPrintValue(V, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Unhandled Link type: " << V << "\n";
         }
     }
 }
@@ -632,11 +628,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
                     auto *FunctionTy = GetIndirectCallFunctionType(Call);
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Source of indirect call operand in Function "
-                                                        << F->getName() << ": ";
-                        CommonHAKCAnalysis::PrettyPrintValue(
-                                AnalysisHelper->getDef(Call->getCalledOperand(), true, false),
-                                CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                                                        << F->getName() << ": " << AnalysisHelper->getDef(Call->getCalledOperand(), true, false) << "\n";
                     }
                     auto HAKCType = FindCalledFunctionType(FunctionTy);
                     if (!HAKCType) {
@@ -978,8 +970,7 @@ hakc::HAKCTypeIdentifier::HAKCTypeIdentifier(Module &M, CommonHAKCAnalysis *Anal
           /*LLVMTypeMapping(),*/ CurrentAnonID(0) {
 //    debug = true;
     if (debug) {
-        M.print(CommonHAKCAnalysis::getWriter(), nullptr);
-        CommonHAKCAnalysis::getWriter() << "\n";
+        CommonHAKCAnalysis::getWriter() << M << "\n";
     }
 
     if (debug) {

@@ -43,6 +43,8 @@ namespace hakc {
 
         HAKCSymbolP FindYamlSymbol(const HAKCYamlSymbol &YamlSymbol);
 
+        HAKCTypeP FindType(Type *Ty);
+
     protected:
         HAKCTypeP HandleType(const DIType *type);
 
@@ -92,8 +94,6 @@ namespace hakc {
         HAKCGlobalP FindGlobal(GlobalVariable *GV, bool SearchUnmapped = false);
 
         HAKCTypeP FindCalledFunctionType(FunctionType *FunctionTy);
-
-        HAKCTypeP FindType(Type *Ty);
 
         HAKCTypeP CreateNoDebugType(Type *Ty);
 

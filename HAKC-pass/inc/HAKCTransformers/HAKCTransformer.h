@@ -62,10 +62,8 @@ namespace hakc {
          * @param IsData
          * @return
          */
-        virtual Instruction *CreateCompartmentTransfer(Value *HAKCPointer,
-                                                       Instruction *I,
-                                                       GlobalValue *Target,
-                                                       bool IsData);
+        virtual Instruction *
+        CreateCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
 
         /**
          * Creates a Compartment Transfer of ManagedHAKCPointer at I. The arguments to the transfer function are:
@@ -85,11 +83,9 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual Instruction *CreateSizedCompartmentTransfer(ManagedHAKCPointerP HAKCPointer,
-                                                            Instruction *I,
-                                                            GlobalValue *Target,
-                                                            bool IsData,
-                                                            ConstantInt *Size);
+        virtual Instruction *
+        CreateSizedCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target,
+                                       bool IsData, ConstantInt *Size);
 
         /**
          * Creates a BitCastInst of Operand to TargetType at I
@@ -274,8 +270,9 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
-                                                             ConstantInt *Size) = 0;
+        virtual void
+        CreateTransferArguments(ManagedHAKCPointerP HAKCPointer, GlobalValue *Target, bool IsData, ConstantInt *Size,
+                                SmallVector<Value *> &Result) = 0;
 
 
         /**
@@ -329,7 +326,8 @@ namespace hakc {
 
         virtual Function *GetTransferFunction(Function *F);
 
-        virtual std::vector<Value *> CreateForwardArgumentTransfers(Function *Target, Function *TransferFunction);
+        virtual void
+        CreateForwardArgumentTransfers(Function *Target, Function *TransferFunction, SmallVector<Value *> &ArgsList);
 
         virtual void CreateBackwardArgumentTransfers(Function *Target, Function *TransferFunction);
 
@@ -343,7 +341,7 @@ namespace hakc {
 
         virtual bool DebugIsActive();
 
-        virtual Type *FindEntryBitcast(Value *V, Instruction *I, Function *Target);
+        virtual HAKCTypeP FindEntryBitcast(ManagedHAKCPointerP HAKCPointerP, Instruction *I, Function *Target);
 
         virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(HAKCTypeP HAKCType);
 
@@ -354,6 +352,8 @@ namespace hakc {
         virtual bool NoKernelTransfers(Function *Target);
 
         void InitNewFunction(Function *F, StringRef EntryBlockName);
+
+        ManagedHAKCPointerP CreateNewManagedPointer(Value *BaseDefinition);
     };
 }
 

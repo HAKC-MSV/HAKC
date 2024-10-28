@@ -33,26 +33,27 @@ namespace hakc {
     }
 
     Instruction *SingleFunctionCustomTransfer::CreateTransfer(IRBuilder<> &HAKCIRBuilder,
-                                                              HAKCCompartmentDivision &TargetDivision,
-                                                              Value *HAKCPointer, Value *Size, bool IsData) {
+                                                              HAKCCompartmentDivision &CompartmentDivision,
+                                                              hakc::ManagedHAKCPointerP HAKCPointer, Value *Size,
+                                                              bool IsData) {
         return HAKCIRBuilder.CreateCall(GetFunction(), {
-                HAKCPointer, TargetDivision.GetHAKCCompartment().GetCompartmentID(), TargetDivision.GetDivisionID()
+                HAKCPointer->GetBaseDefinition(), CompartmentDivision.GetHAKCCompartment().GetCompartmentID(),
+                CompartmentDivision.GetDivisionID()
         });
     }
 
-    Instruction *SingleFunctionCustomTransfer::CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder,
-                                                                       HAKCCompartmentDivision &TargetDivision,
-                                                                       Value *HAKCPointer, Value *Size,
-                                                                       Type *SrcTy, Type *DestTy) {
+    Instruction *SingleFunctionCustomTransfer::CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                                                       hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
+                                                                       HAKCTypeP dstTy) {
         /* cast void* HAKCPointer to DestTy */
-        Value *BitcastArgForTransferCall = HAKCIRBuilder.CreateBitCast(HAKCPointer, DestTy);
+        Value *BitcastArgForTransferCall = HAKCIRBuilder.CreateBitCast(HAKCPointer->GetBaseDefinition(), dstTy->GetLLVMType());
         /* Call transfer function with DestTy HAKCPointer */
         Value *TransferCall = HAKCIRBuilder.CreateCall(GetFunction(), {
-                BitcastArgForTransferCall, TargetDivision.GetHAKCCompartment().GetCompartmentID(),
-                TargetDivision.GetDivisionID()
+                BitcastArgForTransferCall, CompartmentDivision.GetHAKCCompartment().GetCompartmentID(),
+                CompartmentDivision.GetDivisionID()
         });
         /* cast DestTy HAKCPointer back to void* */
-        Value *BitcastArgForTargetCall = HAKCIRBuilder.CreateBitCast(TransferCall, SrcTy);
+        Value *BitcastArgForTargetCall = HAKCIRBuilder.CreateBitCast(TransferCall, srcTy->GetLLVMType());
 
         auto *Result = dyn_cast<Instruction>(BitcastArgForTargetCall);
         return Result;

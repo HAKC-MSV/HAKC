@@ -82,7 +82,8 @@ hakc::HAKCTransformerLinux::CreateTransferFunctionArg_PostCall(Function *Target,
         return;
     }
     CallInst *SavedColor = TransferArgumentsToRestore[Arg];
-    auto *Size = GetObjectSizeInBytes(Arg);
+    auto ManagedPointer = CreateNewManagedPointer(Arg);
+    auto *Size = GetObjectSizeInBytes(ManagedPointer);
     if (!Size) {
         Size = GetDefaultObjectSize();
     }
@@ -177,8 +178,9 @@ void hakc::HAKCTransformerLinux::CreateTransferFunctionFinalize_Arch(Function *O
         auto *transfer_unique_global = dyn_cast<GlobalVariable>(transfer_unique_addressable);
         auto *unique_addressable_global = dyn_cast<GlobalVariable>(unique_addressable);
         Constant *transfer_func_cast = ConstantExpr::getBitCast(Transfer,
-                                                                PointerType::get(getModule().getContext(), Transfer->getAddressSpace())
-                                                                /*transfer_unique_global->getType()->getPointerElementType()*/);
+                                                                PointerType::get(getModule().getContext(),
+                                                                                 Transfer->getAddressSpace())
+                /*transfer_unique_global->getType()->getPointerElementType()*/);
         transfer_unique_global->setSection(unique_addressable_global->getSection());
         transfer_unique_global->copyAttributesFrom(unique_addressable_global);
         transfer_unique_global->setInitializer(transfer_func_cast);
@@ -208,20 +210,23 @@ FunctionType *hakc::HAKCTransformerLinux::GetHAKCDataAuthenticationFunctionType(
     return FunctionType::get(RetTy, ArgTy, false);
 }
 
-void hakc::HAKCTransformerLinux::CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) {
+void hakc::HAKCTransformerLinux::CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I,
+                                                         SmallVector<Value *> &ArgsList) {
     auto *F = I->getFunction();
     auto CompartmentDivision = CompartmentalizationPolicy.GetDivision(F);
     auto AccessToken = CompartmentDivision.GetAccessToken();
     unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
     auto *DataAuthFuncTy = GetHAKCDataAuthenticationFunctionType(AddrSpace);
 
-    auto HAKCPointerBitCast = CreatePointerCast(HAKCPointer, dyn_cast<PointerType>(DataAuthFuncTy->getFunctionParamType(0)));
+    auto HAKCPointerBitCast = CreatePointerCast(HAKCPointer,
+                                                dyn_cast<PointerType>(DataAuthFuncTy->getFunctionParamType(0)));
     ArgsList.append({HAKCPointerBitCast,
                      GetHAKCCompartmentValue(getFunctionCompartmentID(F)),
                      AccessToken});
 }
 
-void hakc::HAKCTransformerLinux::CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) {
+void hakc::HAKCTransformerLinux::CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I,
+                                                         SmallVector<Value *> &ArgsList) {
     Function *F = I->getFunction();
     auto *ExitTokens = GetValidTargetCompartments(F);
     auto CompartmentDivision = CompartmentalizationPolicy.GetDivision(F);
@@ -237,38 +242,36 @@ void hakc::HAKCTransformerLinux::CreateCodeAuthArguments(ManagedHAKCPointerP HAK
                                                             HAKCIRBuilder.getInt64(0), HAKCIRBuilder.getInt64(0)
                                                     });
     unsigned AddrSpace = GetPointerAddrSpace(FirstExitToken);
-    Value *IndirectCallTarget = HAKCIRBuilder.CreateBitCast(HAKCPointer->GetBaseDefinition(), HAKCIRBuilder.getPtrTy(AddrSpace));
+    Value *IndirectCallTarget = HAKCIRBuilder.CreateBitCast(HAKCPointer->GetBaseDefinition(),
+                                                            HAKCIRBuilder.getPtrTy(AddrSpace));
     ArgsList.append({
-            IndirectCallTarget,
-            GetHAKCCompartmentValue(getFunctionCompartmentID(F)),
-            AccessToken,
-            FirstExitToken,
-            HAKCIRBuilder.getInt64(ExitTokens->getValueType()->getArrayNumElements())
-    });
+                            IndirectCallTarget,
+                            GetHAKCCompartmentValue(getFunctionCompartmentID(F)),
+                            AccessToken,
+                            FirstExitToken,
+                            HAKCIRBuilder.getInt64(ExitTokens->getValueType()->getArrayNumElements())
+                    });
 }
 
-std::vector<Value *> hakc::HAKCTransformerLinux::CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target,
-                                                                         bool IsData,
-                                                                         ConstantInt *Size) {
-    std::vector<Value *> FullArgSet;
-
+void
+hakc::HAKCTransformerLinux::CreateTransferArguments(ManagedHAKCPointerP HAKCPointer, GlobalValue *Target, bool IsData,
+                                                    ConstantInt *Size, SmallVector<Value *> &Result) {
     Value *OperandCast;
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
-    bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer);
+    bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer->GetBaseDefinition());
     auto Compartment = CompartmentalizationPolicy.GetCompartment(Target);
 
-    OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer, HAKCIRBuilder.getPtrTy(AddrSpace));
+    OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer->GetBaseDefinition(),
+                                                       HAKCIRBuilder.getPtrTy(AddrSpace));
 
-    FullArgSet.push_back(OperandCast);
-    FullArgSet.push_back(Size);
-    FullArgSet.push_back(Compartment.GetCompartmentID());
-    FullArgSet.push_back(CompartmentalizationPolicy.GetDivisionID(Target));
+    Result.push_back(OperandCast);
+    Result.push_back(Size);
+    Result.push_back(Compartment.GetCompartmentID());
+    Result.push_back(CompartmentalizationPolicy.GetDivisionID(Target));
     if (!IsPerCPU) {
         /* Function signature uses is_code which is !isData */
-        FullArgSet.push_back(IsData ? getFalse() : getTrue());
+        Result.push_back(IsData ? getFalse() : getTrue());
     }
-
-    return FullArgSet;
 }
 
 ConstantInt *hakc::HAKCTransformerLinux::GetColorValue(hakc::sym_color_t Color) {

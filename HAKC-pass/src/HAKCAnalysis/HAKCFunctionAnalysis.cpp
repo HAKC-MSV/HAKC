@@ -28,7 +28,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Updating parameters for the following HAKC functions:\n";
             for (auto *CallI: HAKCFunctionCalls) {
-                CommonHAKCAnalysis::getWriter() << *CallI << "\n";
+                CommonHAKCAnalysis::getWriter() << CallI << "\n";
             }
         }
 
@@ -44,12 +44,12 @@ namespace hakc {
             auto HAKCTransferFunction = GetHAKCTransferDef(CallI->getCalledFunction()->getName());
             if (HAKCTransferFunction) {
                 if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for " << *CallI << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for " << CallI << "\n";
                 }
                 if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string
                             (HAKCTransferFunction->GetCompartmentIdIdx()) << " ("
-                                                    << *CallI->getArgOperand(
+                                                    << CallI->getArgOperand(
                                                             HAKCTransferFunction->GetCompartmentIdIdx()) << ") to "
                                                     << std::to_string(TargetCompartment.GetCompartmentIDValue())
                                                     << "\n";
@@ -58,7 +58,7 @@ namespace hakc {
 
                 UpdateHAKCFunctionParameters_Arch(CallI, TargetCompartment, HAKCTransferFunction, Policy);
                 if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "After update call is " << *CallI << "\n";
+                    CommonHAKCAnalysis::getWriter() << "After update call is " << CallI << "\n";
                 }
             } else if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "No HAKC Transfer function found for "
@@ -88,7 +88,7 @@ namespace hakc {
 
         bool isData = !valueIsReadonlyPtr(getDef(operand, false, debug_output));
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "isData: " << std::to_string(isData) << " for " << *operand << "\n";
+            CommonHAKCAnalysis::getWriter() << "isData: " << std::to_string(isData) << " for " << operand << "\n";
         }
 
         Instruction *TransferCall;
@@ -105,9 +105,9 @@ namespace hakc {
             if (!isData) {
                 CommonHAKCAnalysis::getWriter() << operand->getName();
             } else {
-                operand->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << operand;
             }
-            CommonHAKCAnalysis::getWriter() << ": " << *TransferCall << "\n";
+            CommonHAKCAnalysis::getWriter() << ": " << TransferCall << "\n";
         }
         return TransferCall;
     }
@@ -122,9 +122,7 @@ namespace hakc {
         if (auto I = dyn_cast<Instruction>(user)) {
             return &F == I->getFunction();
         } else {
-            CommonHAKCAnalysis::getWriter() << "Unexpected user: ";
-            user->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Unexpected user: " << user << "\n";
             throw std::exception();
         }
     }
@@ -194,7 +192,7 @@ namespace hakc {
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Finding insertion point for ";
             if (v->getName().empty()) {
-                v->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << v;
             } else {
                 CommonHAKCAnalysis::getWriter() << v->getName();
             }
@@ -203,10 +201,8 @@ namespace hakc {
 
         BasicBlock *DominatorBlock = findDominatorUseBlock(v, users);
         if (!DominatorBlock) {
-            CommonHAKCAnalysis::getWriter() << "Could not find block for ";
-            v->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            getFunction().print(CommonHAKCAnalysis::getWriter());
+            CommonHAKCAnalysis::getWriter() << "Could not find block for " << v << "\n";
+            getFunction().print(CommonHAKCAnalysis::getWriter().GetOS());
             throw std::exception();
         }
 
@@ -250,7 +246,7 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::AddManagedPointer(Value *HAKCPointer) {
         if (!CommonHAKCAnalysis::IsPointerLikeType(HAKCPointer->getType())) {
-            CommonHAKCAnalysis::getWriter() << "Trying to add an invalid ManagedHAKCPointer: " << *HAKCPointer << "\n"
+            CommonHAKCAnalysis::getWriter() << "Trying to add an invalid ManagedHAKCPointer: " << HAKCPointer << "\n"
                                             << getFunction() << "\n";
             throw std::exception();
         }
@@ -277,9 +273,7 @@ namespace hakc {
          */
     void HAKCFunctionAnalysis::createAllAuthenticatedPointers() {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Function prior to making authenticated copies:\n";
-            getFunction().print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Function prior to making authenticated copies:\n" << getFunction() << "\n";
         }
         PointerManager.CreateAuthenticatedPointersAndAllClones();
     }
@@ -462,9 +456,7 @@ namespace hakc {
         } else if (isa<BitCastOperator>(user) || isa<GEPOperator>(user)) {
             return getUserInst(*user->user_begin());
         } else {
-            CommonHAKCAnalysis::getWriter() << "Unexpected user: ";
-            user->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Unexpected user: " << user << "\n";
             assert(false && "getUserInst");
             return nullptr; /* Shut up the compiler */
         }
@@ -488,19 +480,13 @@ namespace hakc {
                 return true;
             }
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Examining PHI Node ";
-                phiNode->print(CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " for Globals (" << nodes.size() << ")\n";
+                CommonHAKCAnalysis::getWriter() << "Examining PHI Node " << phiNode << " for Globals (" << nodes.size() << ")\n";
             }
             nodes.insert(phiNode);
             for (auto &val: phiNode->incoming_values()) {
                 Value *def = getDef(val.get(), false, debug_output);
                 if (debug_output) {
-                    CommonHAKCAnalysis::getWriter() << "\tPHI Node value: ";
-                    val->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n\t\tDef: ";
-                    def->print(CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << "\n";
+                    CommonHAKCAnalysis::getWriter() << "\tPHI Node value: " << val << "\n\t\tDef: " << def << "\n";
                 }
                 if (!isa<GlobalValue>(def)) {
                     if (isa<PHINode>(def)) {
@@ -532,20 +518,12 @@ namespace hakc {
          */
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for ";
-            CommonHAKCAnalysis::PrettyPrintValue(U.get(), CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " from ";
-            CommonHAKCAnalysis::PrettyPrintValue(U.getUser(), CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for " << U.get() << " from " << U.getUser() << "\n";
         }
 
         auto *ptr = getDef(U.get(), false, debug_output);
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def ";
-            CommonHAKCAnalysis::PrettyPrintValue(ptr, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " for ";
-            CommonHAKCAnalysis::PrettyPrintValue(U.get(), CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def " << ptr << " for " << U.get() << "\n";
         }
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
@@ -707,15 +685,11 @@ namespace hakc {
             }
             AddManagedPointer(definition);
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Definition ";
-                CommonHAKCAnalysis::PrettyPrintValue(definition, CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " from " << *use.getUser() << " is registered\n";
+                CommonHAKCAnalysis::getWriter() << "Definition " << definition << " from " << *use.getUser() << " is registered\n";
             }
         } else {
             if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Definition ";
-                CommonHAKCAnalysis::PrettyPrintValue(definition, CommonHAKCAnalysis::getWriter());
-                CommonHAKCAnalysis::getWriter() << " from " << *use.getUser() << " should not be checked\n";
+                CommonHAKCAnalysis::getWriter() << "Definition " << definition << " from " << *use.getUser() << " should not be checked\n";
             }
         }
     }
@@ -727,9 +701,7 @@ namespace hakc {
     Value *HAKCFunctionAnalysis::getDef(Value *V, bool followLoad, bool debug) {
         auto *def = CommonHAKCAnalysis::getDef(V, followLoad, debug);
         if (!def) {
-            CommonHAKCAnalysis::getWriter() << "Could not find definition for ";
-            CommonHAKCAnalysis::PrettyPrintValue(V, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Could not find definition for " << V << "\n";
             throw std::exception();
         }
         return def;
@@ -861,9 +833,7 @@ namespace hakc {
                     RegisterPointerDereference(compare->getOperandUse(0));
                 } else {
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Argument 1 (";
-                        compare->getOperand(1)->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << " ) already authenticated\n";
+                        CommonHAKCAnalysis::getWriter() << "Argument 1 (" << compare->getOperand(1) << " ) already authenticated\n";
                     }
                 }
                 if (arg1NeedsAuth) {
@@ -889,9 +859,7 @@ namespace hakc {
      */
     void HAKCFunctionAnalysis::handleBinaryOperator(BinaryOperator *binOp) {
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Checking binary op ";
-            binOp->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Checking binary op " << binOp << "\n";
         }
         /* Both operators need to be pointers to skip operations like
          * ptr | 0xFFFF
@@ -940,9 +908,7 @@ namespace hakc {
         }
 
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Arg " << globalValueArg.getOperandNo() << " (";
-            globalValueArg->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " ) is not a GlobalValue\n";
+            CommonHAKCAnalysis::getWriter() << "Arg " << globalValueArg.getOperandNo() << " (" << globalValueArg << " ) is not a GlobalValue\n";
         }
         return false;
     }
@@ -1258,7 +1224,7 @@ namespace hakc {
             }
 
             if (debug_output) {
-                getFunction().print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << getFunction() << "\n";
             }
 
             CommonHAKCAnalysis::VerifyFunction(&getFunction());
@@ -1330,7 +1296,7 @@ namespace hakc {
             if (auto *F = dyn_cast<Function>(OldValue)) {
                 CommonHAKCAnalysis::getWriter() << F->getName();
             } else {
-                OldValue->print(CommonHAKCAnalysis::getWriter());
+                CommonHAKCAnalysis::getWriter() << OldValue << "\n";
             }
             CommonHAKCAnalysis::getWriter() << " in " << *I << "\n";
             throw std::exception();

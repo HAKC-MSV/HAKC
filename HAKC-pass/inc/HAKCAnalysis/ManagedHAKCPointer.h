@@ -15,6 +15,7 @@
 
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCTypeIdentifier/HAKCTypeInfo.h"
+#include "HAKCAnalysis/HAKCOstream.h"
 
 namespace hakc {
     using namespace llvm;
@@ -81,7 +82,7 @@ namespace hakc {
             return !(lhs == rhs);
         }
 
-        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointerUse &HAKCPointerUse);
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerUse &HAKCPointerUse);
     };
 
     /**
@@ -171,6 +172,7 @@ namespace hakc {
 
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager *Manager, unsigned ID);
+        ManagedHAKCPointer(Value *BaseDefinition, bool DebugActive);
 
         Value *GetBaseDefinition() const;
 
@@ -251,19 +253,22 @@ namespace hakc {
             return !(lhs == rhs);
         }
 
-        friend raw_ostream &operator<<(raw_ostream &os, const ManagedHAKCPointer &ManagedPointer) {
-            os << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointer &ManagedPointer) {
+            hos << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
             if (ManagedPointer.GetBaseDefinition()) {
-                os << " [";
+                hos << " [";
                 if (isa<Argument>(ManagedPointer.GetBaseDefinition()) ||
                     isa<GlobalValue>(ManagedPointer.GetBaseDefinition())) {
-                    os << "  ";
+                    hos << "  ";
                 }
-                CommonHAKCAnalysis::PrettyPrintValue(ManagedPointer.GetBaseDefinition(), os);
-
-                os << "  ]";
+                hos << ManagedPointer.GetBaseDefinition() << "  ]";
             }
-            return os;
+            return hos;
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerP &ManagedPointer) {
+            hos << *ManagedPointer;
+            return hos;
         }
     };
 

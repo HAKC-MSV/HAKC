@@ -9,6 +9,7 @@
 #include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
+#include "HAKCOstream.h"
 
 #include <map>
 
@@ -111,7 +112,7 @@ namespace hakc {
 
         virtual bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
-        static raw_ostream &getWriter();
+        static hakc::HAKCOstream &getWriter();
 
         static unsigned getCompartmentStorageSizeInBits();
 
@@ -148,8 +149,6 @@ namespace hakc {
         static bool IsMultiSSAUser(Value *V);
 
         static bool IsConstantUsedInGlobal(Value *V);
-
-        static void PrettyPrintValue(Value *V, raw_ostream &os);
 
         static void SortGlobalList(std::vector<GlobalVariable *> &GlobalList);
 

@@ -43,12 +43,15 @@ namespace hakc {
 
         virtual std::string getUniqueAddressable_Name(Function *F);
 
-        void CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) override;
+        void CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I,
+                                     SmallVector<Value *> &ArgsList) override;
 
-        void CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value*> &ArgsList) override;
+        void CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I,
+                                     SmallVector<Value *> &ArgsList) override;
 
-        std::vector<Value *> CreateTransferArguments(Value *HAKCPointer, GlobalValue *Target, bool IsData,
-                                                     ConstantInt *Size) override;
+        void
+        CreateTransferArguments(ManagedHAKCPointerP HAKCPointer, GlobalValue *Target, bool IsData, ConstantInt *Size,
+                                SmallVector<Value *> &Result) override;
 
         ConstantInt *GetColorValue(sym_color_t Color);
 

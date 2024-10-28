@@ -21,11 +21,12 @@ namespace hakc {
                                      StringRef TransferFunctionName, Type *ReturnTy, ArrayRef<Type *> ArgTys,
                                      unsigned SignedPtrIdx, unsigned CompartmentIDIdx);
 
-        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &TargetCompartment,
-                                    Value *HAKCPointer, Value *Size, bool IsData) override;
+        Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                    hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) override;
 
-        Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &TargetCompartment,
-                                             Value *HAKCPointer, Value *Size, Type *SrcTy, Type *DestTy) override;
+        Instruction *CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                             hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
+                                             HAKCTypeP dstTy) override;
 
 
     protected:

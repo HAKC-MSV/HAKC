@@ -8,6 +8,8 @@
 #include "llvm/IR/Verifier.h"
 
 namespace hakc {
+    HAKCOstream hos;
+
     /**
  * @brief Collective analysis functionality
  * @param debug
@@ -37,8 +39,8 @@ namespace hakc {
         return nullptr;
     }
 
-    raw_ostream &CommonHAKCAnalysis::getWriter() {
-        return errs();
+    hakc::HAKCOstream &CommonHAKCAnalysis::getWriter() {
+        return hos;
     }
 
     bool CommonHAKCAnalysis::IsPointerLikeType(Type *Ty) {
@@ -68,8 +70,7 @@ namespace hakc {
             result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Intrinsic (" << intrinsic->getIntrinsicID() << ") from " <<
-                                                Call->getFunction()->getName() << " ";
-                intrinsic->print(CommonHAKCAnalysis::getWriter());
+                                                Call->getFunction()->getName() << " " << intrinsic;
                 if (result) {
                     CommonHAKCAnalysis::getWriter() << " is in { ";
                 } else {
@@ -96,20 +97,6 @@ namespace hakc {
         return Result;
     }
 
-    void CommonHAKCAnalysis::PrettyPrintValue(Value *V, raw_ostream &os) {
-        if (V == nullptr) {
-            os << "!!nullptr!!";
-        } else if (auto *F = dyn_cast<Function>(V)) {
-            os << "Function " << F->getName();
-        } else if (auto *GV = dyn_cast<GlobalVariable>(V)) {
-            os << "Global " << GV->getName();
-        } else if (auto *Arg = dyn_cast<Argument>(V)) {
-            os << "Argument " << Arg->getArgNo() << " of " << Arg->getParent()->getName();
-        } else {
-            os << *V;
-        }
-    }
-
     /**
      * @brief Computes the definition chain from an arbitrary value to its source definition
      * @param v
@@ -128,9 +115,7 @@ namespace hakc {
 
 
         if (debug) {
-            CommonHAKCAnalysis::getWriter() << "Getting Def Chain for ";
-            CommonHAKCAnalysis::PrettyPrintValue(v, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Getting Def Chain for " << v << "\n";
         }
 
         std::set<Value *> working_list = {v};
@@ -142,14 +127,13 @@ namespace hakc {
             if (DefchainCache.find(curr) != DefchainCache.end()) {
                 auto CachedChain = DefchainCache[curr];
                 if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Adding cached chain for ";
-                    CommonHAKCAnalysis::PrettyPrintValue(curr, CommonHAKCAnalysis::getWriter());
-                    CommonHAKCAnalysis::getWriter() << " containing " << std::to_string(CachedChain.size())
+                    CommonHAKCAnalysis::getWriter() << "Adding cached chain for " << curr << " containing "
+                                                    << std::to_string(CachedChain.size())
                                                     << " links\n";
                 }
                 for (auto *Link: CachedChain) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "\t" << *Link << "\n";
+                        CommonHAKCAnalysis::getWriter() << "\t" << Link << "\n";
                     }
                     def_chain.push_back(Link);
                 }
@@ -158,7 +142,7 @@ namespace hakc {
 
             if (auto *gep = dyn_cast<GetElementPtrInst>(curr)) {
                 if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer " << *gep->getPointerOperand()
+                    CommonHAKCAnalysis::getWriter() << "Adding GEP Operator pointer " << gep->getPointerOperand()
                                                     << "\n";
                 }
                 working_list.insert(gep->getPointerOperand());
@@ -171,7 +155,7 @@ namespace hakc {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding Arg "
                                                         << std::to_string(TransferDef->GetSignedPtrIdx())
-                                                        << " of HAKC Transfer " << *call << "\n";
+                                                        << " of HAKC Transfer " << call << "\n";
                     }
                     working_list.insert(call->getArgOperand(TransferDef->GetSignedPtrIdx()));
                 } else if (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic()) {
@@ -183,7 +167,7 @@ namespace hakc {
                     auto BitshiftIntrinsics = GetBitshiftIntrinsics();
                     if (IsCallInIntrinsicSet(call, BitshiftIntrinsics)) {
                         if (debug) {
-                            CommonHAKCAnalysis::getWriter() << "Adding argument 0 of " << *call << "\n";
+                            CommonHAKCAnalysis::getWriter() << "Adding argument 0 of " << call << "\n";
                         }
                         working_list.insert(call->getArgOperand(0));
                     }
@@ -207,7 +191,7 @@ namespace hakc {
                 auto PointerBinOps = GetPointerManipulatingBinaryOps();
                 if (PointerBinOps.find(binOp->getOpcode()) == PointerBinOps.end()) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "BinaryOperator " << *binOp
+                        CommonHAKCAnalysis::getWriter() << "BinaryOperator " << binOp
                                                         << " is not a pointer manipulating binary operation\n";
                     }
                     goto add_to_chain;
@@ -217,27 +201,23 @@ namespace hakc {
                 auto *RHSDef = getDef(binOp->getOperand(1), false, debug);
                 if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand ";
-                        CommonHAKCAnalysis::PrettyPrintValue(binOp->getOperand(0), CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand " << binOp->getOperand(0) << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
                 } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef, debug)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand ";
-                        CommonHAKCAnalysis::PrettyPrintValue(binOp->getOperand(1), CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand " << binOp->getOperand(1) << "\n";
                     }
                     working_list.insert(binOp->getOperand(1));
                 } else if (!isa<Constant>(LHSDef) && !isa<Constant>(RHSDef)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of " << *binOp << " are constants\n";
+                        CommonHAKCAnalysis::getWriter() << "Neither LHS nor RHS of " << binOp << " are constants\n";
                     }
                     /* We stop here */
                     goto add_to_chain;
                 } else if (isa<Constant>(LHSDef) && isa<Constant>(RHSDef)) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of " << *binOp << " are constants\n";
+                        CommonHAKCAnalysis::getWriter() << "Both LHS and RHS of " << binOp << " are constants\n";
                     }
                     /* We stop here */
                     goto add_to_chain;
@@ -249,9 +229,7 @@ namespace hakc {
 
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << std::to_string(def_chain.size())
-                                            << " for ";
-            CommonHAKCAnalysis::PrettyPrintValue(v, CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+                                            << " for " << v << "\n";
         }
         DefchainCache[v] = def_chain;
         return def_chain;
@@ -269,8 +247,7 @@ namespace hakc {
             for (auto &U: V->uses()) {
                 if (isa<IntToPtrInst>(U.getUser())) {
                     if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "User of " << *V << " is an inttoptr: " << *U.getUser()
-                                                        << "\n";
+                        CommonHAKCAnalysis::getWriter() << "User of " << V << " is an inttoptr: " << U.getUser() << "\n";
                     }
                     CallIsUsedAsPointer = true;
                 } else if (auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
@@ -279,7 +256,7 @@ namespace hakc {
                         auto *OtherOp = U.getUser()->getOperand(OpNum);
                         if (debug) {
                             CommonHAKCAnalysis::getWriter() << "Checking operator " << std::to_string(OpNum)
-                                                            << " of " << *BinOp << ": " << *OtherOp << "\n";
+                                                            << " of " << BinOp << ": " << OtherOp << "\n";
                         }
                         if (OtherOp->getType()->isPointerTy()) {
                             /* V is an integer (which could still be used as a pointer), but is used in an add operation
@@ -308,9 +285,7 @@ namespace hakc {
     Value *CommonHAKCAnalysis::getDef(Value *V, bool followLoad, bool debug) {
         std::vector<Value *> def_chain = findDefChain(V, followLoad, debug);
         if (def_chain.empty()) {
-            CommonHAKCAnalysis::getWriter() << "Def Chain for ";
-            V->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << " is empty!\n";
+            CommonHAKCAnalysis::getWriter() << "Def Chain for " << V << " is empty!\n";
             throw std::exception();
         }
         return def_chain.back();
@@ -507,8 +482,8 @@ namespace hakc {
     }
 
     void CommonHAKCAnalysis::VerifyFunction(Function *F) {
-        if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter())) {
-            CommonHAKCAnalysis::getWriter() << "Verification failed for function\n" << *F << "\n";
+        if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter().GetOS())) {
+            CommonHAKCAnalysis::getWriter() << "Verification failed for function\n" << F << "\n";
             throw std::exception();
         }
     }
