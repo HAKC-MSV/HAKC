@@ -85,6 +85,11 @@ namespace hakc {
                                             << " in function\n" << getFunction() << "\n";
             throw std::exception();
         }
+        auto HAKCPointer = PointerManager.GetManagedPointer(operand);
+        if(!HAKCPointer) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << operand << "\n";
+            throw std::exception();
+        }
 
         bool isData = !valueIsReadonlyPtr(getDef(operand, false, debug_output));
         if (debug_output) {
@@ -93,9 +98,9 @@ namespace hakc {
 
         Instruction *TransferCall;
         if (Size == nullptr) {
-            TransferCall = getTransformer(Policy).CreateCompartmentTransfer(operand, I, &getFunction(), isData);
+            TransferCall = getTransformer(Policy).CreateCompartmentTransfer(HAKCPointer, I, &getFunction(), isData);
         } else {
-            TransferCall = getTransformer(Policy).CreateSizedCompartmentTransfer(operand, I, &getFunction(), isData,
+            TransferCall = getTransformer(Policy).CreateSizedCompartmentTransfer(HAKCPointer, I, &getFunction(), isData,
                                                                                  Size);
         }
         TransferCall->setDebugLoc(debugLoc);
@@ -232,15 +237,25 @@ namespace hakc {
          * @return The result of the transfer
          */
     Value *
-    HAKCFunctionAnalysis::AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location,
+    HAKCFunctionAnalysis::AddDataAuthCheckAtLocation(Value *SignedPtr, Instruction *location,
                                                      HAKCCompartmentalizationPolicy &Policy) {
-        auto *bitcast = getTransformer(Policy).CreateDataAuthentication(signed_ptr, location);
+        auto HAKCPointer = PointerManager.GetManagedPointer(SignedPtr);
+        if(!HAKCPointer) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
+            throw std::exception();
+        }
+        auto *bitcast = getTransformer(Policy).CreateDataAuthentication(HAKCPointer, location);
         return bitcast;
     }
 
     Value *HAKCFunctionAnalysis::AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location,
                                                             HAKCCompartmentalizationPolicy &Policy) {
-        auto *SafePointer = getTransformer(Policy).CreateCodeAuthentication(SignedPtr, Location);
+        auto HAKCPointer = PointerManager.GetManagedPointer(SignedPtr);
+        if(!HAKCPointer) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
+            throw std::exception();
+        }
+        auto *SafePointer = getTransformer(Policy).CreateCodeAuthentication(HAKCPointer, Location);
         return SafePointer;
     }
 
@@ -291,7 +306,12 @@ namespace hakc {
 
     Value *HAKCFunctionAnalysis::AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location,
                                                                   HAKCCompartmentalizationPolicy &Policy) {
-        auto *SafePtr = getTransformer(Policy).CreateSafePointer(SignedPtr, Location);
+        auto HAKCPointer = PointerManager.GetManagedPointer(SignedPtr);
+        if(!HAKCPointer) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
+            throw std::exception();
+        }
+        auto *SafePtr = getTransformer(Policy).CreateSafePointer(HAKCPointer, Location);
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Created Safe Pointer\n\t" << *SafePtr << "\nFor Signed Pointer\n\t"
                                             << *SignedPtr << "\nat\n" << *Location << "\n";
@@ -1268,8 +1288,13 @@ namespace hakc {
             }
         }
 
+        auto HAKCPointer = PointerManager.GetManagedPointer(GlobalVar);
+        if(!HAKCPointer) {
+            CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << GlobalVar << "\n";
+            throw std::exception();
+        }
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer(Policy).CreateSignWithColor(GlobalVar, InsertionPoint, &getFunction(),
+        return getTransformer(Policy).CreateSignWithColor(HAKCPointer, InsertionPoint, &getFunction(),
                                                           !isa<Function>(GlobalVar));
     }
 
@@ -1288,7 +1313,12 @@ namespace hakc {
         auto *V = I->getOperand(ArgNo);
         Value *Replacement;
         if (auto *Oper = dyn_cast<BitCastOperator>(V)) {
-            Replacement = getTransformer(Policy).CreateBitCast(NewValue, Oper->getDestTy(), I);
+            auto HAKCPointer = PointerManager.GetManagedPointer(NewValue);
+            if(!HAKCPointer) {
+                CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << NewValue << "\n";
+                throw std::exception();
+            }
+            Replacement = getTransformer(Policy).CreateBitCast(HAKCPointer, Oper->getDestTy(), I);
         } else if (V == OldValue) {
             Replacement = NewValue;
         } else {

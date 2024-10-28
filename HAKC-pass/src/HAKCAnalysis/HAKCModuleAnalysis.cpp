@@ -477,7 +477,7 @@ namespace hakc {
             if (auto *ConstStruct = dyn_cast<ConstantStruct>(GlobalVar->getInitializer())) {
                 Result = ConstantStructTransferIsNeeded(ConstStruct, Policy);
             } else {
-                if (auto *GlobalVal = dyn_cast<GlobalValue>(GlobalVar->getInitializer())) {
+                if (isa<GlobalValue>(GlobalVar->getInitializer())) {
                     Result = !IsKernelSym;
                 } else if (isa<ConstantPointerNull>(GlobalVar->getInitializer())) {
                     Result = false;

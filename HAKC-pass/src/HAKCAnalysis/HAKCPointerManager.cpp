@@ -812,13 +812,6 @@ namespace hakc {
             return Managed;
         }
 
-        auto HAKCPointer = GetManagedPointer(Pointer);
-        if (!HAKCPointer) {
-            if (DebugActive) {
-
-            }
-            return nullptr;
-        }
         if (HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis()->AddCodeAuthCheckAtLocation(Pointer, InsertLocation, Policy);

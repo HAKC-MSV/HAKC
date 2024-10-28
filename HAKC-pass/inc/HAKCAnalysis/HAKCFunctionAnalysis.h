@@ -90,7 +90,7 @@ namespace hakc {
 
     template<unsigned argNo, unsigned index0>
     Value *argumentGEP(Value *allocation) {
-        if (CallInst *call = dyn_cast<CallInst>(allocation)) {
+        if (isa<CallInst>(allocation)) {
             /*HAKCIRBuilder<> irBuilder(call);
             IntegerType *sizeTy = irBuilder.getInt64Ty();
             std::vector<Value*> indices;
