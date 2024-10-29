@@ -141,7 +141,6 @@ namespace hakc {
         HAKCSystemInformation *SysInfo;
 
     public:
-        // HAKCFunctionAnalysis(Function *F, bool debug);
         HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis *ModAnalysis, bool debug);
 
         ~HAKCFunctionAnalysis() = default;

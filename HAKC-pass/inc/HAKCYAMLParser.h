@@ -20,10 +20,6 @@
 #include "HAKC-defs.h"
 #include "HAKCSymbol.h"
 #include "HAKCYaml.h"
-// #include "HAKCCompartment.h"
-// #include "HAKCFile.h"
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
-
 
 using namespace llvm;
 

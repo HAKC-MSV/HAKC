@@ -11,24 +11,6 @@
 #include "HAKCPass.h"
 #include "HAKCSystemInformation.h"
 
-// #include "HAKCCompartment.h"
-// #include "HAKCSymbol.h"
-// #include "HAKCAllocationSize.h"
-// #include "HAKCTransformers/HAKCTransformer.h"
-
-// #include "HAKCTypeIdentifier/HAKCFunctionInfo.h"
-// #include "HAKCGlobalInfo.h"
-// #include "HAKCTypeInfo.h"
-// #include "HAKCTypeIdentifier/HAKCDebugInfoProcessor.h"
-// #include "HAKCAnalysis/HAKCModuleAnalysis.h"
-// #include "HAKCPass.h"
-// #include "HAKCTypeIdentifier/HAKCGlobalInfo.h"
-// #include "HAKCTypeIdentifier/HAKCTypeInfo.h"
-// #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
-// #include "HAKCAllocationSize.h"
-// #include "HAKCYAMLParser.h"
-// #include "HAKCPointerManager.h"
-
 namespace hakc {
 
     class HAKCTransformer;
@@ -52,14 +34,9 @@ namespace hakc {
 
         bool functionIsAnalysisCandidate(Function *F);
 
-        // bool valueShouldBeReplacedWithTransfer(Value *V);
-
         hakc_function_def_t getHAKCFunction(StringRef name);
 
-        // Module &getModule();
-
         virtual HAKCTransformer &getTransformer() = 0;
-        // HAKCTransformer &getTransformer();
 
         bool functionIsModParamGetCtx(Function *F);
 
@@ -118,8 +95,6 @@ namespace hakc {
         std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
         virtual std::set<hakc_function_def_t> GetHAKCFunctions() = 0;
-        // virtual std::set<hakc_function_def_t> GetHAKCFunctions();
-        // std::set<hakc_function_def_t> GetHAKCFunctions();
 
         // virtual std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() = 0;
         virtual std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap() = 0;
@@ -128,7 +103,6 @@ namespace hakc {
 
         // std::set<StringRef> GetIgnoredGlobals();
         std::set<std::string> GetIgnoredGlobals();
-        // virtual std::set<std::string> GetIgnoredGlobals() = 0; 
 
         bool functionIsTransferCandidate(Function *f);
 

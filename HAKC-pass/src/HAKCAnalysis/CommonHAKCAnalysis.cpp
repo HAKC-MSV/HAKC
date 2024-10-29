@@ -340,25 +340,6 @@ namespace hakc {
         return F->getName().startswith(MODPARAM_GETCTX_PREFIX);
     }
 
-    // bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *f) {
-    //     // linux start
-    //     if (F->getName().contains(StringRef(*(*GetSysInfo()->GetMethods())["functionIsTransferCandidate"].begin()))) {
-    //         /* Handle trampolines */
-    //         return false;
-    //     }
-    //     // linux end 
-
-    //     auto NoTransferFuncs = GetNoTransferFunctions();
-    //     return NoTransferFuncs.find(f->getName()) == NoTransferFuncs.end() &&
-    //            !f->isDeclaration() &&
-    //            !isCapabilityReassignmentFunc(f) &&
-    //            !FunctionIsComplexVariadic(f) &&
-    //            !functionIsModParamGetCtx(f) &&
-    //            FunctionHasPointerArg(f) &&
-    //            (!isOutsideTransferFunc(f) ||
-    //             !f->hasFnAttribute(Attribute::InlineHint));
-    // }
-
     bool CommonHAKCAnalysis::FunctionIsComplexVariadic(Function *F) {
         /* TODO: Support variadic functions */
         return F->isVarArg();
@@ -373,14 +354,6 @@ namespace hakc {
         }
         return false;
     }
-
-    // Module &CommonHAKCAnalysis::getModule() {
-    //     return getTransformer().getModule();
-    // }
-
-    // std::set<StringRef> CommonHAKCAnalysis::GetIgnoredGlobals() {
-    //     return {};
-    // }
 
     bool CommonHAKCAnalysis::functionIsAnalysisCandidate(Function *F) {
         if (!F) {

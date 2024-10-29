@@ -37,13 +37,7 @@ static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", 
 
 namespace hakc {
     std::shared_ptr<HAKCModuleAnalysis> GetModuleAnalysis(Module &M) {
-    // HAKCModuleAnalysis *GetModuleAnalysis(Module &M) {
-        // HAKCModuleAnalysis *ModuleAnalysis;
-        // ModuleAnalysis = new HAKCModuleAnalysis(M);
         std::shared_ptr<HAKCModuleAnalysis> ModuleAnalysis = std::make_shared<HAKCModuleAnalysis>(M);
-        CommonHAKCAnalysis::getWriter() << "here000001\n";
-        // ModuleAnalysis->InitAnalysis();
-        CommonHAKCAnalysis::getWriter() << "here000002\n";
         return ModuleAnalysis;
     }
 
@@ -56,9 +50,6 @@ namespace hakc {
 
         SmallString<512> Path = P;
         std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
-        // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
-        // HAKCTypeIdentifier typeIdentifier(M, Transformation.get());
-        // HAKCTypeIdentifier typeIdentifier(M, Transformation);
         HAKCTypeIdentifier typeIdentifier(M, Transformation.get());
         const char *root = HAKC_DAG_ANALYSIS_ROOT.c_str();
         if (!root || std::strlen(root) == 0) {
@@ -110,7 +101,6 @@ namespace hakc {
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
         std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
-        // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
         for (auto path : Transformation->GetHAKCSourcePaths()) {
             if (M.getSourceFileName().find(path) != M.getSourceFileName().npos) {
                 CommonHAKCAnalysis::getWriter() << "Skipping hakc source " << M.getSourceFileName() << "\n";

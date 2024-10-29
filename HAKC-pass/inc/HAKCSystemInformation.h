@@ -10,11 +10,6 @@
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Module.h"
 
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
-// #include "HAKCCompartment.h"
-// #include "HAKCSymbol.h"
-// #include "HAKCFile.h"
-// #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCCompartment.h"
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
@@ -38,8 +33,6 @@ namespace hakc {
 
         static std::string getColorStringFromValue(ConstantInt *color);
 
-        // std::map<StringRef, std::set<StringRef>> *METHODS;
-        // HAKCYAMLParser *parser;
         std::shared_ptr<HAKCYAMLParser> parser; 
     public:
         std::map<std::string, HAKCAllocationSize> KernelAllocationSizeMap;
@@ -47,9 +40,6 @@ namespace hakc {
         std::map<std::string, std::set<std::string>> *GetMethods();
 
         HAKCSystemInformation(Module &M);
-        // ~HAKCSystemInformation(){
-        //     delete parser; 
-        // }
 
         std::set<std::shared_ptr<HAKCSymbol>> getSymbols(StringRef name);
 

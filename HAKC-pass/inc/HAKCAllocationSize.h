@@ -16,12 +16,6 @@
 #include "llvm/Support/YAMLTraits.h"
 
 #include "HAKC-defs.h"
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
-// #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
-// #include "HAKCCompartment.h"
-// #include "HAKCFile.h"
-// #include "HAKCSymbol.h"
-
 
 using namespace llvm;
 

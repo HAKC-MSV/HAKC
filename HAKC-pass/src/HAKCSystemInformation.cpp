@@ -21,17 +21,14 @@ namespace hakc {
 
     HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
         // todo: maybe fix weird memory issue here 
-        // parser = new HAKCYAMLParser(M);
         parser = std::make_shared<HAKCYAMLParser>(M);
         ARCH = parser->ARCH;
         PLATFORM = parser->PLATFORM;
-        // METHODS = parser->GetMethods(); 
         ProcessYAML();
         ProcessCompartmentYaml();
     }
 
     std::map<std::string, std::set<std::string>> *HAKCSystemInformation::GetMethods(){
-        // return METHODS; 
         return parser->GetMethods(); 
     }
 
@@ -62,19 +59,14 @@ namespace hakc {
     }
 
     bool HAKCSystemInformation::ContainsCompartmentalizedSymbols(Module &M) {
-        CommonHAKCAnalysis::getWriter() << "here000\n";
         for (auto Symbol : symbols) {
-            CommonHAKCAnalysis::getWriter() << "here001\n";
             if (CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {
-                CommonHAKCAnalysis::getWriter() << "here002\n";
                 continue;
             }
             if (PathContainsPath(Symbol->getFile()->GetPath(), M.getName())) {
-                CommonHAKCAnalysis::getWriter() << "here003\n";
                 return true;
             }
         }
-        CommonHAKCAnalysis::getWriter() << "here004\n";
         return false;
     }
 
@@ -145,7 +137,6 @@ namespace hakc {
     }
 
     void HAKCSystemInformation::ProcessCompartmentYaml() {
-        CommonHAKCAnalysis::getWriter() << "here0000\n";
         YamlInformation yi;
         std::string yaml_file = HAKC_COMPARTMENT_PATH;
         if (!sys::fs::exists(yaml_file)) {
@@ -162,7 +153,6 @@ namespace hakc {
         yin >> yi;
 
         IntegerType *i32_type = IntegerType::getInt32Ty(M.getContext());
-        CommonHAKCAnalysis::getWriter() << "here0001\n";
         CommonHAKCAnalysis::getWriter() << "found compartments: \n";
         for (YamlCompartment &comp : yi.compartments) {
             CommonHAKCAnalysis::getWriter() << "found cliques: \n";
@@ -172,7 +162,7 @@ namespace hakc {
                 compartments.insert(Compartment);
             }
         }
-        CommonHAKCAnalysis::getWriter() << "here0002\n";
+
         for (YamlCompartment &comp : yi.compartments) {
             for (auto &id : comp.targets) {
                 auto TailCompartments = getCompartments(id);
@@ -183,7 +173,7 @@ namespace hakc {
                 }
             }
         }
-        CommonHAKCAnalysis::getWriter() << "here0003\n";
+
         for (YamlFile &YamlFile : yi.files) {
             auto File = std::make_shared<HAKCFile>(YamlFile);
             for (YamlSymbol &sym : YamlFile.symbols) {
@@ -200,7 +190,6 @@ namespace hakc {
                 symbols.insert(symbol);
             }
         }
-        CommonHAKCAnalysis::getWriter() << "here0004\n";
     }
 
     std::set<std::shared_ptr<HAKCCompartment>> HAKCSystemInformation::getCompartments(hakc_compartment_id_t ID) {

@@ -16,12 +16,6 @@ namespace hakc {
     }
 
     std::map<std::string, std::set<std::string>> *HAKCYAMLParser::GetMethods(){
-        // for(auto it = METHODS->cbegin(); it != METHODS->cend(); ++it)
-        // {
-        //     CommonHAKCAnalysis::getWriter() << "METHOD NAME: " <<  it->first << " size: " << it->second.size() << "\n";
-        // }
-
-        // CommonHAKCAnalysis::getWriter() << "getmethods size: " << (*METHODS).size() << "\n";
         return METHODS;
     }
 
@@ -55,7 +49,7 @@ namespace hakc {
             tmp.push_back(name);
             // if (METHODS->find(name) == METHODS->end()) {
             if (METHODS->find(name.str()) == METHODS->end()) {
-                CommonHAKCAnalysis::getWriter() << "orig name: " << name << ":\n";
+                // CommonHAKCAnalysis::getWriter() << "orig name: " << name << ":\n";
                 // memory issue was probably strange temporary conversion to stringref which did not persist 
                 // (*METHODS)[tmp[i].str()] = std::set<std::string>();
                 // (*METHODS)[tmp[i].str()] = std::set<StringRef>();
@@ -63,8 +57,8 @@ namespace hakc {
             }
             for (std::string function : method.FUNCTIONS) {
                 (*METHODS)[tmp[i].str()].insert(function);
-                CommonHAKCAnalysis::getWriter() << "size: " << (*METHODS)[name.str()].size() << ":\n";
-                CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
+                // CommonHAKCAnalysis::getWriter() << "size: " << (*METHODS)[name.str()].size() << ":\n";
+                // CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
             }
             i++; 
         }

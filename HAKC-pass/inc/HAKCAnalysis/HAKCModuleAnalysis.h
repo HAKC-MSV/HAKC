@@ -19,10 +19,6 @@
 
 #include "CommonHAKCAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
-// #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
-// #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
-// #include "HAKCSystemInformation.h"
-
 
 namespace hakc {
 
@@ -103,7 +99,6 @@ namespace hakc {
          */
         bool functionIsExported(Function *F);
 
-        // HAKCSystemInformation *SysInfo;
         std::shared_ptr<HAKCSystemInformation> SysInfo;
 
     public:
@@ -114,7 +109,6 @@ namespace hakc {
 
         explicit HAKCModuleAnalysis(Module &M);
 
-        // bool functionIsTransferCandidate(Function *F) override;
         bool functionIsTransferCandidate(Function *F);
         
         bool valueShouldBeReplacedWithTransfer(Value *V);
@@ -140,7 +134,6 @@ namespace hakc {
         static sym_color_t getColorFromValue(ConstantInt *Color);
 
         virtual ~HAKCModuleAnalysis() = default;
-        // ~HAKCModuleAnalysis(){};
 
         bool isModuleTransformed();
 
@@ -157,8 +150,6 @@ namespace hakc {
         std::set<std::string> GetSeparateNamespacePaths();
 
         std::set<std::string> GetSafeTransitionFunctions();
-
-        // std::set<std::string> GetSafeTransitionFunctions_Arch();
 
         bool TransferFunctionShouldBeCreated(Function *F);
 
