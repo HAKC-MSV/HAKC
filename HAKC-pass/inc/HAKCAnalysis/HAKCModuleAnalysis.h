@@ -5,17 +5,30 @@
 #ifndef HAKC_HAKCMODULEANALYSIS_H
 #define HAKC_HAKCMODULEANALYSIS_H
 
+#include <bits/stdc++.h>
+#include <execinfo.h>
+#include <stdio.h>
+#include <string.h>
+#include <iostream>
+#include <sstream>
+#include <tuple>
+
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Verifier.h"
+#include "llvm/Support/Regex.h"
+
 #include "CommonHAKCAnalysis.h"
-#include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
+// #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
+// #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
+// #include "HAKCSystemInformation.h"
+
 
 namespace hakc {
 
-#define HAKC_TRANSFER(Name, CompartmentIDIdx, ColorIdx) RegisterHAKCTransfer \
-(std::make_shared<hakc::HAKCTransferFunction>(Name, (unsigned)0, CompartmentIDIdx, ColorIdx))
+#define HAKC_TRANSFER(Name, CompartmentIDIdx, ColorIdx) RegisterHAKCTransfer(std::make_shared<hakc::HAKCTransferFunction>(Name, (unsigned) 0, CompartmentIDIdx, ColorIdx))
 
-#define HAKC_TRANSFER_NO_COLOR(Name, CompartmentIDIdx) RegisterHAKCTransfer \
-(std::make_shared<hakc::HAKCTransferFunction>(Name, (unsigned)0, CompartmentIDIdx))
+#define HAKC_TRANSFER_NO_COLOR(Name, CompartmentIDIdx) RegisterHAKCTransfer(std::make_shared<hakc::HAKCTransferFunction>(Name, (unsigned) 0, CompartmentIDIdx))
 
 #define HAKC_FUNCTION(Name) RegisterNonTransferHAKCFunction(std::make_shared<hakc::HAKCFunctionDefinition>(Name))
 
@@ -30,6 +43,7 @@ namespace hakc {
         Module &M;
         bool MajorityColorSet;
         sym_color_t MajorityColor;
+        Module &getModule();
 
         ConstantInt *getSymbolColor(GlobalValue *GV);
 
@@ -89,28 +103,35 @@ namespace hakc {
          */
         bool functionIsExported(Function *F);
 
+        // HAKCSystemInformation *SysInfo;
+        std::shared_ptr<HAKCSystemInformation> SysInfo;
+
     public:
         unsigned totalDataChecks, totalCodeChecks, totalTransfers;
         std::map<Function *, std::set<CallInst *>> HAKCFunctions;
-        HAKCSystemInformation SysInfo;
+
+        std::shared_ptr<HAKCSystemInformation> GetSysInfo();
 
         explicit HAKCModuleAnalysis(Module &M);
 
+        // bool functionIsTransferCandidate(Function *F) override;
         bool functionIsTransferCandidate(Function *F);
+        
+        bool valueShouldBeReplacedWithTransfer(Value *V);
 
         ConstantInt *getFunctionColor(Function *F);
 
         ConstantInt *getGlobalColor(GlobalVariable *GV);
 
-        std::set<StringRef> GetIgnoredGlobals();
-        
-        std::map<StringRef, HAKCAllocationSize> GetKernelAllocationSizeMap();
+        std::set<std::string> GetIgnoredGlobals();
+
+        std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap();
 
         bool valueIsReadonlyPtr(Value *value);
 
-        std::set<StringRef> GetIgnoredTypes();
+        std::set<std::string> GetIgnoredTypes();
 
-        std::set<StringRef> GetNoTransferFunctions();
+        std::set<std::string> GetNoTransferFunctions();
 
         sym_color_t GetMajoritySymbolColor();
 
@@ -118,9 +139,10 @@ namespace hakc {
 
         static sym_color_t getColorFromValue(ConstantInt *Color);
 
-        ~HAKCModuleAnalysis() = default;
+        virtual ~HAKCModuleAnalysis() = default;
+        // ~HAKCModuleAnalysis(){};
 
-        bool isModuleTransformed();;
+        bool isModuleTransformed();
 
         void performTransformations();
 
@@ -130,13 +152,13 @@ namespace hakc {
 
         HAKCTransformer &getTransformer();
 
-        std::set<StringRef> GetHAKCSourcePaths();
+        std::set<std::string> GetHAKCSourcePaths();
 
-        std::set<StringRef> GetSeparateNamespacePaths();
+        std::set<std::string> GetSeparateNamespacePaths();
 
-        std::set<StringRef> GetSafeTransitionFunctions();
+        std::set<std::string> GetSafeTransitionFunctions();
 
-        std::set<StringRef> GetSafeTransitionFunctions_Arch();
+        // std::set<std::string> GetSafeTransitionFunctions_Arch();
 
         bool TransferFunctionShouldBeCreated(Function *F);
 
@@ -149,20 +171,20 @@ namespace hakc {
         std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
         std::set<hakc_custom_transfer_def_t> GetHAKCCustomTransferFunctions();
-        
+
         void InitHAKCFunctions();
 
         void InitAnalysis();
 
-        StringRef HACKCodeAuthenticationName();
+        std::string HACKCodeAuthenticationName();
 
-        StringRef HAKCDataAuthenticationName();
+        std::string HAKCDataAuthenticationName();
 
-        StringRef HAKCCompartmentTransferName();
+        std::string HAKCCompartmentTransferName();
 
-        StringRef HAKCPerCPUCompartmentTransferName();
+        std::string HAKCPerCPUCompartmentTransferName();
 
-        StringRef HAKCEntryTokenName();
+        std::string HAKCEntryTokenName();
 
         Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy);
 
@@ -173,8 +195,10 @@ namespace hakc {
         void generateModuleParamGetCtxFunction(GlobalVariable *GV);
 
         void transferModuleParams();
+        
+        void PrintStack();
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_HAKCMODULEANALYSIS_H
+#endif//HAKC_HAKCMODULEANALYSIS_H

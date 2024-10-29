@@ -10,7 +10,6 @@
 #include "HAKCTransferFunction.h"
 #include "HAKCSymbol.h"
 
-
 using namespace llvm;
 
 namespace hakc {

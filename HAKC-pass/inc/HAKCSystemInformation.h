@@ -7,12 +7,18 @@
 
 #include <set>
 
-#include "llvm/IR/Module.h"
 #include "llvm/IR/Constants.h"
+#include "llvm/IR/Module.h"
 
+// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+// #include "HAKCCompartment.h"
+// #include "HAKCSymbol.h"
+// #include "HAKCFile.h"
+// #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCCompartment.h"
 #include "HAKCFile.h"
 #include "HAKCSymbol.h"
+#include "HAKCYAMLParser.h"
 #include "HAKCAllocationSize.h"
 
 using namespace llvm;
@@ -23,8 +29,8 @@ namespace hakc {
         Module &M;
         std::set<std::shared_ptr<HAKCCompartment>> compartments;
         std::set<std::shared_ptr<HAKCSymbol>> symbols;
-        StringRef ARCH;
-        StringRef PLATFORM;
+        std::string ARCH;
+        std::string PLATFORM;
 
         bool PathContainsPath(StringRef Path1, StringRef Path2);
 
@@ -32,11 +38,18 @@ namespace hakc {
 
         static std::string getColorStringFromValue(ConstantInt *color);
 
+        // std::map<StringRef, std::set<StringRef>> *METHODS;
+        // HAKCYAMLParser *parser;
+        std::shared_ptr<HAKCYAMLParser> parser; 
     public:
-        std::map<StringRef, std::set<StringRef>> METHODS; 
-        std::map<StringRef, HAKCAllocationSize> KernelAllocationSizeMap;
+        std::map<std::string, HAKCAllocationSize> KernelAllocationSizeMap;
+
+        std::map<std::string, std::set<std::string>> *GetMethods();
 
         HAKCSystemInformation(Module &M);
+        // ~HAKCSystemInformation(){
+        //     delete parser; 
+        // }
 
         std::set<std::shared_ptr<HAKCSymbol>> getSymbols(StringRef name);
 
@@ -47,26 +60,22 @@ namespace hakc {
         std::shared_ptr<HAKCSymbol> findSymbol(GlobalValue *GV);
 
         std::string getCompartmentYamlPath();
-        
+
         std::string getArchYamlPath();
-        
+
         std::string getHAKCPassMode();
 
-        // std::string getCustomYamlPath(std::string str);
         std::string getCustomYamlPath();
 
+        void ProcessYAML();
+
         void ProcessCompartmentYaml();
-
-        void ProcessArchYaml();
-
-        void Init();
 
         hakc_access_token_t getEntryToken(hakc_compartment_id_t CompartmentID);
 
         bool ContainsCompartmentalizedSymbols(Module &M);
-
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_HAKCSYSTEMINFORMATION_H
+#endif//HAKC_HAKCSYSTEMINFORMATION_H

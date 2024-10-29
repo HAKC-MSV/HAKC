@@ -2,19 +2,7 @@
 // Created by al32163 on 10/23/2024
 //
 
-#include "HAKCSystemInformation.h"
-#include "HAKCCompartment.h"
-#include "HAKCFile.h"
-#include "HAKCSymbol.h"
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
-#include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCAllocationSize.h"
-#include <memory>
-
-#include "llvm/Support/YAMLParser.h"
-#include "llvm/Support/YAMLTraits.h"
-#include "llvm/Support/FileSystem.h"
-#include "llvm/Support/Path.h"
 
 namespace hakc {
 
@@ -23,7 +11,7 @@ namespace hakc {
             IRBuilder<> irBuilder(call);
             Value *size = call->getArgOperand(args[0]);
             size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
-            ConstantInt* CI = dyn_cast<ConstantInt>(size);
+            ConstantInt *CI = dyn_cast<ConstantInt>(size);
             return CI;
         }
         return nullptr;
@@ -62,7 +50,7 @@ namespace hakc {
                         irBuilder.CreateZExt(call->getArgOperand(args[1]), int64Ty));
             }
             fullSize = irBuilder.CreateZExtOrBitCast(fullSize, int64Ty);
-            ConstantInt* CI = dyn_cast<ConstantInt>(fullSize);
+            ConstantInt *CI = dyn_cast<ConstantInt>(fullSize);
             return CI;
         }
 
@@ -86,29 +74,24 @@ namespace hakc {
         return nullptr;
     }
 
-    ConstantInt *HAKCAllocationSize::GetSize(Value *val){
-        // set args from tokens 
+    ConstantInt *HAKCAllocationSize::GetSize(Value *val) {
+        // set args from tokens
 
-        if(tokens[1] == "simpleArgumentSize"){
+        if (tokens[1] == "simpleArgumentSize") {
             return simpleArgumentSize(val);
-        }
-        else if(tokens[1] == "simpleStaticSize"){
+        } else if (tokens[1] == "simpleStaticSize") {
             return simpleStaticSize(val);
-        }
-        else if(tokens[1] == "multiplyTwoArguments"){
+        } else if (tokens[1] == "multiplyTwoArguments") {
             return multiplyTwoArguments(val);
-        }
-        else if(tokens[1] == "staticPlusArgument"){
+        } else if (tokens[1] == "staticPlusArgument") {
             return staticPlusArgument(val);
-        }
-        else if(tokens[1] == "argumentGEP"){
+        } else if (tokens[1] == "argumentGEP") {
             return argumentGEP(val);
-        }
-        else{
-            CommonHAKCAnalysis::getWriter() << "tokens[1]: " << tokens[1] << " is not valid type\n";
+        } else {
+            // CommonHAKCAnalysis::getWriter() << "tokens[1]: " << tokens[1] << " is not valid type\n";
             return nullptr;
         }
     }
-    
 
-} // hakc
+
+}// namespace hakc

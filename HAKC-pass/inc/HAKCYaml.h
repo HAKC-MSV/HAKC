@@ -5,14 +5,14 @@
 #ifndef HAKC_HAKCYAML_H
 #define HAKC_HAKCYAML_H
 
-#include <vector>
 #include <string>
+#include <vector>
 
-#include "HAKC-defs.h"
+// #include "HAKC-defs.h"
 
 namespace hakc {
 
-// Structs for the yaml template
+    // Structs for the yaml template
     struct YamlClique {
         int64_t access_token;
         sym_color_t color;
@@ -47,7 +47,7 @@ namespace hakc {
         std::string NAME;
         std::vector<std::string> FUNCTIONS;
     };
-    
+
     struct YamlArchInformation {
         std::string ARCH;
         std::string PLATFORM;
@@ -57,6 +57,6 @@ namespace hakc {
     struct YamlHAKCInformation {
         YamlArchInformation SYSTEMINFO;
     };
-}
+}// namespace hakc
 
-#endif //HAKC_HAKCYAML_H
+#endif//HAKC_HAKCYAML_H

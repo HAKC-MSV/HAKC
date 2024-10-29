@@ -7,9 +7,11 @@
 
 #include "llvm/IR/Dominators.h"
 
+#include "CommonHAKCAnalysis.h"
+#include "HAKCPointerManager.h"
+#include "HAKCSystemInformation.h"
 #include "HAKCModuleAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
-#include "HAKCPointerManager.h"
 
 namespace hakc {
 
@@ -18,73 +20,6 @@ namespace hakc {
     class CommonHAKCAnalysis;
 
     class HAKCPointerManager;
-
-    // static llvm::Value *simpleArgumentSize(llvm::Value *allocation, unsigned argNo) {
-    //     if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
-    //         IRBuilder<> irBuilder(call);
-    //         Value *size = call->getArgOperand(argNo);
-    //         size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
-    //         return size;
-    //     }
-    //     return nullptr;
-    // }
-
-    // static llvm::Value *simpleStaticSize(llvm::Value *allocation, unsigned size) {
-    //     return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), size, false);
-    // }
-
-    // static llvm::Value *staticPlusArgument(llvm::Value *allocation, unsigned size, unsigned argNo) {
-    //     if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
-    //         ConstantInt *argumentSize = dyn_cast<ConstantInt>(call->getArgOperand(argNo));
-    //         return ConstantInt::get(Type::getInt64Ty(allocation->getContext()), argumentSize->getZExtValue() + size,
-    //                                 false);
-    //     }
-    //     return nullptr;
-    // }
-
-    // static llvm::Value *multiplyTwoArguments(Value *allocation, unsigned argNo1, unsigned argNo2) {
-    //     if (CallInst *call = dyn_cast<CallInst>(allocation)) {
-    //         IRBuilder<> irBuilder(call);
-    //         auto *int64Ty = irBuilder.getInt64Ty();
-    //         /* Defying all reason, somehow some functions have different argument counts than
-    //          * expected. See kmalloc_array in the IR for linereq_ioctl. So in that case, take
-    //          * the lowest argument value.
-    //          */
-    //         Value *fullSize = nullptr;
-    //         if (argNo1 >= call->getNumArgOperands() || argNo2 >= call->getNumArgOperands()) {
-    //             if (argNo1 <= argNo2) {
-    //                 fullSize = call->getArgOperand(argNo1);
-    //             } else {
-    //                 fullSize = call->getArgOperand(argNo2);
-    //             }
-    //         } else {
-    //             fullSize = irBuilder.CreateMul(
-    //                     irBuilder.CreateZExt(call->getArgOperand(argNo1), int64Ty),
-    //                     irBuilder.CreateZExt(call->getArgOperand(argNo2), int64Ty));
-    //         }
-    //         fullSize = irBuilder.CreateZExtOrBitCast(fullSize, int64Ty);
-    //         return fullSize;
-    //     }
-
-    //     return nullptr;
-    // }
-
-    // static llvm::Value *argumentGEP(Value *allocation, unsigned argNo, unsigned index0) {
-    //     if (CallInst *call = dyn_cast<CallInst>(allocation)) {
-    //         /*HAKCIRBuilder<> irBuilder(call);
-    //         IntegerType *sizeTy = irBuilder.getInt64Ty();
-    //         std::vector<Value*> indices;
-    //         indices.push_back(ConstantInt::get(sizeTy, index0, false));
-    //         Value *gep = irBuilder.CreateGEP(sizeTy, call->getArgOperand(argNo), indices);
-    //         Value *size = irBuilder.CreateLoad(sizeTy, gep);
-    //         return size;*/
-
-    //         // TODO: Fix this
-    //         return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), 64, false);
-    //     }
-
-    //     return nullptr;
-    // }
 
     /**
  * @brief This pass does the following:
@@ -185,7 +120,7 @@ namespace hakc {
 
         ConstantInt *getColor();
 
-        HAKCTransformer &getTransformer() ;
+        HAKCTransformer &getTransformer();
 
         std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
 
@@ -203,8 +138,11 @@ namespace hakc {
 
         HAKCModuleAnalysis *ModAnalysis;
 
+        HAKCSystemInformation *SysInfo;
+
     public:
-        HAKCFunctionAnalysis(Function *F, bool debug);
+        // HAKCFunctionAnalysis(Function *F, bool debug);
+        HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis *ModAnalysis, bool debug);
 
         ~HAKCFunctionAnalysis() = default;
 
@@ -216,19 +154,19 @@ namespace hakc {
 
         void setup();
 
-        std::set<StringRef> GetNoTransferFunctions() ;
+        std::set<std::string> GetNoTransferFunctions();
 
-        std::set<StringRef> GetSafeTransitionFunctions() ;
+        std::set<std::string> GetSafeTransitionFunctions();
 
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() ;
-        
-        std::map<StringRef, HAKCAllocationSize> GetKernelAllocationSizeMap();
+        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
-        std::set<StringRef> GetIgnoredTypes() ;
+        std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap();
 
-        std::set<hakc_function_def_t> GetHAKCFunctions() ;
+        std::set<std::string> GetIgnoredTypes();
 
-        Value *getDef(Value *, bool, bool) ;
+        std::set<hakc_function_def_t> GetHAKCFunctions();
+
+        Value *getDef(Value *, bool, bool);
 
         Instruction *
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
@@ -236,7 +174,7 @@ namespace hakc {
         Value *
         AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
 
-        Value* AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
+        Value *AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
 
         Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location);
 
@@ -259,9 +197,8 @@ namespace hakc {
         unsigned GetCodeAuthenticationCount();
 
         bool PointerShouldBeConsideredCode(Value *Pointer);
-
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_HAKCFUNCTIONANALYSIS_H
+#endif//HAKC_HAKCFUNCTIONANALYSIS_H

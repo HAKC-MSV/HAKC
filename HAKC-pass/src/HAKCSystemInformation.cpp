@@ -9,6 +9,7 @@
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCAllocationSize.h"
+#include "HAKCYAMLParser.h"
 #include <memory>
 
 #include "llvm/Support/YAMLParser.h"
@@ -16,233 +17,35 @@
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/Path.h"
 
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::YamlSymbol)
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::YamlFile)
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::YamlCompartment)
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::YamlClique)
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::YamlMethodsInformation)
-
-template<>
-struct yaml::ScalarEnumerationTraits<hakc::sym_color_t> {
-    static void enumeration(yaml::IO &io, hakc::sym_color_t &value) {
-        io.enumCase(value, "SILVER_CLIQUE", hakc::SILVER_CLIQUE);
-        io.enumCase(value, "GREEN_CLIQUE", hakc::GREEN_CLIQUE);
-        io.enumCase(value, "RED_CLIQUE", hakc::RED_CLIQUE);
-        io.enumCase(value, "ORANGE_CLIQUE", hakc::ORANGE_CLIQUE);
-        io.enumCase(value, "YELLOW_CLIQUE", hakc::YELLOW_CLIQUE);
-        io.enumCase(value, "PURPLE_CLIQUE", hakc::PURPLE_CLIQUE);
-        io.enumCase(value, "BLUE_CLIQUE", hakc::BLUE_CLIQUE);
-        io.enumCase(value, "GREY_CLIQUE", hakc::GREY_CLIQUE);
-        io.enumCase(value, "PINK_CLIQUE", hakc::PINK_CLIQUE);
-        io.enumCase(value, "BROWN_CLIQUE", hakc::BROWN_CLIQUE);
-        io.enumCase(value, "WHITE_CLIQUE", hakc::WHITE_CLIQUE);
-        io.enumCase(value, "BLACK_CLIQUE", hakc::BLACK_CLIQUE);
-        io.enumCase(value, "TEAL_CLIQUE", hakc::TEAL_CLIQUE);
-        io.enumCase(value, "VIOLET_CLIQUE", hakc::VIOLET_CLIQUE);
-        io.enumCase(value, "CRIMSON_CLIQUE", hakc::CRIMSON_CLIQUE);
-        io.enumCase(value, "GOLD_CLIQUE", hakc::GOLD_CLIQUE);
-        io.enumCase(value, "NO_CLIQUE", hakc::NO_CLIQUE);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlSymbol> {
-    static void mapping(yaml::IO &io, hakc::YamlSymbol &info) {
-        io.mapRequired("CLIQUE", info.color);
-        io.mapRequired("NAME", info.name);
-        io.mapRequired("COMPARTMENT", info.compartment);
-        io.mapRequired("IS_GLOBAL", info.is_global);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlClique> {
-    static void mapping(yaml::IO &io, hakc::YamlClique &info) {
-        io.mapRequired("ACCESS_TOKEN", info.access_token);
-        io.mapRequired("COLOR", info.color);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlFile> {
-    static void mapping(yaml::IO &io, hakc::YamlFile &info) {
-        io.mapOptional("GUID", info.guid);
-        io.mapRequired("PATH", info.name);
-        io.mapOptional("SYMBOLS", info.symbols);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlCompartment> {
-    static void mapping(yaml::IO &io, hakc::YamlCompartment &info) {
-        io.mapRequired("ID", info.id);
-        io.mapOptional("TARGETS", info.targets);
-        io.mapRequired("CLIQUES", info.cliques);
-        io.mapOptional("ENTRY_TOKEN", info.entry_token);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlInformation> {
-    static void mapping(yaml::IO &io, hakc::YamlInformation &info) {
-        io.mapRequired("COMPARTMENTS", info.compartments);
-        io.mapRequired("FILES", info.files);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlMethodsInformation> {
-    static void mapping(yaml::IO &io, hakc::YamlMethodsInformation &info) {
-        io.mapRequired("NAME", info.NAME);
-        io.mapRequired("FUNCTIONS", info.FUNCTIONS);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlArchInformation> {
-    static void mapping(yaml::IO &io, hakc::YamlArchInformation &info) {
-        io.mapRequired("ARCH", info.ARCH);
-        io.mapRequired("PLATFORM", info.PLATFORM);
-        io.mapRequired("METHODS", info.METHODS);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::YamlHAKCInformation> {
-    static void mapping(yaml::IO &io, hakc::YamlHAKCInformation &info) {
-        io.mapRequired("SYSTEMINFO", info.SYSTEMINFO);
-    }
-};
-
 namespace hakc {
+
+    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
+        // todo: maybe fix weird memory issue here 
+        // parser = new HAKCYAMLParser(M);
+        parser = std::make_shared<HAKCYAMLParser>(M);
+        ARCH = parser->ARCH;
+        PLATFORM = parser->PLATFORM;
+        // METHODS = parser->GetMethods(); 
+        ProcessYAML();
+        ProcessCompartmentYaml();
+    }
+
+    std::map<std::string, std::set<std::string>> *HAKCSystemInformation::GetMethods(){
+        // return METHODS; 
+        return parser->GetMethods(); 
+    }
+
     Module &HAKCSystemInformation::getModule() {
         return M;
     }
 
-    std::string HAKCSystemInformation::getCompartmentYamlPath() {
-        const char *path_env_var = HAKC_COMPARTMENT_PATH.c_str();
-        if (path_env_var == nullptr) {
-            CommonHAKCAnalysis::getWriter() << HAKC_COMPARTMENT_PATH << " is not set!\n";
-            throw std::exception();
-        }
-        return path_env_var;
-    }
-
-    void HAKCSystemInformation::ProcessArchYaml() {
-        const char *yaml_file = HAKC_ARCH_CONFIG.c_str();
-        if (!sys::fs::exists(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
-            throw std::exception();
-        } else if (!sys::fs::is_regular_file(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
-            throw std::exception();
-        }
-
-        YamlHAKCInformation yi;
-        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
-        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
-
-        assert(!yin.error() && "Error parsing yaml file");
-        // yaml is actually parsed here, for some reason 
-        yin >> yi;
-
-        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.ARCH << " found\n";
-        ARCH = yi.SYSTEMINFO.ARCH;
-        CommonHAKCAnalysis::getWriter() << yi.SYSTEMINFO.PLATFORM << " found\n";
-        PLATFORM = yi.SYSTEMINFO.PLATFORM; 
-        for (YamlMethodsInformation &method: yi.SYSTEMINFO.METHODS) {
-            // if method name is not in map
-            if(METHODS.find(method.NAME) == METHODS.end()){
-                METHODS[method.NAME] = std::set<StringRef>();
-            }
-            CommonHAKCAnalysis::getWriter() << method.NAME << ":\n";
-            for (StringRef function: method.FUNCTIONS) {
-                METHODS[method.NAME].insert(function); 
-                CommonHAKCAnalysis::getWriter() << "\t" << function << "\n";
-            }
-
-        }
-
-        std::set<StringRef> KernelAllocationSizeMapStrings = METHODS["GetKernelAllocationSizeMap"];
-        
-        for(std::set<StringRef>::iterator ptr = KernelAllocationSizeMapStrings.begin(); ptr != KernelAllocationSizeMapStrings.end(); ptr++){
+    void HAKCSystemInformation::ProcessYAML() {
+        std::set<std::string> KernelAllocationSizeMapStrings = (*GetMethods())["GetKernelAllocationSizeMap"];
+        for (std::set<std::string>::iterator ptr = KernelAllocationSizeMapStrings.begin(); ptr != KernelAllocationSizeMapStrings.end(); ptr++) {
             CommonHAKCAnalysis::getWriter() << "\t in kernel alloc " << *ptr << "\n";
             HAKCAllocationSize Size(*ptr);
-            // TODO: ensure no duplicate key names here 
-            KernelAllocationSizeMap.insert({*ptr,Size});
+            KernelAllocationSizeMap.insert({*ptr, Size});
         }
-    }
-
-    void HAKCSystemInformation::ProcessCompartmentYaml() {
-        YamlInformation yi;
-        auto yaml_file = getCompartmentYamlPath();
-        if (!sys::fs::exists(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
-            throw std::exception();
-        } else if (!sys::fs::is_regular_file(yaml_file)) {
-            CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
-            throw std::exception();
-        }
-        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
-        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
-
-        assert(!yin.error() && "Error parsing yaml file");
-        yin >> yi;
-
-        IntegerType *i32_type = IntegerType::getInt32Ty(M.getContext());
-
-        for (YamlCompartment &comp: yi.compartments) {
-            for (auto clique: comp.cliques) {
-                auto Compartment = std::make_shared<HAKCCompartment>(comp.id, comp.entry_token, clique.access_token,
-                                                                     clique.color);
-                compartments.insert(Compartment);
-            }
-        }
-
-        for (YamlCompartment &comp: yi.compartments) {
-            for (auto &id: comp.targets) {
-                auto TailCompartments = getCompartments(id);
-                for (auto &HeadCompartment: getCompartments(comp.id)) {
-                    for (auto TailCompartment: TailCompartments) {
-                        HeadCompartment->addTarget(TailCompartment);
-                    }
-                }
-            }
-        }
-
-        for (YamlFile &YamlFile: yi.files) {
-            auto File = std::make_shared<HAKCFile>(YamlFile);
-            for (YamlSymbol &sym: YamlFile.symbols) {
-                auto Compartment = getCompartment(sym.compartment, sym.color);
-                if (!Compartment) {
-                    CommonHAKCAnalysis::getWriter() << "Could find find Compartment " << std::to_string(sym.compartment)
-                                                    << " "
-                                                    << getColorStringFromValue(ConstantInt::get(i32_type, sym.color))
-                                                    << " for Symbol " << sym.name
-                                                    << "\n";
-                    throw std::exception();
-                }
-                std::shared_ptr<HAKCSymbol> symbol = std::make_shared<HAKCSymbol>(sym.name, Compartment, File,
-                                                                                  sym.is_global);
-                symbols.insert(symbol);
-            }
-        }
-    }
-
-    void HAKCSystemInformation::Init() {
-        // add error checking 
-        // process Arch Yaml
-        ProcessArchYaml();
-
-        // process Compartment Yaml
-        ProcessCompartmentYaml();
-
-        // process HAKC Pass 
-
-    }
-    
-    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M) {
-        Init(); 
     }
 
     StringRef GetModifiedName(StringRef Path) {
@@ -258,45 +61,20 @@ namespace hakc {
         return Path1.contains(ModifiedFileName);
     }
 
-    std::set<std::shared_ptr<HAKCCompartment>> HAKCSystemInformation::getCompartments(hakc_compartment_id_t ID) {
-        std::set<std::shared_ptr<HAKCCompartment>> result;
-        for (auto &Compartment: compartments) {
-            if (Compartment->getID() == ID) {
-                result.insert(Compartment);
-            }
-        }
-        return result;
-    }
-
-    std::shared_ptr<HAKCCompartment>
-    HAKCSystemInformation::getCompartment(hakc_compartment_id_t id, sym_color_t color) {
-        for (auto Compartment: getCompartments(id)) {
-            if (Compartment->getColor() == color) {
-                return Compartment;
-            }
-        }
-        return nullptr;
-    }
-
-    hakc_access_token_t HAKCSystemInformation::getEntryToken(hakc_compartment_id_t CompartmentID) {
-        auto Compartments = getCompartments(CompartmentID);
-        if (Compartments.empty()) {
-            CommonHAKCAnalysis::getWriter() << "Could not find any Compartment with ID "
-                                            << std::to_string(CompartmentID) << "\n";
-            throw std::exception();
-        }
-        return (*Compartments.begin())->getEntryToken();
-    }
-
     bool HAKCSystemInformation::ContainsCompartmentalizedSymbols(Module &M) {
-        for (auto Symbol: symbols) {
+        CommonHAKCAnalysis::getWriter() << "here000\n";
+        for (auto Symbol : symbols) {
+            CommonHAKCAnalysis::getWriter() << "here001\n";
             if (CommonHAKCAnalysis::IsKernelCompartment(Symbol->getCompartmentID())) {
+                CommonHAKCAnalysis::getWriter() << "here002\n";
                 continue;
             }
             if (PathContainsPath(Symbol->getFile()->GetPath(), M.getName())) {
+                CommonHAKCAnalysis::getWriter() << "here003\n";
                 return true;
             }
         }
+        CommonHAKCAnalysis::getWriter() << "here004\n";
         return false;
     }
 
@@ -310,7 +88,7 @@ namespace hakc {
         auto AllSymbols = getSymbols(Name);
         std::vector<std::shared_ptr<HAKCSymbol>> FoundSymbols;
 
-        for (auto &symbol: AllSymbols) {
+        for (auto &symbol : AllSymbols) {
             if (IsGlobal && symbol->isGlobal()) {
                 FoundSymbols.push_back(symbol);
             } else if (!IsGlobal && !symbol->isGlobal()) {
@@ -328,7 +106,7 @@ namespace hakc {
              */
             std::vector<std::shared_ptr<HAKCSymbol>> ClosestMatches;
             unsigned ClosestEditDistance = UINT32_MAX;
-            for (auto &symbol: FoundSymbols) {
+            for (auto &symbol : FoundSymbols) {
                 auto EditDistance = symbol->getFile()->GetPath().edit_distance(GV->getParent()->getName());
                 if (EditDistance < ClosestEditDistance) {
                     ClosestMatches.clear();
@@ -345,11 +123,10 @@ namespace hakc {
                                                 << " are in Compartments:\n";
                 unsigned ShortestPath = UINT32_MAX;
                 std::shared_ptr<HAKCSymbol> ShortestPathSymbol;
-                for (auto &symbol: FoundSymbols) {
+                for (auto &symbol : FoundSymbols) {
                     CommonHAKCAnalysis::getWriter() << symbol->getFile()->GetPath() << ": "
                                                     << std::to_string(symbol->getCompartmentID())
-                                                    << " (" << std::to_string(
-                            symbol->getFile()->GetPath().edit_distance(GV->getParent()->getName())) << ")"
+                                                    << " (" << std::to_string(symbol->getFile()->GetPath().edit_distance(GV->getParent()->getName())) << ")"
                                                     << "\n";
                     auto Path = symbol->getFile()->GetPath();
                     if (Path.size() < ShortestPath) {
@@ -367,9 +144,97 @@ namespace hakc {
         }
     }
 
+    void HAKCSystemInformation::ProcessCompartmentYaml() {
+        CommonHAKCAnalysis::getWriter() << "here0000\n";
+        YamlInformation yi;
+        std::string yaml_file = HAKC_COMPARTMENT_PATH;
+        if (!sys::fs::exists(yaml_file)) {
+            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << yaml_file << "\n";
+            throw std::exception();
+        } else if (!sys::fs::is_regular_file(yaml_file)) {
+            CommonHAKCAnalysis::getWriter() << yaml_file << " is not a regular file\n";
+            throw std::exception();
+        }
+        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(yaml_file);
+        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
+
+        assert(!yin.error() && "Error parsing yaml file");
+        yin >> yi;
+
+        IntegerType *i32_type = IntegerType::getInt32Ty(M.getContext());
+        CommonHAKCAnalysis::getWriter() << "here0001\n";
+        CommonHAKCAnalysis::getWriter() << "found compartments: \n";
+        for (YamlCompartment &comp : yi.compartments) {
+            CommonHAKCAnalysis::getWriter() << "found cliques: \n";
+            for (auto clique : comp.cliques) {
+                auto Compartment = std::make_shared<HAKCCompartment>(comp.id, comp.entry_token, clique.access_token, clique.color);
+                CommonHAKCAnalysis::getWriter() << "found clique: \t" <<  comp.id << "\n";
+                compartments.insert(Compartment);
+            }
+        }
+        CommonHAKCAnalysis::getWriter() << "here0002\n";
+        for (YamlCompartment &comp : yi.compartments) {
+            for (auto &id : comp.targets) {
+                auto TailCompartments = getCompartments(id);
+                for (auto &HeadCompartment : getCompartments(comp.id)) {
+                    for (auto TailCompartment : TailCompartments) {
+                        HeadCompartment->addTarget(TailCompartment);
+                    }
+                }
+            }
+        }
+        CommonHAKCAnalysis::getWriter() << "here0003\n";
+        for (YamlFile &YamlFile : yi.files) {
+            auto File = std::make_shared<HAKCFile>(YamlFile);
+            for (YamlSymbol &sym : YamlFile.symbols) {
+                auto Compartment = getCompartment(sym.compartment, sym.color);
+                if (!Compartment) {
+                    CommonHAKCAnalysis::getWriter() << "Could find find Compartment " << std::to_string(sym.compartment)
+                                                    << " "
+                                                    << getColorStringFromValue(ConstantInt::get(i32_type, sym.color))
+                                                    << " for Symbol " << sym.name
+                                                    << "\n";
+                    throw std::exception();
+                }
+                std::shared_ptr<HAKCSymbol> symbol = std::make_shared<HAKCSymbol>(sym.name, Compartment, File, sym.is_global);
+                symbols.insert(symbol);
+            }
+        }
+        CommonHAKCAnalysis::getWriter() << "here0004\n";
+    }
+
+    std::set<std::shared_ptr<HAKCCompartment>> HAKCSystemInformation::getCompartments(hakc_compartment_id_t ID) {
+        std::set<std::shared_ptr<HAKCCompartment>> result;
+        for (auto &Compartment : compartments) {
+            if (Compartment->getID() == ID) {
+                result.insert(Compartment);
+            }
+        }
+        return result;
+    }
+
+    std::shared_ptr<HAKCCompartment> HAKCSystemInformation::getCompartment(hakc_compartment_id_t id, sym_color_t color) {
+        for (auto Compartment : getCompartments(id)) {
+            if (Compartment->getColor() == color) {
+                return Compartment;
+            }
+        }
+        return nullptr;
+    }
+
+    hakc_access_token_t HAKCSystemInformation::getEntryToken(hakc_compartment_id_t CompartmentID) {
+        auto Compartments = getCompartments(CompartmentID);
+        if (Compartments.empty()) {
+            CommonHAKCAnalysis::getWriter() << "Could not find any Compartment with ID "
+                                            << std::to_string(CompartmentID) << "\n";
+            throw std::exception();
+        }
+        return (*Compartments.begin())->getEntryToken();
+    }
+
     std::set<std::shared_ptr<HAKCSymbol>> HAKCSystemInformation::getSymbols(StringRef name) {
         std::set<std::shared_ptr<HAKCSymbol>> result;
-        for (auto &Symbol: symbols) {
+        for (auto &Symbol : symbols) {
             if (Symbol->getName() == name) {
                 result.insert(Symbol);
             }
@@ -418,5 +283,4 @@ namespace hakc {
                 return "INVALID_CLIQUE";
         }
     }
-
-} // hakc
+}// namespace hakc

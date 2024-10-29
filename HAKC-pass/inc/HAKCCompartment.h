@@ -7,7 +7,8 @@
 
 #include <set>
 
-#include "HAKCYaml.h"
+// #include "HAKCYaml.h"
+#include "HAKC-defs.h"
 
 namespace hakc {
     class HAKCCompartment {
@@ -35,6 +36,6 @@ namespace hakc {
         std::set<std::shared_ptr<HAKCCompartment>> getTargets();
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_HAKCCOMPARTMENT_H
+#endif//HAKC_HAKCCOMPARTMENT_H

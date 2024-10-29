@@ -19,13 +19,13 @@
 #include "llvm/Support/CommandLine.h"
 
 // critical reference guide for cl: https://llvm.org/docs/CommandLine.html#internal-vs-external-storage
-std::string HAKC_ANALYSIS; 
+std::string HAKC_ANALYSIS;
 std::string HAKC_DEBUG_NAME;
 std::string HAKC_DAG_ANALYSIS_ROOT;
 std::string HAKC_ARCH_CONFIG;
-std::string HAKC_COMPARTMENT_PATH; 
-std::string HAKC_NO_KERNEL_TRANSFERS; 
-std::string HAKC_MORELLO_HYBRID; 
+std::string HAKC_COMPARTMENT_PATH;
+std::string HAKC_NO_KERNEL_TRANSFERS;
+std::string HAKC_MORELLO_HYBRID;
 
 static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"), cl::location(HAKC_ANALYSIS), cl::Required);
 static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME", cl::desc("Enable debug output for a specific function"), cl::location(HAKC_DEBUG_NAME));
@@ -36,10 +36,14 @@ static cl::opt<std::string, true> HAKC_NO_KERNEL_TRANSFERS_CL("HAKC_NO_KERNEL_TR
 static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", cl::desc(""), cl::location(HAKC_MORELLO_HYBRID));
 
 namespace hakc {
-    HAKCModuleAnalysis *GetModuleAnalysis(Module &M) {
-        HAKCModuleAnalysis *ModuleAnalysis;
-        ModuleAnalysis = new HAKCModuleAnalysis(M);
-        ModuleAnalysis->InitAnalysis();
+    std::shared_ptr<HAKCModuleAnalysis> GetModuleAnalysis(Module &M) {
+    // HAKCModuleAnalysis *GetModuleAnalysis(Module &M) {
+        // HAKCModuleAnalysis *ModuleAnalysis;
+        // ModuleAnalysis = new HAKCModuleAnalysis(M);
+        std::shared_ptr<HAKCModuleAnalysis> ModuleAnalysis = std::make_shared<HAKCModuleAnalysis>(M);
+        CommonHAKCAnalysis::getWriter() << "here000001\n";
+        // ModuleAnalysis->InitAnalysis();
+        CommonHAKCAnalysis::getWriter() << "here000002\n";
         return ModuleAnalysis;
     }
 
@@ -51,8 +55,11 @@ namespace hakc {
         } while (end);
 
         SmallString<512> Path = P;
-        auto *Transformation = GetModuleAnalysis(M);
-        HAKCTypeIdentifier typeIdentifier(M, Transformation);
+        std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
+        // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
+        // HAKCTypeIdentifier typeIdentifier(M, Transformation.get());
+        // HAKCTypeIdentifier typeIdentifier(M, Transformation);
+        HAKCTypeIdentifier typeIdentifier(M, Transformation.get());
         const char *root = HAKC_DAG_ANALYSIS_ROOT.c_str();
         if (!root || std::strlen(root) == 0) {
             CommonHAKCAnalysis::getWriter() << HAKC_DAG_ANALYSIS_ROOT << " is not set!\n";
@@ -90,34 +97,35 @@ namespace hakc {
         return false;
     }
 
-    bool runCustom(Module &M){
+    bool runCustom(Module &M) {
         CommonHAKCAnalysis::getWriter() << "running my custom code with HAKC_ANALYSIS of " << HAKC_ANALYSIS << "! \n";
-        CommonHAKCAnalysis::getWriter() << "YAML: " << HAKC_ARCH_CONFIG << "! \n";
-        HAKCSystemInformation SysInfo = HAKCSystemInformation(M);
-        SysInfo.getCustomYamlPath();
+        // CommonHAKCAnalysis::getWriter() << "YAML: " << HAKC_ARCH_CONFIG << "! \n";
+        // HAKCSystemInformation SysInfo = HAKCSystemInformation(M);
+        // SysInfo.getCustomYamlPath();
         // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
 
-        return true; 
+        return true;
     }
 
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
-        HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
-        for (auto path: Transformation->GetHAKCSourcePaths()) {
-            if (M.getSourceFileName().find(path.str()) != M.getSourceFileName().npos) {
+        std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
+        // HAKCModuleAnalysis *Transformation = GetModuleAnalysis(M);
+        for (auto path : Transformation->GetHAKCSourcePaths()) {
+            if (M.getSourceFileName().find(path) != M.getSourceFileName().npos) {
                 CommonHAKCAnalysis::getWriter() << "Skipping hakc source " << M.getSourceFileName() << "\n";
                 PerformTransformations = false;
             }
         }
 
-        for (auto path: Transformation->GetSeparateNamespacePaths()) {
-            if (M.getSourceFileName().find(path.str()) != M.getSourceFileName().npos) {
+        for (auto path : Transformation->GetSeparateNamespacePaths()) {
+            if (M.getSourceFileName().find(path) != M.getSourceFileName().npos) {
                 CommonHAKCAnalysis::getWriter() << "Skipping separate namespace source " << M.getSourceFileName()
                                                 << "\n";
                 PerformTransformations = false;
             }
         }
-
+        
         if (PerformTransformations) {
             Transformation->performTransformations();
             /*if (transformation.isCompartmentalized()) {
@@ -139,14 +147,14 @@ namespace hakc {
 
     struct HAKCPass : public PassInfoMixin<HAKCPass> {
         const std::vector<std::pair<std::string,
-                std::function<bool(Module &)>>>
+                                    std::function<bool(Module &)>>>
                 available_options = {
-                {"dag",              runDataAccessGraphAnalysis},
-                {"compartmentalize", runCompartmentalization},
-                {"custom", runCustom}};
+                        {"dag", runDataAccessGraphAnalysis},
+                        {"compartmentalize", runCompartmentalization},
+                        {"custom", runCustom}};
 
         PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
-            for (const auto &opt: available_options) {
+            for (const auto &opt : available_options) {
                 if (opt.first == HAKC_ANALYSIS) {
                     return opt.second(M) ? PreservedAnalyses::none() : PreservedAnalyses::all();
                 }
@@ -172,4 +180,3 @@ extern "C" LLVM_ATTRIBUTE_WEAK ::llvm::PassPluginLibraryInfo
 llvmGetPassPluginInfo() {
     return getHAKCPluginInfo();
 }
-

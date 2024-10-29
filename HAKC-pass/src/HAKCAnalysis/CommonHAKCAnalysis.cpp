@@ -15,7 +15,7 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
         auto NoTransferFunctions = GetNoTransferFunctions();
-        return NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end();
+        return NoTransferFunctions.find(F->getName().str()) != NoTransferFunctions.end();
     }
 
     bool CommonHAKCAnalysis::IsHAKCTransferFunction(Function *F) {
@@ -67,7 +67,7 @@ namespace hakc {
             } else if (auto *call = dyn_cast<CallInst>(curr)) {
                 if (call->getCalledFunction() &&
                     IsHAKCTransferFunction(call->getCalledFunction())) {
-                    auto TransferDef = GetHAKCTransferDef(call->getCalledFunction()->getName());
+                    auto TransferDef = GetHAKCTransferDef(call->getCalledFunction()->getName().str());
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding Arg "
                                                         << std::to_string(TransferDef->GetSignedPtrIdx())
@@ -155,12 +155,24 @@ namespace hakc {
     bool CommonHAKCAnalysis::isHAKCFunction(Function *F) {
         auto HAKCFunctions = GetHAKCFunctions();
         for (auto HAKCDef: HAKCFunctions) {
-            if (HAKCDef->GetName() == F->getName()) {
+            if (HAKCDef->GetName().str() == F->getName().str()) {
                 return true;
             }
         }
         return false;
     }
+
+    // std::set<hakc_function_def_t> CommonHAKCAnalysis::GetHAKCFunctions() {
+    //     // TODO: this is copied from module analysis, check that it is still correct in this context
+    //     std::set<hakc_function_def_t> AllFunctions;
+    //     for (auto &p : NonTransferHAKCFunctions) {
+    //         AllFunctions.insert(p);
+    //     }
+    //     for (auto &p : GetHAKCTransferFunctions()) {
+    //         AllFunctions.insert(p);
+    //     }
+    //     return AllFunctions;
+    // }
 
     /**
  * @brief
@@ -171,10 +183,7 @@ namespace hakc {
     bool CommonHAKCAnalysis::isSafeTransitionFunction(Function *F) {
         auto SafeTransitionFunctions = GetSafeTransitionFunctions();
         auto AllocationFunctions = GetKernelAllocationSizeMap();
-        return (SafeTransitionFunctions.find(F->getName()) !=
-                SafeTransitionFunctions.end() ||
-                AllocationFunctions.find(F->getName()) !=
-                AllocationFunctions.end());
+        return (SafeTransitionFunctions.find(F->getName().str()) != SafeTransitionFunctions.end() || AllocationFunctions.find(F->getName().str()) != AllocationFunctions.end());
     }
 
     bool CommonHAKCAnalysis::valueHasAttribute(Value *V, Attribute::AttrKind Kind) {
@@ -225,7 +234,7 @@ namespace hakc {
     bool CommonHAKCAnalysis::isIgnoredType(Type *Ty) {
         if (Ty->isStructTy()) {
             auto IgnoredTypes = GetIgnoredTypes();
-            return IgnoredTypes.find(Ty->getStructName()) != IgnoredTypes.end();
+            return IgnoredTypes.find(Ty->getStructName().str()) != IgnoredTypes.end();
         } else if (Ty->isPointerTy()) {
             return isIgnoredType(Ty->getPointerElementType());
         }
@@ -265,14 +274,14 @@ namespace hakc {
         return ArgumentsContainPointer;
     }
 
-    bool CommonHAKCAnalysis::valueShouldBeReplacedWithTransfer(Value *V) {
-        if (auto *F = dyn_cast<Function>(V)) {
-            return functionIsTransferCandidate(F);
-        } else if (auto *BCO = dyn_cast<BitCastOperator>(V)) {
-            return valueShouldBeReplacedWithTransfer(BCO->getOperand(0));
-        }
-        return false;
-    }
+    // bool CommonHAKCAnalysis::valueShouldBeReplacedWithTransfer(Value *V) {
+    //     if (auto *F = dyn_cast<Function>(V)) {
+    //         return functionIsTransferCandidate(F);
+    //     } else if (auto *BCO = dyn_cast<BitCastOperator>(V)) {
+    //         return valueShouldBeReplacedWithTransfer(BCO->getOperand(0));
+    //     }
+    //     return false;
+    // }
 
     bool CommonHAKCAnalysis::IsHAKCFunction(Function *F) {
         if(F == nullptr) {
@@ -307,7 +316,7 @@ namespace hakc {
         auto NoTransferFunctions = GetNoTransferFunctions();
         if (F->getName().startswith(OUTSIDE_TRANSFER_PREFIX)) {
             return F->getName().str();
-        } else if (NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
+        } else if (NoTransferFunctions.find(F->getName().str()) != NoTransferFunctions.end()) {
             return F->getName().str();
         }
         std::string name = OUTSIDE_TRANSFER_PREFIX.str();
@@ -331,17 +340,24 @@ namespace hakc {
         return F->getName().startswith(MODPARAM_GETCTX_PREFIX);
     }
 
-    bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *f) {
-        auto NoTransferFuncs = GetNoTransferFunctions();
-        return NoTransferFuncs.find(f->getName()) == NoTransferFuncs.end() &&
-               !f->isDeclaration() &&
-               !isCapabilityReassignmentFunc(f) &&
-               !FunctionIsComplexVariadic(f) &&
-               !functionIsModParamGetCtx(f) &&
-               FunctionHasPointerArg(f) &&
-               (!isOutsideTransferFunc(f) ||
-                !f->hasFnAttribute(Attribute::InlineHint));
-    }
+    // bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *f) {
+    //     // linux start
+    //     if (F->getName().contains(StringRef(*(*GetSysInfo()->GetMethods())["functionIsTransferCandidate"].begin()))) {
+    //         /* Handle trampolines */
+    //         return false;
+    //     }
+    //     // linux end 
+
+    //     auto NoTransferFuncs = GetNoTransferFunctions();
+    //     return NoTransferFuncs.find(f->getName()) == NoTransferFuncs.end() &&
+    //            !f->isDeclaration() &&
+    //            !isCapabilityReassignmentFunc(f) &&
+    //            !FunctionIsComplexVariadic(f) &&
+    //            !functionIsModParamGetCtx(f) &&
+    //            FunctionHasPointerArg(f) &&
+    //            (!isOutsideTransferFunc(f) ||
+    //             !f->hasFnAttribute(Attribute::InlineHint));
+    // }
 
     bool CommonHAKCAnalysis::FunctionIsComplexVariadic(Function *F) {
         /* TODO: Support variadic functions */
@@ -358,13 +374,13 @@ namespace hakc {
         return false;
     }
 
-    Module &CommonHAKCAnalysis::getModule() {
-        return getTransformer().getModule();
-    }
+    // Module &CommonHAKCAnalysis::getModule() {
+    //     return getTransformer().getModule();
+    // }
 
-    std::set<StringRef> CommonHAKCAnalysis::GetIgnoredGlobals() {
-        return {};
-    }
+    // std::set<StringRef> CommonHAKCAnalysis::GetIgnoredGlobals() {
+    //     return {};
+    // }
 
     bool CommonHAKCAnalysis::functionIsAnalysisCandidate(Function *F) {
         if (!F) {
@@ -448,7 +464,8 @@ namespace hakc {
         auto AllocationDefinitions = GetKernelAllocationSizeMap();
         if (auto *call = dyn_cast<CallInst>(V)) {
             if (call->getCalledFunction() &&
-                AllocationDefinitions.find(call->getCalledFunction()->getName()) != AllocationDefinitions.end()) {
+                // AllocationDefinitions.find(call->getCalledFunction()->getName()) != AllocationDefinitions.end()) {
+                AllocationDefinitions.find(call->getCalledFunction()->getName().str()) != AllocationDefinitions.end()) {
                 return true;
             }
         }

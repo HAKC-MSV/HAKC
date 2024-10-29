@@ -5,32 +5,32 @@
 #ifndef PMC_HAKC_DEFS_H
 #define PMC_HAKC_DEFS_H
 
-#include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Argument.h"
-#include "llvm/IR/Instructions.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/Intrinsics.h"
 
 #include <set>
 #include <vector>
 
 /* Macro value defined in CheriBSD sys/module.h */
 #define HAKC_CHERIBSD_COMPARTMENT_METADATA_TYPE 5
-#define HACK_CHERIBSD_DEFAULT_VERSION           1
+#define HACK_CHERIBSD_DEFAULT_VERSION 1
 
-#define HAKC_CONTEXT_COMPARTMENT_SHIFT  16
+#define HAKC_CONTEXT_COMPARTMENT_SHIFT 16
 
-#define CLIQUE_COLOR_BIT_LENGTH     32
-#define COMPARTMENT_ID_BIT_LENGTH   32
+#define CLIQUE_COLOR_BIT_LENGTH 32
+#define COMPARTMENT_ID_BIT_LENGTH 32
 
-#define BITS_PER_BYTE               8
+#define BITS_PER_BYTE 8
 
-extern std::string HAKC_ANALYSIS; 
+extern std::string HAKC_ANALYSIS;
 extern std::string HAKC_DEBUG_NAME;
 extern std::string HAKC_DAG_ANALYSIS_ROOT;
 extern std::string HAKC_ARCH_CONFIG;
-extern std::string HAKC_COMPARTMENT_PATH; 
-extern std::string HAKC_NO_KERNEL_TRANSFERS; 
-extern std::string HAKC_MORELLO_HYBRID; 
+extern std::string HAKC_COMPARTMENT_PATH;
+extern std::string HAKC_NO_KERNEL_TRANSFERS;
+extern std::string HAKC_MORELLO_HYBRID;
 
 using namespace llvm;
 
@@ -74,6 +74,6 @@ namespace hakc {
     const unsigned KERNEL_COMPARTMENT = 0;
     const sym_color_t KERNEL_COLOR = NO_CLIQUE;
 
-}
+}// namespace hakc
 
 #endif//PMC_HAKC_DEFS_H
