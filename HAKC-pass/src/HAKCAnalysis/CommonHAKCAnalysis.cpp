@@ -519,11 +519,19 @@ namespace hakc {
         return F->getName().starts_with(MODPARAM_GETCTX_PREFIX);
     }
 
+    std::string CommonHAKCAnalysis::GetDBPath() {
+        const char *db_path = std::getenv(HAKC_DB_PATH_ENV_VAR.str().c_str());
+        if (db_path == nullptr) {
+            db_path = "";
+        }
+        return db_path;
+    }
+
     bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         auto NoTransferFuncs = GetNoTransferFunctions();
-        auto Compartment = Policy.GetCompartment(F);
+        auto Division = Policy.GetDivision(F);
         return NoTransferFuncs.find(F->getName()) == NoTransferFuncs.end() &&
-               !Compartment.IsKernelCompartment() &&
+               !Division.GetHAKCCompartment().IsKernelCompartment() &&
                !F->isDeclaration() &&
                !isCapabilityReassignmentFunc(F) &&
                !FunctionIsComplexVariadic(F) &&
@@ -611,8 +619,8 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
-        auto Compartment = Policy.GetCompartment(GV);
-        return Compartment.IsKernelCompartment();
+        auto Division = Policy.GetDivision(GV);
+        return Division.GetHAKCCompartment().IsKernelCompartment();
     }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
@@ -639,8 +647,8 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::FunctionsAreInSameCompartment(Function *F, Function *G,
                                                            HAKCCompartmentalizationPolicy &Policy) {
-        auto FCompartment = Policy.GetCompartment(F);
-        auto GCompartment = Policy.GetCompartment(G);
+        auto FCompartment = Policy.GetDivision(F).GetHAKCCompartment();
+        auto GCompartment = Policy.GetDivision(G).GetHAKCCompartment();
         return FCompartment == GCompartment;
     }
 

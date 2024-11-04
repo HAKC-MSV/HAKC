@@ -26,7 +26,8 @@ namespace hakc {
      */
     class HAKCTransformer {
     public:
-        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis);
+        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis,
+                        HAKCTypeIdentifier &TypeIdentifier);
 
         virtual ~HAKCTransformer() = default;
 
@@ -189,6 +190,7 @@ namespace hakc {
         IRBuilder<> HAKCIRBuilder;
         HAKCCompartmentalizationPolicy &CompartmentalizationPolicy;
         HAKCModuleAnalysis &ModuleAnalysis;
+        HAKCTypeIdentifier &TypeIdentifier;
 
         std::map<Function *, Function *> VariadicTransferFunctions;
 

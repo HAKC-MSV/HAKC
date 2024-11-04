@@ -53,6 +53,7 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         self.division_id = division_id
         self.compartment_id = compartment_id
         self.division_count = division_count
+        self.access_token = self.compute_access_token([])
 
     def __eq__(self, other):
         if isinstance(other, HAKCDivision):
@@ -74,6 +75,7 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         result = dict()
         result['division_id'] = self.division_id
         result['compartment_id'] = self.compartment_id
+        result['access_token'] = self.access_token
         return result
 
     @staticmethod
@@ -82,7 +84,8 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
 
     @classmethod
     def get_data_columns(cls) -> list[HAKCDBColumn]:
-        return [HAKCDBColumn('DivisionID', 'UINT64')]
+        return [HAKCDBColumn('DivisionID', 'UINT64'),
+                HAKCDBColumn('AccessToken', 'UINT64')]
 
     @staticmethod
     def get_table_name() -> str:
@@ -100,6 +103,17 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
             schema[0]: hash(self),
             schema[1]: self.division_id,
         }
+
+    def compute_access_token(self, allowable_accesses: list['HAKCDivision']) -> int:
+        if self.division_id != HAKCDivisionEnum.NO_DIVISION.value:
+            access_token = (self.compartment_id << self.division_count) | (1 << self.division_id)
+            for division in allowable_accesses:
+                if division.compartment_id != self.compartment_id:
+                    raise RuntimeError(f'Trying to add access to Compartment {division.compartment_id} to {self}')
+                access_token |= (1 << division.division_id)
+        else:
+            access_token = 0xFFFF
+        return access_token
 
 
 class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
@@ -153,11 +167,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
         result['entry_token'] = self.entry_token
 
         for division in sorted(self.divisions):
-            access_token = division.access_token
-            division_dict = dict()
-            division_dict['division_id'] = division.division_id
-            division_dict['access_token'] = access_token
-            result['divisions'].append(division_dict)
+            result['divisions'].append(division.get_info_tokens())
         return result
 
     @staticmethod

@@ -7,8 +7,10 @@
 
 namespace hakc {
     HAKCTransformerLinuxX86::HAKCTransformerLinuxX86(HAKCCompartmentalizationPolicy &Policy,
-                                                     HAKCModuleAnalysisLinuxX86 &ModAnalysis) : HAKCTransformerLinux(
-            Policy, ModAnalysis) {
+                                                     HAKCModuleAnalysisLinuxX86 &ModAnalysis,
+                                                     HAKCTypeIdentifier &TypeIdentifier) : HAKCTransformerLinux(Policy,
+                                                                                                                ModAnalysis,
+                                                                                                                TypeIdentifier) {
 
     }
 

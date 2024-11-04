@@ -3,7 +3,8 @@ import multiprocessing as mp
 from typing import Type
 
 import kuzu
-import polars as pl
+# import polars as pl
+import pandas as pd
 
 from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable, HAKCDivision, \
     HAKCCompartment, HAKCCompilationUnit
@@ -40,7 +41,7 @@ class HAKCDatabase:
                 tail_hashes.append(tail_hash)
                 edge_weights.append(edge_weight)
 
-        df = pl.DataFrame({
+        df = pd.DataFrame({
             "from": head_hashes,
             "to": tail_hashes,
             "weight": edge_weights
@@ -53,7 +54,7 @@ class HAKCDatabase:
         RETURN sym.{HAKCSymbol.get_primary_key().column_name} AS symbol_hash;
         """
         response = self.execute_prepared_stmt(cmd)
-        return response.get_as_pl()['symbol_hash'].to_list()
+        return response.get_as_pd()['symbol_hash'].to_list()
 
     def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
         result = self._get_symbols(
@@ -93,7 +94,7 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
         if response.has_next():
-            resp_dict = response.get_as_pl().to_dict(as_series=False)
+            resp_dict = response.get_as_pd().to_dict(as_series=False)
             return HAKCCompilationUnit(filename=resp_dict['filename'][0]), resp_dict['line'][0]
         return None
 
@@ -105,7 +106,7 @@ class HAKCDatabase:
         RETURN DISTINCT indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        df = response.get_as_pl()
+        df = response.get_as_pd()
         for table_name, entries in df.to_dict(as_series=False).items():
             if len(entries) > 0:
                 result[table_name] = entries
@@ -115,7 +116,7 @@ class HAKCDatabase:
         RETURN DISTINCT direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        df = response.get_as_pl()
+        df = response.get_as_pd()
         for table_name, entries in df.to_dict(as_series=False).items():
             if len(entries) > 0:
                 result[table_name] = entries
@@ -135,7 +136,7 @@ class HAKCDatabase:
         response = self.conn.execute(prepared_stmt, parameters=kwargs)
         return response
 
-    def insert_from_dataframe(self, table_name: str, df: pl.DataFrame):
+    def insert_from_dataframe(self, table_name: str, df: pd.DataFrame):
         self.conn.execute(f'COPY {table_name} FROM df')
 
     def _get_symbols(self, where_clause: None | str = None, limit: int = 0) -> list[HAKCSymbol] | int:

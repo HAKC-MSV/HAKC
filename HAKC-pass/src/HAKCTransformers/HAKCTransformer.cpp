@@ -12,10 +12,11 @@
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
-hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis) :
+hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis, HAKCTypeIdentifier &TypeIdentifier) :
         HAKCIRBuilder(HAKCAnalysis.GetModule().getContext()),
         CompartmentalizationPolicy(Policy),
         ModuleAnalysis(HAKCAnalysis),
+        TypeIdentifier(TypeIdentifier),
         VariadicTransferFunctions() {
 
 }
@@ -172,11 +173,11 @@ Value *hakc::HAKCTransformer::CreateCodeAuthentication(hakc::ManagedHAKCPointerP
 }
 
 GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
-    auto Compartment = CompartmentalizationPolicy.GetCompartment(F);
+    auto Division = CompartmentalizationPolicy.GetDivision(F);
 
     GlobalVariable *EntryTokenArray;
-    auto CompartmentID = Compartment.GetCompartmentIDValue();
-    std::string name = "entry_tokens_" + std::to_string(CompartmentID);
+    auto CompartmentID = Division.GetHAKCCompartment().GetCompartmentID();
+    std::string name = "entry_tokens_" + std::to_string(CompartmentID->getZExtValue());
     EntryTokenArray = getModule().getNamedGlobal(name);
     if (EntryTokenArray) {
         if (!EntryTokenArray->getValueType()->isArrayTy()) {
@@ -186,25 +187,25 @@ GlobalVariable *hakc::HAKCTransformer::GetValidTargetCompartments(Function *F) {
         return EntryTokenArray;
     }
 
-    auto Targets = Compartment.GetValidTargets();
+    auto Targets = Division.GetHAKCCompartment().GetValidTargets();
     if (Targets.empty()) {
         CommonHAKCAnalysis::getWriter() << "No valid transitions exist for " << F->getName() << " in Compartment "
-                                        << std::to_string(CompartmentID) << "\n";
+                                        << std::to_string(CompartmentID->getZExtValue()) << "\n";
         throw std::exception();
     }
 
     SmallVector<Constant *> EntryTokenValues;
     SmallVector<hakc_compartment_id_t> IDs;
-    IDs.push_back(CompartmentID);
+    IDs.push_back(CompartmentID->getZExtValue());
     for (auto &t: Targets) {
-        IDs.push_back(t->getSExtValue());
+        IDs.push_back(t->getZExtValue());
     }
     llvm::sort(IDs.begin(), IDs.end(),
                [](hakc_compartment_id_t LHS, hakc_compartment_id_t RHS) { return LHS < RHS; });
 
     for (auto ID: IDs) {
         auto TargetCompartment = CompartmentalizationPolicy.GetCompartment(ID);
-        Constant *EntryToken = GetEntryToken(TargetCompartment);
+        Constant *EntryToken = GetEntryToken(*TargetCompartment);
         EntryTokenValues.push_back(EntryToken);
     }
 
@@ -487,7 +488,7 @@ hakc::HAKCTransformer::FindEntryBitcast(hakc::ManagedHAKCPointerP HAKCPointer, I
         CommonHAKCAnalysis::getWriter() << " in function " << Target->getName() << "\n";
     }
 
-    return CompartmentalizationPolicy.GetTypeIdentifier().FindType(BitcastType);
+    return TypeIdentifier.FindType(BitcastType);
 }
 
 /**
@@ -964,7 +965,7 @@ ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(hakc::ManagedHAKCPointe
 
 ConstantInt *hakc::HAKCTransformer::GetObjectSizeInBytes(hakc::HAKCTypeP HAKCType) {
     auto bit_size = HAKCType->GetSizeInBits();
-    return getInt64(bit_size / BITS_PER_BYTE);
+    return getInt64(bit_size / BITS_PER_BYTE_);
 }
 
 Type *hakc::HAKCTransformer::HAKCAuthenticationRetType(unsigned AddrSpace) {
@@ -984,7 +985,7 @@ hakc::hakc_compartment_id_t hakc::HAKCTransformer::getSymbolCompartmentID(Global
         CommonHAKCAnalysis::getWriter() << "GV is null when trying to get compartment ID\n";
         throw std::exception();
     }
-    auto Compartment = CompartmentalizationPolicy.GetCompartment(GV);
+    auto Compartment = CompartmentalizationPolicy.GetDivision(GV).GetHAKCCompartment();
     return Compartment.GetCompartmentIDValue();
 }
 
@@ -1044,7 +1045,7 @@ bool hakc::HAKCTransformer::DebugIsActive() {
 
 hakc::ManagedHAKCPointerP hakc::HAKCTransformer::CreateNewManagedPointer(Value *BaseDefinition) {
     auto ManagedPtr = std::make_shared<ManagedHAKCPointer>(BaseDefinition, DebugIsActive());
-    auto HAKCTy = CompartmentalizationPolicy.GetTypeIdentifier().FindType(BaseDefinition->getType());
+    auto HAKCTy = TypeIdentifier.FindType(BaseDefinition->getType());
     ManagedPtr->SetType(HAKCTy);
     return ManagedPtr;
 }

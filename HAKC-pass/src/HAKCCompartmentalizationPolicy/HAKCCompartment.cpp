@@ -14,11 +14,11 @@ namespace hakc {
                                      class LLVMContext &Context) :
             Compartment(ConstantInt::get(IntegerType::get(Context, COMPARTMENT_ID_BIT_LENGTH), Compartment)),
             EntryToken(ConstantInt::get(IntegerType::get(Context, 64), EntryToken)),
-            Targets(), Divisions() {
+            Targets() {
 
     }
 
-    HAKCCompartment::HAKCCompartment() : Compartment(nullptr), EntryToken(nullptr), Targets(), Divisions() {
+    HAKCCompartment::HAKCCompartment() : Compartment(nullptr), EntryToken(nullptr), Targets() {
 
     }
 
@@ -34,20 +34,12 @@ namespace hakc {
         return Targets;
     }
 
-    std::vector<HAKCCompartmentDivision> HAKCCompartment::GetDivisions() const {
-        return Divisions;
-    }
-
     void HAKCCompartment::AddTarget(HAKC_Compartment_ID CompartmentID) {
         Targets.push_back(CompartmentID);
     }
 
     hakc_compartment_id_t HAKCCompartment::GetCompartmentIDValue() const {
         return Compartment->getSExtValue();
-    }
-
-    void HAKCCompartment::AddDivision(HAKCCompartmentDivision &HAKCDivision) {
-        Divisions.push_back(HAKCDivision);
     }
 
     HAKC_Access_Token HAKCCompartment::GetEntryToken() const {

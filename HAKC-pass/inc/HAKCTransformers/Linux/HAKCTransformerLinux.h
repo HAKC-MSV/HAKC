@@ -17,7 +17,8 @@ namespace hakc {
     protected:
         StructType *EntryTokenType;
 
-        HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinux &ModuleAnalysis);
+        HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinux &HAKCAnalysis,
+                             HAKCTypeIdentifier &TypeIdentifier);
 
         Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) override;
 

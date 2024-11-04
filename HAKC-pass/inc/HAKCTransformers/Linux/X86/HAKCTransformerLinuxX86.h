@@ -11,7 +11,8 @@ namespace hakc {
 
     class HAKCTransformerLinuxX86 : public HAKCTransformerLinux {
     public:
-        HAKCTransformerLinuxX86(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinuxX86 &ModAnalysis);
+        HAKCTransformerLinuxX86(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysisLinuxX86 &ModAnalysis,
+                                HAKCTypeIdentifier &TypeIdentifier);
     };
 
 } // hakc

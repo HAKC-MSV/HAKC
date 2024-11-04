@@ -71,7 +71,7 @@ namespace hakc {
 
     HAKC_Division_ID
     HAKCModuleAnalysisLinux::getSymbolDivision(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {
-        return Policy.GetDivisionID(GV);
+        return Policy.GetDivision(GV).GetDivisionID();
     }
 
     bool HAKCModuleAnalysisLinux::FunctionIsExported(Function *F) {

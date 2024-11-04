@@ -11,8 +11,9 @@
 #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_sk_buff.h"
 
 hakc::HAKCTransformerLinux::HAKCTransformerLinux(HAKCCompartmentalizationPolicy &Policy,
-                                                 hakc::HAKCModuleAnalysisLinux &ModuleAnalysis) :
-        HAKCTransformer(Policy, ModuleAnalysis),
+                                                 hakc::HAKCModuleAnalysisLinux &ModuleAnalysis,
+                                                 HAKCTypeIdentifier &TypeIdentifier) :
+        HAKCTransformer(Policy, ModuleAnalysis, TypeIdentifier),
         EntryTokenType(nullptr) {
     auto &Module = ModuleAnalysis.GetModule();
     Type *intTy64 = Type::getInt64Ty(Module.getContext());
@@ -259,15 +260,15 @@ hakc::HAKCTransformerLinux::CreateTransferArguments(ManagedHAKCPointerP HAKCPoin
     Value *OperandCast;
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
     bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer->GetBaseDefinition());
-    auto Compartment = CompartmentalizationPolicy.GetCompartment(Target);
+    auto Division = CompartmentalizationPolicy.GetDivision(Target);
 
     OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer->GetBaseDefinition(),
                                                        HAKCIRBuilder.getPtrTy(AddrSpace));
 
     Result.push_back(OperandCast);
     Result.push_back(Size);
-    Result.push_back(Compartment.GetCompartmentID());
-    Result.push_back(CompartmentalizationPolicy.GetDivisionID(Target));
+    Result.push_back(Division.GetHAKCCompartment().GetCompartmentID());
+    Result.push_back(Division.GetDivisionID());
     if (!IsPerCPU) {
         /* Function signature uses is_code which is !isData */
         Result.push_back(IsData ? getFalse() : getTrue());

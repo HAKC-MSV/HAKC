@@ -24,7 +24,7 @@ namespace hakc {
     }
 
     HAKC_Division_ID HAKCFunctionAnalysisLinux::getDivision(HAKCCompartmentalizationPolicy &Policy) {
-        return Policy.GetDivisionID(CurrentFunction);
+        return Policy.GetDivision(CurrentFunction).GetDivisionID();
     }
 
     std::set<StringRef> HAKCFunctionAnalysisLinux::GetSafePointerFunctionNames() {
@@ -68,9 +68,9 @@ namespace hakc {
             if (isOutsideTransferFunc(F)) {
                 auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
                 auto *TransferTarget = F->getParent()->getFunction(transferTargetName);
-                Division = Policy.GetDivisionID(TransferTarget);
+                Division = Policy.GetDivision(TransferTarget).GetDivisionID();
             } else {
-                Division = Policy.GetDivisionID(F);
+                Division = Policy.GetDivision(F).GetDivisionID();
             }
 
             if (debug_output) {

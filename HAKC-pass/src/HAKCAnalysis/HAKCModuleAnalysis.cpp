@@ -38,7 +38,7 @@ namespace hakc {
 
     std::string
     HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
-        auto Compartment = Policy.GetCompartment(GV);
+        auto Compartment = Policy.GetDivision(GV).GetHAKCCompartment();
         if (Compartment.IsKernelCompartment()) {
             return GV->getSection().str();
         }
@@ -71,7 +71,7 @@ namespace hakc {
 
         for (auto *pGlobal: globalsToChange) {
             auto finalName = getGlobalHAKCSectionName(pGlobal, Policy);
-            auto compartment = Policy.GetCompartment(pGlobal);
+            auto compartment = Policy.GetDivision(pGlobal).GetHAKCCompartment();
             RegisterUsedCompartment(compartment);
 
             if (finalName != pGlobal->getSection()) {
@@ -244,9 +244,9 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::performTransformations() {
-        HAKCCompartmentalizationPolicy Policy(M, this);
-        const auto *YamlPath = std::getenv(COMPARTMENT_PATH_ENV_VAR.str().c_str());
-        Policy.ReadCompartmentalizationPolicy(YamlPath);
+        auto DBPath = CommonHAKCAnalysis::GetDBPath();
+        HAKCTypeIdentifier TypeIdentifier(M, this);
+        HAKCCompartmentalizationPolicy Policy(debug_output, M.getContext(), KERNEL_COMPARTMENT, KERNEL_DIVISION, DBPath);
 
         TransformModule(Policy);
         if (IsCompartmentalizedAndContainsDebugName) {
@@ -284,7 +284,7 @@ namespace hakc {
             return false;
         }
         if (CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
-            auto Compartment = Policy.GetCompartment(F);
+            auto Compartment = Policy.GetDivision(F).GetHAKCCompartment();
             if (Compartment.IsKernelCompartment()) {
                 return false;
             }
@@ -346,7 +346,7 @@ namespace hakc {
     void HAKCModuleAnalysis::AddTransferFunctions(HAKCCompartmentalizationPolicy &Policy) {
         std::vector<Function *> FuncsNeedingTransfers;
         for (auto &F: GetModule().getFunctionList()) {
-            auto Compartment = Policy.GetCompartment(&F);
+            auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
 
             if (!Compartment.IsKernelCompartment() && functionIsTransferCandidate(&F, Policy) &&
                 !isOutsideTransferFunc(&F) &&
@@ -361,7 +361,7 @@ namespace hakc {
             Function *transferFunc = nullptr;
 
             if (functionIsTransferCandidate(&F, Policy)) {
-                auto Compartment = Policy.GetCompartment(&F);
+                auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
                 transferFunc = getTransformer(Policy).CreateTransferFunction(&F);
                 if (!transferFunc) {
                     CommonHAKCAnalysis::getWriter() << "Could not create transfer for " << F.getName() << "\n";
@@ -562,7 +562,7 @@ namespace hakc {
 
     std::string
     HAKCModuleAnalysis::GlobalVariableROSectionName(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy) {
-        auto Compartment = Policy.GetCompartment(GlobalVar);
+        auto Compartment = Policy.GetDivision(GlobalVar).GetHAKCCompartment();
         std::string SectionName = ".hakc.";
         SectionName += std::to_string(Compartment.GetCompartmentIDValue());
         SectionName += ".ro_data";

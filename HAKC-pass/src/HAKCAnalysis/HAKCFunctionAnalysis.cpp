@@ -38,7 +38,7 @@ namespace hakc {
             auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
             TransferTarget = F->getParent()->getFunction(transferTargetName);
         }
-        auto TargetCompartment = Policy.GetCompartment(TransferTarget);
+        auto TargetCompartment = Policy.GetDivision(TransferTarget).GetHAKCCompartment();
 
         for (auto *CallI: HAKCFunctionCalls) {
             auto HAKCTransferFunction = GetHAKCTransferDef(CallI->getCalledFunction()->getName());
@@ -171,7 +171,7 @@ namespace hakc {
             if (!dominator) {
                 dominator = BB;
             } else {
-                dominator = DTree.findNearestCommonDominator(dominator, BB);
+                dominator = DTree.findNearestCommonDominator(dominator->getFirstNonPHIOrDbgOrLifetime(), BB->getFirstNonPHIOrDbgOrLifetime())->getParent();
             }
         }
 
@@ -954,8 +954,6 @@ namespace hakc {
             HAKCFunctionCalls.insert(call);
         }
 
-        auto CurrentCompartment = Policy.GetCompartment(CurrentFunction);
-
         if (debug_output) {
             CommonHAKCAnalysis::getWriter() << "Handling call " << *call << "\n";
         }
@@ -1061,7 +1059,7 @@ namespace hakc {
                 }
             }
             if (call->getCalledFunction()) {
-                auto TargetCompartment = Policy.GetCompartment(call->getCalledFunction());
+                auto TargetCompartment = Policy.GetDivision(call->getCalledFunction()).GetHAKCCompartment();
                 if (!TargetCompartment.IsKernelCompartment()) {
                     NonKernelDirectFunctionCallSet.insert(call);
                 }
@@ -1080,7 +1078,7 @@ namespace hakc {
 
     std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName(HAKCCompartmentalizationPolicy &Policy) {
         std::string sectionName = HAKC_SECTION_PREFIX.str();
-        auto Compartment = Policy.GetCompartment(&getFunction());
+        auto Compartment = Policy.GetDivision(&getFunction()).GetHAKCCompartment();
         sectionName += std::to_string(Compartment.GetCompartmentIDValue());
         if (getFunction().getSection().empty()) {
             sectionName += ".text";
@@ -1092,7 +1090,7 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::setup(HAKCCompartmentalizationPolicy &Policy) {
         if (!SetupHasRun) {
-            auto Compartment = Policy.GetCompartment(CurrentFunction);
+            auto Compartment = Policy.GetDivision(CurrentFunction).GetHAKCCompartment();
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Running setup for " << getFunction().getName() << "\n"
                                                 << getFunction() << "\nCompartmentID = "
@@ -1122,7 +1120,7 @@ namespace hakc {
             HAKCCompartmentalizationPolicy &Policy) {
         auto CurrentDivision = Policy.GetDivision(&getFunction());
         for (auto *call: NonKernelDirectFunctionCallSet) {
-            auto TargetCompartment = Policy.GetCompartment(call->getCalledFunction());
+            auto TargetCompartment = Policy.GetDivision(call->getCalledFunction()).GetHAKCCompartment();
             if (CurrentDivision.GetHAKCCompartment().GetCompartmentID() == TargetCompartment.GetCompartmentID()) {
                 /* Aliases are being used for transfer functions, so if the
                  * called function is in the same compartment use the transformed function
@@ -1372,7 +1370,7 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::InstrumentCode(HAKCCompartmentalizationPolicy &Policy) {
-        auto Compartment = Policy.GetCompartment(&getFunction());
+        auto Compartment = Policy.GetDivision(&getFunction()).GetHAKCCompartment();
 
         AddInstrumentation(!Compartment.IsKernelCompartment(), Policy);
     }

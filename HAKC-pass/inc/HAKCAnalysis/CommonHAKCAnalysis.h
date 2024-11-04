@@ -90,6 +90,8 @@ namespace hakc {
 
         static std::string getHAKCDebugName();
 
+        static std::string GetDBPath();
+
         virtual std::set<StringRef> GetNoTransferFunctions() = 0;
 
         virtual std::set<StringRef> GetSafeTransitionFunctions() = 0;

@@ -7,6 +7,7 @@
 
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h"
 #include "HAKCCompartment.h"
+#include "HAKCCompartmentDivision.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
 #include "kuzu.hpp"
@@ -25,32 +26,44 @@ namespace hakc {
 
     class HAKCCompartmentalizationPolicy {
     public:
-        explicit HAKCCompartmentalizationPolicy(bool Debug);
+        explicit HAKCCompartmentalizationPolicy(bool Debug, LLVMContext &Ctx,
+                                                hakc_compartment_id_t DefaultCompartmentID,
+                                                hakc_compartment_division_t DefaultDivisionID, StringRef DatabasePath);
+
         ~HAKCCompartmentalizationPolicy();
 
-        void ConnectToDatabase(StringRef DatabasePath);
+        hakc::HAKCCompartmentDivision &GetDivision(GlobalValue *GV);
 
-        HAKCCompartmentP GetCompartment(GlobalValue *GV);
-
-        HAKCDivisionP GetDivision(GlobalValue *GV);
-
-        HAKCDivisionP
-        GetDivision(hakc_compartment_id_t CompartmentID, hakc_compartment_division_t DivisionID);
-
-        HAKC_Division_ID GetDivisionID(GlobalValue *GV);
-
-        HAKCCompartmentP GetCompartment(hakc_compartment_id_t ID);
+        HAKCCompartmentP GetCompartment(hakc_compartment_id_t CompartmentID);
 
     protected:
         std::shared_ptr<kuzu::main::Database> Database;
         std::unique_ptr<kuzu::main::Connection> Conn;
         bool Debug;
+        HAKCDivisionP DefaultDivision;
+        LLVMContext &LLVMCtx;
+        std::vector<HAKCCompartmentP> Compartments;
+        std::vector<HAKCDivisionP> Divisions;
 
         void CheckConnection();
+
         void Reset();
 
         HAKCPreparedStatementP CreatePreparedStatement(StringRef query);
-        std::unique_ptr<kuzu::main::QueryResult> Execute(HAKCPreparedStatementP&, std::unordered_map<std::string, HAKCDBValueP> &Arguments);
+
+        std::unique_ptr<kuzu::main::QueryResult>
+        Execute(HAKCPreparedStatementP &, std::unordered_map<std::string, HAKCDBValueP> &Arguments);
+
+        HAKCDivisionP GetDivision(hakc_compartment_id_t CompartmentID, hakc_compartment_division_t DivisionID);
+
+        void ConnectToDatabase(StringRef DatabasePath);
+
+        void
+        SetDefaultDivision(hakc_compartment_id_t DefaultCompartmentID, hakc_compartment_division_t DefaultDivisionID);
+
+        HAKCDivisionP FindCachedDivision(hakc_compartment_id_t CompartmentID, hakc_compartment_division_t DivisionID);
+
+        HAKCCompartmentP FindCachedCompartment(hakc_compartment_id_t CompartmentID);
 
     };
 

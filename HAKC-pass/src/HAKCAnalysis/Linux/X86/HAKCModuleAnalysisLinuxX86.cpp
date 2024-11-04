@@ -17,7 +17,7 @@ namespace hakc {
 
     std::shared_ptr<HAKCTransformer>
     HAKCModuleAnalysisLinuxX86::CreateTransformer(HAKCCompartmentalizationPolicy &Policy) {
-        return std::make_shared<HAKCTransformerLinuxX86>(Policy, *this);
+        return std::make_shared<HAKCTransformerLinuxX86>(Policy, *this, );
     }
 
     std::set<StringRef> HAKCModuleAnalysisLinuxX86::GetSeparateNamespacePaths() {

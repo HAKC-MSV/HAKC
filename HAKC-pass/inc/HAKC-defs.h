@@ -22,15 +22,15 @@
 #define DIVISION_ID_BIT_LENGTH                  32
 #define COMPARTMENT_ID_BIT_LENGTH               32
 
-#define BITS_PER_BYTE                           8
+#define BITS_PER_BYTE_                          8
 
 using namespace llvm;
 
 namespace hakc {
 
-    typedef int64_t hakc_compartment_id_t;
-    typedef int64_t hakc_access_token_t;
-    typedef int64_t hakc_compartment_division_t;
+    typedef uint64_t hakc_compartment_id_t;
+    typedef uint64_t hakc_access_token_t;
+    typedef uint64_t hakc_compartment_division_t;
 
     typedef ConstantInt *HAKC_Compartment_ID;
     typedef ConstantInt *HAKC_Access_Token;
@@ -51,6 +51,7 @@ namespace hakc {
     /* Environment Variables */
     const StringRef COMPARTMENT_PATH_ENV_VAR = "HAKC_COMPARTMENT_PATH";
     const StringRef HAKC_DEBUG_ENV_VAR = "HAKC_DEBUG_NAME";
+    const StringRef HAKC_DB_PATH_ENV_VAR = "HAKC_DB_PATH";
     const StringRef DAG_ANALYSIS_ROOT_ENV_VAR = "HAKC_DAG_ANALYSIS_ROOT";
     const StringRef HAKC_ENV_VAR = "HAKC_ANALYSIS";
     const StringRef HAKC_NO_KERNEL_TRANSFERS = "HAKC_NO_KERNEL_TRANSFERS";

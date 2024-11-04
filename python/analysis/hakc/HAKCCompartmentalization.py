@@ -3,7 +3,8 @@ import re
 from typing import Type
 
 import networkx as nx
-import polars as pl
+# import polars as pl
+import pandas as pd
 import tqdm
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
@@ -165,7 +166,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                         if column.column_name not in data_to_persist:
                             data_to_persist[column.column_name] = list()
                         data_to_persist[column.column_name].append(data)
-                df = pl.DataFrame(data_to_persist)
+                df = pd.DataFrame(data_to_persist)
                 logger.debug(f'Persisting {len(nodes)} Nodes to {table_name}')
                 try:
                     conn.insert_from_dataframe(table_name, df)
@@ -194,7 +195,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                                 attr_list[key] = list()
                             attr_list[key].append(val)
                 if len(attr_list) == 0:
-                    df = pl.DataFrame({
+                    df = pd.DataFrame({
                         'from': head_primary_keys,
                         'to': tail_primary_keys
                     })
@@ -205,7 +206,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                     }
                     for key, val in attr_list.items():
                         df_data[key] = val
-                    df = pl.DataFrame(df_data)
+                    df = pd.DataFrame(df_data)
                 logger.debug(f'Persisting {len(head_primary_keys)} edges to {table_name}')
                 try:
                     conn.insert_from_dataframe(table_name, df)

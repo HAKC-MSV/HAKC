@@ -25,11 +25,7 @@ namespace hakc {
 
         std::vector<HAKC_Compartment_ID> GetValidTargets() const;
 
-        std::vector<HAKCCompartmentDivision> GetDivisions() const;
-
         void AddTarget(HAKC_Compartment_ID CompartmentID);
-
-        void AddDivision(HAKCCompartmentDivision &HAKCDivision);
 
         hakc_compartment_id_t GetCompartmentIDValue() const;
 
@@ -49,7 +45,6 @@ namespace hakc {
         HAKC_Compartment_ID Compartment;
         HAKC_Access_Token EntryToken;
         std::vector<HAKC_Compartment_ID> Targets;
-        std::vector<HAKCCompartmentDivision> Divisions;
     };
 
 } // hakc
