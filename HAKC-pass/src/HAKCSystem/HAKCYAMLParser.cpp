@@ -2,7 +2,7 @@
 // Created by al32163 on 10/24/2024
 //
 
-#include "HAKCYAMLParser.h"
+#include "HAKCSystem/HAKCYAMLParser.h"
 #include <execinfo.h>
 #include <iostream>
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
@@ -10,13 +10,7 @@
 namespace hakc {
 
     HAKCYAMLParser::HAKCYAMLParser(Module &M) : M(M) {
-        METHODS = new std::map<std::string, std::set<std::string>>(); 
-        tmp.reserve(100); 
         ParseArchYaml();
-    }
-
-    std::map<std::string, std::set<std::string>> *HAKCYAMLParser::GetMethods(){
-        return METHODS;
     }
 
     void HAKCYAMLParser::ParseArchYaml() {

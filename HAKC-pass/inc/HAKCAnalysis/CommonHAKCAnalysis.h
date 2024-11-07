@@ -11,6 +11,7 @@
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 #include "HAKCOstream.h"
 
+
 #include <map>
 
 namespace hakc {
@@ -93,16 +94,6 @@ namespace hakc {
 
         static std::string GetDBPath();
 
-        virtual std::set<StringRef> GetNoTransferFunctions() = 0;
-        // virtual std::set<StringRef> GetNoTransferFunctions() = 0;
-        virtual std::set<std::string> GetNoTransferFunctions() = 0;
-
-        // virtual std::set<StringRef> GetSafeTransitionFunctions();
-        virtual std::set<std::string> GetSafeTransitionFunctions() = 0;
-
-        // virtual std::set<StringRef> GetIgnoredTypes() = 0;
-        virtual std::set<std::string> GetIgnoredTypes() = 0;
-
         bool IsHAKCTransferFunction(Function *F);
 
         bool IsHAKCFunction(Function *F);
@@ -111,13 +102,7 @@ namespace hakc {
 
         virtual std::set<hakc_function_def_t> GetHAKCFunctions() = 0;
 
-        // virtual std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() = 0;
-        virtual std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap() = 0;
-
         hakc_transfer_def_t GetHAKCTransferDef(StringRef name);
-
-        // std::set<StringRef> GetIgnoredGlobals();
-        std::set<std::string> GetIgnoredGlobals();
 
         bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
