@@ -11,20 +11,7 @@ if(HAKC_LLVM)
     set(LLVM_ENABLE_IDE True CACHE BOOL "HAKC Enable IDE")
     add_subdirectory(llvm-project/llvm)
 else()
-    if (HAKC_CHERIBSD_MORELLO)
-        set(HAKC_BUILD_TYPE cheribsd-morello)
-    elseif (HAKC_LINUX_X86)
-        set(HAKC_BUILD_TYPE linux-x86)
-    elseif (HAKC_LINUX_ARMV8)
-        set(HAKC_BUILD_TYPE linux-armv8)
-    elseif (HAKC_LINUX_ARMV9)
-        set(HAKC_BUILD_TYPE linux-armv9)
-    else ()
-        message(FATAL_ERROR
-                "Must Specify Target HAKC Architecture")
-    endif ()
-
-    set(HAKC_PASS_LIB "HAKC-Compartmentalizer-${HAKC_BUILD_TYPE}")
+    set(HAKC_PASS_LIB "HAKC-Compartmentalizer")
 
     cmake_host_system_information(RESULT Ncpu QUERY NUMBER_OF_PHYSICAL_CORES)
 

@@ -1,4 +1,4 @@
-target_sources(HAKC-Compartmentalizer-${HAKC_BUILD_TYPE} PRIVATE
+target_sources(HAKC-Compartmentalizer PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCTypeIdentifier.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCDebugInfoProcessor.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCInfo.cpp

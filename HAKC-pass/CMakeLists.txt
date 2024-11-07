@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.4.3)
-project(HAKC-Pass VERSION 1.0.0)
+project(HAKC-Pass VERSION 2.0.0)
 
 #===============================================================================
 # 1. VERIFY LLVM INSTALLATION DIR
@@ -80,19 +80,6 @@ endif ()
 # Set the build directories
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin")
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
-
-if (HAKC_CHERIBSD_MORELLO)
-    add_compile_definitions(HAKC_CHERIBSD_MORELLO)
-elseif (HAKC_LINUX_X86)
-    add_compile_definitions(HAKC_LINUX_X86)
-elseif (HAKC_LINUX_ARMV8)
-    add_compile_definitions(HAKC_LINUX_ARMV8)
-elseif (HAKC_LINUX_ARMV9)
-    add_compile_definitions(HAKC_LINUX_ARMV9)
-else ()
-    message(FATAL_ERROR
-            "Must Specify Target HAKC Architecture")
-endif ()
 
 #===============================================================================
 # 4. ADD SUB-TARGETS
