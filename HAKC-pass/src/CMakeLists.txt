@@ -5,4 +5,5 @@ add_subdirectory(HAKCTransformers)
 add_subdirectory(HAKCAnalysis)
 add_subdirectory(HAKCTypeIdentifier)
 add_subdirectory(HAKCFunctionDefinition)
+
 add_subdirectory(HAKCCompartmentalizationPolicy)

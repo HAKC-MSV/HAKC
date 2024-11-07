@@ -18,15 +18,18 @@ namespace hakc {
     public:
         HAKCTypeInfo(StringRef Name, bool DebugActive);
 
-        virtual ~HAKCTypeInfo() = default;
+        ~HAKCTypeInfo() = default;
 
         void AddMember(const std::shared_ptr<HAKCTypeInfo> &TypeUse, unsigned BitOffset);
 
         std::string GetYaml(unsigned Indents) override;
+        std::string getTypeStringRepresentation();
 
         void SetSizeInBits(unsigned Size);
+        std::string getYaml();
 
         unsigned GetSizeInBits();
+        std::string getName();
 
         const DIType *GetDbgType();
 
@@ -38,6 +41,7 @@ namespace hakc {
 
         void SetLLVMType(Type *Ty);
 
+        std::string getHash();
         std::string GetYamlHeader(unsigned Indents) const override;
 
         StringRef GetYamlIdentifier() const override;

@@ -1,9 +1,9 @@
 //
 // Created by derrick on 8/20/21.
 //
-#include "llvm/IR/Verifier.h"
-#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/InlineAsm.h"
+#include "llvm/IR/InstIterator.h"
+#include "llvm/IR/Verifier.h"
 
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
@@ -117,6 +117,27 @@ namespace hakc {
         return TransferCall;
     }
 
+    std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName() {
+        // linux
+        std::string sectionName = HAKC_SECTION_PREFIX.str();
+        auto *Color = getColor();
+
+        sectionName += HAKCModuleAnalysis::getColorStringFromValue(Color);
+        if (getFunction().getSection().empty()) {
+            sectionName += ".text";
+        } else {
+            sectionName += getFunction().getSection().str();
+        }
+        return sectionName;
+    }
+
+
+    bool HAKCFunctionAnalysis::isSafeTransitionFunction(Function *F) {
+        // linux
+        auto isSafe = CommonHAKCAnalysis::isSafeTransitionFunction(F);
+        return isSafe || F->getName().contains("__lse_atomic_") || F->getName().contains("get_pid_ns") || F->getName().contains("get_user_ns") || F->getName().contains("static_branch_");
+    }
+
     /**
          * @brief Checks if a user is in the current function
          * @param user
@@ -151,7 +172,7 @@ namespace hakc {
 
         std::set<BasicBlock *> BasicBlocks;
 
-        for (auto *user: users) {
+        for (auto *user : users) {
             if (!userInFunction(user)) {
                 continue;
             }
@@ -167,7 +188,7 @@ namespace hakc {
             }
         }
 
-        for (auto *BB: BasicBlocks) {
+        for (auto *BB : BasicBlocks) {
             if (!dominator) {
                 dominator = BB;
             } else {
@@ -211,7 +232,7 @@ namespace hakc {
             throw std::exception();
         }
 
-        for (Instruction &I: *DominatorBlock) {
+        for (Instruction &I : *DominatorBlock) {
             if (&I == v) {
                 return I.getNextNonDebugInstruction();
             } else if (!isa<PHINode>(&I) && users.find(&I) != users.end()) {
@@ -369,7 +390,13 @@ namespace hakc {
         return IsCallInIntrinsicSet(Call, IntrinsicsNeedingCloning);
     }
 
-    std::set<StringRef> HAKCFunctionAnalysis::GetNoTransferFunctions() {
+    HAKCModuleAnalysis &HAKCFunctionAnalysis::getModuleAnalysis() {
+        // fix null dereference here
+        // CommonHAKCAnalysis::getWriter() << "trying to get module analysis, but got: " << ModAnalysis << "\n";
+        return *ModAnalysis;
+    }
+
+    std::set<std::string> HAKCFunctionAnalysis::GetNoTransferFunctions() {
         return getModuleAnalysis().GetNoTransferFunctions();
     }
 
@@ -431,7 +458,7 @@ namespace hakc {
     bool HAKCFunctionAnalysis::phiNodeUsesValue(PHINode *phiNode, Value *target,
                                                 std::set<PHINode *> &visited) {
         visited.insert(phiNode);
-        for (auto &val: phiNode->incoming_values()) {
+        for (auto &val : phiNode->incoming_values()) {
             Value *def = getDef(val.get(), true, debug_output);
             if (val.get() == target || def == target) {
                 return true;
@@ -503,7 +530,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Examining PHI Node " << phiNode << " for Globals (" << nodes.size() << ")\n";
             }
             nodes.insert(phiNode);
-            for (auto &val: phiNode->incoming_values()) {
+            for (auto &val : phiNode->incoming_values()) {
                 Value *def = getDef(val.get(), false, debug_output);
                 if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "\tPHI Node value: " << val << "\n\t\tDef: " << def << "\n";
@@ -550,6 +577,10 @@ namespace hakc {
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a CallInst\n";
             }
+                        // arch specific code here (linux)
+            if (call->getCalledFunction() && (call->getCalledFunction()->getName().str() == *(*SysInfo->GetMethods())["pointerShouldBeChecked"].begin())){
+                return false;
+            }
 
             bool IsInline = call->isInlineAsm();
             bool IsManualSafe = IsManualSafePointer(call);
@@ -558,7 +589,6 @@ namespace hakc {
                     if (IsInline) {
                         CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
                     }
-
                     if (IsManualSafe) {
                         CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a manual safe pointer\n";
                     }
@@ -766,7 +796,7 @@ namespace hakc {
                                                                   unsigned int OpNo) {
         auto *Op = getDef(CmpI->getOperand(OpNo), false, debug_output);
         if (auto *func = dyn_cast<Function>(Op)) {
-            if (valueShouldBeReplacedWithTransfer(func, Policy)) {
+            if (getModuleAnalysis().valueShouldBeReplacedWithTransfer(func, Policy)) {
                 if (debug_output) {
                     CommonHAKCAnalysis::getWriter() << "Adding comparison to directFunctionUsers for argument " <<
                                                     std::to_string(OpNo) << "\n";
@@ -903,7 +933,7 @@ namespace hakc {
     bool HAKCFunctionAnalysis::globalShouldBeTransferred(Use &globalValueArg) {
         /* Don't transfer to printk */
         if (auto *globalValue = dyn_cast<GlobalValue>(
-                getDef(globalValueArg.get(), false, debug_output))) {
+                    getDef(globalValueArg.get(), false, debug_output))) {
             /* Don't transfer THIS_MODULE */
             if (globalValue->getName() == "__this_module") {
                 return false;
@@ -950,6 +980,7 @@ namespace hakc {
             return;
         }
 
+        auto CurrentSymbol = getTransformer().GetSysInfo()->findSymbol(CurrentFunction);
         if (IsHAKCFunction(call->getCalledFunction())) {
             HAKCFunctionCalls.insert(call);
         }
@@ -1002,7 +1033,7 @@ namespace hakc {
                 }
             }
         } else if (needsAuthenticatedArgs) {
-            for (auto &arg: call->args()) {
+            for (auto &arg : call->args()) {
                 if (argNeedsAuthentication(arg)) {
                     RegisterPointerDereference(arg);
                 } else if (debug_output) {
@@ -1017,7 +1048,7 @@ namespace hakc {
                  */
                 return;
             }
-            for (auto &arg: call->args()) {
+            for (auto &arg : call->args()) {
                 Value *def = getDef(arg.get(), false, debug_output);
                 if (auto *glob = dyn_cast<GlobalValue>(def)) {
                     if (globalShouldBeTransferred(arg)) {
@@ -1032,7 +1063,7 @@ namespace hakc {
                                                         << " should not be transferred to " << *call << "\n";
                     }
                 } else if (auto *phiNode = dyn_cast<PHINode>(def)) {
-                    for (auto &val: phiNode->incoming_values()) {
+                    for (auto &val : phiNode->incoming_values()) {
                         Value *valDef = getDef(val.get(), false, debug_output);
                         if (auto *globVal = dyn_cast<GlobalValue>(valDef)) {
                             if (globalShouldBeTransferred(val)) {
@@ -1065,6 +1096,11 @@ namespace hakc {
                 }
             }
         }
+    }
+
+    ConstantInt *HAKCFunctionAnalysis::getColor() {
+        // TODO: update get color functionality
+        return getTransformer().getInt64(TEAL_CLIQUE);
     }
 
     /**
@@ -1265,9 +1301,9 @@ namespace hakc {
         ConstantInt *Size = nullptr;
         if (auto *Call = dyn_cast<CallInst>(PointerNeedingTransfer)) {
             if (Call->getCalledFunction()) {
-                const auto &SizeFunction = Allocations.find(Call->getCalledFunction()->getName());
+                const auto &SizeFunction = Allocations.find(Call->getCalledFunction()->getName().str());
                 if (SizeFunction != Allocations.end()) {
-                    Size = dyn_cast<ConstantInt>((*SizeFunction).second(Call));
+                    Size = (*SizeFunction).second.GetSize(Call);
                 }
             }
         }

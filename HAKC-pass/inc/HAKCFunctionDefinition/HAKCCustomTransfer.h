@@ -22,7 +22,7 @@ namespace hakc {
         HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
                            ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
 
-        virtual ~HAKCCustomTransfer() = default;
+        ~HAKCCustomTransfer() = default;
 
         Type *GetType() const;
 

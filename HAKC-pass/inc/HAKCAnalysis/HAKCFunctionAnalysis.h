@@ -7,9 +7,11 @@
 
 #include "llvm/IR/Dominators.h"
 
+#include "CommonHAKCAnalysis.h"
+#include "HAKCPointerManager.h"
+#include "HAKCSystemInformation.h"
 #include "HAKCModuleAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
-#include "HAKCPointerManager.h"
 
 namespace hakc {
 
@@ -18,93 +20,6 @@ namespace hakc {
     class CommonHAKCAnalysis;
 
     class HAKCPointerManager;
-
-    template<unsigned ArgNo>
-    llvm::Value *CallArgumentSize(llvm::Value *Call) {
-        if (auto *CallB = dyn_cast<CallBase>(Call)) {
-            auto *ArgTy = CallB->getArgOperand(ArgNo)->getType();
-            auto Size = CallB->getFunction()->getParent()->getDataLayout().getTypeStoreSize(ArgTy);
-            if (Size > 0) {
-                return ConstantInt::get(IntegerType::getInt64Ty(CallB->getContext()), Size);
-            }
-        }
-
-        return nullptr;
-    }
-
-    template<unsigned argNo>
-    llvm::Value *simpleArgumentSize(llvm::Value *allocation) {
-        if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
-            IRBuilder<> irBuilder(call);
-            Value *size = call->getArgOperand(argNo);
-            size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
-            return size;
-        }
-
-        return nullptr;
-    }
-
-    template<unsigned size>
-    llvm::Value *simpleStaticSize(llvm::Value *allocation) {
-        return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), size, false);
-    }
-
-    template<unsigned size, unsigned argNo>
-    llvm::Value *staticPlusArgument(llvm::Value *allocation) {
-        if (llvm::CallInst *call = llvm::dyn_cast<llvm::CallInst>(allocation)) {
-            ConstantInt *argumentSize = dyn_cast<ConstantInt>(call->getArgOperand(argNo));
-            return ConstantInt::get(Type::getInt64Ty(allocation->getContext()), argumentSize->getZExtValue() + size,
-                                    false);
-        }
-
-        return nullptr;
-    }
-
-    template<unsigned argNo1, unsigned argNo2>
-    Value *multiplyTwoArguments(Value *allocation) {
-        if (CallInst *call = dyn_cast<CallInst>(allocation)) {
-            IRBuilder<> irBuilder(call);
-            auto *int64Ty = irBuilder.getInt64Ty();
-            /* Defying all reason, somehow some functions have different argument counts than
-             * expected. See kmalloc_array in the IR for linereq_ioctl. So in that case, take
-             * the lowest argument value.
-             */
-            Value *fullSize = nullptr;
-            if (argNo1 >= call->arg_size() || argNo2 >= call->arg_size()) {
-                if (argNo1 <= argNo2) {
-                    fullSize = call->getArgOperand(argNo1);
-                } else {
-                    fullSize = call->getArgOperand(argNo2);
-                }
-            } else {
-                fullSize = irBuilder.CreateMul(
-                        irBuilder.CreateZExt(call->getArgOperand(argNo1), int64Ty),
-                        irBuilder.CreateZExt(call->getArgOperand(argNo2), int64Ty));
-            }
-            fullSize = irBuilder.CreateZExtOrBitCast(fullSize, int64Ty);
-            return fullSize;
-        }
-
-        return nullptr;
-    }
-
-    template<unsigned argNo, unsigned index0>
-    Value *argumentGEP(Value *allocation) {
-        if (isa<CallInst>(allocation)) {
-            /*HAKCIRBuilder<> irBuilder(call);
-            IntegerType *sizeTy = irBuilder.getInt64Ty();
-            std::vector<Value*> indices;
-            indices.push_back(ConstantInt::get(sizeTy, index0, false));
-            Value *gep = irBuilder.CreateGEP(sizeTy, call->getArgOperand(argNo), indices);
-            Value *size = irBuilder.CreateLoad(sizeTy, gep);
-            return size;*/
-
-            // TODO: Fix this
-            return llvm::ConstantInt::get(Type::getInt64Ty(allocation->getContext()), 64, false);
-        }
-
-        return nullptr;
-    }
 
     /**
  * @brief This pass does the following:
@@ -179,15 +94,17 @@ namespace hakc {
 
         void RegisterPointerDereference(Use &use);
 
-        virtual void handleLoad(LoadInst *load);
+        bool isSafeTransitionFunction(Function *F);
 
-        virtual void handleStore(StoreInst *store);
+        void handleLoad(LoadInst *load);
 
         virtual void handleComparison(CmpInst *compare, HAKCCompartmentalizationPolicy &Policy);
 
         virtual void handleCall(CallInst *call, HAKCCompartmentalizationPolicy &Policy);
 
-        virtual void handleBinaryOperator(BinaryOperator *binOp);
+        void handleCall(CallInst *call);
+
+        void handleBinaryOperator(BinaryOperator *binOp);
 
         bool globalShouldBeTransferred(Use &globalValueArg);
 
@@ -197,15 +114,21 @@ namespace hakc {
 
         void CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls(HAKCCompartmentalizationPolicy &Policy);
 
-        virtual HAKCModuleAnalysis &getModuleAnalysis() = 0;
+        HAKCModuleAnalysis &getModuleAnalysis();
 
         virtual std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
+        ConstantInt *getColor();
 
-        virtual std::set<Intrinsic::ID> GetInstrinsicsToSkip();
+        HAKCTransformer &getTransformer();
+
+        std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
 
         virtual std::set<Intrinsic::ID> GetIntrinsicsToClone();
 
         virtual void AddManagedPointer(Value *HAKCPointer);
+        std::set<Intrinsic::ID> GetInstrinsicsToSkip();
+
+        void AddManagedPointer(Value *HAKCPointer);
 
         void ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value *NewValue,
                                        HAKCCompartmentalizationPolicy &Policy);
@@ -231,10 +154,14 @@ namespace hakc {
 
         void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo, HAKCCompartmentalizationPolicy &Policy);
 
+        HAKCModuleAnalysis *ModAnalysis;
+
+        HAKCSystemInformation *SysInfo;
+
     public:
         HAKCFunctionAnalysis(Function *F, HAKCCompartmentalizationPolicy &Policy, bool debug);
 
-        virtual ~HAKCFunctionAnalysis() = default;
+        ~HAKCFunctionAnalysis() = default;
 
         bool modifiedFunction();
 
@@ -242,21 +169,22 @@ namespace hakc {
 
         virtual void setup(HAKCCompartmentalizationPolicy &Policy);
 
-        std::set<StringRef> GetNoTransferFunctions() override;
+        std::set<StringRef> GetNoTransferFunctions();
 
-        std::set<StringRef> GetSafeTransitionFunctions() override;
+        std::set<StringRef> GetSafeTransitionFunctions();
 
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() override;
+        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
-        std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() override;
+        std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap();
 
-        std::set<StringRef> GetIgnoredTypes() override;
+        std::set<StringRef> GetIgnoredTypes();
 
+        std::set<hakc_function_def_t> GetHAKCFunctions();
         std::set<StringRef> GetIgnoredGlobals() override;
 
         std::set<hakc_function_def_t> GetHAKCFunctions() override;
 
-        Value *getDef(Value *, bool, bool) override;
+        Value *getDef(Value *, bool, bool);
 
         Instruction *
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
@@ -278,13 +206,11 @@ namespace hakc {
 
         virtual Instruction *SignGlobalPointerWithColor(GlobalValue *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
 
-        virtual Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
+        Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
-        virtual bool IsIntrinsicNeedingAuthentication(CallBase *Call);
+        virtual bool isIntrinsicNeedingAuthentication(CallInst *);
 
-        virtual bool IsIntrinsicsNeedingCloning(CallBase *Call);
-
-        virtual bool PointerIsAuthenticated_Arch(Value *Pointer);
+        bool PointerIsAuthenticated_Arch(Value *Pointer);
 
         virtual bool PointerShouldBeConsideredCode(Value *Pointer);
 
@@ -294,6 +220,6 @@ namespace hakc {
 
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_HAKCFUNCTIONANALYSIS_H
+#endif//HAKC_HAKCFUNCTIONANALYSIS_H

@@ -1,0 +1,30 @@
+using compiler-rt xray test folder because xray instruments llvm ir testing, which is similar to what we might want to test 
+
+# compile llvm-project with the following commands: 
+
+cmake -G Ninja \
+-DLLVM_ENABLE_PROJECTS='clang;lld;clang-tools-extra;llvm;compiler-rt' \
+-DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
+-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+-DCMAKE_C_COMPILER=/usr/bin/clang \
+-DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
+-DLLVM_TARGETS_TO_BUILD='X86;AArch64' \
+-DLLVM_OPTIMIZED_TABLEGEN=True \
+-DLLVM_USE_LINKER=lld \
+-DLLVM_ENABLE_IDE=True \
+-DHAKC_LLVM=True ..
+
+ninja
+sudo ninja install 
+
+# build compiler-rt tests:
+mkdir compiler-rt-build
+cd compiler-rt-build
+cmake ../compiler-rt -DCOMPILER_RT_BUILD_XRAY=ON -DCOMPILER_RT_INCLUDE_TESTS=ON -DCMAKE_CXX_COMPILER=$(realpath ../..)/install/bin/clang++ -DCMAKE_C_COMPILER=$(realpath ../..)/install/bin/clang -DLLVM_CMAKE_DIR=../compiler-rt-build -DLLVM_CONFIG_PATH=/home/al32163/hakc/HAKC/cmake-build-hakc-llvm/llvm-project/llvm/bin/llvm-config
+make check-xray
+
+# execute tests: 
+llvm-lit test/xray/X86_64LinuxConfig/TestCases/Posix/hakc-base-test.cpp
+
+# script to copy over test cases from HAKC-pass to compiler-rt:
+./build.sh

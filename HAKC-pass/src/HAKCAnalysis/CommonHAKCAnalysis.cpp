@@ -10,7 +10,7 @@
 namespace hakc {
     HAKCOstream hos;
 
-    /**
+/**
  * @brief Collective analysis functionality
  * @param debug
  */
@@ -233,48 +233,6 @@ namespace hakc {
         }
         DefchainCache[v] = def_chain;
         return def_chain;
-    }
-
-    bool CommonHAKCAnalysis::ValueIsUsedAsPointer(Value *V, bool debug) {
-        if (!IsPointerLikeType(V->getType())) {
-            return false;
-        }
-
-        bool CallIsUsedAsPointer = V->getType()->isPointerTy();
-        if (V->getType()->isIntegerTy()) {
-            CallIsUsedAsPointer = false;
-            /* Search for uses that determine if the call is considered a pointer or integer */
-            for (auto &U: V->uses()) {
-                if (isa<IntToPtrInst>(U.getUser())) {
-                    if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "User of " << V << " is an inttoptr: " << U.getUser() << "\n";
-                    }
-                    CallIsUsedAsPointer = true;
-                } else if (auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
-                    if (BinOp->getOpcode() == BinaryOperator::Add) {
-                        unsigned OpNum = (U.getOperandNo() + 1) % 2;
-                        auto *OtherOp = U.getUser()->getOperand(OpNum);
-                        if (debug) {
-                            CommonHAKCAnalysis::getWriter() << "Checking operator " << std::to_string(OpNum)
-                                                            << " of " << BinOp << ": " << OtherOp << "\n";
-                        }
-                        if (OtherOp->getType()->isPointerTy()) {
-                            /* V is an integer (which could still be used as a pointer), but is used in an add operation
-                             * that involves another pointer.  Adding two pointers together does not make sense, so V
-                             * is a true integer and not a pointer.
-                             */
-                            break;
-                        }
-                    }
-                }
-
-                if (CallIsUsedAsPointer) {
-                    break;
-                }
-            }
-        }
-
-        return CallIsUsedAsPointer;
     }
 
     /**
@@ -602,8 +560,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::NoKernelTransferFunctionsSet() {
-        const char *env = std::getenv(HAKC_NO_KERNEL_TRANSFERS.str().c_str());
-        return env != nullptr;
+        return strlen(HAKC_NO_KERNEL_TRANSFERS.c_str()) != 0;
     }
 
     void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
@@ -624,18 +581,17 @@ namespace hakc {
     }
 
     std::string CommonHAKCAnalysis::getHAKCDebugName() {
-        const char *name = std::getenv(HAKC_DEBUG_ENV_VAR.str().c_str());
-        if (name == nullptr) {
+        const char *name = HAKC_DEBUG_NAME.c_str();
+        if (strlen(name) == 0) {
             name = "****UNUSED****";
         }
         return name;
     }
 
-    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, ArrayRef<StringRef> NewAdditions) {
+    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, std::set<StringRef> NewAdditions) {
         for (auto NewAddition: NewAdditions) {
             Existing.insert(NewAddition);
         }
-
         return Existing;
     }
 
@@ -657,7 +613,8 @@ namespace hakc {
         auto AllocationDefinitions = GetKernelAllocationSizeMap();
         if (auto *call = dyn_cast<CallInst>(V)) {
             if (call->getCalledFunction() &&
-                AllocationDefinitions.find(call->getCalledFunction()->getName()) != AllocationDefinitions.end()) {
+                // AllocationDefinitions.find(call->getCalledFunction()->getName()) != AllocationDefinitions.end()) {
+                AllocationDefinitions.find(call->getCalledFunction()->getName().str()) != AllocationDefinitions.end()) {
                 return true;
             }
         }

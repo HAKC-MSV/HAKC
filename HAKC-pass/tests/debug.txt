@@ -1,0 +1,402 @@
+[100%] Built target clang_rt.profile-x86_64
+[100%] Built target profile
+[100%] Running the XRay tests
+-- Testing: 36 tests, 12 workers --
+Testing:  0.. 10.. 20.. 30.. 40.. 50.. 60.. 70.. 80.. 
+FAIL: XRay-x86_64-linux :: TestCases/Posix/hakc-test1.c (34 of 36)
+******************** TEST 'XRay-x86_64-linux :: TestCases/Posix/hakc-test1.c' FAILED ********************
+Script:
+--
+: 'RUN: at line 1';   env HAKC_ANALYSIS=compartmentalize HAKC_DEBUG_NAME=foo HAKC_COMPARTMENT_PATH=$(dirname /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/xray/TestCases/Posix/hakc-test1.c)/$(basename /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/xray/TestCases/Posix/hakc-test1.c .c).yml $TEST_CLANG -I $ROOT/linux/tools/include -fexperimental-new-pass-manager -fpass-plugin=$TEST_PASS -g -S -emit-llvm -O2 -o /home/al32163/hakc/HAKC/llvm-project/compiler-rt-build/test/xray/X86_64LinuxConfig/TestCases/Posix/Output/hakc-test1.c.tmp.ll -c /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/xray/TestCases/Posix/hakc-test1.c
+: 'RUN: at line 2';   cat /home/al32163/hakc/HAKC/llvm-project/compiler-rt-build/test/xray/X86_64LinuxConfig/TestCases/Posix/Output/hakc-test1.c.tmp.ll | FileCheck /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/xray/TestCases/Posix/hakc-test1.c || exit 1
+--
+Exit Code: 139
+
+Command Output (stderr):
+--
+Removing signatures in foo
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !24, metadata !DIExpression()), !dbg !28
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+  br i1 %3, label %10, label %4, !dbg !30
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !25, metadata !DIExpression()), !dbg !32
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+  store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+  br label %10
+
+10:                                               ; preds = %1, %4
+  %11 = phi i32 [ %9, %4 ], [ 0, %1 ], !dbg !28
+  ret i32 %11, !dbg !46
+}
+
+InstrumentKernelCode calling setup for foo
+Running setup for foo
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !24, metadata !DIExpression()), !dbg !28
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+  br i1 %3, label %10, label %4, !dbg !30
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !25, metadata !DIExpression()), !dbg !32
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+  store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+  br label %10
+
+10:                                               ; preds = %1, %4
+  %11 = phi i32 [ %9, %4 ], [ 0, %1 ], !dbg !28
+  ret i32 %11, !dbg !46
+}
+
+Checking comparison   %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+	Comparisons with null do not need authentication
+Adding GEP Operator pointer   %2 = alloca %struct.data_struct, align 4
+Checking if   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33 should be registered
+Definition   %2 = alloca %struct.data_struct, align 4 from   store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35 is registered
+ManagedHAKCPointer found BaseDefinition:   %2 = alloca %struct.data_struct, align 4
+Adding GEP Operator pointer %struct.data_struct2* %0
+Checking if   %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40 should be registered
+Definition %struct.data_struct2* %0 from   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41 is registered
+ManagedHAKCPointer found BaseDefinition: %struct.data_struct2* %0
+Handling call   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44 does not need authenticated args
+Indirect call:   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44
+ManagedHAKCPointer found BaseDefinition:   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40 should be cloned
+Argument 0 of   %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41 should use authenticated Base Definition
+Argument 0 of   %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29 is being ignored
+Argument 1 of   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44 should use authenticated Base Definition
+Argument 0 of   %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44 should use signed Base Definition
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33 should be cloned
+Argument 1 of   store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35 should use authenticated Base Definition
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31 should be cloned
+Intrinsic (154)   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45 is not in { 181 184 186 }
+Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45 should use signed Base Definition
+Intrinsic (155)   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31 is not in { 181 184 186 }
+Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31 should use signed Base Definition
+Managed Pointers:
+%struct.data_struct2* %0
++++
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41
++++
+  %2 = alloca %struct.data_struct, align 4
++++
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---- createAllAuthenticatedPointers ----
+Function prior to making authenticated copies:
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !24, metadata !DIExpression()), !dbg !28
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+  br i1 %3, label %10, label %4, !dbg !30
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !25, metadata !DIExpression()), !dbg !32
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+  store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+  %8 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %7, align 8, !dbg !40, !tbaa !41
+  %9 = call i32 %8(%struct.data_struct* nonnull %2) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+  br label %10
+
+10:                                               ; preds = %1, %4
+  %11 = phi i32 [ %9, %4 ], [ 0, %1 ], !dbg !28
+  ret i32 %11, !dbg !46
+}
+
+Creating Base Authenticated Pointer of %struct.data_struct2* %0 with Users
+  %7 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+Finding insertion point for %struct.data_struct2* %0
+Authenticated Pointer for %struct.data_struct2* %0:   %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !40
+
+
+Creating Authenticated Copies of uses of %struct.data_struct2* %0:
+	Argument 0 of   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+	Argument 0 of   %11 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %10, align 8, !dbg !40, !tbaa !41
+Creating copy of Argument 0 of   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+Authenticated Replacement of Argument 0 of   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40:   %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !40
+Creating copy of Argument 0 of   %11 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %10, align 8, !dbg !40, !tbaa !41
+Created Authenticated Copy of   %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40:   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+Authenticated Replacement of Argument 0 of   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41:   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %9, i64 0, i32 0, !dbg !40
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !24, metadata !DIExpression()), !dbg !28
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+  br i1 %3, label %14, label %4, !dbg !30
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !25, metadata !DIExpression()), !dbg !32
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+  store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+  %7 = bitcast %struct.data_struct2* %0 to i8*, !dbg !40
+  %8 = call i8* @check_hakc_data_access(i8* %7, i32 6, i64 393218), !dbg !40
+  %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !40
+  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %9, i64 0, i32 0, !dbg !40
+  %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+  %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41
+  %13 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+  br label %14
+
+14:                                               ; preds = %1, %4
+  %15 = phi i32 [ %13, %4 ], [ 0, %1 ], !dbg !28
+  ret i32 %15, !dbg !46
+}
+
+AuthenticatedPointerReplacements:
+Argument 0 of   %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40:   %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !40
+Argument 0 of   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41:   %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %9, i64 0, i32 0, !dbg !40
+
+
+ProtectedPointerReplacements:
+Argument 0 of   %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40: nullptr
+Created Authenticated and Protected Copies for %struct.data_struct2* %0
+Creating Base Authenticated Pointer of   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41 with Users
+  %13 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44
+Finding insertion point for   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41
+Setting initializer for entry_tokens_6 to be [1 x %HAKCEntryToken] [%HAKCEntryToken { i64 7, i64 458756 }, %HAKCEntryToken { i64 6, i64 393218 }] from token values 
+	%HAKCEntryToken { i64 7, i64 458756 }
+	%HAKCEntryToken { i64 6, i64 393218 }
+Authenticated Pointer for   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41:   %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !44
+
+
+Creating Authenticated Copies of uses of   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41:
+	Argument 1 of   %16 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44
+Creating copy of Argument 1 of   %16 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44
+Authenticated Replacement of Argument 1 of   %16 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44:   %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !44
+
+; Function Attrs: nounwind uwtable
+define dso_local i32 @foo(%struct.data_struct2* readonly %0) local_unnamed_addr #0 !dbg !7 {
+  %2 = alloca %struct.data_struct, align 4
+  call void @llvm.dbg.value(metadata %struct.data_struct2* %0, metadata !24, metadata !DIExpression()), !dbg !28
+  %3 = icmp eq %struct.data_struct2* %0, null, !dbg !29
+  br i1 %3, label %17, label %4, !dbg !30
+
+4:                                                ; preds = %1
+  %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+  call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+  call void @llvm.dbg.declare(metadata %struct.data_struct* %2, metadata !25, metadata !DIExpression()), !dbg !32
+  %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+  store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+  %7 = bitcast %struct.data_struct2* %0 to i8*, !dbg !40
+  %8 = call i8* @check_hakc_data_access(i8* %7, i32 6, i64 393218), !dbg !40
+  %9 = bitcast i8* %8 to %struct.data_struct2*, !dbg !40
+  %10 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %9, i64 0, i32 0, !dbg !40
+  %11 = getelementptr inbounds %struct.data_struct2, %struct.data_struct2* %0, i64 0, i32 0, !dbg !40
+  %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41
+  %13 = bitcast i32 (%struct.data_struct*)* %12 to i8*, !dbg !44
+  %14 = call i8* @check_hakc_code_access(i8* %13, i32 6, i64 393218, %HAKCEntryToken* getelementptr inbounds ([1 x %HAKCEntryToken], [1 x %HAKCEntryToken]* @entry_tokens_6, i64 0, i64 0), i64 1), !dbg !44
+  %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !44
+  %16 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44
+  call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+  br label %17
+
+17:                                               ; preds = %1, %4
+  %18 = phi i32 [ %16, %4 ], [ 0, %1 ], !dbg !28
+  ret i32 %18, !dbg !46
+}
+
+AuthenticatedPointerReplacements:
+Argument 1 of   %16 = call i32 %12(%struct.data_struct* nonnull %2) #3, !dbg !44:   %15 = bitcast i8* %14 to i32 (%struct.data_struct*)*, !dbg !44
+
+
+ProtectedPointerReplacements:
+Created Authenticated and Protected Copies for   %12 = load i32 (%struct.data_struct*)*, i32 (%struct.data_struct*)** %11, align 8, !dbg !40, !tbaa !41
+Authenticated Pointer for   %2 = alloca %struct.data_struct, align 4:   %2 = alloca %struct.data_struct, align 4
+
+
+Creating Authenticated Copies of uses of   %2 = alloca %struct.data_struct, align 4:
+	Argument 0 of   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+	Argument 1 of   store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+	Argument 0 of   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+Creating copy of Argument 0 of   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+Pointer is AuthenticatedPointer
+Authenticated Replacement of Argument 0 of   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33:   %2 = alloca %struct.data_struct, align 4
+Creating copy of Argument 1 of   store i32 0, i32* %6, align 4, !dbg !34, !tbaa !35
+Created Authenticated Copy of   %7 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33:   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+Authenticated Replacement of Argument 1 of   store i32 0, i32* %7, align 4, !dbg !34, !tbaa !35:   %6 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+Creating copy of Argument 0 of   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+Pointer is AuthenticatedPointer
+Authenticated Replacement of Argument 0 of   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31:   %2 = alloca %struct.data_struct, align 4
+
+
+Creating Protected Copies of uses of   %2 = alloca %struct.data_struct, align 4:
+	Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+	Argument 0 of   %17 = call i32 %13(%struct.data_struct* nonnull %2) #3, !dbg !44
+	Argument 0 of   %7 = getelementptr inbounds %struct.data_struct, %struct.data_struct* %2, i64 0, i32 0, !dbg !33
+	Argument 1 of   call void @llvm.lifetime.start.p0i8(i64 4, i8* nonnull %5) #3, !dbg !31
+	Argument 0 of   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+Creating copy of Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %5) #3, !dbg !45
+Created Protected Copy of   %6 = bitcast %struct.data_struct* %2 to i8*, !dbg !31:   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+Protected Replacement of Argument 1 of   call void @llvm.lifetime.end.p0i8(i64 4, i8* nonnull %6) #3, !dbg !45:   %5 = bitcast %struct.data_struct* %2 to i8*, !dbg !31
+Creating copy of Argument 0 of   %18 = call i32 %14(%struct.data_struct* nonnull %2) #3, !dbg !44
+Protected Replacement of Argument 0 of   %18 = call i32 %14(%struct.data_struct* nonnull %2) #3, !dbg !44: PLEASE submit a bug report to https://bugs.llvm.org/ and include the crash backtrace, preprocessed source, and associated run script.
+Stack dump:
+0.	Program arguments: /home/al32163/hakc/HAKC//install/bin/clang -I /home/al32163/hakc/HAKC//linux/tools/include -fexperimental-new-pass-manager -fpass-plugin=/home/al32163/hakc/HAKC//install/lib/libHAKC-Compartmentalizer-linux-x86.so -g -S -emit-llvm -O2 -o /home/al32163/hakc/HAKC/llvm-project/compiler-rt-build/test/xray/X86_64LinuxConfig/TestCases/Posix/Output/hakc-test1.c.tmp.ll -c /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/xray/TestCases/Posix/hakc-test1.c
+1.	<eof> parser at end of file
+2.	Optimizer
+ #0 0x000055d258e6f0f4 llvm::sys::PrintStackTrace(llvm::raw_ostream&, int) /home/al32163/hakc/HAKC/llvm-project/llvm/lib/Support/Unix/Signals.inc:565:13
+ #1 0x000055d258e6d400 llvm::sys::RunSignalHandlers() /home/al32163/hakc/HAKC/llvm-project/llvm/lib/Support/Signals.cpp:72:18
+ #2 0x000055d258dfce73 (anonymous namespace)::CrashRecoveryContextImpl::HandleCrash(int, unsigned long) /home/al32163/hakc/HAKC/llvm-project/llvm/lib/Support/CrashRecoveryContext.cpp:75:5
+ #3 0x000055d258dfce73 CrashRecoverySignalHandler(int) /home/al32163/hakc/HAKC/llvm-project/llvm/lib/Support/CrashRecoveryContext.cpp:388:51
+ #4 0x00007fa5b337f520 (/lib/x86_64-linux-gnu/libc.so.6+0x42520)
+ #5 0x000055d25888c1a2 llvm::Value::getValueID() const /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/IR/Value.h:529:12
+ #6 0x000055d25888c1a2 llvm::isa_impl<llvm::Instruction, llvm::Value, void>::doit(llvm::Value const&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/IR/Value.h:965:16
+ #7 0x000055d25888c1a2 llvm::isa_impl_cl<llvm::Instruction, llvm::Value const*>::doit(llvm::Value const*) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Casting.h:105:12
+ #8 0x000055d25888c1a2 llvm::isa_impl_wrap<llvm::Instruction, llvm::Value const*, llvm::Value const*>::doit(llvm::Value const* const&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Casting.h:131:12
+ #9 0x000055d25888c1a2 llvm::isa_impl_wrap<llvm::Instruction, llvm::Value const* const, llvm::Value const*>::doit(llvm::Value const* const&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Casting.h:121:12
+#10 0x000055d25888c1a2 bool llvm::isa<llvm::Instruction, llvm::Value const*>(llvm::Value const* const&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Casting.h:142:10
+#11 0x000055d25888c1a2 llvm::cast_retty<llvm::Instruction, llvm::Value const*>::ret_type llvm::dyn_cast<llvm::Instruction, llvm::Value const>(llvm::Value const*) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Casting.h:345:10
+#12 0x000055d25888c1a2 llvm::Value::print(llvm::raw_ostream&, bool) const /home/al32163/hakc/HAKC/llvm-project/llvm/lib/IR/AsmWriter.cpp:4578:17
+#13 0x00007fa5b32aa56c hakc::ManagedHAKCPointer::CreatePointerReplacements(std::map<std::shared_ptr<hakc::ManagedHAKCPointerUse>, llvm::Value*, std::less<std::shared_ptr<hakc::ManagedHAKCPointerUse> >, std::allocator<std::pair<std::shared_ptr<hakc::ManagedHAKCPointerUse> const, llvm::Value*> > >&) /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/ManagedHAKCPointer.cpp:435:17
+#14 0x00007fa5b32aaab7 hakc::ManagedHAKCPointer::CreatePointerUseClones() /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/ManagedHAKCPointer.cpp:458:13
+#15 0x00007fa5b32ae1a9 hakc::HAKCPointerManager::CreateAuthenticatedPointersAndAllClones(bool) /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/HAKCPointerManager.cpp:224:17
+#16 0x00007fa5b32a0b2a hakc::HAKCFunctionAnalysis::InstrumentKernelCode() /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/HAKCFunctionAnalysis.cpp:1135:21
+#17 0x00007fa5b32a5002 hakc::HAKCModuleAnalysis::removeSignatures() /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/HAKCModuleAnalysis.cpp:270:49
+#18 0x00007fa5b32a4d65 hakc::HAKCModuleAnalysis::performTransformations() /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCAnalysis/HAKCModuleAnalysis.cpp:0:13
+#19 0x00007fa5b3285676 hakc::runCompartmentalization(llvm::Module&) /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCPass.cpp:128:50
+#20 0x00007fa5b32869f1 hakc::HAKCPass::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /home/al32163/hakc/HAKC/HAKC-pass/src/HAKCPass.cpp:146:32
+#21 0x00007fa5b32866cd llvm::detail::PassModel<llvm::Module, hakc::HAKCPass, llvm::PreservedAnalyses, llvm::AnalysisManager<llvm::Module> >::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /home/al32163/hakc/HAKC/install/include/llvm/IR/PassManagerInternal.h:85:5
+#22 0x000055d2589876ad llvm::SmallPtrSet<void*, 2u>::operator=(llvm::SmallPtrSet<void*, 2u>&&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/SmallPtrSet.h:481:13
+#23 0x000055d2589876ad llvm::PreservedAnalyses::operator=(llvm::PreservedAnalyses&&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/IR/PassManager.h:155:7
+#24 0x000055d2589876ad llvm::PassManager<llvm::Module, llvm::AnalysisManager<llvm::Module> >::run(llvm::Module&, llvm::AnalysisManager<llvm::Module>&) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/IR/PassManager.h:517:16
+#25 0x000055d2593528ab llvm::SmallPtrSetImplBase::isSmall() const /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/SmallPtrSet.h:194:33
+#26 0x000055d2593528ab llvm::SmallPtrSetImplBase::~SmallPtrSetImplBase() /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/SmallPtrSet.h:82:10
+#27 0x000055d2593528ab llvm::PreservedAnalyses::~PreservedAnalyses() /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/IR/PassManager.h:155:7
+#28 0x000055d2593528ab (anonymous namespace)::EmitAssemblyHelper::EmitAssemblyWithNewPassManager(clang::BackendAction, std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream> >) /home/al32163/hakc/HAKC/llvm-project/clang/lib/CodeGen/BackendUtil.cpp:1427:5
+#29 0x000055d25934ce59 std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream> >::~unique_ptr() /usr/bin/../lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/unique_ptr.h:360:12
+#30 0x000055d25934ce59 clang::EmitBackendOutput(clang::DiagnosticsEngine&, clang::HeaderSearchOptions const&, clang::CodeGenOptions const&, clang::TargetOptions const&, clang::LangOptions const&, llvm::DataLayout const&, llvm::Module*, clang::BackendAction, std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream> >) /home/al32163/hakc/HAKC/llvm-project/clang/lib/CodeGen/BackendUtil.cpp:1596:5
+#31 0x000055d2597122a8 std::unique_ptr<llvm::raw_pwrite_stream, std::default_delete<llvm::raw_pwrite_stream> >::~unique_ptr() /usr/bin/../lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/unique_ptr.h:360:6
+#32 0x000055d2597122a8 clang::BackendConsumer::HandleTranslationUnit(clang::ASTContext&) /home/al32163/hakc/HAKC/llvm-project/clang/lib/CodeGen/CodeGenAction.cpp:344:7
+#33 0x000055d25a402cc5 __gnu_cxx::__normal_iterator<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >*, std::vector<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >, std::allocator<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> > > > >::__normal_iterator(std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >* const&) /usr/bin/../lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_iterator.h:1028:20
+#34 0x000055d25a402cc5 std::vector<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >, std::allocator<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> > > >::begin() /usr/bin/../lib/gcc/x86_64-linux-gnu/11/../../../../include/c++/11/bits/stl_vector.h:812:16
+#35 0x000055d25a402cc5 void clang::finalize<std::vector<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >, std::allocator<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> > > > >(std::vector<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> >, std::allocator<std::unique_ptr<clang::TemplateInstantiationCallback, std::default_delete<clang::TemplateInstantiationCallback> > > >&, clang::Sema const&) /home/al32163/hakc/HAKC/llvm-project/clang/include/clang/Sema/TemplateInstCallback.h:54:16
+#36 0x000055d25a402cc5 clang::ParseAST(clang::Sema&, bool, bool) /home/al32163/hakc/HAKC/llvm-project/clang/lib/Parse/ParseAST.cpp:178:3
+#37 0x000055d25966fe57 clang::FrontendAction::Execute() /home/al32163/hakc/HAKC/llvm-project/clang/lib/Frontend/FrontendAction.cpp:953:10
+#38 0x000055d2595c61a0 llvm::Error::getPtr() const /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Error.h:277:12
+#39 0x000055d2595c61a0 llvm::Error::operator bool() /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/Support/Error.h:236:16
+#40 0x000055d2595c61a0 clang::CompilerInstance::ExecuteAction(clang::FrontendAction&) /home/al32163/hakc/HAKC/llvm-project/clang/lib/Frontend/CompilerInstance.cpp:949:23
+#41 0x000055d25970d6da clang::ExecuteCompilerInvocation(clang::CompilerInstance*) /home/al32163/hakc/HAKC/llvm-project/clang/lib/FrontendTool/ExecuteCompilerInvocation.cpp:278:25
+#42 0x000055d257fcf757 cc1_main(llvm::ArrayRef<char const*>, char const*, void*) /home/al32163/hakc/HAKC/llvm-project/clang/tools/driver/cc1_main.cpp:240:15
+#43 0x000055d257fcdd82 ExecuteCC1Tool(llvm::SmallVectorImpl<char const*>&) /home/al32163/hakc/HAKC/llvm-project/clang/tools/driver/driver.cpp:330:12
+#44 0x000055d2594c65f2 clang::driver::CC1Command::Execute(llvm::ArrayRef<llvm::Optional<llvm::StringRef> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, bool*) const::$_0::operator()() const /home/al32163/hakc/HAKC/llvm-project/clang/lib/Driver/Job.cpp:404:30
+#45 0x000055d2594c65f2 void llvm::function_ref<void ()>::callback_fn<clang::driver::CC1Command::Execute(llvm::ArrayRef<llvm::Optional<llvm::StringRef> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, bool*) const::$_0>(long) /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/STLExtras.h:185:12
+#46 0x000055d258dfcc50 llvm::function_ref<void ()>::operator()() const /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/STLExtras.h:0:12
+#47 0x000055d258dfcc50 llvm::CrashRecoveryContext::RunSafely(llvm::function_ref<void ()>) /home/al32163/hakc/HAKC/llvm-project/llvm/lib/Support/CrashRecoveryContext.cpp:424:3
+#48 0x000055d2594c5e9a clang::driver::CC1Command::Execute(llvm::ArrayRef<llvm::Optional<llvm::StringRef> >, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> >*, bool*) const /home/al32163/hakc/HAKC/llvm-project/clang/lib/Driver/Job.cpp:404:7
+#49 0x000055d25949978b clang::driver::Compilation::ExecuteCommand(clang::driver::Command const&, clang::driver::Command const*&) const /home/al32163/hakc/HAKC/llvm-project/clang/lib/Driver/Compilation.cpp:195:15
+#50 0x000055d259499c06 clang::driver::Compilation::ExecuteJobs(clang::driver::JobList const&, llvm::SmallVectorImpl<std::pair<int, clang::driver::Command const*> >&) const /home/al32163/hakc/HAKC/llvm-project/clang/lib/Driver/Compilation.cpp:248:13
+#51 0x000055d2594ac2fc llvm::SmallVectorBase<unsigned int>::empty() const /home/al32163/hakc/HAKC/llvm-project/llvm/include/llvm/ADT/SmallVector.h:73:47
+#52 0x000055d2594ac2fc clang::driver::Driver::ExecuteCompilation(clang::driver::Compilation&, llvm::SmallVectorImpl<std::pair<int, clang::driver::Command const*> >&) /home/al32163/hakc/HAKC/llvm-project/clang/lib/Driver/Driver.cpp:1517:23
+#53 0x000055d257fcd711 main /home/al32163/hakc/HAKC/llvm-project/clang/tools/driver/driver.cpp:502:21
+#54 0x00007fa5b3366d90 __libc_start_call_main ./csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+#55 0x00007fa5b3366e40 call_init ./csu/../csu/libc-start.c:128:20
+#56 0x00007fa5b3366e40 __libc_start_main ./csu/../csu/libc-start.c:379:5
+#57 0x000055d257fcb035 _start (/home/al32163/hakc/HAKC//install/bin/clang+0x1c35035)
+clang-12: error: clang frontend command failed with exit code 139 (use -v to see invocation)
+clang version 12.0.1 (https://github.com/llvm/llvm-project.git fed41342a82f5a3a9201819a82bf7a48313e296b)
+Target: x86_64-unknown-linux-gnu
+Thread model: posix
+InstalledDir: /home/al32163/hakc/HAKC//install/bin
+clang-12: note: diagnostic msg: 
+********************
+
+PLEASE ATTACH THE FOLLOWING FILES TO THE BUG REPORT:
+Preprocessed source(s) and associated run script(s) are located at:
+clang-12: note: diagnostic msg: /tmp/hakc-test1-966bf2.c
+clang-12: note: diagnostic msg: /tmp/hakc-test1-966bf2.sh
+clang-12: note: diagnostic msg: 
+
+********************
+
+--
+
+********************
+Testing:  0.. 10.. 20.. 30.. 40.. 50.. 60.. 70.. 80.. 90.. 
+********************
+Failed Tests (1):
+  XRay-x86_64-linux :: TestCases/Posix/hakc-test1.c
+
+
+Testing Time: 1.10s
+  Unsupported: 15
+  Passed     : 20
+  Failed     :  1
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-base-test.cpp (1 of 1)
+
+Testing Time: 0.06s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-test0.c (1 of 1)
+
+Testing Time: 0.08s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+FAIL: XRay-x86_64-linux :: TestCases/Posix/hakc-test1.c (1 of 1)
+********************
+Failed Tests (1):
+  XRay-x86_64-linux :: TestCases/Posix/hakc-test1.c
+
+
+Testing Time: 0.55s
+
+Total Discovered Tests: 1
+  Failed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-test2.c (1 of 1)
+
+Testing Time: 0.08s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-test3.c (1 of 1)
+
+Testing Time: 0.09s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-test4.c (1 of 1)
+
+Testing Time: 0.10s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)
+-- Testing: 1 tests, 1 workers --
+PASS: XRay-x86_64-linux :: TestCases/Posix/hakc-test5.c (1 of 1)
+
+Testing Time: 0.12s
+
+Total Discovered Tests: 1
+  Passed: 1 (100.00%)

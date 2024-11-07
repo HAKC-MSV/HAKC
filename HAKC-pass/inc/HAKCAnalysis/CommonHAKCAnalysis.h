@@ -36,7 +36,7 @@ namespace hakc {
 
         static bool isFunctionStatic(Function *F);
 
-        virtual bool isSafeTransitionFunction(Function *F);
+        bool isSafeTransitionFunction(Function *F);
 
         bool functionIsAnalysisCandidate(Function *F);
 
@@ -44,19 +44,20 @@ namespace hakc {
 
         hakc_function_def_t getHAKCFunction(StringRef name);
 
-        virtual bool functionIsModParamGetCtx(Function *F);
+        virtual HAKCTransformer &getTransformer() = 0;
 
-        virtual bool IsNoTransferFunction(Function *F);
+        bool functionIsModParamGetCtx(Function *F);
 
-        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, ArrayRef<StringRef> NewAdditions);
+        bool IsNoTransferFunction(Function *F);
+
+        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, std::set<StringRef> NewAdditions);
 
         static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions);
 
         virtual bool ValueIsUsedAsPointer(Value *V, bool debug);
 
     public:
-
-        virtual Value *getDef(Value *V, bool followLoad, bool debug);
+        Value *getDef(Value *V, bool followLoad, bool debug);
 
         virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
 
@@ -70,7 +71,7 @@ namespace hakc {
 
         static bool isKernelUserPointer(Value *V);
 
-        virtual bool valueIsReadonlyPtr(Value *value);
+        bool valueIsReadonlyPtr(Value *value);
 
         static bool FunctionHasPointerArg(Function *F);
 
@@ -93,26 +94,32 @@ namespace hakc {
         static std::string GetDBPath();
 
         virtual std::set<StringRef> GetNoTransferFunctions() = 0;
+        // virtual std::set<StringRef> GetNoTransferFunctions() = 0;
+        virtual std::set<std::string> GetNoTransferFunctions() = 0;
 
-        virtual std::set<StringRef> GetSafeTransitionFunctions() = 0;
+        // virtual std::set<StringRef> GetSafeTransitionFunctions();
+        virtual std::set<std::string> GetSafeTransitionFunctions() = 0;
 
-        virtual std::set<StringRef> GetIgnoredTypes() = 0;
+        // virtual std::set<StringRef> GetIgnoredTypes() = 0;
+        virtual std::set<std::string> GetIgnoredTypes() = 0;
 
         bool IsHAKCTransferFunction(Function *F);
 
         bool IsHAKCFunction(Function *F);
 
-        virtual std::set<hakc_transfer_def_t> GetHAKCTransferFunctions() = 0;
+        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
 
         virtual std::set<hakc_function_def_t> GetHAKCFunctions() = 0;
 
-        virtual std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() = 0;
+        // virtual std::map<StringRef, hakc_allocation_size_map_t> GetKernelAllocationSizeMap() = 0;
+        virtual std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap() = 0;
 
         hakc_transfer_def_t GetHAKCTransferDef(StringRef name);
 
-        virtual std::set<StringRef> GetIgnoredGlobals();
+        // std::set<StringRef> GetIgnoredGlobals();
+        std::set<std::string> GetIgnoredGlobals();
 
-        virtual bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
+        bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
         static hakc::HAKCOstream &getWriter();
 
@@ -164,9 +171,8 @@ namespace hakc {
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);
 
         static bool useHasAttribute(Use &U, Attribute::AttrKind Kind);
-
     };
 
-} // hakc
+}// namespace hakc
 
-#endif //HAKC_COMMONHAKCANALYSIS_H
+#endif//HAKC_COMMONHAKCANALYSIS_H
