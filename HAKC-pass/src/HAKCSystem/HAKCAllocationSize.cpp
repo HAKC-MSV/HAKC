@@ -36,7 +36,7 @@ namespace hakc {
     }
 
     const char *HAKCSingleArgumentSize::YAMLString() {
-        return "simpleArgumentSize";
+        return "SimpleArgumentSize";
     }
 
     HAKCAllocationSize::HAKCAllocationSize(Function *AllocationFunction) : AllocationFunction(AllocationFunction) {
@@ -51,13 +51,15 @@ namespace hakc {
             return nullptr;
         }
 
-        if (YamlAllocation.AllocationType == hakc::SimpleArgumentSize) {
-            return std::unique_ptr<HAKCSingleArgumentSize>(new HAKCSingleArgumentSize(F, YamlAllocation.Arguments));
+        switch(YamlAllocation.AllocationType) {
+            default:
+                CommonHAKCAnalysis::getWriter() << "HAKCAllocation Type " << YamlAllocation.AllocationType
+                                                << " is not supported\n";
+                throw std::exception();
+            case hakc::SimpleArgumentSize:
+                return std::unique_ptr<HAKCSingleArgumentSize>(new HAKCSingleArgumentSize(F, YamlAllocation.Arguments));
         }
 
-        CommonHAKCAnalysis::getWriter() << "HAKCAllocation Type " << YamlAllocation.AllocationType
-                                        << " is not supported\n";
-        throw std::exception();
 
 //        if (tokens.size() == 3) {
 //            tokens[2].getAsInteger(10, args[0]);
@@ -77,9 +79,9 @@ namespace hakc {
 //        return nullptr;
 //    }
 
-//    Function *HAKCAllocationSize::GetAllocationFunction() {
-//        return AllocationFunction;
-//    }
+    Function *HAKCAllocationSize::GetAllocationFunction() {
+        return AllocationFunction;
+    }
 //
 //    ConstantInt *HAKCAllocationSize::simpleStaticSize(Value *allocation) {
 //        return ConstantInt::get(Type::getInt64Ty(allocation->getContext()), args[0], false);

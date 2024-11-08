@@ -49,7 +49,7 @@ namespace hakc {
             }
         }
 
-        for(auto &AllocationDefinition : YamlConfig.KernelAllocationSizeMap) {
+        for(const auto &AllocationDefinition : YamlConfig.KernelAllocationSizeMap) {
             auto Allocation = HAKCAllocationSize::FromYaml(AllocationDefinition, HAKCSystemInfo.M);
             if(Allocation) {
                 HAKCSystemInfo.AllocationSizeMap[Allocation->GetAllocationFunction()] = std::move(Allocation);
