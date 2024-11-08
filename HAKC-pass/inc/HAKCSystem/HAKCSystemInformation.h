@@ -20,6 +20,7 @@ namespace hakc {
     struct HAKCYamlConfig {
         std::string Arch;
         std::string Platform;
+        std::string Database;
         HAKCYamlSequence NoTransferFunctions;
         HAKCYamlSequence SeparateNamespacePaths;
         HAKCYamlSequence HAKCSourcePaths;
@@ -39,6 +40,7 @@ namespace hakc {
         Module &M;
         std::string Arch;
         std::string Platform;
+        std::string Database;
         std::set<Function*> NoTransferFunctions;
         std::set<std::string> SeparateNamespacePaths;
         std::set<std::string> HAKCSourcePaths;
@@ -73,6 +75,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlConfig &SystemInfo) {
         io.mapRequired("Arch", SystemInfo.Arch);
         io.mapRequired("Platform", SystemInfo.Platform);
+        io.mapRequired("Database", SystemInfo.Database);
         io.mapOptional("NoTransferFunctions", SystemInfo.NoTransferFunctions);
         io.mapOptional("SeparateNamespacePaths", SystemInfo.SeparateNamespacePaths);
         io.mapOptional("HAKCSourcePaths", SystemInfo.HAKCSourcePaths);

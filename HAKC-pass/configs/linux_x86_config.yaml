@@ -1,5 +1,6 @@
-ARCH:             X86
-PLATFORM:         Linux
+Arch:             X86
+Platform:         Linux
+Database:         hakc-dag-analysis/hakc-db
 NoTransferFunctions:
   - "clear_page_orig"
   - "clear_page_rep"

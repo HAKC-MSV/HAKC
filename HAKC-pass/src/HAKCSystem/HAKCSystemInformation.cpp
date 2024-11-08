@@ -6,16 +6,17 @@
 
 namespace hakc {
 
-    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M), Arch(), Platform(), NoTransferFunctions(),
-                                                              SeparateNamespacePaths(), HAKCSourcePaths(),
-                                                              SafeTransitionFunctions(), IgnoredTypes(),
-                                                              IgnoredGlobals(), AllocationSizeMap() {
+    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M), Arch(), Platform(), Database(),
+                                                              NoTransferFunctions(), SeparateNamespacePaths(),
+                                                              HAKCSourcePaths(), SafeTransitionFunctions(),
+                                                              IgnoredTypes(), IgnoredGlobals(), AllocationSizeMap() {
 
     }
 
     void operator<<(HAKCSystemInformation &HAKCSystemInfo, HAKCYamlConfig &YamlConfig) {
         HAKCSystemInfo.Arch = YamlConfig.Arch;
         HAKCSystemInfo.Platform = YamlConfig.Platform;
+        HAKCSystemInfo.Database = YamlConfig.Database;
 
         for (auto &FunctionName: YamlConfig.NoTransferFunctions) {
             auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
@@ -28,30 +29,30 @@ namespace hakc {
                                                      YamlConfig.SeparateNamespacePaths.end());
         HAKCSystemInfo.HAKCSourcePaths.insert(YamlConfig.HAKCSourcePaths.begin(), YamlConfig.HAKCSourcePaths.end());
 
-        for (auto &FunctionName : YamlConfig.SafeTransitionFunctions) {
+        for (auto &FunctionName: YamlConfig.SafeTransitionFunctions) {
             auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
-            if(F) {
+            if (F) {
                 HAKCSystemInfo.SafeTransitionFunctions.insert(F);
             }
         }
 
-        for(auto &TypeName : YamlConfig.IgnoredTypes) {
+        for (auto &TypeName: YamlConfig.IgnoredTypes) {
             auto *Ty = StructType::getTypeByName(HAKCSystemInfo.M.getContext(), TypeName);
-            if(Ty) {
+            if (Ty) {
                 HAKCSystemInfo.IgnoredTypes.insert(Ty);
             }
         }
 
-        for(auto &GlobalName : YamlConfig.IgnoredGlobals) {
+        for (auto &GlobalName: YamlConfig.IgnoredGlobals) {
             auto *GV = HAKCSystemInfo.M.getGlobalVariable(GlobalName, true);
-            if(GV) {
+            if (GV) {
                 HAKCSystemInfo.IgnoredGlobals.insert(GV);
             }
         }
 
-        for(const auto &AllocationDefinition : YamlConfig.KernelAllocationSizeMap) {
+        for (const auto &AllocationDefinition: YamlConfig.KernelAllocationSizeMap) {
             auto Allocation = HAKCAllocationSize::FromYaml(AllocationDefinition, HAKCSystemInfo.M);
-            if(Allocation) {
+            if (Allocation) {
                 HAKCSystemInfo.AllocationSizeMap[Allocation->GetAllocationFunction()] = std::move(Allocation);
             }
         }
