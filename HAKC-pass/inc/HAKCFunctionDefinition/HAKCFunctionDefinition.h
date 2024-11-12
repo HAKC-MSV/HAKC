@@ -18,6 +18,8 @@ namespace hakc {
 
         StringRef GetName() const;
 
+        Function *GetFunction() const;
+
     protected:
         Function *F;
     };

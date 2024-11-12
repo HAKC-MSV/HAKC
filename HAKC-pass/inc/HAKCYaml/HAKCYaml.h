@@ -108,7 +108,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapOptional("SeparateNamespacePaths", YamlConfig.SeparateNamespacePaths);
         io.mapOptional("HAKCSourcePaths", YamlConfig.HAKCSourcePaths);
         io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
-        io.mapOptional("IgnoredTypes", YamlConfig.IgnoredTypes);
+        io.mapOptional("IgnoredTypeSet", YamlConfig.IgnoredTypes);
         io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
         io.mapOptional("KernelAllocationSizeMap", YamlConfig.KernelAllocationSizeMap);
     }

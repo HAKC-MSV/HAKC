@@ -57,7 +57,13 @@ namespace hakc {
 
         static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions);
 
-        static bool IsFunctionInList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
+        static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
+
+        static bool IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
+
+        static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
+
+
 
     public:
         HAKCSystemInformation& GetSystemInfo();
@@ -99,6 +105,10 @@ namespace hakc {
         static std::string GetDBPath();
 
         bool IsHAKCTransferFunction(Function *F);
+
+        bool IsHAKCValidationFunction(Function *F);
+
+        bool IsHAKCCompartmentalizationSupportFunction(Function *F);
 
         bool IsHAKCFunction(Function *F);
 

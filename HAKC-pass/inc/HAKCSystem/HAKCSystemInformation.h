@@ -23,6 +23,7 @@ typedef SmallVector<hakc::hakc_function_def_t> HAKCFunctionList;
 typedef SmallVector<hakc::hakc_transfer_def_t> HAKCTransferList;
 typedef SmallVector<GlobalVariable*> HAKCGlobalList;
 typedef SmallVector<Function*> FunctionList;
+typedef SmallPtrSet<Type*, 16> HAKCTypeSet;
 
 namespace hakc {
     class HAKCSystemInformation {
@@ -33,6 +34,11 @@ namespace hakc {
 
         iterator_range<FunctionList::iterator> GetNoTransferFunctions();
         iterator_range<HAKCTransferList::iterator> CompartmentTransferFunctions();
+        iterator_range<HAKCFunctionList::iterator> CompartmentalizationValidationFunctions();
+        iterator_range<FunctionList::iterator> CompartmentalizationSupportFunctions();
+        iterator_range<FunctionList::iterator> SafeTransitionFunctions();
+        iterator_range<HAKCTypeSet::iterator> IgnoredTypes();
+        iterator_range<HAKCGlobalList::iterator> IgnoredGlobals();
 
     protected:
         Module &M;
@@ -46,7 +52,7 @@ namespace hakc {
         StringSet<> SeparateNamespacePaths;
         StringSet<> HAKCSourcePaths;
         FunctionList SafeTransitionFunctionList;
-        SmallPtrSet<Type*, 16> IgnoredTypes;
+        HAKCTypeSet IgnoredTypeSet;
         HAKCGlobalList IgnoredGlobalList;
         ValueMap<Function*, HAKCCustomAllocation> AllocationSizeMap;
     };

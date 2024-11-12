@@ -3,37 +3,42 @@
 //
 
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+#include "llvm/IR/Constants.h"
 
 using namespace llvm;
 
 namespace hakc {
-    HAKCTransferFunction::HAKCTransferFunction(StringRef Name, unsigned int SignedPtrIdx,
-                                               unsigned int CompartmentIdIdx) : HAKCFunctionDefinition(Name),
-                                                                                SignedPtrIdx(SignedPtrIdx),
-                                                                                CompartmentIdIdx(CompartmentIdIdx),
-                                                                                DivisionIdIdx(-1) {
-
+    HAKCTransferFunction::HAKCTransferFunction(Function *F, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
+                                               unsigned int DivisionIdx, unsigned int SizeIdx) :
+            HAKCFunctionDefinition(F), SignedPtrIdx(nullptr), CompartmentIdIdx(nullptr), DivisionIdIdx(nullptr),
+            SizeIdx(nullptr) {
+        if(SignedPtrIdx != (unsigned)-1) {
+            this->SignedPtrIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), SignedPtrIdx);
+        }
+        if(CompartmentIdIdx != (unsigned)-1) {
+            this->CompartmentIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), CompartmentIdIdx);
+        }
+        if(DivisionIdx != (unsigned)-1) {
+            this->DivisionIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), DivisionIdx);
+        }
+        if(SizeIdx != (unsigned)-1) {
+            this->SizeIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), SizeIdx);
+        }
     }
 
-    HAKCTransferFunction::HAKCTransferFunction(StringRef Name, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
-                                               int DivisionIdx) : HAKCFunctionDefinition(Name), SignedPtrIdx
-            (SignedPtrIdx), CompartmentIdIdx(CompartmentIdIdx), DivisionIdIdx(DivisionIdx) {
-
+    ConstantInt *HAKCTransferFunction::GetSignedPtrIdx() const {
+        return nullptr;
     }
 
-    int HAKCTransferFunction::GetDivisionIdx() const {
-        return DivisionIdIdx;
+    ConstantInt *HAKCTransferFunction::GetCompartmentIdIdx() const {
+        return nullptr;
     }
 
-    bool HAKCTransferFunction::HasDivisionIdx() const {
-        return DivisionIdIdx >= 0;
+    ConstantInt *HAKCTransferFunction::GetDivisionIdIdx() const {
+        return nullptr;
     }
 
-    unsigned HAKCTransferFunction::GetSignedPtrIdx() const {
-        return SignedPtrIdx;
-    }
-
-    unsigned HAKCTransferFunction::GetCompartmentIdIdx() const {
-        return CompartmentIdIdx;
+    ConstantInt *HAKCTransferFunction::GetSizeIdx() const {
+        return nullptr;
     }
 } // hakc

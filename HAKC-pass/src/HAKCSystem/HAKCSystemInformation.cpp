@@ -95,4 +95,26 @@ namespace hakc {
     iterator_range<HAKCTransferList::iterator> HAKCSystemInformation::CompartmentTransferFunctions() {
         return make_range(CompartmentTransferFunctionList.begin(), CompartmentTransferFunctionList.end());
     }
+
+    iterator_range<HAKCFunctionList::iterator> HAKCSystemInformation::CompartmentalizationValidationFunctions() {
+        return make_range(CompartmentalizationValidationFunctionList.begin(),
+                          CompartmentalizationValidationFunctionList.end());
+    }
+
+    iterator_range<FunctionList::iterator> HAKCSystemInformation::CompartmentalizationSupportFunctions() {
+        return make_range(CompartmentalizationSupportFunctionList.begin(),
+                          CompartmentalizationSupportFunctionList.end());
+    }
+
+    iterator_range<FunctionList::iterator> HAKCSystemInformation::SafeTransitionFunctions() {
+        return make_range(SafeTransitionFunctionList.begin(), SafeTransitionFunctionList.end());
+    }
+
+    iterator_range<HAKCTypeSet::iterator> HAKCSystemInformation::IgnoredTypes() {
+        return make_range(IgnoredTypeSet.begin(), IgnoredTypeSet.end());
+    }
+
+    iterator_range<HAKCGlobalList::iterator> HAKCSystemInformation::IgnoredGlobals() {
+        return make_range(IgnoredGlobalList.begin(), IgnoredGlobalList.end());
+    }
 } // hakc

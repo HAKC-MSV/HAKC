@@ -19,16 +19,40 @@ namespace hakc {
 
 
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
-        return IsFunctionInList(F, SystemInfo.GetNoTransferFunctions());
+        return IsFunctionInFunctionList(F, SystemInfo.GetNoTransferFunctions());
     }
 
-    bool CommonHAKCAnalysis::IsFunctionInList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
+    bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range) {
         if(!F) {
             return false;
         }
 
-        auto Search = [F](Function &Func) {
-            return F == &Func;
+        auto Search = [F](Function *Func) {
+            return F == Func;
+        };
+        return llvm::any_of(Range, Search);
+    }
+
+    bool
+    CommonHAKCAnalysis::IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
+        if(!F) {
+            return false;
+        }
+
+        auto Search = [F](hakc_function_def_t &Func) {
+            return F == Func->GetFunction();
+        };
+        return llvm::any_of(Range, Search);
+    }
+
+    bool CommonHAKCAnalysis::IsFunctionInHAKCTransferFunctionList(Function *F,
+                                                                  iterator_range<HAKCTransferList::iterator> Range) {
+        if(!F) {
+            return false;
+        }
+
+        auto Search = [F](hakc_transfer_def_t &Func) {
+            return F == Func->GetFunction();
         };
         return llvm::any_of(Range, Search);
     }
@@ -62,7 +86,15 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsHAKCTransferFunction(Function *F) {
-        return IsFunctionInList(F, SystemInfo.CompartmentTransferFunctions());
+        return IsFunctionInHAKCTransferFunctionList(F, SystemInfo.CompartmentTransferFunctions());
+    }
+
+    bool CommonHAKCAnalysis::IsHAKCValidationFunction(Function *F) {
+        return IsFunctionInHAKCFunctionList(F, SystemInfo.CompartmentalizationValidationFunctions());
+    }
+
+    bool CommonHAKCAnalysis::IsHAKCCompartmentalizationSupportFunction(Function *F) {
+        return IsFunctionInFunctionList(F, SystemInfo.CompartmentalizationSupportFunctions());
     }
 
     hakc::HAKCOstream &CommonHAKCAnalysis::getWriter() {
@@ -295,7 +327,7 @@ namespace hakc {
  * #hakc_transfer_funcs, false otherwise
  * */
     bool CommonHAKCAnalysis::isHAKCFunction(Function *F) {
-        return
+        return IsHAKCTransferFunction(F) || IsHAKCCompartmentalizationSupportFunction(F) || IsHAKCValidationFunction(F);
     }
 
     /**
@@ -305,12 +337,13 @@ namespace hakc {
  * otherwise
  */
     bool CommonHAKCAnalysis::isSafeTransitionFunction(Function *F) {
-        auto SafeTransitionFunctions = GetSafeTransitionFunctions();
+        return IsFunctionInFunctionList(F, SystemInfo.SafeTransitionFunctions());
+/*        auto SafeTransitionFunctions = GetSafeTransitionFunctions();
         auto AllocationFunctions = GetKernelAllocationSizeMap();
         return (SafeTransitionFunctions.find(F->getName()) !=
                 SafeTransitionFunctions.end() ||
                 AllocationFunctions.find(F->getName()) !=
-                AllocationFunctions.end());
+                AllocationFunctions.end());*/
     }
 
     bool CommonHAKCAnalysis::IsMultiSSAUser(Value *V) {
@@ -363,24 +396,23 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::isIgnoredType(Type *Ty) {
-        if (Ty->isStructTy()) {
-            auto *StructTy = dyn_cast<StructType>(Ty);
-            if (!StructTy->isLiteral()) {
-                auto IgnoredTypes = GetIgnoredTypes();
-                return IgnoredTypes.find(Ty->getStructName()) != IgnoredTypes.end();
-            }
-        } /*else if (Ty->isPointerTy()) {
-            return isIgnoredType(Ty->getPointerElementType());
-        }*/
+        if(!Ty) {
+            return false;
+        }
 
-        return false;
+        auto Search = [Ty](Type *T) {
+            return Ty == T;
+        };
+        return llvm::any_of(SystemInfo.IgnoredTypes(), Search);
     }
 
     bool CommonHAKCAnalysis::IsIgnoredGlobal(Value *V) {
         bool Result = false;
-        if (auto *GV = dyn_cast<GlobalValue>(V)) {
-            auto IgnoredGlobals = GetIgnoredGlobals();
-            Result = IgnoredGlobals.find(GV->getName()) != IgnoredGlobals.end();
+        if (auto *GV = dyn_cast<GlobalVariable>(V)) {
+            auto Search = [GV](GlobalVariable *G) {
+                return GV == G;
+            };
+            return llvm::any_of(SystemInfo.IgnoredGlobals(), Search);
         }
 
         return Result;
@@ -507,9 +539,8 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
-        auto NoTransferFuncs = GetNoTransferFunctions();
         auto Division = Policy.GetDivision(F);
-        return NoTransferFuncs.find(F->getName()) == NoTransferFuncs.end() &&
+        return !IsNoTransferFunction(F) &&
                !Division.GetHAKCCompartment().IsKernelCompartment() &&
                !F->isDeclaration() &&
                !isCapabilityReassignmentFunc(F) &&
@@ -532,10 +563,6 @@ namespace hakc {
                                            Intrinsic::IndependentIntrinsics::read_register);
         }
         return false;
-    }
-
-    std::set<StringRef> CommonHAKCAnalysis::GetIgnoredGlobals() {
-        return {};
     }
 
     bool CommonHAKCAnalysis::functionIsAnalysisCandidate(Function *F) {
@@ -581,7 +608,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::NoKernelTransferFunctionsSet() {
-        return strlen(HAKC_NO_KERNEL_TRANSFERS.c_str()) != 0;
+        return !HAKC_NO_KERNEL_TRANSFERS.empty();
     }
 
     void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
@@ -643,6 +670,7 @@ namespace hakc {
     }
 
     unsigned CommonHAKCAnalysis::getCompartmentStorageSizeInBits() {
+        // TODO: Add this to SystemInformation
 #if defined(HAKC_CHERIBSD_MORELLO)
         return 128;
 #else

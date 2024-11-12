@@ -6,12 +6,15 @@
 
 namespace hakc {
 
-    HAKCFunctionDefinition::HAKCFunctionDefinition(StringRef Name) :
-            Name(Name) {
+    HAKCFunctionDefinition::HAKCFunctionDefinition(Function *F) : F(F) {
 
     }
 
     StringRef HAKCFunctionDefinition::GetName() const {
-        return Name;
+        return F->getName();
+    }
+
+    Function *HAKCFunctionDefinition::GetFunction() const {
+        return F;
     }
 } // hakc
