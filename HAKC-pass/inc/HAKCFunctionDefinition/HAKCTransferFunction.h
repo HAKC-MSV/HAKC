@@ -12,26 +12,24 @@ namespace hakc {
 
     class HAKCTransferFunction : public HAKCFunctionDefinition {
     public:
-        HAKCTransferFunction(StringRef Name, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
+        HAKCTransferFunction(Function *F, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, unsigned DivisionIdx, unsigned SizeIdx);
 
-        HAKCTransferFunction(StringRef Name, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int DivisionIdx);
+        ConstantInt* GetSignedPtrIdx() const;
 
-        unsigned GetSignedPtrIdx() const;
+        ConstantInt* GetCompartmentIdIdx() const;
 
-        unsigned GetCompartmentIdIdx() const;
+        ConstantInt* GetDivisionIdIdx() const;
 
-        int GetDivisionIdx() const;
-
-        bool HasDivisionIdx() const;
+        ConstantInt* GetSizeIdx() const;
 
     protected:
-        unsigned SignedPtrIdx;
-        unsigned CompartmentIdIdx;
-        int DivisionIdIdx;
+        ConstantInt* SignedPtrIdx;
+        ConstantInt* CompartmentIdIdx;
+        ConstantInt* DivisionIdIdx;
+        ConstantInt* SizeIdx;
     };
 
     typedef std::shared_ptr<HAKCTransferFunction> hakc_transfer_def_t;
-
 } // hakc
 
 #endif //HAKC_HAKCTRANSFERFUNCTION_H

@@ -32,12 +32,13 @@ namespace hakc {
 
     class HAKCFunctionAnalysis;
 
-    class HAKCModuleAnalysis : public CommonHAKCAnalysis {
+    class HAKCModuleAnalysis {
     protected:
         bool IsCompartmentalizedAndContainsDebugName;
         std::vector<HAKCCompartment> UsedCompartments;
         Module &M;
         std::vector<Function *> AnalysisFunctions;
+        CommonHAKCAnalysis &CommonAnalysis;
 
         ConstantInt *GetColorValue(sym_color_t Color);
 
@@ -100,10 +101,10 @@ namespace hakc {
 
         void MoveGlobalsToHAKCSection(HAKCCompartmentalizationPolicy &Policy);
 
-        std::shared_ptr<HAKCSystemInformation> SysInfo;
-
     public:
         virtual ~HAKCModuleAnalysis() = default;
+
+        HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis);
 
         virtual void performTransformations();
 

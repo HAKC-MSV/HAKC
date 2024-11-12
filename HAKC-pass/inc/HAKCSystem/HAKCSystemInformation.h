@@ -11,79 +11,46 @@
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/IR/Module.h"
 #include "HAKCSystem/HAKCAllocationSize.h"
+#include "llvm/ADT/ilist.h"
+#include "llvm/ADT/StringSet.h"
+#include "llvm/IR/ValueMap.h"
+#include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+#include "HAKCYaml/HAKCYaml.h"
 
-using namespace llvm;
+typedef std::shared_ptr<hakc::HAKCAllocationSize> HAKCCustomAllocation;
 
-typedef std::vector<std::string> HAKCYamlSequence;
+typedef SmallVector<hakc::hakc_function_def_t> HAKCFunctionList;
+typedef SmallVector<hakc::hakc_transfer_def_t> HAKCTransferList;
+typedef SmallVector<GlobalVariable*> HAKCGlobalList;
+typedef SmallVector<Function*> FunctionList;
 
 namespace hakc {
-    struct HAKCYamlConfig {
-        std::string Arch;
-        std::string Platform;
-        std::string Database;
-        HAKCYamlSequence NoTransferFunctions;
-        HAKCYamlSequence SeparateNamespacePaths;
-        HAKCYamlSequence HAKCSourcePaths;
-        HAKCYamlSequence SafeTransitionFunctions;
-        HAKCYamlSequence IgnoredTypes;
-        HAKCYamlSequence IgnoredGlobals;
-        std::vector<HAKCAllocationType> KernelAllocationSizeMap;
-    };
-
     class HAKCSystemInformation {
     public:
         explicit HAKCSystemInformation(Module &M);
 
         friend void operator<<(HAKCSystemInformation &HAKCSystemInfo, HAKCYamlConfig &YamlConfig);
 
+        iterator_range<FunctionList::iterator> GetNoTransferFunctions();
+        iterator_range<HAKCTransferList::iterator> CompartmentTransferFunctions();
+
     protected:
         Module &M;
         std::string Arch;
         std::string Platform;
         std::string Database;
-        std::set<Function*> NoTransferFunctions;
-        std::set<std::string> SeparateNamespacePaths;
-        std::set<std::string> HAKCSourcePaths;
-        std::set<Function*> SafeTransitionFunctions;
-        std::set<Type*> IgnoredTypes;
-        std::set<GlobalValue*> IgnoredGlobals;
-        std::map<Function*, std::unique_ptr<HAKCAllocationSize>> AllocationSizeMap;
+        FunctionList NoTransferFunctionList;
+        HAKCTransferList CompartmentTransferFunctionList;
+        HAKCFunctionList CompartmentalizationValidationFunctionList;
+        FunctionList CompartmentalizationSupportFunctionList;
+        StringSet<> SeparateNamespacePaths;
+        StringSet<> HAKCSourcePaths;
+        FunctionList SafeTransitionFunctionList;
+        SmallPtrSet<Type*, 16> IgnoredTypes;
+        HAKCGlobalList IgnoredGlobalList;
+        ValueMap<Function*, HAKCCustomAllocation> AllocationSizeMap;
     };
 
 } // hakc
-
-LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCAllocationType);
-
-template <>
-struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
-    static void enumeration(IO &io, hakc::HAKCAllocationTypeEnum &value) {
-        io.enumCase(value, hakc::HAKCSingleArgumentSize::YAMLString(), hakc::SimpleArgumentSize);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::HAKCAllocationType> {
-    static void mapping(yaml::IO &io, hakc::HAKCAllocationType &AllocationType) {
-        io.mapRequired("name", AllocationType.FunctionName);
-        io.mapRequired("type", AllocationType.AllocationType);
-        io.mapRequired("args", AllocationType.Arguments);
-    }
-};
-
-template<>
-struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
-    static void mapping(yaml::IO &io, hakc::HAKCYamlConfig &SystemInfo) {
-        io.mapRequired("Arch", SystemInfo.Arch);
-        io.mapRequired("Platform", SystemInfo.Platform);
-        io.mapRequired("Database", SystemInfo.Database);
-        io.mapOptional("NoTransferFunctions", SystemInfo.NoTransferFunctions);
-        io.mapOptional("SeparateNamespacePaths", SystemInfo.SeparateNamespacePaths);
-        io.mapOptional("HAKCSourcePaths", SystemInfo.HAKCSourcePaths);
-        io.mapOptional("SafeTransitionFunctions", SystemInfo.SafeTransitionFunctions);
-        io.mapOptional("IgnoredTypes", SystemInfo.IgnoredTypes);
-        io.mapOptional("IgnoredGlobals", SystemInfo.IgnoredGlobals);
-        io.mapOptional("KernelAllocationSizeMap", SystemInfo.KernelAllocationSizeMap);
-    }
-};
 
 #endif //HAKC_HAKCSYSTEMINFORMATION_H

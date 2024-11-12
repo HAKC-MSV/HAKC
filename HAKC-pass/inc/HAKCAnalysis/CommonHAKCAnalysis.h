@@ -10,6 +10,7 @@
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 #include "HAKCOstream.h"
+#include "HAKCSystem/HAKCSystemInformation.h"
 
 
 #include <map>
@@ -30,8 +31,9 @@ namespace hakc {
         bool debug_output;
 
         std::map<Value *, std::vector<Value *>> DefchainCache;
+        HAKCSystemInformation SystemInfo;
 
-        explicit CommonHAKCAnalysis(bool debug);
+        CommonHAKCAnalysis(Module &M, StringRef ConfigPath, bool debug);
 
         bool isHAKCFunction(Function *F);
 
@@ -55,9 +57,11 @@ namespace hakc {
 
         static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions);
 
-        virtual bool ValueIsUsedAsPointer(Value *V, bool debug);
+        static bool IsFunctionInList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
 
     public:
+        HAKCSystemInformation& GetSystemInfo();
+
         Value *getDef(Value *V, bool followLoad, bool debug);
 
         virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
@@ -98,11 +102,7 @@ namespace hakc {
 
         bool IsHAKCFunction(Function *F);
 
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
-
         virtual std::set<hakc_function_def_t> GetHAKCFunctions() = 0;
-
-        hakc_transfer_def_t GetHAKCTransferDef(StringRef name);
 
         bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 

@@ -37,7 +37,7 @@ namespace hakc {
  * The current policy is to pass along signed pointers to functions, which could then authenticate pointers
  * which the caller has already authenticated.  This might be redundant, and a source of overhead.
  */
-    class HAKCFunctionAnalysis : public CommonHAKCAnalysis {
+    class HAKCFunctionAnalysis {
     protected:
         HAKCPointerManager PointerManager;
 
@@ -159,7 +159,7 @@ namespace hakc {
         HAKCSystemInformation *SysInfo;
 
     public:
-        HAKCFunctionAnalysis(Function *F, HAKCCompartmentalizationPolicy &Policy, bool debug);
+        HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy, bool debug);
 
         ~HAKCFunctionAnalysis() = default;
 

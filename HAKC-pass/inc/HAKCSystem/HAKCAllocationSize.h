@@ -17,44 +17,31 @@
 
 #include "HAKC-defs.h"
 #include "HAKCSystemInformation.h"
+#include "HAKCYaml/HAKCYaml.h"
 
 using namespace llvm;
 
 namespace hakc {
-    enum HAKCAllocationTypeEnum {
-        InvalidAllocationType,
-        SimpleArgumentSize,
-        SimpleStaticSize,
-        StaticPlusArgument,
-        MultiplyTwoArguments,
-        ArgumentGEP
-    };
-
-    struct HAKCAllocationType {
-        std::string FunctionName;
-        HAKCAllocationTypeEnum AllocationType;
-        std::vector<std::string> Arguments;
-    };
-
     class HAKCAllocationSize {
     public:
-        static std::unique_ptr<HAKCAllocationSize> FromYaml(const HAKCAllocationType& YamlLine, Module &M);
+        static std::shared_ptr<HAKCAllocationSize> FromYaml(const HAKCYAMLAllocationType& YamlLine, Module &M);
         virtual ConstantInt *GetSize(CallInst *val) = 0;
         Function *GetAllocationFunction();
 
     protected:
         explicit HAKCAllocationSize(Function *AllocationFunction);
+        HAKCAllocationSize() = default;
         Function *AllocationFunction;
     };
 
     class HAKCSingleArgumentSize : public HAKCAllocationSize {
         friend class HAKCAllocationSize;
     public:
+        HAKCSingleArgumentSize(Function *AllocationFunction, const std::vector<std::string> &Arguments);
+        ~HAKCSingleArgumentSize() = default;
         ConstantInt *GetSize(CallInst *Val) override;
-        static const char* YAMLString();
 
     protected:
-        HAKCSingleArgumentSize(Function *AllocationFunction, const std::vector<std::string> &Arguments);
         unsigned ArgNo;
     };
 

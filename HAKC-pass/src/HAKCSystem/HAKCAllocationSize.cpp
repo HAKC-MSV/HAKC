@@ -7,14 +7,6 @@
 
 namespace hakc {
 
-    static ConstantInt *simpleArgumentSize(CallInst *allocation, unsigned ArgNo) {
-        IRBuilder<> irBuilder(allocation);
-        Value *size = allocation->getArgOperand(ArgNo);
-        size = irBuilder.CreateZExtOrBitCast(size, irBuilder.getInt64Ty());
-        auto *CI = dyn_cast<ConstantInt>(size);
-        return CI;
-    }
-
     ConstantInt *HAKCSingleArgumentSize::GetSize(CallInst *Val) {
         IRBuilder<> irBuilder(Val);
         Value *size = Val->getArgOperand(ArgNo);
@@ -35,17 +27,13 @@ namespace hakc {
         Arg.getAsInteger(10, ArgNo);
     }
 
-    const char *HAKCSingleArgumentSize::YAMLString() {
-        return "SimpleArgumentSize";
-    }
-
     HAKCAllocationSize::HAKCAllocationSize(Function *AllocationFunction) : AllocationFunction(AllocationFunction) {
 
     }
 
 
-    std::unique_ptr<HAKCAllocationSize>
-    HAKCAllocationSize::FromYaml(const hakc::HAKCAllocationType &YamlAllocation, Module &M) {
+    std::shared_ptr<HAKCAllocationSize>
+    HAKCAllocationSize::FromYaml(const hakc::HAKCYAMLAllocationType &YamlAllocation, Module &M) {
         auto *F = M.getFunction(YamlAllocation.FunctionName);
         if (!F) {
             return nullptr;
@@ -57,7 +45,7 @@ namespace hakc {
                                                 << " is not supported\n";
                 throw std::exception();
             case hakc::SimpleArgumentSize:
-                return std::unique_ptr<HAKCSingleArgumentSize>(new HAKCSingleArgumentSize(F, YamlAllocation.Arguments));
+                return std::make_shared<HAKCSingleArgumentSize>(F, YamlAllocation.Arguments);
         }
 
 

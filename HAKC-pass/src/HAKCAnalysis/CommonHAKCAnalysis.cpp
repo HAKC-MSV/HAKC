@@ -14,29 +14,55 @@ namespace hakc {
  * @brief Collective analysis functionality
  * @param debug
  */
-    CommonHAKCAnalysis::CommonHAKCAnalysis(bool debug) :
-            debug_output(debug) {}
+
+
+
 
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
-        auto NoTransferFunctions = GetNoTransferFunctions();
-        return NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end();
+        return IsFunctionInList(F, SystemInfo.GetNoTransferFunctions());
+    }
+
+    bool CommonHAKCAnalysis::IsFunctionInList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
+        if(!F) {
+            return false;
+        }
+
+        auto Search = [F](Function &Func) {
+            return F == &Func;
+        };
+        return llvm::any_of(Range, Search);
+    }
+
+    HAKCSystemInformation &CommonHAKCAnalysis::GetSystemInfo() {
+        return SystemInfo;
+    }
+
+    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M, StringRef ConfigPath, bool debug) : debug_output(debug),
+                                                                                          SystemInfo(M) {
+        if (!sys::fs::exists(ConfigPath)) {
+            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << ConfigPath << "\n";
+            throw std::exception();
+        } else if (!sys::fs::is_regular_file(ConfigPath)) {
+            CommonHAKCAnalysis::getWriter() << ConfigPath << " is not a regular file\n";
+            throw std::exception();
+        }
+
+        HAKCYamlConfig SystemConfig;
+        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(ConfigPath);
+        yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
+
+        // yaml is actually parsed here, for some reason
+        yin >> SystemConfig;
+        if (yin.error()) {
+            CommonHAKCAnalysis::getWriter() << "Error parsing config file " << ConfigPath << "\n";
+            throw std::exception();
+        }
+
+        SystemInfo << SystemConfig;
     }
 
     bool CommonHAKCAnalysis::IsHAKCTransferFunction(Function *F) {
-        if (!F) {
-            return false;
-        }
-        auto TransferDef = GetHAKCTransferDef(F->getName());
-        return TransferDef != nullptr;
-    }
-
-    hakc_transfer_def_t CommonHAKCAnalysis::GetHAKCTransferDef(StringRef name) {
-        for (const auto &it: GetHAKCTransferFunctions()) {
-            if (it->GetName() == name) {
-                return it;
-            }
-        }
-        return nullptr;
+        return IsFunctionInList(F, SystemInfo.CompartmentTransferFunctions());
     }
 
     hakc::HAKCOstream &CommonHAKCAnalysis::getWriter() {
@@ -151,7 +177,7 @@ namespace hakc {
             } else if (auto *call = dyn_cast<CallInst>(curr)) {
                 if (call->getCalledFunction() &&
                     IsHAKCTransferFunction(call->getCalledFunction())) {
-                    auto TransferDef = GetHAKCTransferDef(call->getCalledFunction()->getName());
+                    auto TransferDef = SystemInfo.GetCustomAllocation(call->getCalledFunction());
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding Arg "
                                                         << std::to_string(TransferDef->GetSignedPtrIdx())
@@ -269,12 +295,7 @@ namespace hakc {
  * #hakc_transfer_funcs, false otherwise
  * */
     bool CommonHAKCAnalysis::isHAKCFunction(Function *F) {
-        auto Search = [F](const hakc_function_def_t &Func) {
-            return Func->GetName() == F->getName();
-        };
-
-        auto HAKCFunctions = GetHAKCFunctions();
-        return std::any_of(HAKCFunctions.begin(), HAKCFunctions.end(), Search);
+        return
     }
 
     /**

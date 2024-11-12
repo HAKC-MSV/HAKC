@@ -5,7 +5,7 @@
 #ifndef HAKC_HAKCFUNCTIONDEFINITION_H
 #define HAKC_HAKCFUNCTIONDEFINITION_H
 
-#include "llvm/ADT/StringRef.h"
+#include "llvm/IR/Function.h"
 #include <memory>
 
 using namespace llvm;
@@ -14,12 +14,12 @@ namespace hakc {
 
     class HAKCFunctionDefinition {
     public:
-        explicit HAKCFunctionDefinition(StringRef Name);
+        explicit HAKCFunctionDefinition(Function *F);
 
         StringRef GetName() const;
 
     protected:
-        StringRef Name;
+        Function *F;
     };
 
     typedef std::shared_ptr<HAKCFunctionDefinition> hakc_function_def_t;

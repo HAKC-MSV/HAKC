@@ -1,6 +1,20 @@
 Arch:             X86
 Platform:         Linux
 Database:         hakc-dag-analysis/hakc-db
+CompartmentTransferFunctions:
+  - { name: "hakc_sign_pointer_with_color", ptr-idx: 0, compartment-idx: 1 }
+  - { name: "hakc_sign_pcpu_pointer_with_color", ptr-idx: 0, compartment-idx: 1}
+  - { name: "hakc_transfer_percpu_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
+  - { name: "hakc_transfer_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
+  - { name: "hakc_sign_pointer", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
+  - { name: "hakc_color_address", ptr-idx: 0, division-idx: 1, size-idx: 2 }
+CompartmentalizationValidationFunctions:
+  - "check_hakc_code_access"
+  - "check_hakc_data_access"
+CompartmentalizationSupportFunctions:
+  - "get_hakc_color_by_name"
+  - "get_hakc_percpu_color"
+  - "get_hakc_address_color"
 NoTransferFunctions:
   - "clear_page_orig"
   - "clear_page_rep"

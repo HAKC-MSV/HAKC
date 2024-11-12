@@ -7,9 +7,13 @@
 namespace hakc {
 
     HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M), Arch(), Platform(), Database(),
-                                                              NoTransferFunctions(), SeparateNamespacePaths(),
-                                                              HAKCSourcePaths(), SafeTransitionFunctions(),
-                                                              IgnoredTypes(), IgnoredGlobals(), AllocationSizeMap() {
+                                                              NoTransferFunctionList(),
+                                                              CompartmentTransferFunctionList(),
+                                                              CompartmentalizationValidationFunctionList(),
+                                                              CompartmentalizationSupportFunctionList(),
+                                                              SeparateNamespacePaths(), HAKCSourcePaths(),
+                                                              SafeTransitionFunctionList(), IgnoredTypes(),
+                                                              IgnoredGlobalList(), AllocationSizeMap() {
 
     }
 
@@ -21,7 +25,7 @@ namespace hakc {
         for (auto &FunctionName: YamlConfig.NoTransferFunctions) {
             auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
             if (F) {
-                HAKCSystemInfo.NoTransferFunctions.insert(F);
+                HAKCSystemInfo.NoTransferFunctionList.push_back(F);
             }
         }
 
@@ -32,7 +36,33 @@ namespace hakc {
         for (auto &FunctionName: YamlConfig.SafeTransitionFunctions) {
             auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
             if (F) {
-                HAKCSystemInfo.SafeTransitionFunctions.insert(F);
+                HAKCSystemInfo.SafeTransitionFunctionList.push_back(F);
+            }
+        }
+
+        for (auto &TransferEntry: YamlConfig.CompartmentTransferFunctions) {
+            auto *F = HAKCSystemInfo.M.getFunction(TransferEntry.FunctionName);
+            if (F) {
+                auto Transfer = std::make_shared<HAKCTransferFunction>(F, TransferEntry.PointerIdx,
+                                                                       TransferEntry.CompartmentIdx,
+                                                                       TransferEntry.DivisionIdx,
+                                                                       TransferEntry.SizeIdx);
+                HAKCSystemInfo.CompartmentTransferFunctionList.push_back(Transfer);
+            }
+        }
+
+        for (auto &FunctionName: YamlConfig.CompartmentalizationValidationFunctions) {
+            auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
+            if (F) {
+                auto Validation = std::make_shared<HAKCFunctionDefinition>(F);
+                HAKCSystemInfo.CompartmentalizationValidationFunctionList.push_back(Validation);
+            }
+        }
+
+        for (auto &FunctionName: YamlConfig.CompartmentalizationSupportFunctions) {
+            auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
+            if (F) {
+                HAKCSystemInfo.CompartmentalizationSupportFunctionList.push_back(F);
             }
         }
 
@@ -46,7 +76,7 @@ namespace hakc {
         for (auto &GlobalName: YamlConfig.IgnoredGlobals) {
             auto *GV = HAKCSystemInfo.M.getGlobalVariable(GlobalName, true);
             if (GV) {
-                HAKCSystemInfo.IgnoredGlobals.insert(GV);
+                HAKCSystemInfo.IgnoredGlobalList.push_back(GV);
             }
         }
 
@@ -56,5 +86,13 @@ namespace hakc {
                 HAKCSystemInfo.AllocationSizeMap[Allocation->GetAllocationFunction()] = std::move(Allocation);
             }
         }
+    }
+
+    iterator_range<FunctionList::iterator> HAKCSystemInformation::GetNoTransferFunctions() {
+        return make_range(NoTransferFunctionList.begin(), NoTransferFunctionList.end());
+    }
+
+    iterator_range<HAKCTransferList::iterator> HAKCSystemInformation::CompartmentTransferFunctions() {
+        return make_range(CompartmentTransferFunctionList.begin(), CompartmentTransferFunctionList.end());
     }
 } // hakc
