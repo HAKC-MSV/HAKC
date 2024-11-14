@@ -12,7 +12,7 @@ namespace hakc {
                                                               CompartmentalizationValidationFunctionList(),
                                                               CompartmentalizationSupportFunctionList(),
                                                               SeparateNamespacePaths(), HAKCSourcePaths(),
-                                                              SafeTransitionFunctionList(), IgnoredTypes(),
+                                                              SafeTransitionFunctionList(), IgnoredTypeSet(),
                                                               IgnoredGlobalList(), AllocationSizeMap() {
 
     }
@@ -69,7 +69,7 @@ namespace hakc {
         for (auto &TypeName: YamlConfig.IgnoredTypes) {
             auto *Ty = StructType::getTypeByName(HAKCSystemInfo.M.getContext(), TypeName);
             if (Ty) {
-                HAKCSystemInfo.IgnoredTypes.insert(Ty);
+                HAKCSystemInfo.IgnoredTypeSet.insert(Ty);
             }
         }
 

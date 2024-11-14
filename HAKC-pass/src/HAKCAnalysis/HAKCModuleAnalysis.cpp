@@ -14,23 +14,7 @@
 #include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
-#include "HAKCSystemInformation.h"
-#include <stdio.h>
-#include <string.h>
-#include <bits/stdc++.h>
-
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_sk_buff.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_file.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_socket.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_fuse_mount.h"
-
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_scsi_cmnd.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_usb_device.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_usb_interface.h"
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_us_data.h"
-
-// #include "HAKCTransformers/Linux/CustomTransfers/CustomTransfer_scsi_device.h"
-
+#include "HAKCSystem/HAKCSystemInformation.h"
 
 namespace hakc {
 

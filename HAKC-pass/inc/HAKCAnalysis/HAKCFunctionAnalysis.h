@@ -9,7 +9,6 @@
 
 #include "CommonHAKCAnalysis.h"
 #include "HAKCPointerManager.h"
-#include "HAKCSystemInformation.h"
 #include "HAKCModuleAnalysis.h"
 #include "HAKCTransformers/HAKCTransformer.h"
 
@@ -39,6 +38,9 @@ namespace hakc {
  */
     class HAKCFunctionAnalysis {
     protected:
+        CommonHAKCAnalysis &CommonAnalysis;
+        HAKCCompartmentalizationPolicy &Policy;
+
         HAKCPointerManager PointerManager;
 
         /**
@@ -66,8 +68,7 @@ namespace hakc {
         unsigned CompartmentTransferCount;
 
         Instruction *
-        addCompartmentTransferCall(Value *operand, const DebugLoc &debugLoc, Instruction *I, ConstantInt *Size,
-                                   HAKCCompartmentalizationPolicy &Policy);
+        addCompartmentTransferCall(Value *operand, const DebugLoc &debugLoc, Instruction *I, ConstantInt *Size);
 
         bool userInFunction(Value *user);
 
@@ -76,7 +77,7 @@ namespace hakc {
 
         void createAllAuthenticatedPointers();
 
-        void createMissingTransfers(HAKCCompartmentalizationPolicy &Policy);
+        void createMissingTransfers();
 
         void transformPointerDereferences();
 
@@ -86,7 +87,7 @@ namespace hakc {
 
         bool IsManualSafePointer(CallInst *Call);
 
-        void HandleInstruction(Instruction *I, HAKCCompartmentalizationPolicy &Policy);
+        void HandleInstruction(Instruction *I);
 
         Instruction *getUserInst(User *user);
 
@@ -98,9 +99,7 @@ namespace hakc {
 
         void handleLoad(LoadInst *load);
 
-        virtual void handleComparison(CmpInst *compare, HAKCCompartmentalizationPolicy &Policy);
-
-        virtual void handleCall(CallInst *call, HAKCCompartmentalizationPolicy &Policy);
+        virtual void handleComparison(CmpInst *compare);
 
         void handleCall(CallInst *call);
 
@@ -108,15 +107,14 @@ namespace hakc {
 
         bool globalShouldBeTransferred(Use &globalValueArg);
 
-        virtual void relocateFunctionSection(HAKCCompartmentalizationPolicy &Policy);
+        virtual void relocateFunctionSection();
 
-        virtual std::string getHAKCFunctionSectionName(HAKCCompartmentalizationPolicy &Policy);
+        virtual std::string getHAKCFunctionSectionName();
 
-        void CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls(HAKCCompartmentalizationPolicy &Policy);
+        void CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls();
 
         HAKCModuleAnalysis &getModuleAnalysis();
 
-        virtual std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
         ConstantInt *getColor();
 
         HAKCTransformer &getTransformer();
@@ -125,49 +123,45 @@ namespace hakc {
 
         virtual std::set<Intrinsic::ID> GetIntrinsicsToClone();
 
-        virtual void AddManagedPointer(Value *HAKCPointer);
         std::set<Intrinsic::ID> GetInstrinsicsToSkip();
 
         void AddManagedPointer(Value *HAKCPointer);
 
-        void ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value *NewValue,
-                                       HAKCCompartmentalizationPolicy &Policy);
+        void ReplaceInstructionOperand(Instruction *I, unsigned ArgNo, Value *OldValue, Value *NewValue);
 
-        void ReplaceDirectFunctionUsesWithTransfers(HAKCCompartmentalizationPolicy &Policy);
+        void ReplaceDirectFunctionUsesWithTransfers();
 
-        void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy,
-                                                     unsigned int OpNo);
+        void CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned OpNo);
 
-        void MaybeAddCompareToDirectUsers(CmpInst *CmpI, HAKCCompartmentalizationPolicy &Policy);
+        void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
 
         virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
-        virtual void UpdateHAKCFunctionParameters(HAKCCompartmentalizationPolicy &Policy);
+        virtual void UpdateHAKCFunctionParameters();
 
         virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
-                                                       hakc_transfer_def_t &HAKCTransferFunction,
-                                                       HAKCCompartmentalizationPolicy &Policy) = 0;
+                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
-        void AddInstrumentation(bool RelocateSection, HAKCCompartmentalizationPolicy &Policy);
+        void AddInstrumentation(bool RelocateSection);
 
-        HAKCTransformer &getTransformer(HAKCCompartmentalizationPolicy &Policy);
+        HAKCTransformer &getTransformer();
 
-        void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo, HAKCCompartmentalizationPolicy &Policy);
+        void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo);
 
         HAKCModuleAnalysis *ModAnalysis;
 
         HAKCSystemInformation *SysInfo;
 
     public:
-        HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy, bool debug);
+        HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);
 
         ~HAKCFunctionAnalysis() = default;
 
         bool modifiedFunction();
 
-        void InstrumentCode(HAKCCompartmentalizationPolicy &Policy);
+        void InstrumentCode();
 
-        virtual void setup(HAKCCompartmentalizationPolicy &Policy);
+        virtual void setup();
 
         std::set<StringRef> GetNoTransferFunctions();
 
@@ -180,9 +174,6 @@ namespace hakc {
         std::set<StringRef> GetIgnoredTypes();
 
         std::set<hakc_function_def_t> GetHAKCFunctions();
-        std::set<StringRef> GetIgnoredGlobals() override;
-
-        std::set<hakc_function_def_t> GetHAKCFunctions() override;
 
         Value *getDef(Value *, bool, bool);
 
@@ -190,21 +181,20 @@ namespace hakc {
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
 
         Value *
-        AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location, HAKCCompartmentalizationPolicy &Policy);
+        AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
 
         Value *
-        AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location, HAKCCompartmentalizationPolicy &Policy);
+        AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
 
-        Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location,
-                                                HAKCCompartmentalizationPolicy &Policy);
+        Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location);
 
-        bool isCompartmentalizedFunction(HAKCCompartmentalizationPolicy &Policy);
+        bool isCompartmentalizedFunction();
 
         Function &getFunction();
 
-        Instruction *CreateMissingTransfer(Instruction *PointerNeedingTransfer, HAKCCompartmentalizationPolicy &Policy);
+        Instruction *CreateMissingTransfer(Instruction *PointerNeedingTransfer);
 
-        virtual Instruction *SignGlobalPointerWithColor(GlobalValue *GlobalVar, HAKCCompartmentalizationPolicy &Policy);
+        virtual Instruction *SignGlobalPointerWithColor(GlobalValue *GlobalVar);
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 

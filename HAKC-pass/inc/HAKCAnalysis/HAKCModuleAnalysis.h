@@ -148,8 +148,6 @@ namespace hakc {
 
         virtual StringRef HAKCSignWithDivisionName();
 
-        virtual StringRef HAKCEntryTokenName();
-
         FunctionCallee GetFunctionCalleeByName(StringRef Name, FunctionType *FuncTy);
 
         StructType *GetKernelParamType();

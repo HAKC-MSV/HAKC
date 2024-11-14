@@ -22,8 +22,12 @@ namespace hakc {
         return IsFunctionInFunctionList(F, SystemInfo.GetNoTransferFunctions());
     }
 
+    bool CommonHAKCAnalysis::DebugActive() {
+        return debug_output;
+    }
+
     bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range) {
-        if(!F) {
+        if (!F) {
             return false;
         }
 
@@ -35,7 +39,7 @@ namespace hakc {
 
     bool
     CommonHAKCAnalysis::IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
-        if(!F) {
+        if (!F) {
             return false;
         }
 
@@ -47,7 +51,7 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::IsFunctionInHAKCTransferFunctionList(Function *F,
                                                                   iterator_range<HAKCTransferList::iterator> Range) {
-        if(!F) {
+        if (!F) {
             return false;
         }
 
@@ -396,7 +400,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::isIgnoredType(Type *Ty) {
-        if(!Ty) {
+        if (!Ty) {
             return false;
         }
 
@@ -504,9 +508,7 @@ namespace hakc {
     }
 
     std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
-        auto NoTransferFunctions = GetNoTransferFunctions();
-        if (F->getName().starts_with(OUTSIDE_TRANSFER_PREFIX) ||
-            NoTransferFunctions.find(F->getName()) != NoTransferFunctions.end()) {
+        if (F->getName().starts_with(OUTSIDE_TRANSFER_PREFIX) || IsNoTransferFunction(F)) {
             return F->getName().str();
         }
         std::string name = OUTSIDE_TRANSFER_PREFIX.str();

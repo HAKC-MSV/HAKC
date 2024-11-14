@@ -22,7 +22,7 @@
 #define DIVISION_ID_BIT_LENGTH 32
 #define COMPARTMENT_ID_BIT_LENGTH 32
 
-#define BITS_PER_BYTE 8
+constexpr size_t BITS_PER_BYTE = 8;
 
 extern std::string HAKC_ANALYSIS;
 extern std::string HAKC_DEBUG_NAME;

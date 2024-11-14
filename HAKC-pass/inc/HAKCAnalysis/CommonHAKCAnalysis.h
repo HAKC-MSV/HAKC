@@ -63,14 +63,14 @@ namespace hakc {
 
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
-
-
     public:
         HAKCSystemInformation& GetSystemInfo();
 
         Value *getDef(Value *V, bool followLoad, bool debug);
 
         virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
+
+        bool DebugActive();
 
         static bool argShouldTransfer(Value *V);
 
