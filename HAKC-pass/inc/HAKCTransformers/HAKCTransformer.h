@@ -38,9 +38,6 @@ namespace hakc {
 
         ~HAKCTransformer() = default;
 
-        // HAKCSystemInformation *GetSysInfo();
-        std::shared_ptr<HAKCSystemInformation> GetSysInfo();
-
         /**
          * Create a pointer suitable for dereferencing
          * @param HAKCPointer
@@ -157,21 +154,17 @@ namespace hakc {
          */
         void CreateTransferFunctionArg_PostCall(Function *F, Function *TransformFunction, Value *Arg);
 
-        virtual Module &getModule();
+        Module &getModule();
 
         virtual Type *HAKCAuthenticationRetType(unsigned AddrSpace);
-
-        hakc_compartment_id_t getGlobalCompartmentID(GlobalVariable *GV);
-
-        ConstantInt *GetHAKCCompartmentValue(hakc_compartment_id_t CompartmentID);
 
         ConstantInt *getTrue();
 
         ConstantInt *getFalse();
 
-        ConstantInt *getInt64(int64_t Value);
+        ConstantInt *getInt64(uint64_t Value);
 
-        ConstantInt *getInt32(int32_t Value);
+        ConstantInt *getInt32(uint32_t Value);
 
         ConstantInt *GetDefaultObjectSize();
 
@@ -183,7 +176,7 @@ namespace hakc {
 
         virtual unsigned GetPointerAddrSpace(ManagedHAKCPointerP HAKCPointer);
 
-        unsigned GetPointerAddrSpace(Value *V);
+        static unsigned GetPointerAddrSpace(Value *V);
 
         /**
          * Creates metadata associated with a Compartment for proper loading by the kernel
@@ -204,21 +197,11 @@ namespace hakc {
 
         StructType *EntryTokenType;
 
-        CallInst *SaveColor(Value *V);
-
-        const StringRef HAKCGetColorName();
-
-        const StringRef HAKCGetPerCPUColorName();
-
-        const StringRef HAKCColorAddressName();
-
         std::string getUniqueAddressable_Name(Function *F);
 
         std::string getKstrtab_entry_name(Function *F);
 
         std::string getKstrtabns_entry_name(Function *F);
-
-        ConstantInt *GetColorValue(sym_color_t Color);
 
         /**
          * Checks that ManagedHAKCPointer and I are valid, and sets the HAKCIRBuilder location to I
@@ -244,8 +227,13 @@ namespace hakc {
          */
         CallInst *CreateCall(StringRef name, Type *RetTy, ArrayRef<Value *> Args);
 
-        virtual Instruction *
-        CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
+        CallInst *CreateCall(Function *Callee, ArrayRef<Value*> Args);
+
+        Instruction *CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
+
+        Instruction *CreateCallWithResultCast(Function *Callee, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
+
+        Instruction *CastCallToType(CallInst *Call, Value *ValueToTypeMatch);
 
         /**
          * Gets or inserts the GlobalVariable containing the list of valid targets from the Compartment F belongs to
@@ -260,17 +248,9 @@ namespace hakc {
          */
         Type *GetEntryTokenType(unsigned AddrSpace);
 
-        /**
-         * Returns the Entry Token for the given CompartmentID and Value
-         * @return
-         */
-        virtual Constant *GetEntryToken(HAKCCompartment &CompartmentDivision) = 0;
-
         virtual ConstantInt *GetObjectSizeInBytes(hakc::ManagedHAKCPointerP HAKCPointer);
 
         virtual ConstantInt *GetObjectSizeInBytes(hakc::HAKCTypeP HAKCType);
-
-        FunctionType *GetHAKCDataAuthenticationFunctionType(unsigned AddrSpace);
 
         /**
          * Create the argument set for a HAKC data check
@@ -279,7 +259,7 @@ namespace hakc {
          * @return
          */
         virtual void
-        CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value *> &ArgsList) = 0;
+        CreateDataAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVectorImpl<Value *> &Result);
 
         /**
          * Create the argument set for a HAKC code check
@@ -288,7 +268,7 @@ namespace hakc {
          * @return
          */
         virtual void
-        CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVector<Value *> &ArgsList) = 0;
+        CreateCodeAuthArguments(ManagedHAKCPointerP HAKCPointer, Instruction *I, SmallVectorImpl<Value *> &Result);
 
         /**
          * Create the argument set for a HAKC Compartment transfer
@@ -300,7 +280,7 @@ namespace hakc {
          */
         virtual void
         CreateTransferArguments(ManagedHAKCPointerP HAKCPointer, GlobalValue *Target, bool IsData, ConstantInt *Size,
-                                SmallVector<Value *> &Result) = 0;
+                                SmallVector<Value *> &Result);
 
 
         /**

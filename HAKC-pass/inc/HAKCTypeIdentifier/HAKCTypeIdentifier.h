@@ -31,9 +31,9 @@ namespace hakc {
     typedef std::shared_ptr<HAKCSymbolInfo> HAKCSymbolP;
     typedef std::shared_ptr<HAKCGlobalInfo> HAKCGlobalP;
 
-    class HAKCTypeIdentifier : public HAKCDebugInfoProcessor {
+    class HAKCTypeIdentifier {
     public:
-        HAKCTypeIdentifier(Module &M, CommonHAKCAnalysis *Analysis);
+        explicit HAKCTypeIdentifier(CommonHAKCAnalysis &Analysis);
 
         void OutputYAML(raw_ostream &out);
 
@@ -101,8 +101,8 @@ namespace hakc {
 
         void CreateIndirectCallSourceLink(Value *V, std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path);
 
-    protected:
-        CommonHAKCAnalysis *AnalysisHelper;
+        CommonHAKCAnalysis &AnalysisHelper;
+        DebugInfoFinder DbgInfoFinder;
         std::map<const DIType *, HAKCTypeP> types;
         std::map<const DIGlobalVariable *, HAKCGlobalP> globals;
         std::map<const DISubprogram *, HAKCFunctionP> functions;

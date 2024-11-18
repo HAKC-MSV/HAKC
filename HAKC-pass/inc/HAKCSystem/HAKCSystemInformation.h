@@ -21,39 +21,60 @@ typedef std::shared_ptr<hakc::HAKCAllocationSize> HAKCCustomAllocation;
 
 typedef SmallVector<hakc::hakc_function_def_t> HAKCFunctionList;
 typedef SmallVector<hakc::hakc_transfer_def_t> HAKCTransferList;
-typedef SmallVector<GlobalVariable*> HAKCGlobalList;
+typedef SmallVector<GlobalVariable*> HAKCGlobalVariableList;
+typedef SmallVector<GlobalValue*> HAKCSymbolList;
 typedef SmallVector<Function*> FunctionList;
 typedef SmallPtrSet<Type*, 16> HAKCTypeSet;
+typedef SmallVector<std::string, 16> HAKCStringList;
 
 namespace hakc {
     class HAKCSystemInformation {
     public:
         explicit HAKCSystemInformation(Module &M);
 
+        bool OutputDebugInfo() const;
+
+        bool OutputDebugInfo(GlobalValue *GV) const;
+
+        bool OutputDebugInfo(StringRef SymbolName) const;
+
+        Module& GetModule();
+
         friend void operator<<(HAKCSystemInformation &HAKCSystemInfo, HAKCYamlConfig &YamlConfig);
 
         iterator_range<FunctionList::iterator> GetNoTransferFunctions();
         iterator_range<HAKCTransferList::iterator> CompartmentTransferFunctions();
-        iterator_range<HAKCFunctionList::iterator> CompartmentalizationValidationFunctions();
         iterator_range<FunctionList::iterator> CompartmentalizationSupportFunctions();
         iterator_range<FunctionList::iterator> SafeTransitionFunctions();
         iterator_range<HAKCTypeSet::iterator> IgnoredTypes();
-        iterator_range<HAKCGlobalList::iterator> IgnoredGlobals();
+        iterator_range<HAKCGlobalVariableList::iterator> IgnoredGlobals();
+        iterator_range<HAKCStringList::iterator> SeparateNamespacePaths();
+        iterator_range<HAKCStringList::iterator> HAKCSourcePaths();
+
+        StringRef DatabasePath() const;
+        Function* CodeValidation() const;
+        Function* DataValidation() const;
+        hakc::hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
 
     protected:
         Module &M;
+        bool DebugOutput;
         std::string Arch;
         std::string Platform;
         std::string Database;
         FunctionList NoTransferFunctionList;
         HAKCTransferList CompartmentTransferFunctionList;
-        HAKCFunctionList CompartmentalizationValidationFunctionList;
+        Function *CodeValidationFunction;
+        Function *DataValidationFunction;
+        hakc::hakc_transfer_def_t DefaultCompartmentTransfer;
+        hakc::hakc_transfer_def_t PerCPUCompartmentTransfer;
         FunctionList CompartmentalizationSupportFunctionList;
-        StringSet<> SeparateNamespacePaths;
-        StringSet<> HAKCSourcePaths;
+        HAKCSymbolList SymbolsToOutputDebugInfo;
+        HAKCStringList SeparateNamespacePathList;
+        HAKCStringList HAKCSourcePathList;
         FunctionList SafeTransitionFunctionList;
         HAKCTypeSet IgnoredTypeSet;
-        HAKCGlobalList IgnoredGlobalList;
+        HAKCGlobalVariableList IgnoredGlobalList;
         ValueMap<Function*, HAKCCustomAllocation> AllocationSizeMap;
     };
 

@@ -11,7 +11,7 @@
 
 namespace hakc {
     HAKCDebugInfoProcessor::HAKCDebugInfoProcessor(Module &M) :
-            M(M), debug(false), infoFinder() {
+            M(M), infoFinder() {
         infoFinder.processModule(M);
     }
 
@@ -151,10 +151,6 @@ namespace hakc {
                 printDIType(diCompositeType->getBaseType(), indents + 1);
             }
         }
-    }
-
-    bool HAKCDebugInfoProcessor::debugActive() {
-        return debug;
     }
 
     const DIType *HAKCDebugInfoProcessor::getBaseDefinition(const MDNode *metadata) {

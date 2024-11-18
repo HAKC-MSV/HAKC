@@ -6,24 +6,13 @@
 #include "llvm/Support/FileSystem.h"
 
 #include "llvm/IR/Verifier.h"
+#include "llvm/IR/DerivedTypes.h"
 
 namespace hakc {
     HAKCOstream hos;
 
-/**
- * @brief Collective analysis functionality
- * @param debug
- */
-
-
-
-
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
         return IsFunctionInFunctionList(F, SystemInfo.GetNoTransferFunctions());
-    }
-
-    bool CommonHAKCAnalysis::DebugActive() {
-        return debug_output;
     }
 
     bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range) {
@@ -65,8 +54,7 @@ namespace hakc {
         return SystemInfo;
     }
 
-    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M, StringRef ConfigPath, bool debug) : debug_output(debug),
-                                                                                          SystemInfo(M) {
+    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M, StringRef ConfigPath) : SystemInfo(M) {
         if (!sys::fs::exists(ConfigPath)) {
             CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << ConfigPath << "\n";
             throw std::exception();
@@ -130,7 +118,7 @@ namespace hakc {
         bool result = false;
         if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
             result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
-            if (debug_output) {
+            if (SystemInfo.OutputDebugInfo(Call->getFunction())) {
                 CommonHAKCAnalysis::getWriter() << "Intrinsic (" << intrinsic->getIntrinsicID() << ") from " <<
                                                 Call->getFunction()->getName() << " " << intrinsic;
                 if (result) {
@@ -318,7 +306,7 @@ namespace hakc {
      */
     bool CommonHAKCAnalysis::callIsSafeTransition(CallBase *call) {
         if (call->getCalledFunction()) {
-            return isSafeTransitionFunction(call->getCalledFunction());
+            return IsSafeTransitionFunction(call->getCalledFunction());
         }
 
         return false;
@@ -340,7 +328,7 @@ namespace hakc {
  * @return true if F->getName() is in #safe_transition_functions, false
  * otherwise
  */
-    bool CommonHAKCAnalysis::isSafeTransitionFunction(Function *F) {
+    bool CommonHAKCAnalysis::IsSafeTransitionFunction(Function *F) {
         return IsFunctionInFunctionList(F, SystemInfo.SafeTransitionFunctions());
 /*        auto SafeTransitionFunctions = GetSafeTransitionFunctions();
         auto AllocationFunctions = GetKernelAllocationSizeMap();
@@ -399,7 +387,7 @@ namespace hakc {
         return result;
     }
 
-    bool CommonHAKCAnalysis::isIgnoredType(Type *Ty) {
+    bool CommonHAKCAnalysis::IsIgnoredType(Type *Ty) {
         if (!Ty) {
             return false;
         }
@@ -420,18 +408,6 @@ namespace hakc {
         }
 
         return Result;
-    }
-
-    bool CommonHAKCAnalysis::isKernelUserPointer(Use &U) {
-//        return useHasAttribute(U, Attribute::KernelUserPtr);
-        // TODO: Fix this when attributes are added in again
-        return false;
-    }
-
-    bool CommonHAKCAnalysis::isPerCPUPointer(Use &U) {
-//        return useHasAttribute(U, Attribute::PerCPUPtr);
-        // TODO: Fix this when attributes are added in again
-        return false;
     }
 
     bool CommonHAKCAnalysis::isPerCPUPointer(Value *V) {
@@ -503,11 +479,44 @@ namespace hakc {
         }
     }
 
+    FunctionType *CommonHAKCAnalysis::GetDataAuthenticationFunctionType(Module &M, unsigned AddrSpace) {
+        auto *RetTy = PointerType::get(M.getContext(), AddrSpace);
+        Type *ArgTy[] = {
+                PointerType::get(M.getContext(), AddrSpace),
+                IntegerType::get(M.getContext(), 64),
+                IntegerType::get(M.getContext(), 64)
+        };
+
+        return FunctionType::get(RetTy, ArgTy, false);
+    }
+
+    FunctionType *CommonHAKCAnalysis::GetTransferFunctionType(Module &M, unsigned int AddrSpace) {
+        auto *RetTy = PointerType::get(M.getContext(), AddrSpace);
+        Type *ArgTy[] = {
+                PointerType::get(M.getContext(), AddrSpace),
+                IntegerType::get(M.getContext(), 64),
+                IntegerType::get(M.getContext(), 64)
+        };
+
+        return FunctionType::get(RetTy, ArgTy, false);
+    }
+
+    FunctionType *CommonHAKCAnalysis::GetCodeAuthenticationFunctionType(Module &M, unsigned AddrSpace) {
+        auto *RetTy = PointerType::get(M.getContext(), AddrSpace);
+        Type *ArgTy[] = {
+                PointerType::get(M.getContext(), AddrSpace),
+                IntegerType::get(M.getContext(), 64),
+                IntegerType::get(M.getContext(), 64)
+        };
+
+        return FunctionType::get(RetTy, ArgTy, false);
+    }
+
     bool CommonHAKCAnalysis::IsCompartmentalizedFunction(Function *F, HAKCCompartmentalizationPolicy &Policy) {
         return !IsKernelSymbol(F, Policy) && !isOutsideTransferFunc(F);
     }
 
-    std::string CommonHAKCAnalysis::getOutsideTransferName(Function *F) {
+    std::string CommonHAKCAnalysis::GetOutsideTransferName(Function *F) {
         if (F->getName().starts_with(OUTSIDE_TRANSFER_PREFIX) || IsNoTransferFunction(F)) {
             return F->getName().str();
         }
@@ -530,14 +539,6 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::functionIsModParamGetCtx(Function *F) {
         return F->getName().starts_with(MODPARAM_GETCTX_PREFIX);
-    }
-
-    std::string CommonHAKCAnalysis::GetDBPath() {
-        const char *db_path = std::getenv(HAKC_DB_PATH_ENV_VAR.str().c_str());
-        if (db_path == nullptr) {
-            db_path = "";
-        }
-        return db_path;
     }
 
     bool CommonHAKCAnalysis::functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy) {
@@ -567,17 +568,11 @@ namespace hakc {
         return false;
     }
 
-    bool CommonHAKCAnalysis::functionIsAnalysisCandidate(Function *F) {
-        if (!F) {
-            return true;
-        }
-        if (isSafeTransitionFunction(F)) {
+    bool CommonHAKCAnalysis::FunctionIsAnalysisCandidate(Function *F) {
+        if (IsSafeTransitionFunction(F)) {
             return false;
         }
-        if (isHAKCFunction(F)) {
-            return false;
-        }
-        if (F->getName() == "printk") {
+        if (IsHAKCFunction(F)) {
             return false;
         }
         if (isOutsideTransferFunc(F)) {
@@ -636,19 +631,6 @@ namespace hakc {
             name = "****UNUSED****";
         }
         return name;
-    }
-
-    std::set<StringRef> CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, std::set<StringRef> NewAdditions) {
-        for (auto NewAddition: NewAdditions) {
-            Existing.insert(NewAddition);
-        }
-        return Existing;
-    }
-
-    std::set<StringRef>
-    CommonHAKCAnalysis::AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions) {
-        Existing.insert(NewAdditions.begin(), NewAdditions.end());
-        return Existing;
     }
 
     bool CommonHAKCAnalysis::FunctionsAreInSameCompartment(Function *F, Function *G,

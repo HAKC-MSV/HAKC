@@ -3,17 +3,22 @@
 //
 
 #include "HAKCSystem/HAKCSystemInformation.h"
+#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
 
-    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M), Arch(), Platform(), Database(),
+    HAKCSystemInformation::HAKCSystemInformation(Module &M) : M(M), DebugOutput(false), Arch(), Platform(), Database(),
                                                               NoTransferFunctionList(),
                                                               CompartmentTransferFunctionList(),
-                                                              CompartmentalizationValidationFunctionList(),
+                                                              CodeValidationFunction(nullptr),
+                                                              DataValidationFunction(nullptr),
+                                                              DefaultCompartmentTransfer(nullptr),
+                                                              PerCPUCompartmentTransfer(nullptr),
                                                               CompartmentalizationSupportFunctionList(),
-                                                              SeparateNamespacePaths(), HAKCSourcePaths(),
-                                                              SafeTransitionFunctionList(), IgnoredTypeSet(),
-                                                              IgnoredGlobalList(), AllocationSizeMap() {
+                                                              SymbolsToOutputDebugInfo(), SeparateNamespacePathList(),
+                                                              HAKCSourcePathList(), SafeTransitionFunctionList(),
+                                                              IgnoredTypeSet(), IgnoredGlobalList(),
+                                                              AllocationSizeMap() {
 
     }
 
@@ -21,27 +26,49 @@ namespace hakc {
         HAKCSystemInfo.Arch = YamlConfig.Arch;
         HAKCSystemInfo.Platform = YamlConfig.Platform;
         HAKCSystemInfo.Database = YamlConfig.Database;
+        HAKCSystemInfo.DebugOutput = YamlConfig.OutputAllDebugInfo;
 
         for (auto &FunctionName: YamlConfig.NoTransferFunctions) {
-            auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
+            auto *F = HAKCSystemInfo.GetModule().getFunction(FunctionName);
             if (F) {
                 HAKCSystemInfo.NoTransferFunctionList.push_back(F);
             }
         }
 
-        HAKCSystemInfo.SeparateNamespacePaths.insert(YamlConfig.SeparateNamespacePaths.begin(),
-                                                     YamlConfig.SeparateNamespacePaths.end());
-        HAKCSystemInfo.HAKCSourcePaths.insert(YamlConfig.HAKCSourcePaths.begin(), YamlConfig.HAKCSourcePaths.end());
+        for (auto &SymbolName: YamlConfig.PassDebugSymbols) {
+            auto *F = HAKCSystemInfo.GetModule().getFunction(SymbolName);
+            if (F) {
+                HAKCSystemInfo.SymbolsToOutputDebugInfo.push_back(F);
+            } else {
+                auto *Global = HAKCSystemInfo.GetModule().getGlobalVariable(SymbolName);
+                if (Global) {
+                    HAKCSystemInfo.SymbolsToOutputDebugInfo.push_back(Global);
+                }
+            }
+        }
+
+        auto CodeValidation = HAKCSystemInfo.GetModule().getOrInsertFunction(YamlConfig.CodeValidationFunction,
+                                                                             CommonHAKCAnalysis::GetCodeAuthenticationFunctionType(
+                                                                                     HAKCSystemInfo.GetModule()));
+        HAKCSystemInfo.CodeValidationFunction = dyn_cast<Function>(CodeValidation.getCallee());
+        auto DataValidation = HAKCSystemInfo.GetModule().getOrInsertFunction(YamlConfig.DataValidationFunction,
+                                                                             CommonHAKCAnalysis::GetDataAuthenticationFunctionType(
+                                                                                     HAKCSystemInfo.GetModule()));
+        HAKCSystemInfo.DataValidationFunction = dyn_cast<Function>(DataValidation.getCallee());
+
+        HAKCSystemInfo.SeparateNamespacePathList.append(YamlConfig.SeparateNamespacePaths.begin(),
+                                                        YamlConfig.SeparateNamespacePaths.end());
+        HAKCSystemInfo.HAKCSourcePathList.append(YamlConfig.HAKCSourcePaths.begin(), YamlConfig.HAKCSourcePaths.end());
 
         for (auto &FunctionName: YamlConfig.SafeTransitionFunctions) {
-            auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
+            auto *F = HAKCSystemInfo.GetModule().getFunction(FunctionName);
             if (F) {
                 HAKCSystemInfo.SafeTransitionFunctionList.push_back(F);
             }
         }
 
         for (auto &TransferEntry: YamlConfig.CompartmentTransferFunctions) {
-            auto *F = HAKCSystemInfo.M.getFunction(TransferEntry.FunctionName);
+            auto *F = HAKCSystemInfo.GetModule().getFunction(TransferEntry.FunctionName);
             if (F) {
                 auto Transfer = std::make_shared<HAKCTransferFunction>(F, TransferEntry.PointerIdx,
                                                                        TransferEntry.CompartmentIdx,
@@ -51,12 +78,27 @@ namespace hakc {
             }
         }
 
-        for (auto &FunctionName: YamlConfig.CompartmentalizationValidationFunctions) {
-            auto *F = HAKCSystemInfo.M.getFunction(FunctionName);
-            if (F) {
-                auto Validation = std::make_shared<HAKCFunctionDefinition>(F);
-                HAKCSystemInfo.CompartmentalizationValidationFunctionList.push_back(Validation);
-            }
+        auto *DefaultTransferFunc = dyn_cast<Function>(
+                HAKCSystemInfo.GetModule().getOrInsertFunction(YamlConfig.DefaultCompartmentTransfer.FunctionName,
+                                                               CommonHAKCAnalysis::GetTransferFunctionType(
+                                                                       HAKCSystemInfo.GetModule())).getCallee());
+        HAKCSystemInfo.DefaultCompartmentTransfer = std::make_shared<HAKCTransferFunction>(DefaultTransferFunc,
+                                                                                           YamlConfig.DefaultCompartmentTransfer.PointerIdx,
+                                                                                           YamlConfig.DefaultCompartmentTransfer.CompartmentIdx,
+                                                                                           YamlConfig.DefaultCompartmentTransfer.DivisionIdx,
+                                                                                           YamlConfig.DefaultCompartmentTransfer.SizeIdx);
+        if (YamlConfig.PerCPUCompartmentTransfer.IsValid()) {
+            auto *PerCPUTransferFunc = dyn_cast<Function>(
+                    HAKCSystemInfo.GetModule().getOrInsertFunction(YamlConfig.PerCPUCompartmentTransfer.FunctionName,
+                                                                   CommonHAKCAnalysis::GetTransferFunctionType(
+                                                                           HAKCSystemInfo.GetModule())).getCallee());
+            HAKCSystemInfo.PerCPUCompartmentTransfer = std::make_shared<HAKCTransferFunction>(PerCPUTransferFunc,
+                                                                                              YamlConfig.PerCPUCompartmentTransfer.PointerIdx,
+                                                                                              YamlConfig.PerCPUCompartmentTransfer.CompartmentIdx,
+                                                                                              YamlConfig.PerCPUCompartmentTransfer.DivisionIdx,
+                                                                                              YamlConfig.PerCPUCompartmentTransfer.SizeIdx);
+        } else {
+            HAKCSystemInfo.PerCPUCompartmentTransfer = HAKCSystemInfo.DefaultCompartmentTransfer;
         }
 
         for (auto &FunctionName: YamlConfig.CompartmentalizationSupportFunctions) {
@@ -88,17 +130,56 @@ namespace hakc {
         }
     }
 
+    bool HAKCSystemInformation::OutputDebugInfo() const {
+        return DebugOutput;
+    }
+
+    bool HAKCSystemInformation::OutputDebugInfo(GlobalValue *GV) const {
+        auto Search = [GV](GlobalValue *Symbol) {
+            return Symbol == GV;
+        };
+
+        return OutputDebugInfo() || llvm::any_of(SymbolsToOutputDebugInfo, Search);
+    }
+
+    Module &HAKCSystemInformation::GetModule() {
+        return M;
+    }
+
+    StringRef HAKCSystemInformation::DatabasePath() const {
+        return Database;
+    }
+
+    Function *HAKCSystemInformation::CodeValidation() const {
+        return CodeValidationFunction;
+    }
+
+    Function *HAKCSystemInformation::DataValidation() const {
+        return DataValidationFunction;
+    }
+
+    hakc::hakc_transfer_def_t HAKCSystemInformation::CompartmentTransfer(bool PerCPU) const {
+        if(PerCPU) {
+            return PerCPUCompartmentTransfer;
+        } else {
+            return DefaultCompartmentTransfer;
+        }
+    }
+
+    bool HAKCSystemInformation::OutputDebugInfo(StringRef SymbolName) const {
+        auto Search = [SymbolName](GlobalValue *Symbol) {
+            return Symbol->getName() == SymbolName;
+        };
+
+        return OutputDebugInfo() || llvm::any_of(SymbolsToOutputDebugInfo, Search);
+    }
+
     iterator_range<FunctionList::iterator> HAKCSystemInformation::GetNoTransferFunctions() {
         return make_range(NoTransferFunctionList.begin(), NoTransferFunctionList.end());
     }
 
     iterator_range<HAKCTransferList::iterator> HAKCSystemInformation::CompartmentTransferFunctions() {
         return make_range(CompartmentTransferFunctionList.begin(), CompartmentTransferFunctionList.end());
-    }
-
-    iterator_range<HAKCFunctionList::iterator> HAKCSystemInformation::CompartmentalizationValidationFunctions() {
-        return make_range(CompartmentalizationValidationFunctionList.begin(),
-                          CompartmentalizationValidationFunctionList.end());
     }
 
     iterator_range<FunctionList::iterator> HAKCSystemInformation::CompartmentalizationSupportFunctions() {
@@ -114,7 +195,15 @@ namespace hakc {
         return make_range(IgnoredTypeSet.begin(), IgnoredTypeSet.end());
     }
 
-    iterator_range<HAKCGlobalList::iterator> HAKCSystemInformation::IgnoredGlobals() {
+    iterator_range<HAKCGlobalVariableList::iterator> HAKCSystemInformation::IgnoredGlobals() {
         return make_range(IgnoredGlobalList.begin(), IgnoredGlobalList.end());
+    }
+
+    iterator_range<HAKCStringList::iterator> HAKCSystemInformation::SeparateNamespacePaths() {
+        return make_range(SeparateNamespacePathList.begin(), SeparateNamespacePathList.end());
+    }
+
+    iterator_range<HAKCStringList::iterator> HAKCSystemInformation::HAKCSourcePaths() {
+        return make_range(HAKCSourcePathList.begin(), HAKCSourcePathList.end());
     }
 } // hakc

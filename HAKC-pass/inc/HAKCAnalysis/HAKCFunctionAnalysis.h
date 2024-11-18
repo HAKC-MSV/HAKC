@@ -40,7 +40,6 @@ namespace hakc {
     protected:
         CommonHAKCAnalysis &CommonAnalysis;
         HAKCCompartmentalizationPolicy &Policy;
-
         HAKCPointerManager PointerManager;
 
         /**
@@ -95,8 +94,6 @@ namespace hakc {
 
         void RegisterPointerDereference(Use &use);
 
-        bool isSafeTransitionFunction(Function *F);
-
         void handleLoad(LoadInst *load);
 
         virtual void handleComparison(CmpInst *compare);
@@ -135,22 +132,18 @@ namespace hakc {
 
         void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
 
-        virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
+//        virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
         virtual void UpdateHAKCFunctionParameters();
 
-        virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
-                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
+//        virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
+//                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
         void AddInstrumentation(bool RelocateSection);
 
-        HAKCTransformer &getTransformer();
-
         void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo);
 
-        HAKCModuleAnalysis *ModAnalysis;
-
-        HAKCSystemInformation *SysInfo;
+        bool DebugActive();
 
     public:
         HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);

@@ -40,12 +40,17 @@ namespace hakc {
         unsigned SizeIdx;
         unsigned CompartmentIdx;
         unsigned DivisionIdx;
+
+        HAKCYAMLTransferType() : FunctionName(), PointerIdx(-1), SizeIdx(-1), CompartmentIdx(-1), DivisionIdx(-1) {}
+        bool IsValid() const { return !FunctionName.empty(); }
     };
 
     struct HAKCYamlConfig {
         HAKCYAMLStringType Arch;
         HAKCYAMLStringType Platform;
         HAKCYAMLStringType Database;
+        HAKCYAMLStringType CodeValidationFunction;
+        HAKCYAMLStringType DataValidationFunction;
         HAKCYAMLStringSequenceType NoTransferFunctions;
         HAKCYAMLStringSequenceType SeparateNamespacePaths;
         HAKCYAMLStringSequenceType HAKCSourcePaths;
@@ -53,11 +58,14 @@ namespace hakc {
         HAKCYAMLStringSequenceType IgnoredTypes;
         HAKCYAMLStringSequenceType IgnoredGlobals;
         HAKCYAMLStringSequenceType TransferFunctions;
+        HAKCYAMLStringSequenceType PassDebugSymbols;
+        bool OutputAllDebugInfo;
 
         HAKCYAMLSequence<HAKCYAMLTransferType> CompartmentTransferFunctions;
-        HAKCYAMLStringSequenceType CompartmentalizationValidationFunctions;
         HAKCYAMLStringSequenceType CompartmentalizationSupportFunctions;
         HAKCYAMLSequence<HAKCYAMLAllocationType> KernelAllocationSizeMap;
+        HAKCYAMLTransferType DefaultCompartmentTransfer;
+        HAKCYAMLTransferType PerCPUCompartmentTransfer;
     };
 } // hakc
 
@@ -89,6 +97,7 @@ struct yaml::MappingTraits<hakc::HAKCYAMLTransferType> {
     static void mapping(yaml::IO &io, hakc::HAKCYAMLTransferType &TransferType) {
         io.mapRequired("name", TransferType.FunctionName);
         io.mapRequired("ptr-idx", TransferType.PointerIdx);
+
         io.mapOptional("compartment-idx", TransferType.CompartmentIdx, (unsigned)-1);
         io.mapOptional("division-idx", TransferType.DivisionIdx, (unsigned)-1);
         io.mapOptional("size-idx", TransferType.SizeIdx, (unsigned)-1);
@@ -101,16 +110,22 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapRequired("Arch", YamlConfig.Arch);
         io.mapRequired("Platform", YamlConfig.Platform);
         io.mapRequired("Database", YamlConfig.Database);
+        io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
+        io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
+        io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
+
         io.mapOptional("CompartmentTransferFunctions", YamlConfig.CompartmentTransferFunctions);
-        io.mapOptional("CompartmentalizationValidationFunctions", YamlConfig.CompartmentalizationValidationFunctions);
         io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
         io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);
-        io.mapOptional("SeparateNamespacePaths", YamlConfig.SeparateNamespacePaths);
-        io.mapOptional("HAKCSourcePaths", YamlConfig.HAKCSourcePaths);
+        io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
+        io.mapOptional("HAKCSourcePathList", YamlConfig.HAKCSourcePaths);
         io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
         io.mapOptional("IgnoredTypeSet", YamlConfig.IgnoredTypes);
         io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
         io.mapOptional("KernelAllocationSizeMap", YamlConfig.KernelAllocationSizeMap);
+        io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
+        io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
+        io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer, hakc::MISSING_TRANSFER);
     }
 };
 

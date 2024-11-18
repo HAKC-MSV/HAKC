@@ -25,6 +25,8 @@ namespace hakc {
     protected:
         raw_ostream &os;
 
+        void printDIType(const DIType *type, unsigned indents);
+
 
     public:
         friend HAKCOstream &operator<<(HAKCOstream &hos, llvm::Value *V) {
@@ -90,6 +92,11 @@ namespace hakc {
 
         friend HAKCOstream &operator<<(HAKCOstream &hos, const DINode &DiNode) {
             hos.os << DiNode;
+            return hos;
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const DIType *DiType) {
+            hos.printDIType(DiType, 0);
             return hos;
         }
     };

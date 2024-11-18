@@ -17,15 +17,6 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
 
-// critical reference guide for cl: https://llvm.org/docs/CommandLine.html#internal-vs-external-storage
-std::string HAKC_ANALYSIS;
-std::string HAKC_DEBUG_NAME;
-std::string HAKC_DAG_ANALYSIS_ROOT;
-std::string HAKC_ARCH_CONFIG;
-std::string HAKC_COMPARTMENT_PATH;
-std::string HAKC_NO_KERNEL_TRANSFERS;
-std::string HAKC_MORELLO_HYBRID;
-
 static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"),
                                                    cl::location(HAKC_ANALYSIS), cl::Required);
 static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME",
@@ -44,30 +35,20 @@ static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", 
                                                          cl::location(HAKC_MORELLO_HYBRID));
 
 namespace hakc {
-    std::shared_ptr<HAKCModuleAnalysis> GetModuleAnalysis(Module &M) {
-        std::shared_ptr<HAKCModuleAnalysis> ModuleAnalysis = std::make_shared<HAKCModuleAnalysis>(M);
-        return ModuleAnalysis;
-    }
-
     bool runDataAccessGraphAnalysis(Module &M) {
         auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
         auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
-        StringRef PRef(P);
 
-        SmallString<512> Path = P;
-        std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
-        HAKCTypeIdentifier typeIdentifier(M, Transformation.get());
-        const char *root = HAKC_DAG_ANALYSIS_ROOT.c_str();
-        if (!root || std::strlen(root) == 0) {
+        if (HAKC_DAG_ANALYSIS_ROOT.empty()) {
             CommonHAKCAnalysis::getWriter() << HAKC_DAG_ANALYSIS_ROOT << " is not set!\n";
             throw std::exception();
         }
 
-        std::string Prefix = root;
+        auto Prefix = HAKC_DAG_ANALYSIS_ROOT;
         if (Prefix.back() != llvm::sys::path::get_separator().back()) {
             Prefix += llvm::sys::path::get_separator();
         }
-        std::string Path = Prefix;
+        auto Path = Prefix;
         Path += P;
         Path += ".dag.yml";
 
@@ -79,36 +60,42 @@ namespace hakc {
         }
         raw_fd_ostream out(Path, err);
         if (!err) {
-            typeIdentifier.OutputYAML(out);
+            CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
+            HAKCTypeIdentifier TypeIdentifier(HAKCAnalysis);
+            TypeIdentifier.OutputYAML(out);
             out.close();
         } else {
             CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
             throw std::exception();
         }
-        // delete Transformation;
+
         return false;
     }
 
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
-        std::shared_ptr<HAKCModuleAnalysis> Transformation = GetModuleAnalysis(M);
-        for (auto path: Transformation->GetHAKCSourcePaths()) {
-            if (M.getSourceFileName().find(path) != M.getSourceFileName().npos) {
-                CommonHAKCAnalysis::getWriter() << "Skipping hakc source " << M.getSourceFileName() << "\n";
+        CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
+        StringRef CurrentSourceName(M.getSourceFileName());
+        for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {
+            if (CurrentSourceName.contains(path)) {
+                CommonHAKCAnalysis::getWriter() << "Skipping hakc source " << CurrentSourceName << "\n";
                 PerformTransformations = false;
             }
         }
 
-        for (auto path: Transformation->GetSeparateNamespacePaths()) {
-            if (M.getSourceFileName().find(path) != M.getSourceFileName().npos) {
-                CommonHAKCAnalysis::getWriter() << "Skipping separate namespace source " << M.getSourceFileName()
-                                                << "\n";
+        for (auto &path: HAKCAnalysis.GetSystemInfo().SeparateNamespacePaths()) {
+            if (CurrentSourceName.contains(path)) {
+                CommonHAKCAnalysis::getWriter() << "Skipping separate namespace source " << CurrentSourceName << "\n";
                 PerformTransformations = false;
             }
         }
 
         if (PerformTransformations) {
-            Transformation->performTransformations();
+            HAKCCompartmentalizationPolicy Policy(HAKCAnalysis.GetSystemInfo().OutputDebugInfo(),
+                                                  M.getContext(), KERNEL_COMPARTMENT,
+                                                  KERNEL_DIVISION, HAKCAnalysis.GetSystemInfo().DatabasePath());
+            HAKCModuleAnalysis ModuleTransformation(HAKCAnalysis, Policy);
+            ModuleTransformation.performTransformations();
         }
 
         return true;

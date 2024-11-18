@@ -34,13 +34,10 @@ namespace hakc {
 
         static void printDIType(const DIType *type, unsigned indents);
 
-        bool debugActive();
-
         bool isAnonStructOrUnion(const DIType *diType);
 
     protected:
         Module &M;
-        bool debug;
         DebugInfoFinder infoFinder;
 
         const DIType *getBaseDefinition(const MDNode *metadata);

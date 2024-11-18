@@ -25,37 +25,21 @@ namespace hakc {
 
     class CommonHAKCAnalysis {
     protected:
-        /**
-        * @brief Set to true to output debugging information
-        */
-        bool debug_output;
 
         std::map<Value *, std::vector<Value *>> DefchainCache;
         HAKCSystemInformation SystemInfo;
 
-        CommonHAKCAnalysis(Module &M, StringRef ConfigPath, bool debug);
-
-        bool isHAKCFunction(Function *F);
-
         static bool isFunctionStatic(Function *F);
 
-        bool isSafeTransitionFunction(Function *F);
-
-        bool functionIsAnalysisCandidate(Function *F);
+        bool FunctionIsAnalysisCandidate(Function *F);
 
         bool valueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy);
 
         hakc_function_def_t getHAKCFunction(StringRef name);
 
-        virtual HAKCTransformer &getTransformer() = 0;
-
         bool functionIsModParamGetCtx(Function *F);
 
         bool IsNoTransferFunction(Function *F);
-
-        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, std::set<StringRef> NewAdditions);
-
-        static std::set<StringRef> AddToSet(std::set<StringRef> Existing, const std::set<StringRef> &NewAdditions);
 
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
@@ -64,21 +48,16 @@ namespace hakc {
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
     public:
+        CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
         HAKCSystemInformation& GetSystemInfo();
 
         Value *getDef(Value *V, bool followLoad, bool debug);
 
         virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
 
-        bool DebugActive();
-
         static bool argShouldTransfer(Value *V);
 
-        static bool isPerCPUPointer(Use &U);
-
         static bool isPerCPUPointer(Value *V);
-
-        static bool isKernelUserPointer(Use &U);
 
         static bool isKernelUserPointer(Value *V);
 
@@ -94,15 +73,13 @@ namespace hakc {
 
         static bool IsPointerLikeType(Type *Ty);
 
-        std::string getOutsideTransferName(Function *F);
+        std::string GetOutsideTransferName(Function *F);
+
+        bool IsSafeTransitionFunction(Function *F);
 
         static std::string getVariadicTransferName(Function *F);
 
         static std::string getOriginalTransformedName(Function *F);
-
-        static std::string getHAKCDebugName();
-
-        static std::string GetDBPath();
 
         bool IsHAKCTransferFunction(Function *F);
 
@@ -112,11 +89,15 @@ namespace hakc {
 
         bool IsHAKCFunction(Function *F);
 
-        virtual std::set<hakc_function_def_t> GetHAKCFunctions() = 0;
-
         bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
         static hakc::HAKCOstream &getWriter();
+
+        static FunctionType* GetDataAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
+
+        static FunctionType* GetCodeAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
+
+        static FunctionType* GetTransferFunctionType(Module &M, unsigned AddrSpace = 0);
 
         static unsigned getCompartmentStorageSizeInBits();
 
@@ -126,7 +107,7 @@ namespace hakc {
 
         static bool isRegisterRead(Value *v);
 
-        bool isIgnoredType(Type *Ty);
+        bool IsIgnoredType(Type *Ty);
 
         bool IsIgnoredGlobal(Value *V);
 

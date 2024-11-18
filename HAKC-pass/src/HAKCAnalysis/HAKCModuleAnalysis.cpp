@@ -18,67 +18,26 @@
 
 namespace hakc {
 
-    HAKCModuleAnalysis::HAKCModuleAnalysis(Module &M)
-            : CommonHAKCAnalysis(false),
-              IsCompartmentalizedAndContainsDebugName(false),
-          M(M),
-          AnalysisFunctions(),
-          transformer(nullptr),
-          Transfers(),
-          NonTransferHAKCFunctions(),
-          SysInfo(std::make_shared<HAKCSystemInformation>(M))
-          {
+    HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy)
+            : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(CommonAnalysis), Policy(Policy) {
         InitAnalysis();
     }
 
-    std::shared_ptr<HAKCSystemInformation> HAKCModuleAnalysis::GetSysInfo() {
-        return SysInfo;
-    }
-
-    Module &HAKCModuleAnalysis::getModule(){
-        return M;
-    }
-
-    void HAKCModuleAnalysis::InitHAKCFunctions() {
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_sk_buff, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_file, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_socket, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_fuse_mount, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_scsi_cmnd, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_usb_device, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_usb_interface, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_us_data, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-        // HAKC_CUSTOM_TRANSFER(hakc::CustomTransfer_scsi_device, M, CommonHAKCAnalysis::getCompartmentStorageSizeInBits());
-
-        HAKC_TRANSFER(HAKCCompartmentTransferName(), 2, 3);
-        HAKC_TRANSFER(HAKCPerCPUCompartmentTransferName(), 2, 3);
-        HAKC_TRANSFER("hakc_sign_pointer_with_color", 1, -1);
-        HAKC_TRANSFER("hakc_sign_pointer", 1, 2);
-
-        /* TODO: Make these custom transfer functions */
-        HAKC_FUNCTION("hakc_transfer_nla");
-        HAKC_FUNCTION("hakc_transfer_string");
-
-        /* I couldn't find these in the kernel source, but they were listed, so I am keeping them. */
-        HAKC_FUNCTION("hakc_record_common");
-        HAKC_FUNCTION("hakc_transfer_to_destination");
-        HAKC_FUNCTION("hakc_restore_original");
-    }
-
     void HAKCModuleAnalysis::InitAnalysis() {
-        HAKC_FUNCTION(HAKCDataAuthenticationName());
-        HAKC_FUNCTION(HACKCodeAuthenticationName());
-
-        InitHAKCFunctions();
-        GetAnalysisFunctions();
+        for (auto &F : GetModule().functions()) {
+            if (FunctionNeedsAnalysis(&F)) {
+                AnalysisFunctions.push_back(&F);
+            }
+        }
+        CommonHAKCAnalysis::SortFunctionList(AnalysisFunctions);
     }
 
     Module &HAKCModuleAnalysis::GetModule() {
-        return M;
+        return CommonAnalysis.GetSystemInfo().GetModule();
     }
 
     std::string
-    HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV, HAKCCompartmentalizationPolicy &Policy) {
+    HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV) {
         auto Compartment = Policy.GetDivision(GV).GetHAKCCompartment();
         if (Compartment.IsKernelCompartment()) {
             return GV->getSection().str();
@@ -107,16 +66,16 @@ namespace hakc {
     /**
         * @brief Moves all global values to the specified HAKC ELF section
         */
-    void HAKCModuleAnalysis::MoveGlobalsToHAKCSection(HAKCCompartmentalizationPolicy &Policy) {
+    void HAKCModuleAnalysis::MoveGlobalsToHAKCSection() {
         std::set<GlobalVariable *> globalsToChange;
 
         for (auto *pGlobal: globalsToChange) {
-            auto finalName = getGlobalHAKCSectionName(pGlobal, Policy);
+            auto finalName = getGlobalHAKCSectionName(pGlobal);
             auto compartment = Policy.GetDivision(pGlobal).GetHAKCCompartment();
             RegisterUsedCompartment(compartment);
 
             if (finalName != pGlobal->getSection()) {
-                if (debug_output) {
+                if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(pGlobal)) {
                     CommonHAKCAnalysis::getWriter() << "Changing section of global " << *pGlobal << " to section "
                                                     << finalName << " from " << pGlobal->getSection() << "\n";
                 }
@@ -125,30 +84,14 @@ namespace hakc {
         }
     }
 
-    bool HAKCModuleAnalysis::functionInAnalysisSet(Function *F) {
-        auto Search = [F](Function *Func) {
-            return F == Func;
-        };
-        return std::any_of(AnalysisFunctions.begin(), AnalysisFunctions.end(), Search);
-    }
-
-    void HAKCModuleAnalysis::GetAnalysisFunctions() {
-        for (auto &F : M.getFunctionList()) {
-            if (FunctionNeedsAnalysis(&F)) {
-                AnalysisFunctions.push_back(&F);
-            }
-        }
-        CommonHAKCAnalysis::SortFunctionList(AnalysisFunctions);
-    }
-
     bool HAKCModuleAnalysis::FunctionNeedsAnalysis(Function *F) {
         bool needsAnalysis = !F->isIntrinsic() &&
                              !F->isDeclaration() &&
                              F->getSubprogram() != nullptr &&
-                             !isOutsideTransferFunc(F) &&
-                             !isHAKCFunction(F);
+                             !CommonHAKCAnalysis::isOutsideTransferFunc(F) &&
+                             !CommonAnalysis.IsHAKCFunction(F);
 
-        CommonHAKCAnalysis::getWriter() << "in FunctionNeedsAnalysis " << (*(*GetSysInfo()).GetMethods()).size() << "\n";
+
         // linux
         // if (F->getName().contains("static_branch_")) {
         if (F->getName().contains(StringRef(*(*GetSysInfo()->GetMethods())["FunctionNeedsAnalysis"].begin()))) {
@@ -157,7 +100,7 @@ namespace hakc {
                 * We ensure that any pointer passed to these functions have
                 * no signature in argNeedsAnalysis.
                 */
-            if (debug_output) {
+            if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)) {
                 CommonHAKCAnalysis::getWriter() << F->getName() << " does not need analysis\n";
             }
             needsAnalysis = false;
@@ -166,15 +109,15 @@ namespace hakc {
         if (!needsAnalysis) {
             goto out;
         }
-        for (auto *user : F->users()) {
+        for (auto *user: F->users()) {
             if (!isa<CallInst>(user)) {
                 /* Function is passed into a global variable */
                 needsAnalysis = true;
             }
         }
 
-    out:
-        if (debug_output) {
+        out:
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)) {
             CommonHAKCAnalysis::getWriter() << F->getName();
             if (!needsAnalysis) {
                 CommonHAKCAnalysis::getWriter() << " does not need ";
@@ -198,7 +141,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysis::isModuleCompartmentalized() {
-        return getTransformer().GetSysInfo()->ContainsCompartmentalizedSymbols(getModule());
+        return CommonAnalysis.GetSystemInfo().ContainsCompartmentalizedSymbols(GetModule());
     }
 
     bool HAKCModuleAnalysis::AliasShouldBeCreated(Function *F) {
@@ -219,10 +162,10 @@ namespace hakc {
         SmallVector<StringRef, 2> Matches;
 
         auto NameInAssembly = NameRegex.match(ModuleAsm, &Matches, nullptr);
-        if (NameInAssembly && debug_output) {
+        if (NameInAssembly && CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)) {
             CommonHAKCAnalysis::getWriter() << F->getName() << " was found in the Module inline assembly: " <<
                                             Matches[0] << "\n";
-        } else if (debug_output) {
+        } else if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)) {
             CommonHAKCAnalysis::getWriter() << "Could not find " << SearchTerm << " in\n" << ModuleAsm << "\n";
         }
         return NameInAssembly;
@@ -235,13 +178,13 @@ namespace hakc {
         } else if (isa<ConstantStruct>(U.getUser()) || isa<SelectInst>(U.getUser())) {
             return true;
         } else if (auto *call = dyn_cast<CallInst>(U.getUser())) {
-            for (auto &arg : call->args()) {
+            for (auto &arg: call->args()) {
                 if (arg.get() == U.get()) {
                     return true;
                 }
             }
         } else if (auto *bc = dyn_cast<BitCastOperator>(U.getUser())) {
-            for (Use &u : bc->uses()) {
+            for (Use &u: bc->uses()) {
                 if (expected.find(u.get()) != expected.end()) {
                     continue;
                 }
@@ -257,7 +200,7 @@ namespace hakc {
                 return true;
             }
         } else if (auto *phi = dyn_cast<PHINode>(U.getUser())) {
-            for (Use &u : phi->uses()) {
+            for (Use &u: phi->uses()) {
                 if (expected.find(u.get()) != expected.end()) {
                     continue;
                 }
@@ -287,35 +230,26 @@ namespace hakc {
         return escapes;
     }
 
-    void HAKCModuleAnalysis::TransformModule(HAKCCompartmentalizationPolicy &Policy) {
-        MoveGlobalsToHAKCSection(Policy);
-        TransformFunctions(Policy);
-        AddCompartmentMetadata(Policy);
+    void HAKCModuleAnalysis::TransformModule() {
+        MoveGlobalsToHAKCSection();
+        TransformFunctions();
+        AddCompartmentMetadata();
 
-        CreateInitGlobalMemberTransfers(Policy);
-        AddTransferFunctions(Policy);
+        CreateInitGlobalMemberTransfers();
+        AddTransferFunctions();
     }
 
-    void HAKCModuleAnalysis::TransformFunctions(HAKCCompartmentalizationPolicy &Policy) {
-        SmallVector<Function *> SortedFunctions(AnalysisFunctions.begin(), AnalysisFunctions.end());
-        llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
-                   [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
-
-        for (auto *F: SortedFunctions) {
-            auto *FunctionTransformation = GetFunctionTransformation(F, Policy);
-            FunctionTransformation->InstrumentCode(Policy);
-            delete FunctionTransformation;
+    void HAKCModuleAnalysis::TransformFunctions() {
+        for (auto *F: AnalysisFunctions) {
+            HAKCFunctionAnalysis FunctionTransformation(F, CommonAnalysis, Policy);
+            FunctionTransformation.InstrumentCode();
         }
     }
 
     void HAKCModuleAnalysis::performTransformations() {
-        auto DBPath = CommonHAKCAnalysis::GetDBPath();
-        HAKCTypeIdentifier TypeIdentifier(M, this);
-        HAKCCompartmentalizationPolicy Policy(debug_output, M.getContext(), KERNEL_COMPARTMENT, KERNEL_DIVISION, DBPath);
-
-        TransformModule(Policy);
-        if (IsCompartmentalizedAndContainsDebugName) {
-            CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n" << M << "\n";
+        TransformModule();
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo()) {
+            CommonHAKCAnalysis::getWriter() << "Final Module After Transformations:\n" << GetModule() << "\n";
         }
     }
 
@@ -323,11 +257,11 @@ namespace hakc {
         if (F->isIntrinsic()) {
             return false;
         }
-        for (auto &U : F->uses()) {
+        for (auto &U: F->uses()) {
             if (useEscapes(U)) {
                 return true;
             }
-            if (debug_output) {
+            if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)) {
                 CommonHAKCAnalysis::getWriter() << "Use " << U.getUser() << " does not escape\n";
             }
         }
@@ -340,11 +274,11 @@ namespace hakc {
         return FunctionIsExported(F) || !isFunctionStatic(F);
     }
 
-    bool HAKCModuleAnalysis::FunctionIsExported(Function *F) {
-        return false;
+    CommonHAKCAnalysis &HAKCModuleAnalysis::GetCommonAnalysis() {
+        return CommonAnalysis;
     }
 
-    bool HAKCModuleAnalysis::TransferFunctionShouldBeCreated(Function *F, HAKCCompartmentalizationPolicy &Policy) {
+    bool HAKCModuleAnalysis::TransferFunctionShouldBeCreated(Function *F) {
         if (F->isDeclaration()) {
             return false;
         }
@@ -358,84 +292,24 @@ namespace hakc {
         return CommonHAKCAnalysis::FunctionHasPointerArg(F);
     }
 
-    void HAKCModuleAnalysis::RegisterCustomTransfer(const hakc_custom_transfer_def_t &CustomTransfer) {
-        if (CustomTransfer->GetFunction() == nullptr || CustomTransfer->GetType() == nullptr) {
-            return;
-        }
-
-        CustomTransfers.push_back(CustomTransfer);
-    }
-
-    void HAKCModuleAnalysis::RegisterHAKCTransfer(const hakc_transfer_def_t &Transfer) {
-        if (Transfer) {
-            Transfers.insert(Transfer);
-        }
-    }
-
-    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(const hakc_function_def_t &HAKCFunction) {
-    std::set<std::string> HAKCModuleAnalysis::GetSeparateNamespacePaths() {
-        return (*GetSysInfo()->GetMethods())["GetSeparateNamespacePaths"];
-    }
-
-    std::set<std::string> HAKCModuleAnalysis::GetHAKCSourcePaths() {
-        return (*GetSysInfo()->GetMethods())["GetHAKCSourcePaths"];
-    }
-
-
-    void HAKCModuleAnalysis::RegisterNonTransferHAKCFunction(hakc_function_def_t HAKCFunction) {
-        if (HAKCFunction) {
-            NonTransferHAKCFunctions.insert(HAKCFunction);
-        }
-    }
-
-    std::set<hakc_function_def_t> HAKCModuleAnalysis::GetHAKCFunctions() {
-        std::set<hakc_function_def_t> AllFunctions;
-        for (auto &p : NonTransferHAKCFunctions) {
-            AllFunctions.insert(p);
-        }
-        for (auto &p : GetHAKCTransferFunctions()) {
-            AllFunctions.insert(p);
-        }
-        return AllFunctions;
-    }
-
-    std::set<hakc_transfer_def_t> HAKCModuleAnalysis::GetHAKCTransferFunctions() {
-        std::set<hakc_transfer_def_t> TransferFunctions;
-        for (auto &p : Transfers) {
-            TransferFunctions.insert(p);
-        }
-        for (auto &p : GetHAKCCustomTransferFunctions()) {
-            TransferFunctions.insert(p);
-        }
-        return TransferFunctions;
-    }
-
-    std::set<hakc_custom_transfer_def_t> HAKCModuleAnalysis::GetHAKCCustomTransferFunctions() {
-        std::set<hakc_custom_transfer_def_t> TransferFunctions;
-        for (auto &p : CustomTransfers) {
-            TransferFunctions.insert(p);
-        }
-        return TransferFunctions;
-    }
-
-    void HAKCModuleAnalysis::AddTransferFunctions(HAKCCompartmentalizationPolicy &Policy) {
+    void HAKCModuleAnalysis::AddTransferFunctions() {
         std::vector<Function *> FuncsNeedingTransfers;
-        for (auto &F: GetModule().getFunctionList()) {
+        for (auto &F: GetModule().functions()) {
             auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
 
-            if (!Compartment.IsKernelCompartment() && functionIsTransferCandidate(&F, Policy) &&
-                !isOutsideTransferFunc(&F) &&
+            if (!Compartment.IsKernelCompartment() && CommonAnalysis.functionIsTransferCandidate(&F, Policy) &&
+                !hakc::CommonHAKCAnalysis::isOutsideTransferFunc(&F) &&
                 functionEscapes(&F)) {
                 FuncsNeedingTransfers.push_back(&F);
             }
         }
-        SortFunctionList(FuncsNeedingTransfers);
+        CommonHAKCAnalysis::SortFunctionList(FuncsNeedingTransfers);
         for (auto *Funcp: FuncsNeedingTransfers) {
             Function &F = *Funcp;
-            debug_output = (F.getName() == getHAKCDebugName());
+            auto debug_output = CommonAnalysis.GetSystemInfo().OutputDebugInfo(Funcp);
             Function *transferFunc = nullptr;
 
-            if (functionIsTransferCandidate(&F, Policy)) {
+            if (CommonAnalysis.functionIsTransferCandidate(&F, Policy)) {
                 auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
                 transferFunc = getTransformer(Policy).CreateTransferFunction(&F);
                 if (!transferFunc) {
@@ -471,7 +345,7 @@ namespace hakc {
                 transferFunc->copyAttributesFrom(&F);
             }
 
-            if (valueShouldBeReplacedWithTransfer(&F, Policy)) {
+            if (valueShouldBeReplacedWithTransfer(&F)) {
                 if (!IsNoTransferFunction(&F)) {
                     if (debug_output) {
                         CommonHAKCAnalysis::getWriter() << "Replacing uses of " << F.getName()
@@ -484,7 +358,7 @@ namespace hakc {
                     }
                 }
             }
-            if (AliasShouldBeCreated(&F, Policy)) {
+            if (AliasShouldBeCreated(&F)) {
                 auto OrigName = F.getName().str();
                 auto NewName = CommonHAKCAnalysis::getOriginalTransformedName(&F);
                 if (debug_output) {
@@ -517,13 +391,14 @@ namespace hakc {
     bool HAKCModuleAnalysis::ConstantStructTransferIsNeeded(ConstantStruct *ConstStruct,
                                                             HAKCCompartmentalizationPolicy &Policy) {
         bool Result = false;
-        if (debug_output) {
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo()) {
             CommonHAKCAnalysis::getWriter() << "TransferIsNeeded Checking " << *ConstStruct << "\n";
         }
         for (auto &Member: ConstStruct->operands()) {
-            auto *Def = getDef(Member.get(), false, debug_output);
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Checking struct member " << *Member << " with Def " << *Def << "\n";
+            auto *Def = getDef(Member.get(), false, CommonAnalysis.GetSystemInfo().OutputDebugInfo());
+            if (CommonAnalysis.GetSystemInfo().OutputDebugInfo()) {
+                CommonHAKCAnalysis::getWriter() << "Checking struct member " << *Member << " with Def " << *Def
+                                                << "\n";
             }
             if (isa<ConstantPointerNull>(Def)) {
                 continue;
@@ -539,7 +414,7 @@ namespace hakc {
             }
         }
 
-        if (debug_output) {
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo()) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " Result: " << std::to_string(Result) << "\n";
         }
         return Result;
@@ -567,14 +442,14 @@ namespace hakc {
 
     void HAKCModuleAnalysis::CreateInitGlobalMemberTransfers(HAKCCompartmentalizationPolicy &Policy) {
         std::vector<GlobalVariable *> GlobalsToModifyDuringInit;
-        for (auto &GV: M.globals()) {
+        for (auto &GV: GetModule().globals()) {
             if (TransferIsNeeded(&GV, Policy)) {
                 GlobalsToModifyDuringInit.push_back(&GV);
             }
         }
         SortGlobalList(GlobalsToModifyDuringInit);
 
-        if (debug_output) {
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo()) {
             CommonHAKCAnalysis::getWriter() << "Creating Init transfer functions for "
                                             << std::to_string(GlobalsToModifyDuringInit.size()) << " globals:\n";
             for (auto *GlobToTransfer: GlobalsToModifyDuringInit) {
@@ -584,7 +459,7 @@ namespace hakc {
 
         for (auto *GlobToTransfer: GlobalsToModifyDuringInit) {
             auto *InitTransfer = CreateInitTransfer(GlobToTransfer, Policy);
-            if (debug_output) {
+            if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(GlobToTransfer)) {
                 CommonHAKCAnalysis::getWriter() << "Created InitTransfer " << InitTransfer->getName() << "\n";
             }
         }
@@ -610,7 +485,7 @@ namespace hakc {
             }
         }
 
-        auto *GlobalTransferTy = FunctionType::get(Type::getVoidTy(M.getContext()), {});
+        auto *GlobalTransferTy = FunctionType::get(Type::getVoidTy(GetModule().getContext()), {});
         auto *GlobalInitFunc = GetFunctionByName(FunctionName, GlobalTransferTy);
         if (!GlobalInitFunc) {
             CommonHAKCAnalysis::getWriter() << "Could not get Global Transfer function " << FunctionName << "\n";
@@ -619,8 +494,9 @@ namespace hakc {
 
         if (GlobalInitFunc->empty()) {
             PopulateGlobalInitTransferFunc(GlobalInitFunc, GlobalVar, Policy);
-            if (debug_output) {
-                CommonHAKCAnalysis::getWriter() << "Finished Populating Global Init Transfer\n" << *GlobalInitFunc << "\n";
+            if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(GlobalVar)) {
+                CommonHAKCAnalysis::getWriter() << "Finished Populating Global Init Transfer\n" << *GlobalInitFunc
+                                                << "\n";
             }
         }
 
@@ -636,7 +512,8 @@ namespace hakc {
     }
 
     std::string
-    HAKCModuleAnalysis::GlobalVariableROSectionName(GlobalVariable *GlobalVar, HAKCCompartmentalizationPolicy &Policy) {
+    HAKCModuleAnalysis::GlobalVariableROSectionName(GlobalVariable *GlobalVar,
+                                                    HAKCCompartmentalizationPolicy &Policy) {
         auto Compartment = Policy.GetDivision(GlobalVar).GetHAKCCompartment();
         std::string SectionName = ".hakc.";
         SectionName += std::to_string(Compartment.GetCompartmentIDValue());
@@ -647,8 +524,10 @@ namespace hakc {
 
     void HAKCModuleAnalysis::PopulateGlobalInitTransferFunc(Function *GlobTransfer, GlobalVariable *GlobalVar,
                                                             HAKCCompartmentalizationPolicy &Policy) {
+        auto debug_output = CommonAnalysis.GetSystemInfo().OutputDebugInfo(GlobalVar);
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "Populating Global Init Transfer Function " << GlobTransfer->getName()
+            CommonHAKCAnalysis::getWriter() << "Populating Global Init Transfer Function "
+                                            << GlobTransfer->getName()
                                             << "\n";
         }
 
@@ -666,15 +545,11 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Starting Global Init Population\n";
         }
         getTransformer(Policy).PopulateGlobalTransfer(GlobTransfer, GlobalVar, debug_output);
-        if (llvm::verifyFunction(*GlobTransfer, &CommonHAKCAnalysis::getWriter().GetOS())) {
-            CommonHAKCAnalysis::getWriter() << "\nFaulty Global Transfer function "
-                                            << GlobTransfer->getName() << "\n" << GetModule();
-            throw std::exception();
-        }
+        CommonHAKCAnalysis::VerifyFunction(GlobTransfer);
 
         auto GlobalTrackerName = GlobTransfer->getName() + "_loc";
         auto *TransferPointer = dyn_cast<GlobalVariable>(
-                M.getOrInsertGlobal(GlobalTrackerName.getSingleStringRef(), GlobTransfer->getType()));
+                GetModule().getOrInsertGlobal(GlobalTrackerName.getSingleStringRef(), GlobTransfer->getType()));
         TransferPointer->setConstant(true);
         TransferPointer->setInitializer(GlobTransfer);
         TransferPointer->setSection(GlobalInitTransferPointerSectionName());
@@ -689,10 +564,7 @@ namespace hakc {
     }
 
     HAKCTransformer &HAKCModuleAnalysis::getTransformer(HAKCCompartmentalizationPolicy &Policy) {
-        if (!transformer) {
-            transformer = CreateTransformer(Policy);
-        }
-        return *transformer;
+        return
     }
 
 //    bool HAKCModuleAnalysis::isModuleTransformed() {
@@ -723,28 +595,9 @@ namespace hakc {
 //        delete functionAnalysis;
 //    }
 
-    std::set<std::string> HAKCModuleAnalysis::GetSafeTransitionFunctions() {
-        return (*GetSysInfo()->GetMethods())["GetSafeTransitionFunctions"];
-    }
-
-    std::string hakc::HAKCModuleAnalysis::HAKCDataAuthenticationName() {
-        return "check_hakc_data_access";
-    }
-
-    std::string hakc::HAKCModuleAnalysis::HACKCodeAuthenticationName() {
-        return "check_hakc_code_access";
-    }
-
-    std::string hakc::HAKCModuleAnalysis::HAKCCompartmentTransferName() {
-        return "hakc_transfer_to_clique";
-    }
 
     StringRef HAKCModuleAnalysis::HAKCSignWithDivisionName() {
         return "hakc_sign_pointer_with_color";
-    }
-
-    StringRef hakc::HAKCModuleAnalysis::HAKCPerCPUCompartmentTransferName() {
-        return "hakc_transfer_percpu_to_clique";
     }
 
     std::string hakc::HAKCModuleAnalysis::HAKCEntryTokenName() {
@@ -757,7 +610,8 @@ namespace hakc {
 
     bool HAKCModuleAnalysis::functionIsTransferCandidate(Function *F) {
         // linux start
-        if (F->getName().contains(StringRef(*(*GetSysInfo()->GetMethods())["functionIsTransferCandidate"].begin()))) {
+        if (F->getName().contains(
+                StringRef(*(*GetSysInfo()->GetMethods())["functionIsTransferCandidate"].begin()))) {
             /* Handle trampolines */
             return false;
         }
@@ -799,7 +653,7 @@ namespace hakc {
     // Get the StructType representing a kernel (module) parameter
     StructType *HAKCModuleAnalysis::GetKernelParamType() {
         // linux
-        return llvm::StructType::getTypeByName(M.getContext(), llvm::StringRef("struct.kernel_param"));
+        return llvm::StructType::getTypeByName(GetModule().getContext(), llvm::StringRef("struct.kernel_param"));
     }
 
     GlobalValue *HAKCModuleAnalysis::ExtractGlobalFromKernelParam(GlobalVariable *GV) {
@@ -807,15 +661,15 @@ namespace hakc {
         // until we get to the actual global value backing the parameter
         GlobalValue *kernparam;
 
-        StructType *KernelParamType = GetKernelParamType();
+        auto *KernelParamType = GetKernelParamType();
         // type not found, just do nothing
         if (!KernelParamType) {
             return nullptr;
         }
 
         // trying to find globals of type GetKernelParamType()
-        if (auto *F = dyn_cast<StructType>(GV->getValueType())) {
-            if (!(F->getName().equals(KernelParamType->getName()))) {
+        if (auto *StructTy = dyn_cast<StructType>(GV->getValueType())) {
+            if (!(StructTy->getName() == KernelParamType->getName())) {
                 return nullptr;// someone passed us a struct that wasn't a kernel param struct
             }
         } else {
@@ -856,30 +710,28 @@ namespace hakc {
 
                         // now we have kp->arg
                     }
-                    // the thing in the union isn't a BitCastOperator, that's bad
+                        // the thing in the union isn't a BitCastOperator, that's bad
                     else {
                         return nullptr;
                     }
                 }
-                // we couldn't get the union out of the union struct, that's bad
+                    // we couldn't get the union out of the union struct, that's bad
                 else {
                     return nullptr;
                 }
             }
-            // we couldn't get the union struct at all out of the param struct, that's bad
+                // we couldn't get the union struct at all out of the param struct, that's bad
             else {
                 return nullptr;
             }
         }
-        // we couldn't even get the kernel param struct as a struct, that's bad
+            // we couldn't even get the kernel param struct as a struct, that's bad
         else {
             return nullptr;
         }
 
-        if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "processing kernel param\n";
-            kernparam->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(GV)) {
+            CommonHAKCAnalysis::getWriter() << "processing kernel param\n" << *kernparam << "\n";
         }
 
         return kernparam;
@@ -893,31 +745,24 @@ namespace hakc {
             return;
         }
 
-        StructType *KernelParamType = GetKernelParamType();
+        auto *KernelParamType = GetKernelParamType();
         // type not found, just do nothing
         if (!KernelParamType) {
             return;
         }
 
         if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "kernel param type is: \n";
-            KernelParamType->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "kernel param type is: " << *KernelParamType << "\n";
         }
 
         // inspect all globals
-        for (auto &Global : M.getGlobalList()) {
-
+        for (auto &Global: GetModule().globals()) {
             // trying to find globals of type GetKernelParamType()
-            if (auto *F = dyn_cast<StructType>(Global.getValueType())) {
-
+            if (auto *StructTy = dyn_cast<StructType>(Global.getValueType())) {
                 // if true, the type of Global matches GetKernelParamType
-                if (F->getName().equals(KernelParamType->getName())) {
-
-                    if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "found kernel param: \n";
-                        Global.print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                if (StructTy == KernelParamType) {
+                    if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(&Global)) {
+                        CommonHAKCAnalysis::getWriter() << "found kernel param: " << Global << "\n";
                     }
 
                     // generate a GetCtx function for the parameter and update
@@ -931,22 +776,22 @@ namespace hakc {
     void HAKCModuleAnalysis::emitModParamGetCtx(GlobalValue *kernparam) {
         // linux
         // type of void*
-        PointerType *PointerTy = PointerType::get(IntegerType::get(M.getContext(), 8), 0);
+        PointerType *PointerTy = PointerType::get(IntegerType::get(GetModule().getContext(), 8), 0);
 
         // two args
         std::vector<Type *> FuncTy_args;
         // first arg points to param
         FuncTy_args.push_back(PointerTy);
         // second arg is int64_t flag (0 to return param's access token, 1 to return param's color)
-        FuncTy_args.push_back(IntegerType::get(M.getContext(), 64));
+        FuncTy_args.push_back(IntegerType::get(GetModule().getContext(), 64));
 
         // type of function that returns int64_t, takes (void *, int64_t)
-        FunctionType *FuncTy = FunctionType::get(IntegerType::get(M.getContext(), 64),
+        FunctionType *FuncTy = FunctionType::get(IntegerType::get(GetModule().getContext(), 64),
                                                  FuncTy_args,
                                                  false);
 
         // create a function named "hakc_modparam_getctx_paramname"
-        auto c = M.getOrInsertFunction(MODPARAM_GETCTX_PREFIX.str() + kernparam->getName().str(),
+        auto c = GetModule().getOrInsertFunction(MODPARAM_GETCTX_PREFIX.str() + kernparam->getName().str(),
                                        FuncTy);
 
         auto *constc = dyn_cast<Constant>(c.getCallee());
@@ -963,11 +808,11 @@ namespace hakc {
         Value *returnTypeArg = args++;
 
         // create entry basic block in our new function
-        BasicBlock *block = BasicBlock::Create(M.getContext(), "entry", getctx);
+        BasicBlock *block = BasicBlock::Create(GetModule().getContext(), "entry", getctx);
         //
         IRBuilder<> builder(block);
         // constant zero for compare/select
-        Value *czero = ConstantInt::get(IntegerType::get(M.getContext(), 64), 0);
+        Value *czero = ConstantInt::get(IntegerType::get(GetModule().getContext(), 64), 0);
 
         // get HAKC symbol for the kernel parameter Value
         auto Symbol = getTransformer().GetSysInfo()->findSymbol(kernparam);
@@ -975,10 +820,7 @@ namespace hakc {
         // find the color of the HAKC symbol
         ConstantInt *Color;
         if (!Symbol) {
-            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: \n";
-            kernparam->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            Color = getTransformer().getInt64(KERNEL_COLOR);
+            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: " << *kernparam << "\n";
             throw std::exception();
         } else {
             Color = getTransformer().getInt64(Symbol->getCompartment()->getColor());
@@ -987,13 +829,8 @@ namespace hakc {
         // find the compartment ID of the HAKC symbol
         ConstantInt *compartId = getTransformer().GetHAKCCompartmentValue(Symbol->getCompartmentID());
 
-        if (debug_output) {
-            CommonHAKCAnalysis::getWriter() << "color:\n";
-            CommonHAKCAnalysis::getWriter() << getColorStringFromValue(Color) << "\n";
-
-            CommonHAKCAnalysis::getWriter() << "compartment:\n";
-            compartId->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(kernparam)) {
+            CommonHAKCAnalysis::getWriter() << *kernparam << "compartment: " << *compartId << "\n";
         }
 
         // get the access token for HAKC symbol as an int64_t
@@ -1005,9 +842,9 @@ namespace hakc {
         auto AddrSpace = getTransformer().GetPointerAddrSpace(kernparam);
 
         if (kernparam->getType()->isIntegerTy()) {
-            voidCast = builder.CreateIntToPtr(kernparam, builder.getInt8PtrTy(AddrSpace));
+            voidCast = builder.CreateIntToPtr(kernparam, builder.getPtrTy(AddrSpace));
         } else {
-            voidCast = builder.CreateBitCast(kernparam, builder.getInt8PtrTy(AddrSpace));
+            voidCast = builder.CreateBitCast(kernparam, builder.getPtrTy(AddrSpace));
         }
 
 
@@ -1024,20 +861,19 @@ namespace hakc {
         // function is done
         builder.CreateRet(ctxSelect);
 
-        if (debug_output) {
-            getctx->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
-            CommonHAKCAnalysis::getWriter() << llvm::verifyFunction(*getctx, &CommonHAKCAnalysis::getWriter()) << "\n";
+        if (CommonAnalysis.GetSystemInfo().OutputDebugInfo(kernparam)) {
+            CommonHAKCAnalysis::getWriter() << *getctx << "\n";
         }
 
+        CommonHAKCAnalysis::VerifyFunction(getctx);
+
         // generate function pointer and place in modparam fp section
-        GlobalVariable *gcfp = new GlobalVariable(M,
-                                                  getctx->getType(),
-                                                  true,// const
-                                                  GlobalValue::ExternalLinkage,
-                                                  getctx,
-                                                  getctx->getName().str() + "_fp");
+        auto CtxFPName = getctx->getName() + "_fp";
+        auto *gcfp = dyn_cast<GlobalVariable>(GetModule().getOrInsertGlobal(CtxFPName.getSingleStringRef(), getctx->getType()));
         gcfp->setSection(HAKC_MODPARAM_FUNCP_SECTION);
+        gcfp->setLinkage(GlobalValue::ExternalLinkage);
+        gcfp->setConstant(true);
+        gcfp->setInitializer(getctx);
     }
 
     // takes a KernelParam and generate a function to get the HAKC signing context
@@ -1049,34 +885,30 @@ namespace hakc {
         GlobalValue *kernparam = ExtractGlobalFromKernelParam(GV);
 
         if (!kernparam) {
-            CommonHAKCAnalysis::getWriter() << "Could not extract global from kernel param: \n";
-            GV->print(CommonHAKCAnalysis::getWriter());
-            CommonHAKCAnalysis::getWriter() << "\n";
+            CommonHAKCAnalysis::getWriter() << "Could not extract global from kernel param " << *GV << "\n";
             throw std::exception();
         }
 
         emitModParamGetCtx(kernparam);
     }
 
-    void HAKCModuleAnalysis::updateCallParameters(std::map<Function *, std::set<CallInst *>> calls_map) {
+    void HAKCModuleAnalysis::updateCallParameters(const std::map<Function *, std::set<CallInst *>>& calls_map) {
         // linux
-        for (auto &pair : calls_map) {
+        for (auto &pair: calls_map) {
             Function *F = pair.first;
-            debug_output = (F->getName() == getHAKCDebugName());
+            auto debug_output = CommonAnalysis.GetSystemInfo().OutputDebugInfo(F);
 
-            for (auto &call : pair.second) {
+            for (auto &call: pair.second) {
                 auto HAKCTransferFunction = GetHAKCTransferDef(call->getCalledFunction()->getName());
                 if (HAKCTransferFunction) {
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for ";
-                        call->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for " << *call << "\n";
                     }
                     hakc_compartment_id_t id;
                     StringRef transferTargetName = F->getName();
                     if (isOutsideTransferFunc(F)) {
                         transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
-                        Function *TransferTarget = M.getFunction(transferTargetName);
+                        Function *TransferTarget = GetModule().getFunction(transferTargetName);
                         id = getTransformer().getFunctionCompartmentID(TransferTarget);
                     } else {
                         id = getTransformer().getFunctionCompartmentID(F);
@@ -1087,8 +919,10 @@ namespace hakc {
                         throw std::exception();
                     }
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string(HAKCTransferFunction->GetCompartmentIdIdx()) << " (";
-                        call->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(CommonHAKCAnalysis::getWriter());
+                        CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string(
+                                HAKCTransferFunction->GetCompartmentIdIdx()) << " (";
+                        call->getArgOperand(HAKCTransferFunction->GetCompartmentIdIdx())->print(
+                                CommonHAKCAnalysis::getWriter());
                         CommonHAKCAnalysis::getWriter() << ") to " << std::to_string(id) << "\n";
                     }
                     call->setArgOperand(HAKCTransferFunction->GetCompartmentIdIdx(),
@@ -1098,7 +932,7 @@ namespace hakc {
                         ConstantInt *color;
                         if (isOutsideTransferFunc(F)) {
                             transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
-                            auto *TransferTarget = getModule().getFunction(transferTargetName);
+                            auto *TransferTarget = GetModule().getFunction(transferTargetName);
                             color = getSymbolColor(TransferTarget);
                         } else {
                             color = getFunctionColor(F);
@@ -1112,24 +946,11 @@ namespace hakc {
                         call->setArgOperand(HAKCTransferFunction->GetColorIdx(), color);
                     }
                     if (debug_output) {
-                        CommonHAKCAnalysis::getWriter() << "After update call is ";
-                        call->print(CommonHAKCAnalysis::getWriter());
-                        CommonHAKCAnalysis::getWriter() << "\n";
+                        CommonHAKCAnalysis::getWriter() << "After update call is " << *call << "\n";
                     }
                 }
             }
         }
-    }
-
-    std::map<std::string, HAKCAllocationSize> HAKCModuleAnalysis::GetKernelAllocationSizeMap() {
-        // linux
-        CommonHAKCAnalysis::getWriter() << "METHODS size: GetKernelAllocationSizeMap " << GetSysInfo()->KernelAllocationSizeMap.size() << "\n";
-        return GetSysInfo()->KernelAllocationSizeMap;
-    }
-
-    std::set<std::string> HAKCModuleAnalysis::GetIgnoredGlobals() {
-        CommonHAKCAnalysis::getWriter() << "METHODS size: GetIgnoredGlobals " << (*GetSysInfo()->GetMethods())["GetIgnoredGlobals"].size() << "\n";
-        return (*GetSysInfo()->GetMethods())["GetIgnoredGlobals"];
     }
 
     bool HAKCModuleAnalysis::valueIsReadonlyPtr(Value *value) {
@@ -1138,7 +959,8 @@ namespace hakc {
         if (!result) {
             if (auto *callInst = dyn_cast<CallInst>(value)) {
                 /* We may have done some global transfer beforehand, so check for that */
-                if (callInst->getCalledFunction() && callInst->getCalledFunction()->getName() == "hakc_sign_pointer_with_color") {
+                if (callInst->getCalledFunction() &&
+                    callInst->getCalledFunction()->getName() == "hakc_sign_pointer_with_color") {
                     auto *isCode = dyn_cast<ConstantInt>(
                             callInst->getArgOperand(callInst->getNumArgOperands() - 1));
                     result = isCode->isOne();
@@ -1147,143 +969,6 @@ namespace hakc {
         }
 
         return result;
-    }
-
-    std::set<std::string> HAKCModuleAnalysis::GetIgnoredTypes() {
-        return (*GetSysInfo()->GetMethods())["GetIgnoredTypes"];
-    }
-
-    std::set<std::string> HAKCModuleAnalysis::GetNoTransferFunctions() {
-        return (*GetSysInfo()->GetMethods())["GetNoTransferFunctions"];
-    }
-
-    sym_color_t HAKCModuleAnalysis::GetMajoritySymbolColor() {
-        // linux
-        if (!MajorityColorSet) {
-            std::map<ConstantInt *, unsigned> ColorCounts;
-            std::set<GlobalValue *> symbols;
-            for (auto &Global : M.getGlobalList()) {
-                symbols.insert(&Global);
-            }
-            for (auto &F : M.getFunctionList()) {
-                symbols.insert(&F);
-            }
-
-            for (auto *GV : symbols) {
-                auto color = getSymbolColor(GV);
-                if (!color->equalsInt(hakc::KERNEL_COLOR)) {
-                    if (ColorCounts.find(color) == ColorCounts.end()) {
-                        ColorCounts[color] = 0;
-                    }
-                    ColorCounts[color] += 1;
-                }
-            }
-
-            unsigned MaxSymbolCount = 0;
-            for (auto &it : ColorCounts) {
-                if (it.second > MaxSymbolCount) {
-                    MajorityColor = getColorFromValue(it.first);
-                }
-            }
-            MajorityColorSet = true;
-        }
-
-        return MajorityColor;
-    }
-
-    std::string HAKCModuleAnalysis::getColorStringFromValue(ConstantInt *color) {
-        switch (color->getZExtValue()) {
-            case SILVER_CLIQUE:
-                return "SILVER_CLIQUE";
-            case GREEN_CLIQUE:
-                return "GREEN_CLIQUE";
-            case RED_CLIQUE:
-                return "RED_CLIQUE";
-            case ORANGE_CLIQUE:
-                return "ORANGE_CLIQUE";
-            case YELLOW_CLIQUE:
-                return "YELLOW_CLIQUE";
-            case PURPLE_CLIQUE:
-                return "PURPLE_CLIQUE";
-            case BLUE_CLIQUE:
-                return "BLUE_CLIQUE";
-            case GREY_CLIQUE:
-                return "GREY_CLIQUE";
-            case PINK_CLIQUE:
-                return "PINK_CLIQUE";
-            case BROWN_CLIQUE:
-                return "BROWN_CLIQUE";
-            case WHITE_CLIQUE:
-                return "WHITE_CLIQUE";
-            case BLACK_CLIQUE:
-                return "BLACK_CLIQUE";
-            case TEAL_CLIQUE:
-                return "TEAL_CLIQUE";
-            case VIOLET_CLIQUE:
-                return "VIOLET_CLIQUE";
-            case CRIMSON_CLIQUE:
-                return "CRIMSON_CLIQUE";
-            case GOLD_CLIQUE:
-                return "GOLD_CLIQUE";
-            case NO_CLIQUE:
-                return "NO_CLIQUE";
-            default:
-                CommonHAKCAnalysis::getWriter() << "number " << color->getZExtValue() << "isn't a valid color\n";
-                return "INVALID_CLIQUE";
-        }
-    }
-
-    sym_color_t HAKCModuleAnalysis::getColorFromValue(ConstantInt *Color) {
-        switch (Color->getZExtValue()) {
-            case SILVER_CLIQUE:
-                return SILVER_CLIQUE;
-            case GREEN_CLIQUE:
-                return GREEN_CLIQUE;
-            case RED_CLIQUE:
-                return RED_CLIQUE;
-            case ORANGE_CLIQUE:
-                return ORANGE_CLIQUE;
-            case YELLOW_CLIQUE:
-                return YELLOW_CLIQUE;
-            case PURPLE_CLIQUE:
-                return PURPLE_CLIQUE;
-            case BLUE_CLIQUE:
-                return BLUE_CLIQUE;
-            case GREY_CLIQUE:
-                return GREY_CLIQUE;
-            case PINK_CLIQUE:
-                return PINK_CLIQUE;
-            case BROWN_CLIQUE:
-                return BROWN_CLIQUE;
-            case WHITE_CLIQUE:
-                return WHITE_CLIQUE;
-            case BLACK_CLIQUE:
-                return BLACK_CLIQUE;
-            case TEAL_CLIQUE:
-                return TEAL_CLIQUE;
-            case VIOLET_CLIQUE:
-                return VIOLET_CLIQUE;
-            case CRIMSON_CLIQUE:
-                return CRIMSON_CLIQUE;
-            case GOLD_CLIQUE:
-                return GOLD_CLIQUE;
-            case NO_CLIQUE:
-                return NO_CLIQUE;
-            default:
-                CommonHAKCAnalysis::getWriter() << "number " << Color->getZExtValue() << "isn't a valid color\n";
-                return NO_CLIQUE;
-        }
-    }
-
-    void HAKCModuleAnalysis::PrintStack() {
-        // print stack debug
-        void *buffer[10];
-        int size = backtrace(buffer, 10);
-        char **strings = backtrace_symbols(buffer, size);
-        for (int i = 0; i < size; i++) {
-            std::cout << strings[i] << std::endl;
-        }
-        free(strings);
     }
 
 }// namespace hakc
