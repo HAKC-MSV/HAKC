@@ -145,7 +145,7 @@ namespace hakc {
     }
 
     Module &HAKCSystemInformation::GetModule() {
-        return TypeIdentifier.GetModule();
+        return CommonAnalysis.GetModule();
     }
 
     StringRef HAKCSystemInformation::DatabasePath() const {
