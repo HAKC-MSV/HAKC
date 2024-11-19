@@ -25,8 +25,8 @@ namespace hakc {
     protected:
         SmallVector<HAKCCompartment, 8> UsedCompartments;
         CommonHAKCAnalysis &CommonAnalysis;
-        std::vector<Function*> AnalysisFunctions;
-        HAKCTypeIdentifier TypeIdentifier;
+        std::vector<Function *> AnalysisFunctions;
+        HAKCTypeIdentifier &TypeIdentifier;
         HAKCCompartmentalizationPolicy &Policy;
 
         void InitAnalysis();
@@ -76,7 +76,8 @@ namespace hakc {
     public:
         virtual ~HAKCModuleAnalysis() = default;
 
-        HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);
+        HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCTypeIdentifier &TypeIdentifier,
+                           HAKCCompartmentalizationPolicy &Policy);
 
         virtual void performTransformations();
 
@@ -100,7 +101,7 @@ namespace hakc {
 
         CommonHAKCAnalysis &GetCommonAnalysis();
 
-        Function* GetFunctionByName(StringRef Name, FunctionType *FuncTy);
+        Function *GetFunctionByName(StringRef Name, FunctionType *FuncTy);
     };
 
 }// namespace hakc

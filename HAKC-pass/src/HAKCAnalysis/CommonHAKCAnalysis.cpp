@@ -54,7 +54,7 @@ namespace hakc {
         return SystemInfo;
     }
 
-    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M, StringRef ConfigPath) : SystemInfo(M) {
+    void CommonHAKCAnalysis::InitConfig(StringRef ConfigPath) {
         if (!sys::fs::exists(ConfigPath)) {
             CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << ConfigPath << "\n";
             throw std::exception();
@@ -75,6 +75,13 @@ namespace hakc {
         }
 
         SystemInfo << SystemConfig;
+    }
+
+    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M) : M(M), SystemInfo(M) {
+    }
+
+    Module &CommonHAKCAnalysis::GetModule() {
+        return M;
     }
 
     bool CommonHAKCAnalysis::IsHAKCTransferFunction(Function *F) {
@@ -422,7 +429,7 @@ namespace hakc {
         return false;
     }
 
-    bool CommonHAKCAnalysis::isFunctionStatic(Function *F) {
+    bool CommonHAKCAnalysis::FunctionIsStatic(Function *F) {
         return Function::isLocalLinkage(F->getLinkage()) || F->isDeclaration();
     }
 

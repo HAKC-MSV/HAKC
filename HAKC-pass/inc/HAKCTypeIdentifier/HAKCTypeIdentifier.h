@@ -45,6 +45,12 @@ namespace hakc {
 
         HAKCTypeP FindType(Type *Ty);
 
+        void ProcessDebugInfo();
+
+        Module& GetModule();
+
+        void GetHAKCTypes(SmallVectorImpl<HAKCTypeP> &Results);
+
     protected:
         HAKCTypeP HandleType(const DIType *type);
 

@@ -9,7 +9,7 @@
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlType.h"
 
 #include <map>
-#include <llvm/IR/DebugInfoMetadata.h>
+#include "llvm/IR/DebugInfoMetadata.h"
 #include "HAKCAnalysis/HAKCOstream.h"
 
 namespace hakc {
@@ -90,14 +90,17 @@ namespace hakc {
             return !(*lhs == *rhs);
         }
 
-        friend bool operator==(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
+        friend bool operator==(StringRef TypeName, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
             std::string LLVMTypeStr;
             llvm::raw_string_ostream ostr(LLVMTypeStr);
             if (TypeInfo->GetLLVMType()) {
                 ostr << *TypeInfo->GetLLVMType();
             }
-            return YamlType.DebugType == TypeInfo->DbgTypeName ||
-                   (!LLVMTypeStr.empty() && LLVMTypeStr == YamlType.LLVMType);
+            return TypeName == TypeInfo->DbgTypeName || TypeName == LLVMTypeStr;
+        }
+
+        friend bool operator==(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
+            return YamlType.DebugType == TypeInfo || YamlType.LLVMType == TypeInfo;
         }
 
         friend bool operator==(const std::shared_ptr<HAKCTypeInfo> &TypeInfo, const HAKCYamlType &YamlType) {

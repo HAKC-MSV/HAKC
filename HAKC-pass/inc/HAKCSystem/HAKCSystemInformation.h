@@ -15,12 +15,14 @@
 #include "llvm/ADT/StringSet.h"
 #include "llvm/IR/ValueMap.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+#include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCYaml/HAKCYaml.h"
 
 typedef std::shared_ptr<hakc::HAKCAllocationSize> HAKCCustomAllocation;
 
 typedef SmallVector<hakc::hakc_function_def_t> HAKCFunctionList;
 typedef SmallVector<hakc::hakc_transfer_def_t> HAKCTransferList;
+typedef SmallVector<hakc::hakc_custom_transfer_def_t> HAKCCustomTransferList;
 typedef SmallVector<GlobalVariable*> HAKCGlobalVariableList;
 typedef SmallVector<GlobalValue*> HAKCSymbolList;
 typedef SmallVector<Function*> FunctionList;
@@ -30,7 +32,7 @@ typedef SmallVector<std::string, 16> HAKCStringList;
 namespace hakc {
     class HAKCSystemInformation {
     public:
-        explicit HAKCSystemInformation(Module &M);
+        explicit HAKCSystemInformation(HAKCTypeIdentifier &TypeIdentifier);
 
         bool OutputDebugInfo() const;
 
@@ -50,6 +52,7 @@ namespace hakc {
         iterator_range<HAKCGlobalVariableList::iterator> IgnoredGlobals();
         iterator_range<HAKCStringList::iterator> SeparateNamespacePaths();
         iterator_range<HAKCStringList::iterator> HAKCSourcePaths();
+        iterator_range<HAKCCustomTransferList::iterator> HAKCCustomTransfers();
 
         StringRef DatabasePath() const;
         Function* CodeValidation() const;
@@ -57,7 +60,7 @@ namespace hakc {
         hakc::hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
 
     protected:
-        Module &M;
+        HAKCTypeIdentifier &TypeIdentifier;
         bool DebugOutput;
         std::string Arch;
         std::string Platform;
@@ -76,6 +79,7 @@ namespace hakc {
         HAKCTypeSet IgnoredTypeSet;
         HAKCGlobalVariableList IgnoredGlobalList;
         ValueMap<Function*, HAKCCustomAllocation> AllocationSizeMap;
+        HAKCCustomTransferList CustomTransferList;
     };
 
 } // hakc

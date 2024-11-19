@@ -136,7 +136,7 @@ namespace hakc {
          * @param Original
          * @param Transfer
          */
-        void CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer);
+//        void CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer);
 
         /**
          * Perform architecture specific transformations prior to an argument transfer to a target compartment
@@ -320,13 +320,11 @@ namespace hakc {
          * @param HAKCPointer
          * @return
          */
-        virtual std::shared_ptr<HAKCCustomTransfer> GetCustomTransferFunction(ManagedHAKCPointerP HAKCPointer);
+        virtual hakc_custom_transfer_def_t GetCustomTransferFunction(ManagedHAKCPointerP HAKCPointer);
 
         void ValidateLocation(Instruction *I);
 
         virtual void ValidateHAKCPointer(ManagedHAKCPointerP HAKCPointer);
-
-        hakc_compartment_id_t getSymbolCompartmentID(GlobalValue *GV);
 
         Function *CreateNonVariadicTransferFunction(Function *F);
 
@@ -351,7 +349,7 @@ namespace hakc {
 
         virtual HAKCTypeP FindEntryBitcast(ManagedHAKCPointerP HAKCPointerP, Instruction *I, Function *Target);
 
-        virtual std::shared_ptr<hakc::HAKCCustomTransfer> GetCustomTransferFunctionForType(HAKCTypeP HAKCType);
+        virtual hakc_custom_transfer_def_t GetCustomTransferFunctionForType(HAKCTypeP HAKCType);
 
         virtual Instruction *
         CreateVoidCastCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target,

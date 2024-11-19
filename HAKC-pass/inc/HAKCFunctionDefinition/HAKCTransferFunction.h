@@ -15,6 +15,8 @@ namespace hakc {
         HAKCTransferFunction(Function *F, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, unsigned DivisionIdx,
                              unsigned SizeIdx);
 
+        HAKCTransferFunction(Function *F, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, unsigned DivisionIdx);
+
         ConstantInt *GetSignedPtrIdx() const;
 
         ConstantInt *GetCompartmentIdIdx() const;
@@ -23,11 +25,16 @@ namespace hakc {
 
         ConstantInt *GetSizeIdx() const;
 
+        static constexpr unsigned MissingIdx = -1;
+
     protected:
         ConstantInt *SignedPtrIdx;
         ConstantInt *CompartmentIdIdx;
         ConstantInt *DivisionIdIdx;
         ConstantInt *SizeIdx;
+
+        void CreateIndexes(unsigned SignedPtrIdx, unsigned CompartmentIdIdx, unsigned DivisionIdx,
+                           unsigned SizeIdx);
     };
 
     typedef std::shared_ptr<HAKCTransferFunction> hakc_transfer_def_t;

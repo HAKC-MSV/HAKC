@@ -25,11 +25,9 @@ namespace hakc {
 
     class CommonHAKCAnalysis {
     protected:
+        Module &M;
 
         std::map<Value *, std::vector<Value *>> DefchainCache;
-        HAKCSystemInformation SystemInfo;
-
-        static bool isFunctionStatic(Function *F);
 
         bool FunctionIsAnalysisCandidate(Function *F);
 
@@ -48,8 +46,13 @@ namespace hakc {
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
     public:
-        CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
-        HAKCSystemInformation& GetSystemInfo();
+        CommonHAKCAnalysis(Module &M);
+
+        HAKCSystemInformation &GetSystemInfo();
+
+        Module &GetModule();
+
+        void InitConfig(StringRef ConfigPath);
 
         Value *getDef(Value *V, bool followLoad, bool debug);
 
@@ -62,6 +65,8 @@ namespace hakc {
         static bool isKernelUserPointer(Value *V);
 
         bool valueIsReadonlyPtr(Value *value);
+
+        static bool FunctionIsStatic(Function *F);
 
         static bool FunctionHasPointerArg(Function *F);
 
@@ -93,11 +98,11 @@ namespace hakc {
 
         static hakc::HAKCOstream &getWriter();
 
-        static FunctionType* GetDataAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
+        static FunctionType *GetDataAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
 
-        static FunctionType* GetCodeAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
+        static FunctionType *GetCodeAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
 
-        static FunctionType* GetTransferFunctionType(Module &M, unsigned AddrSpace = 0);
+        static FunctionType *GetTransferFunctionType(Module &M, unsigned AddrSpace = 0);
 
         static unsigned getCompartmentStorageSizeInBits();
 

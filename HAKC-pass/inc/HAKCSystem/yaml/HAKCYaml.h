@@ -12,7 +12,7 @@
 
 typedef std::string HAKCYAMLStringType;
 
-template <typename Ty>
+template<typename Ty>
 using HAKCYAMLSequence = std::vector<Ty>;
 
 typedef HAKCYAMLSequence<HAKCYAMLStringType> HAKCYAMLStringSequenceType;
@@ -32,17 +32,58 @@ namespace hakc {
         HAKCYAMLStringType FunctionName;
         HAKCAllocationTypeEnum AllocationType;
         HAKCYAMLStringSequenceType Arguments;
+
+        HAKCYAMLAllocationType() : FunctionName(), AllocationType(InvalidAllocationType), Arguments() {}
     };
 
-    struct HAKCYAMLTransferType {
+    struct HAKCYAMLFunctionDefinitionType {
         HAKCYAMLStringType FunctionName;
         unsigned PointerIdx;
         unsigned SizeIdx;
         unsigned CompartmentIdx;
         unsigned DivisionIdx;
 
-        HAKCYAMLTransferType() : FunctionName(), PointerIdx(-1), SizeIdx(-1), CompartmentIdx(-1), DivisionIdx(-1) {}
+        HAKCYAMLFunctionDefinitionType()
+                : FunctionName(), PointerIdx(HAKCTransferFunction::MissingIdx),
+                  SizeIdx(HAKCTransferFunction::MissingIdx), CompartmentIdx(HAKCTransferFunction::MissingIdx),
+                  DivisionIdx(HAKCTransferFunction::MissingIdx) {}
+
         bool IsValid() const { return !FunctionName.empty(); }
+    };
+
+    struct HAKCYAMLTransferType : public HAKCYAMLFunctionDefinitionType {
+        HAKCYAMLTransferType() : HAKCYAMLFunctionDefinitionType() {}
+
+        Function *GetFunction(Module &M) {
+            if (!IsValid()) {
+                return nullptr;
+            }
+            unsigned BitCount = 64;
+            SmallVector<Type *> ArgTypes = {
+                    PointerType::get(M.getContext(), 0)
+            };
+            if (PointerIdx != HAKCTransferFunction::MissingIdx) {
+                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+            }
+            if (SizeIdx != HAKCTransferFunction::MissingIdx) {
+                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+            }
+            if (CompartmentIdx != HAKCTransferFunction::MissingIdx) {
+                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+            }
+            if (DivisionIdx != HAKCTransferFunction::MissingIdx) {
+                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+            }
+
+            auto *FuncType = FunctionType::get(PointerType::get(M.getContext(), 0), ArgTypes, false);
+            return dyn_cast<Function>(M.getOrInsertFunction(FunctionName, FuncType).getCallee());
+        }
+    };
+
+    struct HAKCYAMLCustomTransferType : public HAKCYAMLTransferType {
+        HAKCYAMLStringType TypeName;
+
+        HAKCYAMLCustomTransferType() : HAKCYAMLTransferType(), TypeName() {}
     };
 
     struct HAKCYamlConfig {
@@ -61,9 +102,9 @@ namespace hakc {
         HAKCYAMLStringSequenceType PassDebugSymbols;
         bool OutputAllDebugInfo;
 
-        HAKCYAMLSequence<HAKCYAMLTransferType> CompartmentTransferFunctions;
-        HAKCYAMLStringSequenceType CompartmentalizationSupportFunctions;
-        HAKCYAMLSequence<HAKCYAMLAllocationType> KernelAllocationSizeMap;
+        HAKCYAMLSequence <HAKCYAMLCustomTransferType> CustomTransferFunctionList;
+        HAKCYAMLSequence <HAKCYAMLFunctionDefinitionType> CompartmentalizationSupportFunctions;
+        HAKCYAMLSequence <HAKCYAMLAllocationType> KernelAllocationSizeMap;
         HAKCYAMLTransferType DefaultCompartmentTransfer;
         HAKCYAMLTransferType PerCPUCompartmentTransfer;
     };
@@ -71,8 +112,9 @@ namespace hakc {
 
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLAllocationType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLTransferType);
+LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLCustomTransferType);
 
-template <>
+template<>
 struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
     static void enumeration(IO &io, hakc::HAKCAllocationTypeEnum &value) {
         io.enumCase(value, "SimpleArgumentSize", hakc::SimpleArgumentSize);
@@ -93,14 +135,36 @@ struct yaml::MappingTraits<hakc::HAKCYAMLAllocationType> {
 };
 
 template<>
+struct yaml::MappingTraits<hakc::HAKCYAMLFunctionDefinitionType> {
+    static void mapping(yaml::IO &io, hakc::HAKCYAMLFunctionDefinitionType &FunctionDefinition) {
+        io.mapRequired("name", FunctionDefinition.FunctionName);
+        io.mapOptional("ptr-idx", FunctionDefinition.PointerIdx);
+        io.mapOptional("compartment-idx", FunctionDefinition.CompartmentIdx);
+        io.mapOptional("division-idx", FunctionDefinition.DivisionIdx);
+        io.mapOptional("size-idx", FunctionDefinition.SizeIdx);
+    }
+};
+
+template<>
 struct yaml::MappingTraits<hakc::HAKCYAMLTransferType> {
     static void mapping(yaml::IO &io, hakc::HAKCYAMLTransferType &TransferType) {
         io.mapRequired("name", TransferType.FunctionName);
         io.mapRequired("ptr-idx", TransferType.PointerIdx);
+        io.mapRequired("compartment-idx", TransferType.CompartmentIdx);
+        io.mapRequired("division-idx", TransferType.DivisionIdx);
+        io.mapOptional("size-idx", TransferType.SizeIdx);
+    }
+};
 
-        io.mapOptional("compartment-idx", TransferType.CompartmentIdx, (unsigned)-1);
-        io.mapOptional("division-idx", TransferType.DivisionIdx, (unsigned)-1);
-        io.mapOptional("size-idx", TransferType.SizeIdx, (unsigned)-1);
+template<>
+struct yaml::MappingTraits<hakc::HAKCYAMLCustomTransferType> {
+    static void mapping(yaml::IO &io, hakc::HAKCYAMLCustomTransferType &CustomTransfer) {
+        io.mapRequired("name", CustomTransfer.FunctionName);
+        io.mapRequired("ptr-idx", CustomTransfer.PointerIdx);
+        io.mapRequired("compartment-idx", CustomTransfer.CompartmentIdx);
+        io.mapRequired("division-idx", CustomTransfer.DivisionIdx);
+        io.mapRequired("type", CustomTransfer.TypeName);
+        io.mapOptional("size-idx", CustomTransfer.SizeIdx);
     }
 };
 
@@ -125,7 +189,8 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapOptional("KernelAllocationSizeMap", YamlConfig.KernelAllocationSizeMap);
         io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
         io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
-        io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer, hakc::MISSING_TRANSFER);
+        io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
+        io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
     }
 };
 

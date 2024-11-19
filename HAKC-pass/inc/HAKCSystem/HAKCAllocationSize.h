@@ -17,7 +17,7 @@
 
 #include "HAKC-defs.h"
 #include "HAKCSystemInformation.h"
-#include "HAKCYaml/HAKCYaml.h"
+#include "HAKCSystem/yaml/HAKCYaml.h"
 
 using namespace llvm;
 

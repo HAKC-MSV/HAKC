@@ -12,33 +12,47 @@ namespace hakc {
                                                unsigned int DivisionIdx, unsigned int SizeIdx) :
             HAKCFunctionDefinition(F), SignedPtrIdx(nullptr), CompartmentIdIdx(nullptr), DivisionIdIdx(nullptr),
             SizeIdx(nullptr) {
-        if(SignedPtrIdx != (unsigned)-1) {
-            this->SignedPtrIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), SignedPtrIdx);
+        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, SizeIdx);
+    }
+
+    HAKCTransferFunction::HAKCTransferFunction(Function *F, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
+                                               unsigned int DivisionIdx) : HAKCFunctionDefinition(F),
+                                                                           SignedPtrIdx(nullptr),
+                                                                           CompartmentIdIdx(nullptr),
+                                                                           DivisionIdIdx(nullptr), SizeIdx(nullptr) {
+        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, MissingIdx);
+    }
+
+    void HAKCTransferFunction::CreateIndexes(unsigned int PtrIdx, unsigned int CompartmentIdx,
+                                             unsigned int DivisionIdx, unsigned int SzIdx) {
+        unsigned IndexBitSize = 64;
+        if (PtrIdx != MissingIdx) {
+            this->SignedPtrIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), PtrIdx);
         }
-        if(CompartmentIdIdx != (unsigned)-1) {
-            this->CompartmentIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), CompartmentIdIdx);
+        if (CompartmentIdx != MissingIdx) {
+            this->CompartmentIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), CompartmentIdx);
         }
-        if(DivisionIdx != (unsigned)-1) {
-            this->DivisionIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), DivisionIdx);
+        if (DivisionIdx != MissingIdx) {
+            this->DivisionIdIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), DivisionIdx);
         }
-        if(SizeIdx != (unsigned)-1) {
-            this->SizeIdx = ConstantInt::get(IntegerType::get(F->getContext(), 64), SizeIdx);
+        if (SzIdx != MissingIdx) {
+            this->SizeIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), SzIdx);
         }
     }
 
     ConstantInt *HAKCTransferFunction::GetSignedPtrIdx() const {
-        return nullptr;
+        return SignedPtrIdx;
     }
 
     ConstantInt *HAKCTransferFunction::GetCompartmentIdIdx() const {
-        return nullptr;
+        return CompartmentIdIdx;
     }
 
     ConstantInt *HAKCTransferFunction::GetDivisionIdIdx() const {
-        return nullptr;
+        return DivisionIdIdx;
     }
 
     ConstantInt *HAKCTransferFunction::GetSizeIdx() const {
-        return nullptr;
+        return SizeIdx;
     }
 } // hakc

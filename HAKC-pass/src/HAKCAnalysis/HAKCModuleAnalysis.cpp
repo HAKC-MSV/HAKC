@@ -18,13 +18,15 @@
 
 namespace hakc {
 
-    HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy)
-            : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(CommonAnalysis), Policy(Policy) {
+    HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCTypeIdentifier &TypeIdentifier,
+                                           HAKCCompartmentalizationPolicy &Policy)
+            : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(TypeIdentifier),
+              Policy(Policy) {
         InitAnalysis();
     }
 
     void HAKCModuleAnalysis::InitAnalysis() {
-        for (auto &F : GetModule().functions()) {
+        for (auto &F: GetModule().functions()) {
             if (FunctionNeedsAnalysis(&F)) {
                 AnalysisFunctions.push_back(&F);
             }
@@ -265,13 +267,13 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Use " << U.getUser() << " does not escape\n";
             }
         }
-        Function *transfer = GetModule().getFunction(getOutsideTransferName(F));
+        Function *transfer = GetModule().getFunction(CommonAnalysis.GetOutsideTransferName(F));
         if (transfer) {
             /* A transfer function reference has been made, so it escapes */
             return true;
         }
 
-        return FunctionIsExported(F) || !isFunctionStatic(F);
+        return !CommonHAKCAnalysis::FunctionIsStatic(F);
     }
 
     CommonHAKCAnalysis &HAKCModuleAnalysis::GetCommonAnalysis() {
@@ -792,7 +794,7 @@ namespace hakc {
 
         // create a function named "hakc_modparam_getctx_paramname"
         auto c = GetModule().getOrInsertFunction(MODPARAM_GETCTX_PREFIX.str() + kernparam->getName().str(),
-                                       FuncTy);
+                                                 FuncTy);
 
         auto *constc = dyn_cast<Constant>(c.getCallee());
         Function *getctx = cast<Function>(constc);
@@ -820,7 +822,8 @@ namespace hakc {
         // find the color of the HAKC symbol
         ConstantInt *Color;
         if (!Symbol) {
-            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: " << *kernparam << "\n";
+            CommonHAKCAnalysis::getWriter() << "Could not find HAKC Symbol for kernel param global: " << *kernparam
+                                            << "\n";
             throw std::exception();
         } else {
             Color = getTransformer().getInt64(Symbol->getCompartment()->getColor());
@@ -869,7 +872,8 @@ namespace hakc {
 
         // generate function pointer and place in modparam fp section
         auto CtxFPName = getctx->getName() + "_fp";
-        auto *gcfp = dyn_cast<GlobalVariable>(GetModule().getOrInsertGlobal(CtxFPName.getSingleStringRef(), getctx->getType()));
+        auto *gcfp = dyn_cast<GlobalVariable>(
+                GetModule().getOrInsertGlobal(CtxFPName.getSingleStringRef(), getctx->getType()));
         gcfp->setSection(HAKC_MODPARAM_FUNCP_SECTION);
         gcfp->setLinkage(GlobalValue::ExternalLinkage);
         gcfp->setConstant(true);
@@ -892,7 +896,7 @@ namespace hakc {
         emitModParamGetCtx(kernparam);
     }
 
-    void HAKCModuleAnalysis::updateCallParameters(const std::map<Function *, std::set<CallInst *>>& calls_map) {
+    void HAKCModuleAnalysis::updateCallParameters(const std::map<Function *, std::set<CallInst *>> &calls_map) {
         // linux
         for (auto &pair: calls_map) {
             Function *F = pair.first;

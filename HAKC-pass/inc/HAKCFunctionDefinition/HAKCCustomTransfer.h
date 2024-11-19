@@ -16,32 +16,26 @@ using namespace llvm;
 namespace hakc {
     class HAKCCustomTransfer : public HAKCTransferFunction {
     public:
-        HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
-                           ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx, int DivisionIdx);
+        HAKCCustomTransfer(Function *CustomFunction, HAKCTypeP TargetType, unsigned SignedPtrIdx,
+                           unsigned CompartmentIdIdx, int DivisionIdx);
 
-        HAKCCustomTransfer(Module &M, StringRef TypeName, StringRef TransferFunctionName, Type *ReturnTy,
-                           ArrayRef<Type *> ArgTys, unsigned SignedPtrIdx, unsigned CompartmentIdIdx);
+        HAKCCustomTransfer(Function *CustomFunction, HAKCTypeP TargetType, unsigned SignedPtrIdx,
+                           unsigned CompartmentIdIdx, unsigned DivisionIdx, unsigned SizeIdx);
 
         ~HAKCCustomTransfer() = default;
 
-        Type *GetType() const;
+        HAKCTypeP GetTargetType() const;
 
-        Function *GetFunction() const;
-
-        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) = 0;
-
-        virtual Instruction *
-        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
-                                HAKCTypeP dstTy) = 0;
+//        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+//                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) = 0;
+//
+//        virtual Instruction *
+//        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+//                                hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
+//                                HAKCTypeP dstTy) = 0;
 
     protected:
-        Type *TargetType;
-        Function *CustomTransfer;
-
-        void FindTargetTypeAndTransfer(Module &M, StringRef TransferFunctionName, StringRef TypeName, Type *ReturnTy,
-                                       ArrayRef<Type *> ArgTys);
+        HAKCTypeP TargetType;
     };
 
     typedef std::shared_ptr<HAKCCustomTransfer> hakc_custom_transfer_def_t;

@@ -4,6 +4,7 @@
 
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCSystem/HAKCAllocationSize.h"
+#include "HAKCSystem/yaml/HAKCYaml.h"
 
 namespace hakc {
 

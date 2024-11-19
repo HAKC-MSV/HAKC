@@ -980,6 +980,13 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(
 
 hakc::HAKCTypeIdentifier::HAKCTypeIdentifier(CommonHAKCAnalysis &AnalysisHelper)
         : AnalysisHelper(AnalysisHelper), DbgInfoFinder(), types(), globals(), functions(), CurrentAnonID(0) {
+}
+
+Module &hakc::HAKCTypeIdentifier::GetModule() {
+    return AnalysisHelper.GetSystemInfo().GetModule();
+}
+
+void hakc::HAKCTypeIdentifier::ProcessDebugInfo() {
     DbgInfoFinder.processModule(AnalysisHelper.GetSystemInfo().GetModule());
 
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo()) {
