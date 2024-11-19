@@ -32,7 +32,7 @@ typedef SmallVector<std::string, 16> HAKCStringList;
 namespace hakc {
     class HAKCSystemInformation {
     public:
-        explicit HAKCSystemInformation(HAKCTypeIdentifier &TypeIdentifier);
+        explicit HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis);
 
         bool OutputDebugInfo() const;
 
@@ -57,10 +57,12 @@ namespace hakc {
         StringRef DatabasePath() const;
         Function* CodeValidation() const;
         Function* DataValidation() const;
-        hakc::hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
+        hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
+        HAKCTypeIdentifier &GetTypeIdentifier() const;
 
     protected:
-        HAKCTypeIdentifier &TypeIdentifier;
+        CommonHAKCAnalysis &CommonAnalysis;
+        HAKCTypeIdentifier TypeIdentifier;
         bool DebugOutput;
         std::string Arch;
         std::string Platform;

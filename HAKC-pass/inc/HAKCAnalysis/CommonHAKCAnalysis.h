@@ -19,15 +19,15 @@ namespace hakc {
 
     class HAKCTransformer;
 
-    class HAKCCompartmentalizationPolicy;
-
     typedef std::function<llvm::Value *(llvm::Value *)> hakc_allocation_size_map_t;
 
     class CommonHAKCAnalysis {
     protected:
         Module &M;
 
-        std::map<Value *, std::vector<Value *>> DefchainCache;
+        std::map<Value *, SmallVector<Value *>> DefchainCache;
+
+        HAKCSystemInformation SystemInfo;
 
         bool FunctionIsAnalysisCandidate(Function *F);
 
@@ -46,17 +46,15 @@ namespace hakc {
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
     public:
-        CommonHAKCAnalysis(Module &M);
+        explicit CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
 
         HAKCSystemInformation &GetSystemInfo();
 
         Module &GetModule();
 
-        void InitConfig(StringRef ConfigPath);
+        Value *getDef(Value *V, bool followLoad);
 
-        Value *getDef(Value *V, bool followLoad, bool debug);
-
-        virtual std::vector<Value *> findDefChain(Value *v, bool followLoad, bool debug);
+        void findDefChain(Value *v, bool followLoad, SmallVectorImpl<Value*> &Results);
 
         static bool argShouldTransfer(Value *V);
 

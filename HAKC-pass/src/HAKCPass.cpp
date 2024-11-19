@@ -60,10 +60,8 @@ namespace hakc {
         }
         raw_fd_ostream out(Path, err);
         if (!err) {
-            CommonHAKCAnalysis HAKCAnalysis(M);
-            HAKCTypeIdentifier TypeIdentifier(HAKCAnalysis);
-            TypeIdentifier.ProcessDebugInfo();
-            TypeIdentifier.OutputYAML(out);
+            CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
+            HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
             out.close();
         } else {
             CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
@@ -75,9 +73,7 @@ namespace hakc {
 
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
-        CommonHAKCAnalysis HAKCAnalysis(M);
-        HAKCAnalysis.InitConfig(HAKC_ARCH_CONFIG);
-        HAKCTypeIdentifier TypeIdentifier(HAKCAnalysis);
+        CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
 
         StringRef CurrentSourceName(M.getSourceFileName());
         for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {

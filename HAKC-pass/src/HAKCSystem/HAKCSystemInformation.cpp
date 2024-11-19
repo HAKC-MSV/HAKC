@@ -8,26 +8,13 @@
 
 namespace hakc {
 
-    HAKCSystemInformation::HAKCSystemInformation(HAKCTypeIdentifier &TypeIdentifier) : TypeIdentifier(TypeIdentifier),
-                                                                                       DebugOutput(false), Arch(),
-                                                                                       Platform(), Database(),
-                                                                                       NoTransferFunctionList(),
-                                                                                       CompartmentTransferFunctionList(),
-                                                                                       CodeValidationFunction(nullptr),
-                                                                                       DataValidationFunction(nullptr),
-                                                                                       DefaultCompartmentTransfer(
-                                                                                               nullptr),
-                                                                                       PerCPUCompartmentTransfer(
-                                                                                               nullptr),
-                                                                                       CompartmentalizationSupportFunctionList(),
-                                                                                       SymbolsToOutputDebugInfo(),
-                                                                                       SeparateNamespacePathList(),
-                                                                                       HAKCSourcePathList(),
-                                                                                       SafeTransitionFunctionList(),
-                                                                                       IgnoredTypeSet(),
-                                                                                       IgnoredGlobalList(),
-                                                                                       AllocationSizeMap(),
-                                                                                       CustomTransferList() {
+    HAKCSystemInformation::HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis) :
+            CommonAnalysis(CommonAnalysis), TypeIdentifier(CommonAnalysis), DebugOutput(false), Arch(), Platform(),
+            Database(), NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
+            DataValidationFunction(nullptr), DefaultCompartmentTransfer(nullptr), PerCPUCompartmentTransfer(nullptr),
+            CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(), SeparateNamespacePathList(),
+            HAKCSourcePathList(), SafeTransitionFunctionList(), IgnoredTypeSet(), IgnoredGlobalList(),
+            AllocationSizeMap(), CustomTransferList() {
 
     }
 
@@ -73,22 +60,6 @@ namespace hakc {
             auto *F = HAKCSystemInfo.GetModule().getFunction(FunctionName);
             if (F) {
                 HAKCSystemInfo.SafeTransitionFunctionList.push_back(F);
-            }
-        }
-
-        SmallVector<HAKCTypeP> Types;
-        HAKCSystemInfo.TypeIdentifier.GetHAKCTypes(Types);
-        for (auto &CustomTransferDefinition: YamlConfig.CustomTransferFunctionList) {
-            auto *F = CustomTransferDefinition.GetFunction(HAKCSystemInfo.GetModule());
-            for (auto &HAKCTy: Types) {
-                if (CustomTransferDefinition.TypeName == HAKCTy) {
-                    auto CustomTransfer = std::make_shared<HAKCCustomTransfer>(F, HAKCTy,
-                                                                               CustomTransferDefinition.PointerIdx,
-                                                                               CustomTransferDefinition.CompartmentIdx,
-                                                                               CustomTransferDefinition.DivisionIdx,
-                                                                               CustomTransferDefinition.SizeIdx);
-                    HAKCSystemInfo.CustomTransferList.push_back(CustomTransfer);
-                }
             }
         }
 
@@ -142,6 +113,23 @@ namespace hakc {
                 HAKCSystemInfo.AllocationSizeMap[Allocation->GetAllocationFunction()] = std::move(Allocation);
             }
         }
+
+        SmallVector <HAKCTypeP> Types;
+        HAKCSystemInfo.TypeIdentifier.ProcessDebugInfo();
+        HAKCSystemInfo.TypeIdentifier.GetHAKCTypes(Types);
+        for (auto &CustomTransferDefinition: YamlConfig.CustomTransferFunctionList) {
+            for (auto &HAKCTy: Types) {
+                if (CustomTransferDefinition.TypeName == HAKCTy) {
+                    auto *F = CustomTransferDefinition.GetFunction(HAKCSystemInfo.GetModule());
+                    auto CustomTransfer = std::make_shared<HAKCCustomTransfer>(F, HAKCTy,
+                                                                               CustomTransferDefinition.PointerIdx,
+                                                                               CustomTransferDefinition.CompartmentIdx,
+                                                                               CustomTransferDefinition.DivisionIdx,
+                                                                               CustomTransferDefinition.SizeIdx);
+                    HAKCSystemInfo.CustomTransferList.push_back(CustomTransfer);
+                }
+            }
+        }
     }
 
     bool HAKCSystemInformation::OutputDebugInfo() const {
@@ -172,6 +160,10 @@ namespace hakc {
         return DataValidationFunction;
     }
 
+    HAKCTypeIdentifier& &HAKCSystemInformation::GetTypeIdentifier() const {
+        return TypeIdentifier;
+    }
+
     hakc::hakc_transfer_def_t HAKCSystemInformation::CompartmentTransfer(bool PerCPU) const {
         if (PerCPU) {
             return PerCPUCompartmentTransfer;
@@ -188,40 +180,40 @@ namespace hakc {
         return OutputDebugInfo() || llvm::any_of(SymbolsToOutputDebugInfo, Search);
     }
 
-    iterator_range<FunctionList::iterator> HAKCSystemInformation::GetNoTransferFunctions() {
+    iterator_range <FunctionList::iterator> HAKCSystemInformation::GetNoTransferFunctions() {
         return make_range(NoTransferFunctionList.begin(), NoTransferFunctionList.end());
     }
 
-    iterator_range<HAKCTransferList::iterator> HAKCSystemInformation::CompartmentTransferFunctions() {
+    iterator_range <HAKCTransferList::iterator> HAKCSystemInformation::CompartmentTransferFunctions() {
         return make_range(CompartmentTransferFunctionList.begin(), CompartmentTransferFunctionList.end());
     }
 
-    iterator_range<FunctionList::iterator> HAKCSystemInformation::CompartmentalizationSupportFunctions() {
+    iterator_range <FunctionList::iterator> HAKCSystemInformation::CompartmentalizationSupportFunctions() {
         return make_range(CompartmentalizationSupportFunctionList.begin(),
                           CompartmentalizationSupportFunctionList.end());
     }
 
-    iterator_range<FunctionList::iterator> HAKCSystemInformation::SafeTransitionFunctions() {
+    iterator_range <FunctionList::iterator> HAKCSystemInformation::SafeTransitionFunctions() {
         return make_range(SafeTransitionFunctionList.begin(), SafeTransitionFunctionList.end());
     }
 
-    iterator_range<HAKCTypeSet::iterator> HAKCSystemInformation::IgnoredTypes() {
+    iterator_range <HAKCTypeSet::iterator> HAKCSystemInformation::IgnoredTypes() {
         return make_range(IgnoredTypeSet.begin(), IgnoredTypeSet.end());
     }
 
-    iterator_range<HAKCGlobalVariableList::iterator> HAKCSystemInformation::IgnoredGlobals() {
+    iterator_range <HAKCGlobalVariableList::iterator> HAKCSystemInformation::IgnoredGlobals() {
         return make_range(IgnoredGlobalList.begin(), IgnoredGlobalList.end());
     }
 
-    iterator_range<HAKCStringList::iterator> HAKCSystemInformation::SeparateNamespacePaths() {
+    iterator_range <HAKCStringList::iterator> HAKCSystemInformation::SeparateNamespacePaths() {
         return make_range(SeparateNamespacePathList.begin(), SeparateNamespacePathList.end());
     }
 
-    iterator_range<HAKCStringList::iterator> HAKCSystemInformation::HAKCSourcePaths() {
+    iterator_range <HAKCStringList::iterator> HAKCSystemInformation::HAKCSourcePaths() {
         return make_range(HAKCSourcePathList.begin(), HAKCSourcePathList.end());
     }
 
-    iterator_range<HAKCCustomTransferList::iterator> HAKCSystemInformation::HAKCCustomTransfers() {
+    iterator_range <HAKCCustomTransferList::iterator> HAKCSystemInformation::HAKCCustomTransfers() {
         return make_range(CustomTransferList.begin(), CustomTransferList.end());
     }
 } // hakc

@@ -987,7 +987,7 @@ Module &hakc::HAKCTypeIdentifier::GetModule() {
 }
 
 void hakc::HAKCTypeIdentifier::ProcessDebugInfo() {
-    DbgInfoFinder.processModule(AnalysisHelper.GetSystemInfo().GetModule());
+    DbgInfoFinder.processModule(AnalysisHelper.GetModule());
 
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo()) {
         CommonHAKCAnalysis::getWriter() << AnalysisHelper.GetSystemInfo().GetModule() << "\n";

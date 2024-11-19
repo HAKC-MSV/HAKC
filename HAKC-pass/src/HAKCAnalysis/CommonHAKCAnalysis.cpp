@@ -15,7 +15,7 @@ namespace hakc {
         return IsFunctionInFunctionList(F, SystemInfo.GetNoTransferFunctions());
     }
 
-    bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range) {
+    bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range <FunctionList::iterator> Range) {
         if (!F) {
             return false;
         }
@@ -27,7 +27,7 @@ namespace hakc {
     }
 
     bool
-    CommonHAKCAnalysis::IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
+    CommonHAKCAnalysis::IsFunctionInHAKCFunctionList(Function *F, iterator_range <HAKCFunctionList::iterator> Range) {
         if (!F) {
             return false;
         }
@@ -39,7 +39,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsFunctionInHAKCTransferFunctionList(Function *F,
-                                                                  iterator_range<HAKCTransferList::iterator> Range) {
+                                                                  iterator_range <HAKCTransferList::iterator> Range) {
         if (!F) {
             return false;
         }
@@ -64,7 +64,7 @@ namespace hakc {
         }
 
         HAKCYamlConfig SystemConfig;
-        ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(ConfigPath);
+        ErrorOr <std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(ConfigPath);
         yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
 
         // yaml is actually parsed here, for some reason
@@ -77,7 +77,8 @@ namespace hakc {
         SystemInfo << SystemConfig;
     }
 
-    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M) : M(M), SystemInfo(M) {
+    CommonHAKCAnalysis::CommonHAKCAnalysis(Module &M, StringRef ConfigPath) : M(M), SystemInfo(*this) {
+        InitConfig(ConfigPath);
     }
 
     Module &CommonHAKCAnalysis::GetModule() {
@@ -104,14 +105,14 @@ namespace hakc {
         return Ty->isPointerTy() || Ty->isIntegerTy(64);
     }
 
-    std::set<Intrinsic::ID> CommonHAKCAnalysis::GetBitshiftIntrinsics() {
+    std::set <Intrinsic::ID> CommonHAKCAnalysis::GetBitshiftIntrinsics() {
         return {
                 Intrinsic::fshl,
                 Intrinsic::fshr,
         };
     }
 
-    std::set<Instruction::BinaryOps> CommonHAKCAnalysis::GetPointerManipulatingBinaryOps() {
+    std::set <Instruction::BinaryOps> CommonHAKCAnalysis::GetPointerManipulatingBinaryOps() {
         return {
                 Instruction::BinaryOps::Add,
                 Instruction::BinaryOps::Xor,
@@ -121,7 +122,7 @@ namespace hakc {
         };
     }
 
-    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallBase *Call, std::set<Intrinsic::ID> &IntrinsicsSet) const {
+    bool CommonHAKCAnalysis::IsCallInIntrinsicSet(CallBase *Call, std::set <Intrinsic::ID> &IntrinsicsSet) const {
         bool result = false;
         if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
             result = (IntrinsicsSet.find(intrinsic->getIntrinsicID()) != IntrinsicsSet.end());
@@ -159,24 +160,23 @@ namespace hakc {
      * @param v
      * @return The chain of definitions starting from v to the source definition
      */
-    std::vector<Value *>
-    CommonHAKCAnalysis::findDefChain(Value *v, bool followLoad, bool debug) {
+    void
+    CommonHAKCAnalysis::findDefChain(Value *v, bool followLoad, SmallVectorImpl<Value *> &Results) {
+        auto debug = GetSystemInfo().OutputDebugInfo();
         if (v == nullptr) {
             CommonHAKCAnalysis::getWriter() << "v is null\n";
             throw std::exception();
         }
         if (DefchainCache.find(v) != DefchainCache.end()) {
             auto CachedChain = DefchainCache[v];
-            return CachedChain;
+            Results.append(CachedChain);
         }
-
 
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Getting Def Chain for " << v << "\n";
         }
 
-        std::set<Value *> working_list = {v};
-        std::vector<Value *> def_chain;
+        std::set < Value * > working_list = {v};
         while (!working_list.empty()) {
             Value *curr = *working_list.begin();
             working_list.erase(curr);
@@ -185,14 +185,13 @@ namespace hakc {
                 auto CachedChain = DefchainCache[curr];
                 if (debug) {
                     CommonHAKCAnalysis::getWriter() << "Adding cached chain for " << curr << " containing "
-                                                    << std::to_string(CachedChain.size())
-                                                    << " links\n";
+                                                    << CachedChain.size() << " links\n";
                 }
                 for (auto *Link: CachedChain) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "\t" << Link << "\n";
                     }
-                    def_chain.push_back(Link);
+                    Results.push_back(Link);
                 }
                 continue;
             }
@@ -281,15 +280,14 @@ namespace hakc {
                 }
             }
             add_to_chain:
-            def_chain.push_back(curr);
+            Results.push_back(curr);
         }
 
         if (debug) {
-            CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << std::to_string(def_chain.size())
-                                            << " for " << v << "\n";
+            CommonHAKCAnalysis::getWriter() << "Returning Def Chain of length " << Results.size() << " for " << v
+                                            << "\n";
         }
-        DefchainCache[v] = def_chain;
-        return def_chain;
+        DefchainCache[v].append(Results);
     }
 
     /**
@@ -297,13 +295,14 @@ namespace hakc {
      * @param V
      * @return
      */
-    Value *CommonHAKCAnalysis::getDef(Value *V, bool followLoad, bool debug) {
-        std::vector<Value *> def_chain = findDefChain(V, followLoad, debug);
+    Value *CommonHAKCAnalysis::getDef(Value *V, bool followLoad) {
+        SmallVector < Value * > Chain;
+        findDefChain(V, followLoad, Chain);
         if (def_chain.empty()) {
             CommonHAKCAnalysis::getWriter() << "Def Chain for " << V << " is empty!\n";
             throw std::exception();
         }
-        return def_chain.back();
+        return Chain.back();
     }
 
     /**
