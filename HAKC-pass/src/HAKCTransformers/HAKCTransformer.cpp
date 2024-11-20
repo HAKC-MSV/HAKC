@@ -8,8 +8,7 @@
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 
-hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis,
-                                       HAKCTypeIdentifier &TypeIdentifier) :
+hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis) :
         HAKCIRBuilder(HAKCAnalysis.GetModule().getContext()),
         CompartmentalizationPolicy(Policy),
         ModuleAnalysis(HAKCAnalysis),
@@ -156,7 +155,7 @@ hakc::HAKCTransformer::CreateTransferArguments(hakc::ManagedHAKCPointerP HAKCPoi
                                                ConstantInt *Size, SmallVector<Value *> &Result) {
     Value *OperandCast;
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);
-    bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer->GetBaseDefinition());
+    bool IsPerCPU = CommonHAKCAnalysis::IsPerCPUPointer(HAKCPointer->GetBaseDefinition());
     auto Division = CompartmentalizationPolicy.GetDivision(Target);
 
     OperandCast = HAKCIRBuilder.CreateBitOrPointerCast(HAKCPointer->GetBaseDefinition(),
@@ -408,14 +407,14 @@ CallInst *hakc::HAKCTransformer::CreateCall(StringRef name, Type *RetTy, ArrayRe
 
     FunctionType *FunctionCallTy = FunctionType::get(RetTy, FunctionParamTypes, false);
 
-    auto Func = ModuleAnalysis.GetFunctionCalleeByName(name, FunctionCallTy);
+    auto Func = ModuleAnalysis.GetFunctionByName(name, FunctionCallTy);
     if (!Func) {
         CommonHAKCAnalysis::getWriter() << "Could not find function " << name << " of type " << FunctionCallTy
                                         << " to be inserted into\n" << HAKCIRBuilder.GetInsertBlock()->getParent()
                                         << "\n";
         throw std::exception();
     }
-    return CreateCall(dyn_cast<Function>(Func.getCallee()), Args);
+    return CreateCall(Func, Args);
 }
 
 Instruction *
@@ -490,8 +489,8 @@ bool hakc::HAKCTransformer::HAKCPointerHasCustomTransfer(hakc::ManagedHAKCPointe
 
 hakc::hakc_custom_transfer_def_t
 hakc::HAKCTransformer::GetCustomTransferFunctionForType(hakc::HAKCTypeP HAKCTy) {
-    for (auto &it: ModuleAnalysis.GetHAKCCustomTransferFunctions()) {
-        if (HAKCTy->GetLLVMType() && HAKCTy->GetLLVMType() == it->GetTargetType()) {
+    for (auto &it: ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().HAKCCustomTransfers()) {
+        if (HAKCTy == it->GetTargetType()) {
             return it;
         }
     }
@@ -500,8 +499,8 @@ hakc::HAKCTransformer::GetCustomTransferFunctionForType(hakc::HAKCTypeP HAKCTy) 
 
 hakc::hakc_custom_transfer_def_t
 hakc::HAKCTransformer::GetCustomTransferFunction(hakc::ManagedHAKCPointerP HAKCPointer) {
-    for (auto &it: ModuleAnalysis.GetHAKCCustomTransferFunctions()) {
-        if (HAKCPointer->GetBaseDefinition()->getType() == it->GetTargetType()) {
+    for (auto &it: ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().HAKCCustomTransfers()) {
+        if (HAKCPointer->GetType() == it->GetTargetType()) {
             return it;
         }
     }
@@ -513,7 +512,7 @@ hakc::HAKCTransformer::CreateDefaultTransfer(hakc::ManagedHAKCPointerP HAKCPoint
                                              ConstantInt *Size) {
     SmallVector<Value *> TransferOperations;
     CreateTransferArguments(HAKCPointer, Target, IsData, Size, TransferOperations);
-    bool IsPerCPU = CommonHAKCAnalysis::isPerCPUPointer(HAKCPointer->GetBaseDefinition());
+    bool IsPerCPU = CommonHAKCAnalysis::IsPerCPUPointer(HAKCPointer->GetBaseDefinition());
 
     auto CompartmentTransfer = ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().CompartmentTransfer(IsPerCPU);
 
@@ -823,7 +822,7 @@ Function *hakc::HAKCTransformer::GetTransferFunction(Function *F) {
 }
 
 bool hakc::HAKCTransformer::NoKernelTransfers(Function *Target) {
-    return hakc::CommonHAKCAnalysis::IsKernelSymbol(Target, CompartmentalizationPolicy) &&
+    return hakc::CommonHAKCAnalysis::IsUncompartmentalizedSymbol(Target, CompartmentalizationPolicy) &&
            !CommonHAKCAnalysis::NoKernelTransferFunctionsSet();
 }
 
@@ -1139,7 +1138,7 @@ ConstantInt *hakc::HAKCTransformer::GetDefaultObjectSize() {
 }
 
 bool hakc::HAKCTransformer::TargetIsKernel(GlobalValue *Target) {
-    return CompartmentalizationPolicy.GetDivision(Target).GetHAKCCompartment().IsKernelCompartment();
+    return CompartmentalizationPolicy.GetDivision(Target).GetHAKCCompartment().IsUncompartmentalized();
 }
 
 unsigned hakc::HAKCTransformer::GetPointerAddrSpace(hakc::ManagedHAKCPointerP HAKCPointer) {

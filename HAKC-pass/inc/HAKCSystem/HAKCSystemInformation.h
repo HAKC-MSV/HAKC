@@ -29,6 +29,7 @@ typedef SmallVector<GlobalValue*> HAKCSymbolList;
 typedef SmallVector<Function*> FunctionList;
 typedef SmallPtrSet<Type*, 16> HAKCTypeSet;
 typedef SmallVector<std::string, 16> HAKCStringList;
+typedef SmallVector<HAKCCustomAllocation> HAKCCustomAllocationList;
 
 namespace hakc {
 
@@ -57,6 +58,7 @@ namespace hakc {
         iterator_range<HAKCStringList::iterator> SeparateNamespacePaths();
         iterator_range<HAKCStringList::iterator> HAKCSourcePaths();
         iterator_range<HAKCCustomTransferList::iterator> HAKCCustomTransfers();
+        iterator_range<HAKCCustomAllocationList::iterator> AllocationFunctions();
 
         StringRef DatabasePath() const;
         Function* CodeValidation() const;
@@ -84,7 +86,7 @@ namespace hakc {
         FunctionList SafeTransitionFunctionList;
         HAKCTypeSet IgnoredTypeSet;
         HAKCGlobalVariableList IgnoredGlobalList;
-        ValueMap<Function*, HAKCCustomAllocation> AllocationSizeMap;
+        HAKCCustomAllocationList AllocationFunctionList;
         HAKCCustomTransferList CustomTransferList;
     };
 

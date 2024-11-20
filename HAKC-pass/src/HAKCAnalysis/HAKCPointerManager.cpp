@@ -73,7 +73,7 @@ namespace hakc {
                                             << " with BaseDefinition " << BaseDefinition << "\n";
         }
 
-        ManagedHAKCPointerP ManagedPointer = std::make_shared<ManagedHAKCPointer>(BaseDefinition, this, NextID);
+        ManagedHAKCPointerP ManagedPointer = std::make_shared<ManagedHAKCPointer>(BaseDefinition, *this, NextID);
         ManagedPointers.insert(ManagedPointer);
         AnalyzedUses.clear();
         ClassifyAllUsesOfDefinition(ManagedPointer->GetBaseDefinition(), ManagedPointer);
@@ -96,7 +96,7 @@ namespace hakc {
             for (auto *ConstUser: U->users()) {
                 if (auto *Call = dyn_cast<CallBase>(ConstUser)) {
                     if (Call->getFunction() == &GetFunctionAnalysis().getFunction() &&
-                        CommonHAKCAnalysis::IsKernelSymbol(Call->getCalledFunction(), Policy)) {
+                            CommonHAKCAnalysis::IsUncompartmentalizedSymbol(Call->getCalledFunction(), Policy)) {
                         Result = true;
                         break;
                     }
@@ -173,10 +173,10 @@ namespace hakc {
                                        isa<LoadInst>(UserP) ||
                                        isa<SubOperator>(UserP);
         if (auto *Call = dyn_cast<CallBase>(UserP)) {
-            if (GetFunctionAnalysis().IsHAKCTransferFunction(Call->getCalledFunction())) {
+            if (GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsHAKCTransferFunction(Call->getCalledFunction())) {
                 UseAuthenticatedPointer = false;
             } else if (
-                    GetFunctionAnalysis().callIsSafeTransition(Call) ||
+                    GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsSafeTransitionCall(Call) ||
                     Call->isInlineAsm() ||
                     Call->getCalledOperandUse().getOperandNo() == U.getOperandNo() ||
                     Call->getCalledFunction() == nullptr ||
@@ -236,9 +236,9 @@ namespace hakc {
                 UseSignedPointer = true;
             }
         } else if (auto *Call = dyn_cast<CallInst>(UserP)) {
-            if (!GetFunctionAnalysis().callIsSafeTransition(Call) || Call->getCalledFunction() != nullptr ||
-                GetFunctionAnalysis().IsHAKCTransferFunction(Call->getCalledFunction()) ||
-                CommonHAKCAnalysis::IsKernelSymbol(Call->getCalledFunction(), Policy)) {
+            if (!GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsSafeTransitionCall(Call) || Call->getCalledFunction() != nullptr ||
+                GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsHAKCTransferFunction(Call->getCalledFunction()) ||
+                    CommonHAKCAnalysis::IsUncompartmentalizedSymbol(Call->getCalledFunction(), Policy)) {
                 UseSignedPointer = true;
             } else if (Call->isInlineAsm()) {
                 UseSignedPointer = false;
@@ -318,7 +318,7 @@ namespace hakc {
                     CommonHAKCAnalysis::getWriter() << *UPtr << " should use signed Base Definition\n";
                 }
                 if (auto *Call = dyn_cast<CallBase>(User)) {
-                    if (GetFunctionAnalysis().IsHAKCTransferFunction(Call->getCalledFunction())) {
+                    if (GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsHAKCTransferFunction(Call->getCalledFunction())) {
                         ManagedPointer->RegisterManualHAKCTransfer(Call);
                         if (DebugActive) {
                             CommonHAKCAnalysis::getWriter() << "Registered " << *Call << " as the protected pointer of "
@@ -816,13 +816,21 @@ namespace hakc {
             return Managed;
         }
 
-        if (HAKCAnalysis->PointerShouldBeConsideredCode(Pointer)) {
+        if (HAKCAnalysis.PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis().AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
         } else {
             DataAuthenticationsAdded++;
             return GetFunctionAnalysis().AddDataAuthCheckAtLocation(Pointer, InsertLocation);
         }
+    }
+
+    HAKCCompartmentalizationPolicy &HAKCPointerManager::GetPolicy() {
+        return Policy;
+    }
+
+    bool HAKCPointerManager::DebugIsActive() const {
+        return DebugActive;
     }
 
 } // hakc

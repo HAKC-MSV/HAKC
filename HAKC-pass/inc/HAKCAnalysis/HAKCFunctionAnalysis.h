@@ -72,8 +72,7 @@ namespace hakc {
 
         bool userInFunction(Value *user);
 
-        BasicBlock *
-        findDominatorUseBlock(Value *ptr, std::set<Instruction *> &users);
+        BasicBlock *findDominatorUseBlock(Value *ptr, std::set<Instruction *> &users);
 
         void createAllAuthenticatedPointers();
 
@@ -107,7 +106,7 @@ namespace hakc {
 
         bool globalShouldBeTransferred(Use &globalValueArg);
 
-        virtual void relocateFunctionSection();
+        void relocateFunctionSection();
 
         virtual std::string getHAKCFunctionSectionName();
 
@@ -127,7 +126,7 @@ namespace hakc {
 
 //        virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
 
-        virtual void UpdateHAKCFunctionParameters();
+        void UpdateHAKCFunctionParameters();
 
 //        virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
 //                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
@@ -136,35 +135,24 @@ namespace hakc {
 
         void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo);
 
-        bool IsIntrinsicNeedingAuthentication(CallBase *Call);
-
-        bool IsIntrinsicNeedingCloning(CallBase *Call);
-
-        bool IsIntrinsicToSkip(CallBase *Call);
-
         bool IsCallInIntrinsicSet(CallBase *Call, ArrayRef<Intrinsic::ID> IDs);
 
     public:
         HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis &ModuleAnalysis, HAKCCompartmentalizationPolicy &Policy);
 
-        ~HAKCFunctionAnalysis() = default;
-
         bool modifiedFunction();
 
         void InstrumentCode();
 
-        virtual void setup();
+        void setup();
 
         Value *getDef(Value *, bool);
 
-        Instruction *
-        FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
+        Instruction *FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
 
-        Value *
-        AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
+        Value *AddDataAuthCheckAtLocation(Value *signed_ptr, Instruction *location);
 
-        Value *
-        AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
+        Value *AddCodeAuthCheckAtLocation(Value *SignedPtr, Instruction *Location);
 
         Value *AddSafePointerCreationAtLocation(Value *SignedPtr, Instruction *Location);
 
@@ -178,17 +166,21 @@ namespace hakc {
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
 
-        virtual bool isIntrinsicNeedingAuthentication(CallInst *);
-
         bool PointerIsAuthenticated_Arch(Value *Pointer);
 
-        virtual bool PointerShouldBeConsideredCode(Value *Pointer);
+        bool PointerShouldBeConsideredCode(Value *Pointer);
 
-        virtual bool PointerShouldBeManaged(Use &use);
+        bool PointerShouldBeManaged(Use &use);
 
         bool IsPHIOfGlobalsOnly(Value *V);
 
         HAKCModuleAnalysis &GetModuleAnalysis();
+
+        bool IsIntrinsicNeedingAuthentication(CallBase *Call);
+
+        bool IsIntrinsicNeedingCloning(CallBase *Call);
+
+        bool IsIntrinsicToSkip(CallBase *Call);
 
     };
 

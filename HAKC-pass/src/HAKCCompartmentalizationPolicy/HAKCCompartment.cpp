@@ -26,7 +26,7 @@ namespace hakc {
         return Compartment;
     }
 
-    bool HAKCCompartment::IsKernelCompartment() const {
+    bool HAKCCompartment::IsUncompartmentalized() const {
         return GetCompartmentIDValue() == KERNEL_COMPARTMENT;
     }
 

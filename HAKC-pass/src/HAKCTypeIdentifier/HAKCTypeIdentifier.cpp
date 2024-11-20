@@ -311,7 +311,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
         }
         return nullptr;
     }
-    if (CommonHAKCAnalysis::isOutsideTransferFunc(F) || F->isIntrinsic()) {
+    if (CommonHAKCAnalysis::IsOutsideTransferFunc(F) || F->isIntrinsic()) {
         if (debug) {
             CommonHAKCAnalysis::getWriter() << SubProg->getName() << " is a HAKC Transfer function\n";
         }

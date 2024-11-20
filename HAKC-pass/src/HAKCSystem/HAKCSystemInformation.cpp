@@ -14,7 +14,7 @@ namespace hakc {
             DataValidationFunction(nullptr), DefaultCompartmentTransfer(nullptr), PerCPUCompartmentTransfer(nullptr),
             CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(), SeparateNamespacePathList(),
             HAKCSourcePathList(), SafeTransitionFunctionList(), IgnoredTypeSet(), IgnoredGlobalList(),
-            AllocationSizeMap(), CustomTransferList() {
+            AllocationFunctionList(), CustomTransferList() {
 
     }
 
@@ -107,10 +107,10 @@ namespace hakc {
             }
         }
 
-        for (const auto &AllocationDefinition: YamlConfig.KernelAllocationSizeMap) {
+        for (const auto &AllocationDefinition: YamlConfig.AllocationFunctions) {
             auto Allocation = HAKCAllocationSize::FromYaml(AllocationDefinition, HAKCSystemInfo.GetModule());
             if (Allocation) {
-                HAKCSystemInfo.AllocationSizeMap[Allocation->GetAllocationFunction()] = std::move(Allocation);
+                HAKCSystemInfo.AllocationFunctionList.push_back(Allocation);
             }
         }
 
@@ -118,7 +118,7 @@ namespace hakc {
         // ProcessDebugInfo must happen before creating custom transfers
         HAKCSystemInfo.TypeIdentifier.ProcessDebugInfo();
         HAKCSystemInfo.TypeIdentifier.GetHAKCTypes(Types);
-        for (auto &CustomTransferDefinition: YamlConfig.CustomTransferFunctionList) {
+        for (auto &CustomTransferDefinition: YamlConfig.CustomTransferFunctions) {
             for (auto &HAKCTy: Types) {
                 if (CustomTransferDefinition.TypeName == HAKCTy) {
                     auto *F = CustomTransferDefinition.GetFunction(HAKCSystemInfo.GetModule());
@@ -216,5 +216,9 @@ namespace hakc {
 
     iterator_range <HAKCCustomTransferList::iterator> HAKCSystemInformation::HAKCCustomTransfers() {
         return make_range(CustomTransferList.begin(), CustomTransferList.end());
+    }
+
+    iterator_range<HAKCCustomAllocationList::iterator> HAKCSystemInformation::AllocationFunctions() {
+        return make_range(AllocationFunctions().begin(), AllocationFunctions().end());
     }
 } // hakc

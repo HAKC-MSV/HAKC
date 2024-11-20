@@ -51,7 +51,7 @@ namespace hakc {
     std::string
     HAKCModuleAnalysis::getGlobalHAKCSectionName(GlobalVariable *GV) {
         auto Compartment = Policy.GetDivision(GV).GetHAKCCompartment();
-        if (Compartment.IsKernelCompartment()) {
+        if (Compartment.IsUncompartmentalized()) {
             return GV->getSection().str();
         }
 
@@ -70,7 +70,7 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::RegisterUsedCompartment(HAKCCompartment &compartment) {
-        if (!(compartment.IsKernelCompartment())) {
+        if (!(compartment.IsUncompartmentalized())) {
             UsedCompartments.push_back(compartment);
         }
     }
@@ -98,7 +98,7 @@ namespace hakc {
 
     bool HAKCModuleAnalysis::FunctionNeedsAnalysis(Function *F) {
         bool needsAnalysis = !F->isIntrinsic() && !F->isDeclaration() && F->getSubprogram() != nullptr &&
-                             !CommonHAKCAnalysis::isOutsideTransferFunc(F) && !CommonAnalysis.IsHAKCFunction(F);
+                             !CommonHAKCAnalysis::IsOutsideTransferFunc(F) && !CommonAnalysis.IsHAKCFunction(F);
 
 
         // TODO: Add this to configuration file
@@ -147,7 +147,7 @@ namespace hakc {
 
     bool HAKCModuleAnalysis::isModuleCompartmentalized() {
         auto Search = [](HAKCCompartment &Compartment) {
-            return !Compartment.IsKernelCompartment();
+            return !Compartment.IsUncompartmentalized();
         };
 
         return llvm::any_of(UsedCompartments, Search);
@@ -293,7 +293,7 @@ namespace hakc {
         }
         if (CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
             auto Compartment = Policy.GetDivision(F).GetHAKCCompartment();
-            if (Compartment.IsKernelCompartment()) {
+            if (Compartment.IsUncompartmentalized()) {
                 return false;
             }
         }
@@ -306,8 +306,8 @@ namespace hakc {
         for (auto &F: GetModule().functions()) {
             auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
 
-            if (!Compartment.IsKernelCompartment() && CommonAnalysis.functionIsTransferCandidate(&F, Policy) &&
-                !hakc::CommonHAKCAnalysis::isOutsideTransferFunc(&F) &&
+            if (!Compartment.IsUncompartmentalized() && CommonAnalysis.functionIsTransferCandidate(&F, Policy) &&
+                !hakc::CommonHAKCAnalysis::IsOutsideTransferFunc(&F) &&
                 functionEscapes(&F)) {
                 FuncsNeedingTransfers.push_back(&F);
             }
@@ -412,7 +412,7 @@ namespace hakc {
                 continue;
             }
             if (auto *GlobalVal = dyn_cast<GlobalValue>(Def)) {
-                Result = !CommonHAKCAnalysis::IsKernelSymbol(GlobalVal, Policy);
+                Result = !CommonHAKCAnalysis::IsUncompartmentalizedSymbol(GlobalVal, Policy);
             } else if (auto *StructMember = dyn_cast<ConstantStruct>(Def)) {
                 Result = ConstantStructTransferIsNeeded(StructMember);
             }
@@ -429,7 +429,7 @@ namespace hakc {
     }
 
     bool HAKCModuleAnalysis::TransferIsNeeded(GlobalVariable *GlobalVar) {
-        bool IsKernelSym = CommonHAKCAnalysis::IsKernelSymbol(GlobalVar, Policy);
+        bool IsKernelSym = CommonHAKCAnalysis::IsUncompartmentalizedSymbol(GlobalVar, Policy);
         bool Result = GlobalVar->hasInitializer() && !IsKernelSym;
         if (Result) {
             if (auto *ConstStruct = dyn_cast<ConstantStruct>(GlobalVar->getInitializer())) {
@@ -563,7 +563,7 @@ namespace hakc {
 
     void HAKCModuleAnalysis::AddCompartmentMetadata() {
         for (auto Compartment: UsedCompartments) {
-            if (!Compartment.IsKernelCompartment()) {
+            if (!Compartment.IsUncompartmentalized()) {
                 GetTransformer().AddCompartmentMetadataEntry(Compartment);
             }
         }
@@ -811,7 +811,7 @@ namespace hakc {
 //                    }
 //                    hakc_compartment_id_t id;
 //                    StringRef transferTargetName = F->getName();
-//                    if (CommonHAKCAnalysis::isOutsideTransferFunc(F)) {
+//                    if (CommonHAKCAnalysis::IsOutsideTransferFunc(F)) {
 //                        transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
 //                        Function *TransferTarget = GetModule().getFunction(transferTargetName);
 //                        id = GetTransformer().getFunctionCompartmentID(TransferTarget);
@@ -835,7 +835,7 @@ namespace hakc {
 //
 //                    if (HAKCTransferFunction->HasColorIdx()) {
 //                        ConstantInt *color;
-//                        if (CommonHAKCAnalysis::isOutsideTransferFunc(F)) {
+//                        if (CommonHAKCAnalysis::IsOutsideTransferFunc(F)) {
 //                            transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
 //                            auto *TransferTarget = GetModule().getFunction(transferTargetName);
 //                            color = getSymbolColor(TransferTarget);

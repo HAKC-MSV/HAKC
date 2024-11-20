@@ -16,7 +16,6 @@
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
-#include "HAKCAnalysis/HAKCModuleAnalysis.h"
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
 #include "HAKC-defs.h"
 
@@ -33,8 +32,7 @@ namespace hakc {
      */
     class HAKCTransformer {
     public:
-        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis,
-                        HAKCTypeIdentifier &TypeIdentifier);
+        HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, HAKCModuleAnalysis &HAKCAnalysis);
 
         ~HAKCTransformer() = default;
 

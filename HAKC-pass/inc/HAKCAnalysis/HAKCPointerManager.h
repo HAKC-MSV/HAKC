@@ -23,10 +23,8 @@ namespace hakc {
      * clones, so exactly one is ever created.
      */
     class HAKCPointerManager {
-        friend class ManagedHAKCPointer;
-
     public:
-        explicit HAKCPointerManager(HAKCFunctionAnalysis *Analysis, HAKCCompartmentalizationPolicy &Policy,
+        explicit HAKCPointerManager(HAKCFunctionAnalysis &Analysis, HAKCCompartmentalizationPolicy &Policy,
                                     bool DebugActive);
 
         bool ManagePointer(Value *V);
@@ -35,7 +33,7 @@ namespace hakc {
 
         void GetSortedPointers(SmallVector<ManagedHAKCPointerP> &SortedPointers);
 
-        HAKCFunctionAnalysis *GetFunctionAnalysis();
+        HAKCFunctionAnalysis &GetFunctionAnalysis();
 
         /**
          * Returns the ManagedHAKCPointer that corresponds to the definition V
@@ -103,6 +101,16 @@ namespace hakc {
 
         void SetFunctionIsCompartmentalized(bool FunctionIsCompartmentalized);
 
+        HAKCCompartmentalizationPolicy &GetPolicy();
+
+        Instruction *CloneInstruction(Instruction *I);
+
+        Value *CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
+
+        Value *CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
+
+        bool DebugIsActive() const;
+
     protected:
         /**
          * The set of pointers under management
@@ -115,7 +123,7 @@ namespace hakc {
 
         std::set<ManagedHAKCPointerUseP> AnalyzedUses;
 
-        HAKCFunctionAnalysis *HAKCAnalysis;
+        HAKCFunctionAnalysis &HAKCAnalysis;
         HAKCCompartmentalizationPolicy &Policy;
 
         unsigned DataAuthenticationsAdded;
@@ -124,12 +132,6 @@ namespace hakc {
 
         bool IsCompartmentalized;
         bool DebugActive;
-
-        Instruction *CloneInstruction(Instruction *I);
-
-        Value *CreateSafePointerAtLocation(Value *Pointer, Instruction *InsertLocation);
-
-        Value *CreateAuthenticationAtLocation(Value *Pointer, Instruction *InsertLocation);
 
         bool PointerIsEligibleForManagement(Value *Pointer);
 

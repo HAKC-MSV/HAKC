@@ -63,6 +63,20 @@ namespace hakc {
             return hos;
         }
 
+        friend HAKCOstream &operator<<(HAKCOstream &hos, unsigned long i) {
+            hos.os << i;
+            return hos;
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, bool b) {
+            if(b) {
+                hos.os << "True";
+            } else {
+                hos.os << "False";
+            }
+            return hos;
+        }
+
         friend HAKCOstream &operator<<(HAKCOstream &hos, Function &F) {
             F.print(hos.os, nullptr);
             return hos;

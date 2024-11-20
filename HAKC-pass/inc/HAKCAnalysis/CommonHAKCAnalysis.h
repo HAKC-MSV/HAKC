@@ -31,8 +31,6 @@ namespace hakc {
 
         bool FunctionIsAnalysisCandidate(Function *F);
 
-        hakc_function_def_t getHAKCFunction(StringRef name);
-
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
         static bool IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
@@ -40,6 +38,8 @@ namespace hakc {
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
         void InitConfig(StringRef ConfigPath);
+
+        hakc_transfer_def_t GetHAKCTransferDefinition(Function *F);
 
     public:
         explicit CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
@@ -54,9 +54,9 @@ namespace hakc {
 
         static bool argShouldTransfer(Value *V);
 
-        static bool isPerCPUPointer(Value *V);
+        static bool IsPerCPUPointer(Value *V);
 
-        static bool isKernelUserPointer(Value *V);
+        static bool IsKernelUserPointer(Value *V);
 
         bool IsNoTransferFunction(Function *F);
 
@@ -66,9 +66,9 @@ namespace hakc {
 
         static bool FunctionHasPointerArg(Function *F);
 
-        static bool isOutsideTransferFunc(Function *F);
+        static bool IsOutsideTransferFunc(Function *F);
 
-        static bool isCapabilityReassignmentFunc(Function *F);
+        static bool IsCapabilityReassignmentFunc(Function *F);
 
         static bool NoKernelTransferFunctionsSet();
 
@@ -88,11 +88,13 @@ namespace hakc {
 
         bool IsHAKCTransferFunction(Function *F);
 
-        bool IsHAKCValidationFunction(Function *F);
+        bool IsHAKCCustomTransferFunction(Function *F);
 
         bool IsHAKCCompartmentalizationSupportFunction(Function *F);
 
         bool IsHAKCFunction(Function *F);
+
+        bool IsAllocationFunction(Function *F);
 
         bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
@@ -103,8 +105,6 @@ namespace hakc {
         static FunctionType *GetCodeAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
 
         static FunctionType *GetTransferFunctionType(Module &M, unsigned AddrSpace = 0);
-
-        static unsigned getCompartmentStorageSizeInBits();
 
         static bool FunctionIsComplexVariadic(Function *F);
 
@@ -120,7 +120,7 @@ namespace hakc {
 
         bool IsSafeTransitionCall(CallBase *call);
 
-        bool IsKernelAllocation(Value *V);
+        bool IsAllocation(Value *V);
 
         static bool IsCompartmentalizedFunction(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
@@ -144,7 +144,7 @@ namespace hakc {
 
         static void SortFunctionList(std::vector<Function *> &FuncList);
 
-        static bool IsKernelSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
+        static bool IsUncompartmentalizedSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
 
         static void VerifyFunction(Function *F);
 

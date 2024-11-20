@@ -25,7 +25,7 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::UpdateHAKCFunctionParameters() {
-        if (CommonHAKCAnalysis::IsKernelSymbol(CurrentFunction, Policy)) {
+        if (CommonHAKCAnalysis::IsUncompartmentalizedSymbol(CurrentFunction, Policy)) {
             return;
         }
 
@@ -38,7 +38,7 @@ namespace hakc {
 
         auto *F = &getFunction();
         auto *TransferTarget = F;
-        if (CommonHAKCAnalysis::isOutsideTransferFunc(F)) {
+        if (CommonHAKCAnalysis::IsOutsideTransferFunc(F)) {
             auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
             TransferTarget = F->getParent()->getFunction(transferTargetName);
         }
@@ -970,7 +970,7 @@ namespace hakc {
         }
 
         bool needsAuthenticatedArgs = (call->isInlineAsm() || (GetModuleAnalysis().GetCommonAnalysis().functionInAnalysisSet(call->getCalledFunction()) &&
-                                        !CommonHAKCAnalysis::isOutsideTransferFunc(call->getCalledFunction())) ||
+                                        !CommonHAKCAnalysis::IsOutsideTransferFunc(call->getCalledFunction())) ||
                                        callIsSafeTransition(call));
 
         if (isa<IntrinsicInst>(call)) {
@@ -1061,7 +1061,7 @@ namespace hakc {
             }
             if (call->getCalledFunction()) {
                 auto TargetCompartment = Policy.GetDivision(call->getCalledFunction()).GetHAKCCompartment();
-                if (!TargetCompartment.IsKernelCompartment()) {
+                if (!TargetCompartment.IsUncompartmentalized()) {
                     NonKernelDirectFunctionCallSet.insert(call);
                 }
             }
@@ -1097,7 +1097,7 @@ namespace hakc {
                                                 << getFunction() << "\nCompartmentID = "
                                                 << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
             }
-            PointerManager.SetFunctionIsCompartmentalized(!Compartment.IsKernelCompartment());
+            PointerManager.SetFunctionIsCompartmentalized(!Compartment.IsUncompartmentalized());
             for (auto it = inst_begin(CurrentFunction); it != inst_end(CurrentFunction); ++it) {
                 Instruction *inst = &*it;
                 HandleInstruction(inst);
@@ -1176,7 +1176,7 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::AddInstrumentation(bool RelocateSection) {
-        if (CommonHAKCAnalysis::isOutsideTransferFunc(&getFunction())) {
+        if (CommonHAKCAnalysis::IsOutsideTransferFunc(&getFunction())) {
             throw std::exception();
         }
 
@@ -1300,7 +1300,7 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::createMissingTransfers() {
-        if (CommonHAKCAnalysis::IsKernelSymbol(CurrentFunction, Policy)) {
+        if (CommonHAKCAnalysis::IsUncompartmentalizedSymbol(CurrentFunction, Policy)) {
             return;
         }
         if (DebugActive) {
@@ -1373,7 +1373,7 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::InstrumentCode() {
         auto Compartment = Policy.GetDivision(&getFunction()).GetHAKCCompartment();
-        AddInstrumentation(!Compartment.IsKernelCompartment());
+        AddInstrumentation(!Compartment.IsUncompartmentalized());
     }
 
     bool HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Value *Pointer) {

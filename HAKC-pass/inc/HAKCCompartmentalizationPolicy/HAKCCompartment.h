@@ -29,7 +29,7 @@ namespace hakc {
 
         hakc_compartment_id_t GetCompartmentIDValue() const;
 
-        bool IsKernelCompartment() const;
+        bool IsUncompartmentalized() const;
 
         static HAKC_Compartment_ID CreateID(hakc_compartment_id_t ID, Module &M);
 
