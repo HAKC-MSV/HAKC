@@ -45,18 +45,19 @@ namespace hakc {
         auto TargetCompartment = Policy.GetDivision(TransferTarget).GetHAKCCompartment();
 
         for (auto *CallI: HAKCFunctionCalls) {
-            auto HAKCTransferFunction = GetHAKCTransferDef(CallI->getCalledFunction()->getName());
+            auto HAKCTransferFunction = GetModuleAnalysis().GetCommonAnalysis().GetHAKCTransferDefinition(
+                    CallI->getCalledFunction());
             if (HAKCTransferFunction) {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for " << CallI << "\n";
                 }
                 if (DebugActive) {
-                    CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string
-                            (HAKCTransferFunction->GetCompartmentIdIdx()) << " ("
+                    CommonHAKCAnalysis::getWriter() << "Updating index " << HAKCTransferFunction->GetCompartmentIdIdx()
+                                                    << " ("
                                                     << CallI->getArgOperand(
-                                                            HAKCTransferFunction->GetCompartmentIdIdx()) << ") to "
-                                                    << std::to_string(TargetCompartment.GetCompartmentIDValue())
-                                                    << "\n";
+                                                            HAKCTransferFunction->GetCompartmentIdIdx()->getZExtValue())
+                                                    << ") to "
+                                                    << TargetCompartment.GetCompartmentIDValue() << "\n";
 
                 }
 
@@ -104,7 +105,7 @@ namespace hakc {
             TransferCall = getTransformer().CreateCompartmentTransfer(HAKCPointer, I, &getFunction(), isData);
         } else {
             TransferCall = getTransformer().CreateSizedCompartmentTransfer(HAKCPointer, I, &getFunction(), isData,
-                                                                                 Size);
+                                                                           Size);
         }
         TransferCall->setDebugLoc(debugLoc);
         CompartmentTransferCount++;
@@ -404,7 +405,7 @@ namespace hakc {
     }
 
     bool HAKCFunctionAnalysis::IsIntrinsicNeedingCloning(CallBase *Call) {
-        Intrinsic::ID IntrinsicsNeedingCloning[] =  {
+        Intrinsic::ID IntrinsicsNeedingCloning[] = {
                 Intrinsic::IndependentIntrinsics::lifetime_start,
                 Intrinsic::IndependentIntrinsics::lifetime_end,
         };
@@ -572,7 +573,7 @@ namespace hakc {
                     }
                 }
                 /* These are usually the result of reading a register value */
-                return ValueIsUsedAsPointer(call);
+                return GetModuleAnalysis().GetCommonAnalysis().ValueIsUsedAsPointer(call);
             } else if (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic() &&
                        call->getCalledFunction()->getIntrinsicID() == Intrinsic::IndependentIntrinsics::read_register) {
                 if (DebugActive) {
@@ -656,7 +657,7 @@ namespace hakc {
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << *ptr << " is used in inline assembly\n";
                 }
-                return ValueIsUsedAsPointer(U.get(), DebugActive);
+                return GetModuleAnalysis().GetCommonAnalysis().ValueIsUsedAsPointer(U.get());
             }
         } else if (!ptr->getType()->isPointerTy()) {
             if (DebugActive) {
@@ -701,10 +702,7 @@ namespace hakc {
 
                 if (is_percpu_ptr) {
                     if (DebugActive) {
-                        CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: " << *use << "\nDef chain:\n";
-                        for (auto *v: findDefChain(use.get(), false)) {
-                            CommonHAKCAnalysis::getWriter() << "\t" << *v << "\n";
-                        }
+                        CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: " << *use << "\n";
                     }
                     definition = use.get();
                 }
@@ -926,7 +924,7 @@ namespace hakc {
 
             if (auto *call = dyn_cast<CallInst>(
                     globalValueArg.getUser())) {
-                if (!functionIsAnalysisCandidate(call->getCalledFunction())) {
+                if (!GetModuleAnalysis().GetCommonAnalysis().FunctionIsAnalysisCandidate(call->getCalledFunction())) {
                     return false;
                 }
                 return true;
@@ -955,7 +953,7 @@ namespace hakc {
             return;
         }
 
-        if (IsHAKCFunction(call->getCalledFunction())) {
+        if (GetModuleAnalysis().GetCommonAnalysis().IsHAKCFunction(call->getCalledFunction())) {
             HAKCFunctionCalls.insert(call);
         }
 
@@ -963,13 +961,15 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Handling call " << *call << "\n";
         }
 
-        if (ValueIsUsedAsPointer(call, DebugActive)) {
+        if (GetModuleAnalysis().GetCommonAnalysis().ValueIsUsedAsPointer(call)) {
             AddManagedPointer(call);
         } else if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << *call << " should not be managed\n";
         }
 
-        bool needsAuthenticatedArgs = (call->isInlineAsm() || (GetModuleAnalysis().GetCommonAnalysis().functionInAnalysisSet(call->getCalledFunction()) &&
+        bool needsAuthenticatedArgs = (call->isInlineAsm() ||
+                                       (GetModuleAnalysis().GetCommonAnalysis().functionInAnalysisSet(
+                                               call->getCalledFunction()) &&
                                         !CommonHAKCAnalysis::IsOutsideTransferFunc(call->getCalledFunction())) ||
                                        callIsSafeTransition(call));
 
@@ -1050,7 +1050,8 @@ namespace hakc {
                         }
                     }
                 } else if (isa<AllocaInst>(def)) {
-                    if (!functionIsAnalysisCandidate(call->getCalledFunction())) {
+                    if (!GetModuleAnalysis().GetCommonAnalysis().FunctionIsAnalysisCandidate(
+                            call->getCalledFunction())) {
                         if (DebugActive) {
                             CommonHAKCAnalysis::getWriter() << "Function called by " << *call
                                                             << " is not an analysis candidate\n";
@@ -1201,7 +1202,7 @@ namespace hakc {
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << *HAKCPointer << "\n+++\n";
             }
-            HAKCPointer->DetermineIfBasePointerIsAuthenticated(Policy);
+            HAKCPointer->DetermineIfBasePointerIsAuthenticated();
         }
 
         if (modifiedFunction()) {
@@ -1256,7 +1257,6 @@ namespace hakc {
     }
 
     Instruction *HAKCFunctionAnalysis::CreateMissingTransfer(Instruction *PointerNeedingTransfer) {
-        auto Allocations = GetKernelAllocationSizeMap();
         std::set<Instruction *> UserInstructions;
         for (auto *U: PointerNeedingTransfer->users()) {
             if (auto *I = dyn_cast<Instruction>(U)) {
@@ -1267,11 +1267,10 @@ namespace hakc {
 
         ConstantInt *Size = nullptr;
         if (auto *Call = dyn_cast<CallInst>(PointerNeedingTransfer)) {
-            if (Call->getCalledFunction()) {
-                const auto &SizeFunction = Allocations.find(Call->getCalledFunction()->getName().str());
-                if (SizeFunction != Allocations.end()) {
-                    Size = (*SizeFunction).second.GetSize(Call);
-                }
+            if (GetModuleAnalysis().GetCommonAnalysis().IsAllocationFunction(Call->getCalledFunction())) {
+                auto AllocationDef = GetModuleAnalysis().GetCommonAnalysis().GetAllocationDefinition(
+                        Call->getCalledFunction());
+                Size = AllocationDef->GetSize(Call);
             }
         }
         return addCompartmentTransferCall(PointerNeedingTransfer, PointerNeedingTransfer->getDebugLoc(),
@@ -1296,7 +1295,7 @@ namespace hakc {
         }
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
         return getTransformer().CreateSignWithColor(HAKCPointer, InsertionPoint, &getFunction(),
-                                                          !isa<Function>(GlobalVar));
+                                                    !isa<Function>(GlobalVar));
     }
 
     void HAKCFunctionAnalysis::createMissingTransfers() {

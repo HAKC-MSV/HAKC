@@ -516,8 +516,8 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
                 APInt Offset(64, 0);
                 GEP->stripAndAccumulateInBoundsConstantOffsets(GetModule().getDataLayout(), Offset);
                 if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Offset in bits for " << *GEP << ": "
-                                                    << Offset.getSExtValue() << "\n";
+                    CommonHAKCAnalysis::getWriter() << "Offset in bits for " << *GEP << ": " << Offset.getZExtValue()
+                                                    << "\n";
                 }
                 if (!HAKCType->GetLLVMType()) {
                     HAKCType->SetLLVMType(TyToCheck);

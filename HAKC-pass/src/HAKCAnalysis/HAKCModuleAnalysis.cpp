@@ -1,13 +1,10 @@
 //
 // Created by derrick on 8/20/21.
 //
-#include <iostream>
-#include <sstream>
 #include <tuple>
 #include <llvm/IR/Verifier.h>
 
 #include "llvm/IR/InstIterator.h"
-#include "llvm/IR/Verifier.h"
 #include "llvm/Support/Regex.h"
 #include "llvm/IR/DIBuilder.h"
 
@@ -20,7 +17,7 @@ namespace hakc {
 
     HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy)
             : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(CommonAnalysis.GetSystemInfo().GetTypeIdentifier()),
-              Policy(Policy), Transformer(Policy, *this, TypeIdentifier) {
+              Policy(Policy), Transformer(Policy, *this) {
         InitAnalysis();
     }
 
@@ -604,7 +601,7 @@ namespace hakc {
         if (kp_struct) {
             // the anonymous union that holds the Value we actually want
             // is the last element of the struct
-            int num_ops = kp_struct->getNumOperands();
+            auto num_ops = kp_struct->getNumOperands();
             Constant *last_op = kp_struct->getOperand(num_ops - 1);
 
             // this holds kp->arg

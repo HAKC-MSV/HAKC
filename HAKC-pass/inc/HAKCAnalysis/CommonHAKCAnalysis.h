@@ -29,15 +29,11 @@ namespace hakc {
 
         HAKCSystemInformation SystemInfo;
 
-        bool FunctionIsAnalysisCandidate(Function *F);
-
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
         void InitConfig(StringRef ConfigPath);
-
-        hakc_transfer_def_t GetHAKCTransferDefinition(Function *F);
 
     public:
         explicit CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
@@ -146,10 +142,16 @@ namespace hakc {
 
         static void VerifyFunction(Function *F);
 
+        bool ValueIsUsedAsPointer(Value *V);
+
+        hakc_transfer_def_t GetHAKCTransferDefinition(Function *F);
+
+        HAKCCustomAllocation GetAllocationDefinition(Function *F);
+
+        bool FunctionIsAnalysisCandidate(Function *F);
+
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);
-
-        static bool useHasAttribute(Use &U, Attribute::AttrKind Kind);
     };
 
 }// namespace hakc

@@ -219,6 +219,6 @@ namespace hakc {
     }
 
     iterator_range<HAKCCustomAllocationList::iterator> HAKCSystemInformation::AllocationFunctions() {
-        return make_range(AllocationFunctions().begin(), AllocationFunctions().end());
+        return make_range(AllocationFunctionList.begin(), AllocationFunctionList.end());
     }
 } // hakc

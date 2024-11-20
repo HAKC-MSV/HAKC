@@ -42,6 +42,22 @@ namespace hakc {
         return SystemInfo;
     }
 
+    bool CommonHAKCAnalysis::FunctionIsAnalysisCandidate(Function *F) {
+        if (IsSafeTransitionFunction(F)) {
+            return false;
+        }
+        if (IsHAKCFunction(F)) {
+            return false;
+        }
+        if (IsOutsideTransferFunc(F)) {
+            return false;
+        }
+        if (F->isIntrinsic()) {
+            return false;
+        }
+        return true;
+    }
+
     void CommonHAKCAnalysis::InitConfig(StringRef ConfigPath) {
         if (!sys::fs::exists(ConfigPath)) {
             CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << ConfigPath << "\n";
@@ -265,12 +281,12 @@ namespace hakc {
 
                 auto *LHSDef = getDef(binOp->getOperand(0), false);
                 auto *RHSDef = getDef(binOp->getOperand(1), false);
-                if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef, debug)) {
+                if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand " << binOp->getOperand(0) << "\n";
                     }
                     working_list.insert(binOp->getOperand(0));
-                } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef, debug)) {
+                } else if (!isa<Constant>(RHSDef) && ValueIsUsedAsPointer(RHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding RHS Binary Operand " << binOp->getOperand(1) << "\n";
                     }
@@ -366,8 +382,7 @@ namespace hakc {
             /* A pointer to a pointer is used by the kernel to allow setting
              * the value of a user pointer. See ___sys_recvmsg in net/socket.c
              */
-            result = arg->hasAttribute(Kind) /*&&
-                     !arg->getType()->getPointerElementType()->isPointerTy()*/;
+            result = arg->hasAttribute(Kind);
         } else if (auto *I = dyn_cast<Instruction>(V)) {
             auto *metadata = I->getMetadata(LLVMContext::MD_annotation);
             if (metadata) {
@@ -395,11 +410,6 @@ namespace hakc {
             }
         }
 
-        return result;
-    }
-
-    bool CommonHAKCAnalysis::useHasAttribute(Use &U, Attribute::AttrKind Kind) {
-        bool result = valueHasAttribute(U.get(), Kind);
         return result;
     }
 
@@ -559,28 +569,11 @@ namespace hakc {
 
     bool CommonHAKCAnalysis::isRegisterRead(Value *v) {
         if (auto *call = dyn_cast<CallInst>(v)) {
-            return call->isInlineAsm() || (call->getCalledFunction() &&
-                                           call->getCalledFunction()->isIntrinsic() &&
+            return call->isInlineAsm() || (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic() &&
                                            call->getCalledFunction()->getIntrinsicID() ==
                                            Intrinsic::IndependentIntrinsics::read_register);
         }
         return false;
-    }
-
-    bool CommonHAKCAnalysis::FunctionIsAnalysisCandidate(Function *F) {
-        if (IsSafeTransitionFunction(F)) {
-            return false;
-        }
-        if (IsHAKCFunction(F)) {
-            return false;
-        }
-        if (IsOutsideTransferFunc(F)) {
-            return false;
-        }
-        if (F->isIntrinsic()) {
-            return false;
-        }
-        return true;
     }
 
     bool CommonHAKCAnalysis::argShouldTransfer(Value *V) {
@@ -630,6 +623,16 @@ namespace hakc {
             AllocationFunctions.push_back(Allocation->GetAllocationFunction());
         }
         return IsFunctionInFunctionList(F, AllocationFunctions);
+    }
+
+    HAKCCustomAllocation CommonHAKCAnalysis::GetAllocationDefinition(Function *F) {
+        for(auto Allocation : SystemInfo.AllocationFunctions()) {
+            if(Allocation->GetAllocationFunction() == F) {
+                return Allocation;
+            }
+        }
+
+        return nullptr;
     }
 
     bool CommonHAKCAnalysis::FunctionsAreInSameCompartment(Function *F, Function *G,
@@ -691,5 +694,49 @@ namespace hakc {
             throw std::exception();
         }
         return RealPath.str().str();
+    }
+
+    bool CommonHAKCAnalysis::ValueIsUsedAsPointer(Value *V) {
+        if (!IsPointerLikeType(V->getType())) {
+            return false;
+        }
+
+        bool CallIsUsedAsPointer = V->getType()->isPointerTy();
+        if (V->getType()->isIntegerTy()) {
+            CallIsUsedAsPointer = false;
+            /* Search for uses that determine if the call is considered a pointer or integer */
+            for (auto &U: V->uses()) {
+                if (auto *IToPtrI = dyn_cast<IntToPtrInst>(U.getUser())) {
+                    if (GetSystemInfo().OutputDebugInfo(IToPtrI->getFunction())) {
+                        CommonHAKCAnalysis::getWriter() << "User of " << *V << " is an inttoptr: " << *U.getUser()
+                                                        << "\n";
+                    }
+                    CallIsUsedAsPointer = true;
+                } else if (auto *BinOp = dyn_cast<BinaryOperator>(U.getUser())) {
+                    if (BinOp->getOpcode() == BinaryOperator::Add) {
+                        unsigned OpNum = (U.getOperandNo() + 1) % 2;
+                        auto *OtherOp = U.getUser()->getOperand(OpNum);
+                        if (GetSystemInfo().OutputDebugInfo(BinOp->getFunction())) {
+                            CommonHAKCAnalysis::getWriter() << "Checking operator " << OpNum << " of " << *BinOp << ": "
+                                                            << *OtherOp << "\n";
+                        }
+                        if (OtherOp->getType()->isPointerTy()) {
+                            /* V is an integer (which could still be used as a pointer), but is used in an add operation
+                             * that involves another pointer.  Adding two pointers together does not make sense, so V
+                             * is a true integer and not a pointer.
+                             */
+                            break;
+                        }
+                    }
+                }
+
+                if (CallIsUsedAsPointer) {
+                    break;
+                }
+            }
+        }
+
+        return CallIsUsedAsPointer;
+
     }
 }// namespace hakc
