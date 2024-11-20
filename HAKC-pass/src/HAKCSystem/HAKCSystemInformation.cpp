@@ -115,6 +115,7 @@ namespace hakc {
         }
 
         SmallVector <HAKCTypeP> Types;
+        // ProcessDebugInfo must happen before creating custom transfers
         HAKCSystemInfo.TypeIdentifier.ProcessDebugInfo();
         HAKCSystemInfo.TypeIdentifier.GetHAKCTypes(Types);
         for (auto &CustomTransferDefinition: YamlConfig.CustomTransferFunctionList) {

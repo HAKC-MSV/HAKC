@@ -72,10 +72,8 @@ namespace hakc {
         void CompartmentalizeFunction(Function *F);
 
     public:
-        ~HAKCModuleAnalysis() = default;
 
-        HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCTypeIdentifier &TypeIdentifier,
-                           HAKCCompartmentalizationPolicy &Policy);
+        HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);
 
         void performTransformations();
 

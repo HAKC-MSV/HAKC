@@ -18,9 +18,8 @@
 
 namespace hakc {
 
-    HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCTypeIdentifier &TypeIdentifier,
-                                           HAKCCompartmentalizationPolicy &Policy)
-            : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(TypeIdentifier),
+    HAKCModuleAnalysis::HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy)
+            : UsedCompartments(), CommonAnalysis(CommonAnalysis), AnalysisFunctions(), TypeIdentifier(CommonAnalysis.GetSystemInfo().GetTypeIdentifier()),
               Policy(Policy), Transformer(Policy, *this, TypeIdentifier) {
         InitAnalysis();
     }

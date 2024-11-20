@@ -15,7 +15,7 @@ namespace hakc {
                                                HAKCCompartmentalizationPolicy &Policy) :
             ModuleAnalysis(ModuleAnalysis),
             Policy(Policy),
-            PointerManager(this, Policy, ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(F)),
+            PointerManager(*this, Policy, ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(F)),
             DebugActive(ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(F)),
             DTree(*F),
             CurrentFunction(F),
