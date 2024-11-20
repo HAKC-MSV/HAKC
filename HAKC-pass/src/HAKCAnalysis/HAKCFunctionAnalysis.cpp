@@ -630,7 +630,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a PHINode of Globals\n";
             }
             return false;
-        } else if (isKernelUserPointer(ptr)) {
+        } else if (CommonHAKCAnalysis::IsKernelUserPointer(ptr)) {
             if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a Kernel pointer from user space\n";
             }
@@ -698,7 +698,7 @@ namespace hakc {
 
         if (PointerShouldBeManaged(use)) {
             if (isa<IntToPtrInst>(use.get())) {
-                bool is_percpu_ptr = isPerCPUPointer(use);
+                bool is_percpu_ptr = CommonHAKCAnalysis::IsPerCPUPointer(use);
 
                 if (is_percpu_ptr) {
                     if (DebugActive) {
@@ -968,8 +968,7 @@ namespace hakc {
         }
 
         bool needsAuthenticatedArgs = (call->isInlineAsm() ||
-                                       (GetModuleAnalysis().GetCommonAnalysis().functionInAnalysisSet(
-                                               call->getCalledFunction()) &&
+                                       (GetModuleAnalysis().functionInAnalysisSet(call->getCalledFunction()) &&
                                         !CommonHAKCAnalysis::IsOutsideTransferFunc(call->getCalledFunction())) ||
                                        callIsSafeTransition(call));
 
