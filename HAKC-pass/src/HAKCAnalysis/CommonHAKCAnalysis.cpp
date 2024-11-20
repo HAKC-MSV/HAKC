@@ -26,18 +26,6 @@ namespace hakc {
         return llvm::any_of(Range, Search);
     }
 
-    bool
-    CommonHAKCAnalysis::IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range) {
-        if (!F) {
-            return false;
-        }
-
-        auto Search = [F](hakc_function_def_t &Func) {
-            return F == Func->GetFunction();
-        };
-        return llvm::any_of(Range, Search);
-    }
-
     bool CommonHAKCAnalysis::IsFunctionInHAKCTransferFunctionList(Function *F,
                                                                   iterator_range<HAKCTransferList::iterator> Range) {
         if (!F) {

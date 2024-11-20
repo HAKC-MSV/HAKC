@@ -33,8 +33,6 @@ namespace hakc {
 
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
-        static bool IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
-
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
         void InitConfig(StringRef ConfigPath);
