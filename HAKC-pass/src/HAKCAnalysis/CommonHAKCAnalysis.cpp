@@ -150,15 +150,15 @@ namespace hakc {
 
     hakc_transfer_def_t CommonHAKCAnalysis::GetHAKCTransferDefinition(Function *F) {
         SmallVector<hakc_transfer_def_t> HAKCFunctions;
-        for(const auto& HAKCFunction : SystemInfo.CompartmentTransferFunctions()) {
+        for (const auto &HAKCFunction: SystemInfo.CompartmentTransferFunctions()) {
             HAKCFunctions.push_back(HAKCFunction);
         }
-        for(const auto& HAKCFunction : SystemInfo.HAKCCustomTransfers()) {
+        for (const auto &HAKCFunction: SystemInfo.HAKCCustomTransfers()) {
             HAKCFunctions.push_back(HAKCFunction);
         }
 
-        for(auto HAKCFunction : HAKCFunctions) {
-            if(HAKCFunction->GetFunction() == F) {
+        for (auto HAKCFunction: HAKCFunctions) {
+            if (HAKCFunction->GetFunction() == F) {
                 return HAKCFunction;
             }
         }
@@ -625,8 +625,8 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsAllocationFunction(Function *F) {
-        SmallVector<Function*> AllocationFunctions;
-        for(const auto& Allocation : SystemInfo.AllocationFunctions()) {
+        SmallVector<Function *> AllocationFunctions;
+        for (const auto &Allocation: SystemInfo.AllocationFunctions()) {
             AllocationFunctions.push_back(Allocation->GetAllocationFunction());
         }
         return IsFunctionInFunctionList(F, AllocationFunctions);
