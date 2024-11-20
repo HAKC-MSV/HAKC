@@ -18,8 +18,6 @@
 #include "HAKCFunctionInfo.h"
 #include "HAKCGlobalInfo.h"
 
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
-
 #include <map>
 #include <set>
 
@@ -30,6 +28,8 @@ namespace hakc {
     typedef std::shared_ptr<HAKCFunctionInfo> HAKCFunctionP;
     typedef std::shared_ptr<HAKCSymbolInfo> HAKCSymbolP;
     typedef std::shared_ptr<HAKCGlobalInfo> HAKCGlobalP;
+
+    class CommonHAKCAnalysis;
 
     class HAKCTypeIdentifier {
     public:

@@ -11,7 +11,7 @@
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 #include "HAKCOstream.h"
 #include "HAKCSystem/HAKCSystemInformation.h"
-
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 #include <map>
 
@@ -31,19 +31,15 @@ namespace hakc {
 
         bool FunctionIsAnalysisCandidate(Function *F);
 
-        bool valueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy);
-
         hakc_function_def_t getHAKCFunction(StringRef name);
-
-        bool functionIsModParamGetCtx(Function *F);
-
-        bool IsNoTransferFunction(Function *F);
 
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
         static bool IsFunctionInHAKCFunctionList(Function *F, iterator_range<HAKCFunctionList::iterator> Range);
 
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
+
+        void InitConfig(StringRef ConfigPath);
 
     public:
         explicit CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
@@ -62,7 +58,9 @@ namespace hakc {
 
         static bool isKernelUserPointer(Value *V);
 
-        bool valueIsReadonlyPtr(Value *value);
+        bool IsNoTransferFunction(Function *F);
+
+        static bool valueIsReadonlyPtr(Value *value);
 
         static bool FunctionIsStatic(Function *F);
 
@@ -77,6 +75,10 @@ namespace hakc {
         static bool IsPointerLikeType(Type *Ty);
 
         std::string GetOutsideTransferName(Function *F);
+
+        static bool FunctionIsModParamGetCtx(Function *F);
+
+        bool ValueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy);
 
         bool IsSafeTransitionFunction(Function *F);
 
@@ -116,7 +118,7 @@ namespace hakc {
 
         static bool FunctionsAreInSameCompartment(Function *F, Function *G, HAKCCompartmentalizationPolicy &Policy);
 
-        bool callIsSafeTransition(CallBase *call);
+        bool IsSafeTransitionCall(CallBase *call);
 
         bool IsKernelAllocation(Value *V);
 

@@ -7,6 +7,7 @@
 #include "llvm/Support/FileSystem.h"
 
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
+#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 #include <string_view>
 

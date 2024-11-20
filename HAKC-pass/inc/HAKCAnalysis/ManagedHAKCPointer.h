@@ -13,12 +13,13 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Dominators.h"
 
-#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCTypeIdentifier/HAKCTypeInfo.h"
 #include "HAKCAnalysis/HAKCOstream.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
+
+using namespace llvm;
 
 namespace hakc {
-    using namespace llvm;
 
     class ManagedHAKCPointerUse;
 

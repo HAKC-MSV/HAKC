@@ -5,6 +5,7 @@
 #include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
 #include "llvm/Support/raw_ostream.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
+#include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 #include "llvm/Support/FileSystem.h"
 #include "llvm/ADT/SmallString.h"

@@ -13,7 +13,6 @@ hakc::HAKCTransformer::HAKCTransformer(HAKCCompartmentalizationPolicy &Policy, H
         HAKCIRBuilder(HAKCAnalysis.GetModule().getContext()),
         CompartmentalizationPolicy(Policy),
         ModuleAnalysis(HAKCAnalysis),
-        TypeIdentifier(TypeIdentifier),
         VariadicTransferFunctions() {
 }
 
@@ -606,7 +605,7 @@ hakc::HAKCTransformer::FindEntryBitcast(hakc::ManagedHAKCPointerP HAKCPointer, I
              *   there is only the one level of indirection through memory
              */
             if (CurrentUse->getOperandNo() != StoreInst::getPointerOperandIndex()) {
-                auto *StorePtrDef = ModuleAnalysis.GetCommonAnalysis().getDef(StoreI->getPointerOperand(), false, DebugIsActive());
+                auto *StorePtrDef = ModuleAnalysis.GetCommonAnalysis().getDef(StoreI->getPointerOperand(), false);
                 if (isa<AllocaInst>(StorePtrDef)) {
                     for (auto *AllocaUser: StorePtrDef->users()) {
                         if (isa<LoadInst>(AllocaUser)) {
@@ -633,7 +632,7 @@ hakc::HAKCTransformer::FindEntryBitcast(hakc::ManagedHAKCPointerP HAKCPointer, I
         CommonHAKCAnalysis::getWriter() << " in function " << Target->getName() << "\n";
     }
 
-    return TypeIdentifier.FindType(BitcastType);
+    return ModuleAnalysis.GetTypeIdentifier().FindType(BitcastType);
 }
 
 /**
@@ -1166,7 +1165,7 @@ bool hakc::HAKCTransformer::DebugIsActive() {
 
 hakc::ManagedHAKCPointerP hakc::HAKCTransformer::CreateNewManagedPointer(Value *BaseDefinition) {
     auto ManagedPtr = std::make_shared<ManagedHAKCPointer>(BaseDefinition, DebugIsActive());
-    auto HAKCTy = TypeIdentifier.FindType(BaseDefinition->getType());
+    auto HAKCTy = ModuleAnalysis.GetTypeIdentifier().FindType(BaseDefinition->getType());
     ManagedPtr->SetType(HAKCTy);
     return ManagedPtr;
 }

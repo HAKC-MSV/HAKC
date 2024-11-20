@@ -180,7 +180,7 @@ namespace hakc {
                     Call->isInlineAsm() ||
                     Call->getCalledOperandUse().getOperandNo() == U.getOperandNo() ||
                     Call->getCalledFunction() == nullptr ||
-                    GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call) ||
+                            GetFunctionAnalysis()->IsIntrinsicNeedingCloning(Call) ||
                     GetFunctionAnalysis()->IsIntrinsicNeedingAuthentication(Call)) {
                 UseAuthenticatedPointer = true;
             }

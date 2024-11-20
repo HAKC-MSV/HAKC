@@ -191,7 +191,6 @@ namespace hakc {
         IRBuilder<> HAKCIRBuilder;
         HAKCCompartmentalizationPolicy &CompartmentalizationPolicy;
         HAKCModuleAnalysis &ModuleAnalysis;
-        HAKCTypeIdentifier &TypeIdentifier;
 
         std::map<Function *, Function *> VariadicTransferFunctions;
 
@@ -216,7 +215,7 @@ namespace hakc {
          * @param I
          * @return
          */
-        virtual Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) = 0;
+//        virtual Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) = 0;
 
         /**
          * Creates a Call to the specified function

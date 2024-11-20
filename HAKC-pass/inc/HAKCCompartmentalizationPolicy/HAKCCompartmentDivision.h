@@ -9,8 +9,6 @@
 
 namespace hakc {
 
-    class HAKCCompartment;
-
     class HAKCCompartmentDivision {
     public:
         HAKCCompartmentDivision(const HAKCCompartment &C, hakc_compartment_division_t DivisionID,

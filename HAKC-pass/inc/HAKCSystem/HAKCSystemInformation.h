@@ -16,7 +16,8 @@
 #include "llvm/IR/ValueMap.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
-#include "HAKCYaml/HAKCYaml.h"
+#include "HAKCSystem/yaml/HAKCYaml.h"
+#include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
 typedef std::shared_ptr<hakc::HAKCAllocationSize> HAKCCustomAllocation;
 
@@ -30,6 +31,9 @@ typedef SmallPtrSet<Type*, 16> HAKCTypeSet;
 typedef SmallVector<std::string, 16> HAKCStringList;
 
 namespace hakc {
+
+    class CommonHAKCAnalysis;
+
     class HAKCSystemInformation {
     public:
         explicit HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis);
@@ -44,7 +48,7 @@ namespace hakc {
 
         friend void operator<<(HAKCSystemInformation &HAKCSystemInfo, HAKCYamlConfig &YamlConfig);
 
-        iterator_range<FunctionList::iterator> GetNoTransferFunctions();
+        iterator_range<FunctionList::iterator> NoTransferFunctions();
         iterator_range<HAKCTransferList::iterator> CompartmentTransferFunctions();
         iterator_range<FunctionList::iterator> CompartmentalizationSupportFunctions();
         iterator_range<FunctionList::iterator> SafeTransitionFunctions();
@@ -58,7 +62,7 @@ namespace hakc {
         Function* CodeValidation() const;
         Function* DataValidation() const;
         hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
-        HAKCTypeIdentifier &GetTypeIdentifier() const;
+        HAKCTypeIdentifier &GetTypeIdentifier();
 
     protected:
         CommonHAKCAnalysis &CommonAnalysis;

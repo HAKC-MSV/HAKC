@@ -12,7 +12,7 @@ namespace hakc {
     HAKCOstream hos;
 
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
-        return IsFunctionInFunctionList(F, SystemInfo.GetNoTransferFunctions());
+        return IsFunctionInFunctionList(F, SystemInfo.NoTransferFunctions());
     }
 
     bool CommonHAKCAnalysis::IsFunctionInFunctionList(Function *F, iterator_range <FunctionList::iterator> Range) {
@@ -298,7 +298,7 @@ namespace hakc {
     Value *CommonHAKCAnalysis::getDef(Value *V, bool followLoad) {
         SmallVector < Value * > Chain;
         findDefChain(V, followLoad, Chain);
-        if (def_chain.empty()) {
+        if (Chain.empty()) {
             CommonHAKCAnalysis::getWriter() << "Def Chain for " << V << " is empty!\n";
             throw std::exception();
         }
@@ -310,7 +310,7 @@ namespace hakc {
      * @param call
      * @return
      */
-    bool CommonHAKCAnalysis::callIsSafeTransition(CallBase *call) {
+    bool CommonHAKCAnalysis::IsSafeTransitionCall(CallBase *call) {
         if (call->getCalledFunction()) {
             return IsSafeTransitionFunction(call->getCalledFunction());
         }
@@ -444,11 +444,11 @@ namespace hakc {
         return ArgumentsContainPointer;
     }
 
-    bool CommonHAKCAnalysis::valueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy) {
+    bool CommonHAKCAnalysis::ValueShouldBeReplacedWithTransfer(Value *V, HAKCCompartmentalizationPolicy &Policy) {
         if (auto *F = dyn_cast<Function>(V)) {
             return functionIsTransferCandidate(F, Policy);
         } else if (auto *BCO = dyn_cast<BitCastOperator>(V)) {
-            return valueShouldBeReplacedWithTransfer(BCO->getOperand(0), Policy);
+            return ValueShouldBeReplacedWithTransfer(BCO->getOperand(0), Policy);
         }
         return false;
     }
@@ -543,7 +543,7 @@ namespace hakc {
         return TransformedName;
     }
 
-    bool CommonHAKCAnalysis::functionIsModParamGetCtx(Function *F) {
+    bool CommonHAKCAnalysis::FunctionIsModParamGetCtx(Function *F) {
         return F->getName().starts_with(MODPARAM_GETCTX_PREFIX);
     }
 
@@ -554,7 +554,7 @@ namespace hakc {
                !F->isDeclaration() &&
                !isCapabilityReassignmentFunc(F) &&
                !FunctionIsComplexVariadic(F) &&
-               !functionIsModParamGetCtx(F) &&
+               !FunctionIsModParamGetCtx(F) &&
                FunctionHasPointerArg(F) &&
                (!isOutsideTransferFunc(F) ||
                 !F->hasFnAttribute(Attribute::InlineHint));

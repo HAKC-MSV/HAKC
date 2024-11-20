@@ -16,8 +16,6 @@ namespace hakc {
 
     class HAKCModuleAnalysis;
 
-    class HAKCTypeIdentifier;
-
     typedef std::shared_ptr<HAKCCompartment> HAKCCompartmentP;
     typedef std::shared_ptr<HAKCCompartmentDivision> HAKCDivisionP;
     typedef std::unique_ptr<kuzu::main::PreparedStatement> HAKCPreparedStatementP;

@@ -372,13 +372,13 @@ namespace hakc {
                                                         << std::to_string(
                                                                 CommonHAKCAnalysis::IsKernelSymbol(Callee, Policy))
                                                         << "\n";
-                        CommonHAKCAnalysis::getWriter() << "IsIntrinsicsNeedingCloning(" << *Call << ") = "
+                        CommonHAKCAnalysis::getWriter() << "IsIntrinsicNeedingCloning(" << *Call << ") = "
                                                         << std::to_string(
-                                                                Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(
+                                                                Manager->GetFunctionAnalysis()->IsIntrinsicNeedingCloning(
                                                                         Call)) << "\n";
                     }
                     AlreadyAuthenticated = /*Manager->GetFunctionAnalysis()->IsKernelFunction(Callee) ||*/
-                            Manager->GetFunctionAnalysis()->IsIntrinsicsNeedingCloning(Call);
+                            Manager->GetFunctionAnalysis()->IsIntrinsicNeedingCloning(Call);
                 }
             } else if (Call->isInlineAsm()) {
                 AlreadyAuthenticated = true;

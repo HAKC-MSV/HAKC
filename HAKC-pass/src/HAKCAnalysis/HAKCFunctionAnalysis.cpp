@@ -11,11 +11,12 @@
 
 namespace hakc {
 
-    HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis,
+    HAKCFunctionAnalysis::HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis &ModuleAnalysis,
                                                HAKCCompartmentalizationPolicy &Policy) :
-            CommonAnalysis(CommonAnalysis),
+            ModuleAnalysis(ModuleAnalysis),
             Policy(Policy),
-            PointerManager(this, Policy, CommonAnalysis.GetSystemInfo().OutputDebugInfo(F)),
+            PointerManager(this, Policy, ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(F)),
+            DebugActive(ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(F)),
             DTree(*F),
             CurrentFunction(F),
             SetupHasRun(false),
@@ -28,7 +29,7 @@ namespace hakc {
             return;
         }
 
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Updating parameters for the following HAKC functions:\n";
             for (auto *CallI: HAKCFunctionCalls) {
                 CommonHAKCAnalysis::getWriter() << CallI << "\n";
@@ -37,7 +38,7 @@ namespace hakc {
 
         auto *F = &getFunction();
         auto *TransferTarget = F;
-        if (isOutsideTransferFunc(F)) {
+        if (CommonHAKCAnalysis::isOutsideTransferFunc(F)) {
             auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
             TransferTarget = F->getParent()->getFunction(transferTargetName);
         }
@@ -46,10 +47,10 @@ namespace hakc {
         for (auto *CallI: HAKCFunctionCalls) {
             auto HAKCTransferFunction = GetHAKCTransferDef(CallI->getCalledFunction()->getName());
             if (HAKCTransferFunction) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Updating HAKC call parameters for " << CallI << "\n";
                 }
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Updating index " << std::to_string
                             (HAKCTransferFunction->GetCompartmentIdIdx()) << " ("
                                                     << CallI->getArgOperand(
@@ -60,10 +61,10 @@ namespace hakc {
                 }
 
                 UpdateHAKCFunctionParameters_Arch(CallI, TargetCompartment, HAKCTransferFunction, Policy);
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "After update call is " << CallI << "\n";
                 }
-            } else if (DebugActive()) {
+            } else if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "No HAKC Transfer function found for "
                                                 << CallI->getCalledFunction()->getName() << "\n";
             }
@@ -81,7 +82,7 @@ namespace hakc {
                                                                   ConstantInt *Size) {
         if (!operand->getType()->isPointerTy()
             && !isa<PtrToIntInst>(operand)
-            && !operand->getType()->isIntegerTy(getCompartmentStorageSizeInBits())) {
+            && !operand->getType()->isIntegerTy(HAKCCompartment::CompartmentIDBitCount)) {
             CommonHAKCAnalysis::getWriter() << "Compartment transfer target " << *operand
                                             << " is not a pointer but of type " << *operand->getType()
                                             << " in function\n" << getFunction() << "\n";
@@ -93,21 +94,21 @@ namespace hakc {
             throw std::exception();
         }
 
-        bool isData = !valueIsReadonlyPtr(getDef(operand, false, DebugActive()));
-        if (DebugActive()) {
+        bool isData = !hakc::CommonHAKCAnalysis::valueIsReadonlyPtr(getDef(operand, false));
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "isData: " << std::to_string(isData) << " for " << operand << "\n";
         }
 
         Instruction *TransferCall;
         if (Size == nullptr) {
-            TransferCall = getTransformer(Policy).CreateCompartmentTransfer(HAKCPointer, I, &getFunction(), isData);
+            TransferCall = getTransformer().CreateCompartmentTransfer(HAKCPointer, I, &getFunction(), isData);
         } else {
-            TransferCall = getTransformer(Policy).CreateSizedCompartmentTransfer(HAKCPointer, I, &getFunction(), isData,
+            TransferCall = getTransformer().CreateSizedCompartmentTransfer(HAKCPointer, I, &getFunction(), isData,
                                                                                  Size);
         }
         TransferCall->setDebugLoc(debugLoc);
         CompartmentTransferCount++;
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Created transfer for ";
             if (!isData) {
                 CommonHAKCAnalysis::getWriter() << operand->getName();
@@ -118,19 +119,6 @@ namespace hakc {
         }
         return TransferCall;
     }
-
-    std::string HAKCFunctionAnalysis::getHAKCFunctionSectionName() {
-        // linux
-        std::string sectionName = HAKC_SECTION_PREFIX.str();
-
-        if (getFunction().getSection().empty()) {
-            sectionName += ".text";
-        } else {
-            sectionName += getFunction().getSection().str();
-        }
-        return sectionName;
-    }
-
 
 //    bool HAKCFunctionAnalysis::isSafeTransitionFunction(Function *F) {
 //        // linux
@@ -217,7 +205,7 @@ namespace hakc {
         if (auto phi = dyn_cast<PHINode>(v)) {
             return phi->getParent()->getFirstNonPHIOrDbgOrLifetime();
         }
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Finding insertion point for ";
             if (v->getName().empty()) {
                 CommonHAKCAnalysis::getWriter() << v;
@@ -266,7 +254,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *bitcast = getTransformer(Policy).CreateDataAuthentication(HAKCPointer, location);
+        auto *bitcast = getTransformer().CreateDataAuthentication(HAKCPointer, location);
         return bitcast;
     }
 
@@ -276,7 +264,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *SafePointer = getTransformer(Policy).CreateCodeAuthentication(HAKCPointer, Location);
+        auto *SafePointer = getTransformer().CreateCodeAuthentication(HAKCPointer, Location);
         return SafePointer;
     }
 
@@ -289,12 +277,12 @@ namespace hakc {
         if (PointerManager.ManagePointer(HAKCPointer)) {
             auto ManagedPointer = PointerManager.GetManagedPointer(HAKCPointer);
             if (auto *PHII = dyn_cast<PHINode>(ManagedPointer->GetBaseDefinition())) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Definition is a PHI Node. Adding all non-null incoming "
                                                        "members\n";
                 }
                 for (auto &Incoming: PHII->incoming_values()) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Adding Incoming member " << Incoming << "\n";
                     }
                     RegisterPointerDereference(Incoming);
@@ -308,7 +296,7 @@ namespace hakc {
          * between authentication and dereference
          */
     void HAKCFunctionAnalysis::createAllAuthenticatedPointers() {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Function prior to making authenticated copies:\n" << getFunction()
                                             << "\n";
         }
@@ -319,7 +307,7 @@ namespace hakc {
          * @brief Replace signed pointer dereferences with authenticated dereferences
          */
     void HAKCFunctionAnalysis::transformPointerDereferences() {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Function prior to transforming pointer dereferences\n" << getFunction()
                                             << "\n";
         }
@@ -332,8 +320,8 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *SafePtr = getTransformer(Policy).CreateSafePointer(HAKCPointer, Location);
-        if (DebugActive()) {
+        auto *SafePtr = getTransformer().CreateSafePointer(HAKCPointer, Location);
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Created Safe Pointer\n\t" << *SafePtr << "\nFor Signed Pointer\n\t"
                                             << *SignedPtr << "\nat\n" << *Location << "\n";
         }
@@ -349,7 +337,7 @@ namespace hakc {
         if (auto *call = dyn_cast<CallInst>(arg.getUser())) {
             if (auto *inlineAsm = dyn_cast<InlineAsm>(
                     call->getCalledOperand())) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Arg " << *arg << " of " << *call << " is argument "
                                                     << arg.getOperandNo() << "\n";
                 }
@@ -367,87 +355,73 @@ namespace hakc {
                     }*/
                 }
             } else if (call->getCalledFunction()) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "arg.getOperandNo() = " << arg.getOperandNo()
                                                     << "\n";
                 }
-                return ((arg->getType()->isPointerTy() ||
-                         isa<PtrToIntInst>(arg.get()))) &&
-                       (isSafeTransitionFunction(call->getCalledFunction()) ||
+                return ((arg->getType()->isPointerTy() || isa<PtrToIntInst>(arg.get()))) &&
+                       (GetModuleAnalysis().GetCommonAnalysis().IsSafeTransitionFunction(call->getCalledFunction()) ||
                         IsIntrinsicNeedingAuthentication(call));
             }
         }
         return (!isa<Function>(arg) && PointerShouldBeManaged(arg));
     }
 
+    bool HAKCFunctionAnalysis::IsCallInIntrinsicSet(CallBase *Call, ArrayRef<Intrinsic::ID> IDs) {
+        bool result = false;
+        if (auto *intrinsic = dyn_cast<IntrinsicInst>(Call)) {
+            auto IDToFind = intrinsic->getIntrinsicID();
+            auto Search = [IDToFind](Intrinsic::ID ID) {
+                return IDToFind == ID;
+            };
+
+            result = llvm::any_of(IDs, Search);
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Intrinsic (" << IDToFind << ") from " <<
+                                                Call->getFunction()->getName() << " " << intrinsic;
+                if (result) {
+                    CommonHAKCAnalysis::getWriter() << " is in { ";
+                } else {
+                    CommonHAKCAnalysis::getWriter() << " is not in { ";
+                }
+                for (auto id: IDs) {
+                    CommonHAKCAnalysis::getWriter() << id << " ";
+                }
+                CommonHAKCAnalysis::getWriter() << "}\n";
+            }
+        }
+        return result;
+    }
+
     bool HAKCFunctionAnalysis::IsIntrinsicNeedingAuthentication(CallBase *Call) {
-        auto IntrinsicsNeedingAuth = GetIntrinsicsNeedingAuthenticatedArgs();
-        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingAuth);
-    }
-
-    bool HAKCFunctionAnalysis::IsIntrinsicsNeedingCloning(CallBase *Call) {
-        auto IntrinsicsNeedingCloning = GetIntrinsicsToClone();
-        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingCloning);
-    }
-
-    HAKCModuleAnalysis &HAKCFunctionAnalysis::getModuleAnalysis() {
-        // fix null dereference here
-        // CommonHAKCAnalysis::getWriter() << "trying to get module analysis, but got: " << ModAnalysis << "\n";
-        return *ModAnalysis;
-    }
-
-    std::set<std::string> HAKCFunctionAnalysis::GetNoTransferFunctions() {
-        return getModuleAnalysis().GetNoTransferFunctions();
-    }
-
-    std::set<StringRef> HAKCFunctionAnalysis::GetSafeTransitionFunctions() {
-        return getModuleAnalysis().GetSafeTransitionFunctions();
-    }
-
-    std::set<hakc_transfer_def_t> HAKCFunctionAnalysis::GetHAKCTransferFunctions() {
-        return getModuleAnalysis().GetHAKCTransferFunctions();
-    }
-
-    std::map<StringRef, hakc_allocation_size_map_t> HAKCFunctionAnalysis::GetKernelAllocationSizeMap() {
-        return getModuleAnalysis().GetKernelAllocationSizeMap();
-    }
-
-    std::set<hakc_function_def_t> HAKCFunctionAnalysis::GetHAKCFunctions() {
-        return getModuleAnalysis().GetHAKCFunctions();
-    }
-
-    std::set<StringRef> HAKCFunctionAnalysis::GetIgnoredTypes() {
-        return getModuleAnalysis().GetIgnoredTypes();
-    }
-
-    std::set<StringRef> HAKCFunctionAnalysis::GetIgnoredGlobals() {
-        return getModuleAnalysis().GetIgnoredGlobals();
-    }
-
-    std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsNeedingAuthenticatedArgs() {
-        return {
+        Intrinsic::ID IntrinsicsNeedingAuth[] = {
                 Intrinsic::IndependentIntrinsics::memcpy,
                 Intrinsic::IndependentIntrinsics::memmove,
                 Intrinsic::IndependentIntrinsics::memset
         };
+
+        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingAuth);
     }
 
-    std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetIntrinsicsToClone() {
-        return {
+    bool HAKCFunctionAnalysis::IsIntrinsicNeedingCloning(CallBase *Call) {
+        Intrinsic::ID IntrinsicsNeedingCloning[] =  {
                 Intrinsic::IndependentIntrinsics::lifetime_start,
                 Intrinsic::IndependentIntrinsics::lifetime_end,
         };
+        return IsCallInIntrinsicSet(Call, IntrinsicsNeedingCloning);
     }
 
-    std::set<Intrinsic::ID> HAKCFunctionAnalysis::GetInstrinsicsToSkip() {
-        return {
+    bool HAKCFunctionAnalysis::IsIntrinsicToSkip(CallBase *Call) {
+        Intrinsic::ID IntrinsicsToSkip[] = {
                 Intrinsic::IndependentIntrinsics::dbg_declare,
                 /*Intrinsic::IndependentIntrinsics::dbg_addr,*/
                 Intrinsic::IndependentIntrinsics::dbg_label,
                 Intrinsic::IndependentIntrinsics::dbg_value,
                 Intrinsic::IndependentIntrinsics::read_register,
         };
+        return IsCallInIntrinsicSet(Call, IntrinsicsToSkip);
     }
+
 
     /**
          * @brief Returns true if the PHINode uses the specified target
@@ -459,7 +433,7 @@ namespace hakc {
                                                 std::set<PHINode *> &visited) {
         visited.insert(phiNode);
         for (auto &val: phiNode->incoming_values()) {
-            Value *def = getDef(val.get(), true, DebugActive());
+            Value *def = getDef(val.get(), true);
             if (val.get() == target || def == target) {
                 return true;
             } else if (auto *phi = dyn_cast<PHINode>(def)) {
@@ -526,14 +500,14 @@ namespace hakc {
             if (nodes.find(phiNode) != nodes.end()) {
                 return true;
             }
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Examining PHI Node " << phiNode << " for Globals (" << nodes.size()
                                                 << ")\n";
             }
             nodes.insert(phiNode);
             for (auto &val: phiNode->incoming_values()) {
-                Value *def = getDef(val.get(), false, DebugActive());
-                if (DebugActive()) {
+                Value *def = getDef(val.get(), false);
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "\tPHI Node value: " << val << "\n\t\tDef: " << def << "\n";
                 }
                 if (!isa<GlobalValue>(def)) {
@@ -559,40 +533,37 @@ namespace hakc {
         return false;
     }
 
-    bool HAKCFunctionAnalysis::DebugActive() {
-        return CommonAnalysis.GetSystemInfo().OutputDebugInfo(CurrentFunction);
-    }
-
     /**
          * @brief Returns true if a pointer should be authenticated
          * @param ptr
          * @return
          */
     bool HAKCFunctionAnalysis::PointerShouldBeManaged(Use &U) {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Starting Pointer Management checks for " << U.get() << " from "
                                             << U.getUser() << "\n";
         }
 
-        auto *ptr = getDef(U.get(), false, DebugActive());
-        if (DebugActive()) {
+        auto *ptr = getDef(U.get(), false);
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " found def " << ptr << " for " << U.get() << "\n";
         }
 
         if (auto *call = dyn_cast<CallInst>(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a CallInst\n";
             }
-            // arch specific code here (linux)
-            if (call->getCalledFunction() && (call->getCalledFunction()->getName().str() ==
-                                              *(*SysInfo->GetMethods())["pointerShouldBeChecked"].begin())) {
-                return false;
-            }
+            // TODO: Add this to configuration file
+//            // arch specific code here (linux)
+//            if (call->getCalledFunction() && (call->getCalledFunction()->getName().str() ==
+//                                              *(*SysInfo->GetMethods())["pointerShouldBeChecked"].begin())) {
+//                return false;
+//            }
 
             bool IsInline = call->isInlineAsm();
             bool IsManualSafe = IsManualSafePointer(call);
             if (IsInline || IsManualSafe) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     if (IsInline) {
                         CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
                     }
@@ -601,12 +572,10 @@ namespace hakc {
                     }
                 }
                 /* These are usually the result of reading a register value */
-                return ValueIsUsedAsPointer(call, DebugActive());
-            } else if (call->getCalledFunction() &&
-                       call->getCalledFunction()->isIntrinsic() &&
-                       call->getCalledFunction()->getIntrinsicID() ==
-                       Intrinsic::IndependentIntrinsics::read_register) {
-                if (DebugActive()) {
+                return ValueIsUsedAsPointer(call);
+            } else if (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic() &&
+                       call->getCalledFunction()->getIntrinsicID() == Intrinsic::IndependentIntrinsics::read_register) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Call is a read register intrinsic\n";
                 }
                 return false;
@@ -615,87 +584,87 @@ namespace hakc {
                  * against IS_ERR(). No need to check this.
                  * See find_mm_struct in mm/migrate.c.
                  */
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Call returns 32-bit integer\n";
                 }
                 return false;
             }
         } else if (auto *ConstExpr = dyn_cast<ConstantExpr>(ptr)) {
             if (ConstExpr->isCast()) {
-                auto *Operand = getDef(ConstExpr->getOperand(0), false, DebugActive());
-                if (DebugActive()) {
+                auto *Operand = getDef(ConstExpr->getOperand(0), false);
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << *ConstExpr << " operand def is " << *Operand << "\n";
                 }
                 if (isa<ConstantInt>(Operand)) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "ConstExpr is from ConstantInt\n";
                     }
                     return false;
                 }
             }
         } else if (isa<Constant>(ptr) && ptr->getType()->isIntegerTy()) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a constant int\n";
             }
             return false;
         } else if (!CommonHAKCAnalysis::IsPointerLikeType(ptr->getType()) &&
                    !ptr->getType()->isArrayTy() && !isa<PtrToIntInst>(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is not a pointer, array, or pointer to int cast\n";
             }
             return false;
         } else if (isa<ConstantPointerNull>(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a constant null pointer\n";
             }
             return false;
         } /*else if (isa<GlobalValue>(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 ptr->print(CommonHAKCAnalysis::getWriter());
                 CommonHAKCAnalysis::getWriter() << " is a GlobalValue\n";
             }
             return false;
         }*/ else if (IsPHIOfGlobalsOnly(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a PHINode of Globals\n";
             }
             return false;
         } else if (isKernelUserPointer(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is a Kernel pointer from user space\n";
             }
             return false;
         } else if (isa<LoadInst>(U.getUser())) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is used in a LoadInst\n";
             }
             return true;
         } else if (isa<StoreInst>(U.getUser())) {
             if (U.getOperandNo() == StoreInst::getPointerOperandIndex()) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << *ptr << " is used in a StoreInst\n";
                 }
                 return true;
             }
         } else if (isa<UndefValue>(ptr)) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " is an undef value\n";
             }
             return false;
         } else if (auto *CallI = dyn_cast<CallInst>(U.getUser())) {
             if (CallI->isInlineAsm()) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << *ptr << " is used in inline assembly\n";
                 }
-                return ValueIsUsedAsPointer(U.get(), DebugActive());
+                return ValueIsUsedAsPointer(U.get(), DebugActive);
             }
         } else if (!ptr->getType()->isPointerTy()) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " Type is not a pointer: " << *ptr->getType() << "\n";
             }
             return false;
         } else if (ptr->getType()->isPointerTy()) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << *ptr << " Type is a pointer: " << *ptr->getType() << "\n";
             }
             return true;
@@ -708,7 +677,7 @@ namespace hakc {
          * @param use
          */
     void HAKCFunctionAnalysis::RegisterPointerDereference(Use &use) {
-        Value *definition = getDef(use.get(), false, DebugActive());
+        Value *definition = getDef(use.get(), false);
         if ((isa<StoreInst>(use.getUser()) && isa<IntToPtrInst>(use.get())) ||
             (definition->getType()->isIntegerTy(64))) {
             bool registerUse = false;
@@ -716,13 +685,13 @@ namespace hakc {
                 registerUse = CommonHAKCAnalysis::isRegisterRead(call);
             }
             if (!registerUse) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Using " << *use << " instead of " << *definition << "\n";
                 }
                 definition = use.get();
             }
         }
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Checking if " << *use << " should be registered\n";
         }
 
@@ -731,9 +700,9 @@ namespace hakc {
                 bool is_percpu_ptr = isPerCPUPointer(use);
 
                 if (is_percpu_ptr) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Detected per-cpu pointer: " << *use << "\nDef chain:\n";
-                        for (auto *v: findDefChain(use.get(), false, DebugActive())) {
+                        for (auto *v: findDefChain(use.get(), false)) {
                             CommonHAKCAnalysis::getWriter() << "\t" << *v << "\n";
                         }
                     }
@@ -741,12 +710,12 @@ namespace hakc {
                 }
             }
             AddManagedPointer(definition);
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Definition " << definition << " from " << *use.getUser()
                                                 << " is registered\n";
             }
         } else {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Definition " << definition << " from " << *use.getUser()
                                                 << " should not be checked\n";
             }
@@ -757,8 +726,8 @@ namespace hakc {
         return Alloca;
     }
 
-    Value *HAKCFunctionAnalysis::getDef(Value *V, bool followLoad, bool debug) {
-        auto *def = CommonHAKCAnalysis::getDef(V, followLoad, debug);
+    Value *HAKCFunctionAnalysis::getDef(Value *V, bool followLoad) {
+        auto *def = GetModuleAnalysis().GetCommonAnalysis().getDef(V, followLoad);
         if (!def) {
             CommonHAKCAnalysis::getWriter() << "Could not find definition for " << V << "\n";
             throw std::exception();
@@ -771,7 +740,7 @@ namespace hakc {
          * @param load
          */
     void HAKCFunctionAnalysis::handleLoad(LoadInst *load) {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Handling " << *load->getOperandUse(LoadInst::getPointerOperandIndex())
                                             << " from Load " << *load << "\n";
         }
@@ -796,16 +765,16 @@ namespace hakc {
     }
 
     void HAKCFunctionAnalysis::MaybeAddCompareToDirectUsers(CmpInst *CmpI) {
-        CheckCompareOperandForDirectFunctionUse(CmpI, Policy, 0);
-        CheckCompareOperandForDirectFunctionUse(CmpI, Policy, 1);
+        CheckCompareOperandForDirectFunctionUse(CmpI, 0);
+        CheckCompareOperandForDirectFunctionUse(CmpI, 1);
     }
 
     void
     HAKCFunctionAnalysis::CheckCompareOperandForDirectFunctionUse(CmpInst *CmpI, unsigned OpNo) {
-        auto *Op = getDef(CmpI->getOperand(OpNo), false, DebugActive());
+        auto *Op = getDef(CmpI->getOperand(OpNo), false);
         if (auto *func = dyn_cast<Function>(Op)) {
-            if (getModuleAnalysis().valueShouldBeReplacedWithTransfer(func, Policy)) {
-                if (DebugActive()) {
+            if (GetModuleAnalysis().GetCommonAnalysis().ValueShouldBeReplacedWithTransfer(func, Policy)) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Adding comparison to directFunctionUsers for argument " <<
                                                     std::to_string(OpNo) << "\n";
                 }
@@ -819,7 +788,7 @@ namespace hakc {
          * @param compare
          */
     void HAKCFunctionAnalysis::handleComparison(CmpInst *compare) {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Checking comparison " << *compare << "\n";
         }
 
@@ -827,7 +796,7 @@ namespace hakc {
 
         if (isa<ConstantPointerNull>(compare->getOperand(0)) ||
             isa<ConstantPointerNull>(compare->getOperand(1))) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "\tComparisons with null do not need authentication\n";
             }
             return;
@@ -850,7 +819,7 @@ namespace hakc {
             }
 
             if (comparisonIsWithConstant) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter()
                             << "\tComparisons with constant integers do not need authentications\n";
                 }
@@ -861,11 +830,11 @@ namespace hakc {
         if (isCompartmentalizedFunction()) {
             bool arg0NeedsAuth =
                     argNeedsAuthentication(compare->getOperandUse(0)) &&
-                    !isa<GlobalValue>(getDef(compare->getOperand(0), false, DebugActive()));
+                    !isa<GlobalValue>(getDef(compare->getOperand(0), false));
             bool arg1NeedsAuth =
                     argNeedsAuthentication(compare->getOperandUse(1)) &&
-                    !isa<GlobalValue>(getDef(compare->getOperand(1), false, DebugActive()));
-            if (DebugActive()) {
+                    !isa<GlobalValue>(getDef(compare->getOperand(1), false));
+            if (DebugActive) {
                 if (arg0NeedsAuth) {
                     CommonHAKCAnalysis::getWriter() << "Argument 0 needs auth\n";
                 } else {
@@ -878,25 +847,25 @@ namespace hakc {
                 }
             }
             if (arg0NeedsAuth && arg1NeedsAuth) {
-                if (DebugActive()) {
+                if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Both operands should be checked\n";
                 }
                 RegisterPointerDereference(compare->getOperandUse(0));
                 RegisterPointerDereference(compare->getOperandUse(1));
             } else {
                 if (arg0NeedsAuth) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Registering argument 0\n";
                     }
                     RegisterPointerDereference(compare->getOperandUse(0));
                 } else {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Argument 1 (" << compare->getOperand(1)
                                                         << " ) already authenticated\n";
                     }
                 }
                 if (arg1NeedsAuth) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Registering argument 1\n";
                     }
                     RegisterPointerDereference(compare->getOperandUse(1));
@@ -917,7 +886,7 @@ namespace hakc {
      * @param binOp
      */
     void HAKCFunctionAnalysis::handleBinaryOperator(BinaryOperator *binOp) {
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Checking binary op " << binOp << "\n";
         }
         /* Both operators need to be pointers to skip operations like
@@ -925,7 +894,7 @@ namespace hakc {
          */
         if (argNeedsAuthentication(binOp->getOperandUse(0)) &&
             argNeedsAuthentication(binOp->getOperandUse(1))) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Registering both operands\n";
             }
             RegisterPointerDereference(binOp->getOperandUse(0));
@@ -942,7 +911,7 @@ namespace hakc {
     bool HAKCFunctionAnalysis::globalShouldBeTransferred(Use &globalValueArg) {
         /* Don't transfer to printk */
         if (auto *globalValue = dyn_cast<GlobalValue>(
-                getDef(globalValueArg.get(), false, DebugActive()))) {
+                getDef(globalValueArg.get(), false))) {
             /* Don't transfer THIS_MODULE */
             if (globalValue->getName() == "__this_module") {
                 return false;
@@ -966,7 +935,7 @@ namespace hakc {
             return globalValue->getValueType()->isPointerTy();
         }
 
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Arg " << globalValueArg.getOperandNo() << " (" << globalValueArg
                                             << " ) is not a GlobalValue\n";
         }
@@ -982,11 +951,7 @@ namespace hakc {
          * @param call
          */
     void HAKCFunctionAnalysis::handleCall(CallInst *call) {
-        auto IntrinsicsToSkip = GetInstrinsicsToSkip();
-        if (call->getCalledFunction() &&
-            (/*call->getCalledFunction()->isDebugInfoForProfiling() ||*/
-                    IntrinsicsToSkip.find(call->getIntrinsicID()) !=
-                    IntrinsicsToSkip.end())) {
+        if (call->getCalledFunction() && IsIntrinsicToSkip(call)) {
             return;
         }
 
@@ -995,28 +960,25 @@ namespace hakc {
             HAKCFunctionCalls.insert(call);
         }
 
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Handling call " << *call << "\n";
         }
 
-        if (ValueIsUsedAsPointer(call, DebugActive())) {
+        if (ValueIsUsedAsPointer(call, DebugActive)) {
             AddManagedPointer(call);
-        } else if (DebugActive()) {
+        } else if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << *call << " should not be managed\n";
         }
 
-        bool needsAuthenticatedArgs = (call->isInlineAsm() ||
-                                       (getModuleAnalysis().functionInAnalysisSet(
-                                               call->getCalledFunction()) &&
-                                        !isOutsideTransferFunc(
-                                                call->getCalledFunction())) ||
+        bool needsAuthenticatedArgs = (call->isInlineAsm() || (GetModuleAnalysis().GetCommonAnalysis().functionInAnalysisSet(call->getCalledFunction()) &&
+                                        !CommonHAKCAnalysis::isOutsideTransferFunc(call->getCalledFunction())) ||
                                        callIsSafeTransition(call));
 
         if (isa<IntrinsicInst>(call)) {
             needsAuthenticatedArgs = IsIntrinsicNeedingAuthentication(call);
         }
 
-        if (DebugActive()) {
+        if (DebugActive) {
             if (needsAuthenticatedArgs) {
                 CommonHAKCAnalysis::getWriter() << *call << " needs authenticated args\n";
             } else {
@@ -1025,7 +987,7 @@ namespace hakc {
         }
 
         if (call->isIndirectCall()) {
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Indirect call: " << *call << "\n";
             }
             RegisterPointerDereference(call->getCalledOperandUse());
@@ -1037,7 +999,7 @@ namespace hakc {
             for (auto &arg: call->args()) {
                 if (argNeedsAuthentication(arg)) {
                     RegisterPointerDereference(arg);
-                } else if (DebugActive()) {
+                } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Argument " << *arg << " for " << *call
                                                     << " does not need authentication\n";
                 }
@@ -1046,12 +1008,12 @@ namespace hakc {
             for (auto &arg: call->args()) {
                 if (argNeedsAuthentication(arg)) {
                     RegisterPointerDereference(arg);
-                } else if (DebugActive()) {
+                } else if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "Argument " << *arg << " for " << *call
                                                     << " does not need authentication\n";
                 }
             }
-        } else if (!callIsSafeTransition(call)) {
+        } else if (!GetModuleAnalysis().GetCommonAnalysis().IsSafeTransitionCall(call)) {
             if (call->getCalledFunction() && call->getCalledFunction()->isIntrinsic()) {
                 /* Intrinsics that don't need authenticated args are basically bitwise shifts
                  * and other minor things, so ignore them
@@ -1059,30 +1021,30 @@ namespace hakc {
                 return;
             }
             for (auto &arg: call->args()) {
-                Value *def = getDef(arg.get(), false, DebugActive());
+                Value *def = getDef(arg.get(), false);
                 if (auto *glob = dyn_cast<GlobalValue>(def)) {
                     if (globalShouldBeTransferred(arg)) {
-                        if (DebugActive()) {
+                        if (DebugActive) {
                             CommonHAKCAnalysis::getWriter() << "Global " << glob->getName()
                                                             << " used by " << *call << "\n";
                         }
                         GlobalArgumentUses[glob].insert(call);
                         RegisterPointerDereference(arg);
-                    } else if (DebugActive()) {
+                    } else if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Global " << glob->getName()
                                                         << " should not be transferred to " << *call << "\n";
                     }
                 } else if (auto *phiNode = dyn_cast<PHINode>(def)) {
                     for (auto &val: phiNode->incoming_values()) {
-                        Value *valDef = getDef(val.get(), false, DebugActive());
+                        Value *valDef = getDef(val.get(), false);
                         if (auto *globVal = dyn_cast<GlobalValue>(valDef)) {
                             if (globalShouldBeTransferred(val)) {
-                                if (DebugActive()) {
+                                if (DebugActive) {
                                     CommonHAKCAnalysis::getWriter() << "Global " << globVal->getName() << " used by "
                                                                     << *call << "\n";
                                 }
                                 GlobalArgumentUses[globVal].insert(call);
-                            } else if (DebugActive()) {
+                            } else if (DebugActive) {
                                 CommonHAKCAnalysis::getWriter() << "Global " << globVal->getName()
                                                                 << " should not be transferred to " << *call << "\n";
                             }
@@ -1091,7 +1053,7 @@ namespace hakc {
                 } else if (isa<AllocaInst>(def)) {
                     if (!functionIsAnalysisCandidate(
                             call->getCalledFunction())) {
-                        if (DebugActive()) {
+                        if (DebugActive) {
                             CommonHAKCAnalysis::getWriter() << "Function called by " << *call
                                                             << " is not an analysis candidate\n";
                         }
@@ -1106,11 +1068,6 @@ namespace hakc {
                 }
             }
         }
-    }
-
-    ConstantInt *HAKCFunctionAnalysis::getColor() {
-        // TODO: update get color functionality
-        return getTransformer().getInt64(TEAL_CLIQUE);
     }
 
     /**
@@ -1137,7 +1094,7 @@ namespace hakc {
     void HAKCFunctionAnalysis::setup() {
         if (!SetupHasRun) {
             auto Compartment = Policy.GetDivision(CurrentFunction).GetHAKCCompartment();
-            if (DebugActive()) {
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Running setup for " << getFunction().getName() << "\n"
                                                 << getFunction() << "\nCompartmentID = "
                                                 << std::to_string(Compartment.GetCompartmentIDValue()) << "\n";
@@ -1148,7 +1105,7 @@ namespace hakc {
                 HandleInstruction(inst);
             }
             SetupHasRun = true;
-        } else if (DebugActive()) {
+        } else if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "setup has run for " << getFunction().getName() << "\n";
         }
     }
@@ -1173,7 +1130,7 @@ namespace hakc {
                  * transfer function will be used through the alias.
                  */
                 auto TransformedName = CommonHAKCAnalysis::getOriginalTransformedName(call->getCalledFunction());
-                auto TransformedFunction = getModuleAnalysis().GetFunctionByName(TransformedName,
+                auto TransformedFunction = GetModuleAnalysis().GetFunctionByName(TransformedName,
                                                                                  call->getCalledFunction()->getFunctionType());
                 call->setCalledFunction(TransformedFunction);
             } else {
@@ -1181,7 +1138,7 @@ namespace hakc {
                 bool ValidTransition = false;
 
                 for (auto *Target: CurrentDivision.GetHAKCCompartment().GetValidTargets()) {
-                    if (DebugActive()) {
+                    if (DebugActive) {
                         CommonHAKCAnalysis::getWriter() << "Testing Target Compartment " << *Target << " against "
                                                         << *TargetCompartment.GetCompartmentID() << "\n";
                     }
@@ -1205,7 +1162,7 @@ namespace hakc {
                 }
 
                 if (call->getCalledFunction()->isVarArg()) {
-                    auto *VariadicTransfer = getTransformer(Policy).CreateTransferToVariadic(call);
+                    auto *VariadicTransfer = getTransformer().CreateTransferToVariadic(call);
                     call->setCalledFunction(VariadicTransfer);
                 }
             }
@@ -1213,15 +1170,19 @@ namespace hakc {
     }
 
     HAKCTransformer &HAKCFunctionAnalysis::getTransformer() {
-        return getModuleAnalysis().getTransformer(Policy);
+        return GetModuleAnalysis().GetTransformer();
+    }
+
+    HAKCModuleAnalysis &HAKCFunctionAnalysis::GetModuleAnalysis() {
+        return ModuleAnalysis;
     }
 
     void HAKCFunctionAnalysis::AddInstrumentation(bool RelocateSection) {
-        if (isOutsideTransferFunc(&getFunction())) {
+        if (CommonHAKCAnalysis::isOutsideTransferFunc(&getFunction())) {
             throw std::exception();
         }
 
-        auto debug_output = getFunction().getName() == getHAKCDebugName();
+        auto debug_output = GetModuleAnalysis().GetCommonAnalysis().GetSystemInfo().OutputDebugInfo(&getFunction());
         if (!SetupHasRun) {
             if (debug_output) {
                 CommonHAKCAnalysis::getWriter() << __FUNCTION__ << " calling setup for " << getFunction().getName()
@@ -1336,7 +1297,7 @@ namespace hakc {
             throw std::exception();
         }
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer(Policy).CreateSignWithColor(HAKCPointer, InsertionPoint, &getFunction(),
+        return getTransformer().CreateSignWithColor(HAKCPointer, InsertionPoint, &getFunction(),
                                                           !isa<Function>(GlobalVar));
     }
 
@@ -1344,7 +1305,7 @@ namespace hakc {
         if (CommonHAKCAnalysis::IsKernelSymbol(CurrentFunction, Policy)) {
             return;
         }
-        if (DebugActive()) {
+        if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Function prior to making transfers:\n" << getFunction() << "\n";
         }
         PointerManager.CreateAllTransfers();
@@ -1360,7 +1321,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << NewValue << "\n";
                 throw std::exception();
             }
-            Replacement = getTransformer(Policy).CreateBitCast(HAKCPointer, Oper->getDestTy(), I);
+            Replacement = getTransformer().CreateBitCast(HAKCPointer, Oper->getDestTy(), I);
         } else if (V == OldValue) {
             Replacement = NewValue;
         } else {
@@ -1378,15 +1339,15 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::CheckAndReplaceArgument(Value *V, Instruction *I, unsigned int ArgNo) {
         if (auto *Func = dyn_cast<Function>(V)) {
-            auto name = getOutsideTransferName(Func);
-            auto transfer = getModuleAnalysis().GetFunctionByName(name, Func->getFunctionType());
-            if (DebugActive()) {
+            auto name = GetModuleAnalysis().GetCommonAnalysis().GetOutsideTransferName(Func);
+            auto transfer = GetModuleAnalysis().GetFunctionByName(name, Func->getFunctionType());
+            if (DebugActive) {
                 CommonHAKCAnalysis::getWriter() << "Changing operand " << std::to_string(ArgNo) << " to "
                                                 << name << " for\n\t" << *I << "\n";
             }
             transfer->setLinkage(Func->getLinkage());
             transfer->copyAttributesFrom(Func);
-            ReplaceInstructionOperand(I, ArgNo, V, transfer, Policy);
+            ReplaceInstructionOperand(I, ArgNo, V, transfer);
         }
     }
 
@@ -1399,13 +1360,13 @@ namespace hakc {
                         /* Don't change actual function call, only the arguments */
                         continue;
                 }
-                auto *Op = getDef(I->getOperand(i), false, DebugActive());
+                auto *Op = getDef(I->getOperand(i), false);
                 if (isa<Function>(Op)) {
                     CheckAndReplaceArgument(Op, I, i);
                 } else if (auto *selectInst = dyn_cast<SelectInst>(Op)) {
-                    auto *TrueValue = getDef(selectInst->getTrueValue(), false, DebugActive());
+                    auto *TrueValue = getDef(selectInst->getTrueValue(), false);
                     CheckAndReplaceArgument(TrueValue, I, i);
-                    auto *FalseValue = getDef(selectInst->getFalseValue(), false, DebugActive());
+                    auto *FalseValue = getDef(selectInst->getFalseValue(), false);
                     CheckAndReplaceArgument(FalseValue, I, i);
                 }
             }
@@ -1414,7 +1375,6 @@ namespace hakc {
 
     void HAKCFunctionAnalysis::InstrumentCode() {
         auto Compartment = Policy.GetDivision(&getFunction()).GetHAKCCompartment();
-
         AddInstrumentation(!Compartment.IsKernelCompartment());
     }
 

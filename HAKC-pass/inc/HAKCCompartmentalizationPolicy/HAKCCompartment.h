@@ -41,6 +41,8 @@ namespace hakc {
             return !(lhs == rhs);
         }
 
+        static constexpr unsigned CompartmentIDBitCount = 32;
+
     protected:
         HAKC_Compartment_ID Compartment;
         HAKC_Access_Token EntryToken;

@@ -47,6 +47,6 @@ namespace hakc {
     }
 
     HAKC_Compartment_ID HAKCCompartment::CreateID(hakc_compartment_id_t ID, Module &M) {
-        return ConstantInt::get(IntegerType::get(M.getContext(), COMPARTMENT_ID_BIT_LENGTH), ID);
+        return ConstantInt::get(IntegerType::get(M.getContext(), CompartmentIDBitCount), ID);
     }
 } // hakc

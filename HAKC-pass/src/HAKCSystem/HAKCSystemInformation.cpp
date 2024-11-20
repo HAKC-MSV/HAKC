@@ -160,7 +160,7 @@ namespace hakc {
         return DataValidationFunction;
     }
 
-    HAKCTypeIdentifier& &HAKCSystemInformation::GetTypeIdentifier() const {
+    HAKCTypeIdentifier& HAKCSystemInformation::GetTypeIdentifier() {
         return TypeIdentifier;
     }
 
@@ -180,7 +180,7 @@ namespace hakc {
         return OutputDebugInfo() || llvm::any_of(SymbolsToOutputDebugInfo, Search);
     }
 
-    iterator_range <FunctionList::iterator> HAKCSystemInformation::GetNoTransferFunctions() {
+    iterator_range <FunctionList::iterator> HAKCSystemInformation::NoTransferFunctions() {
         return make_range(NoTransferFunctionList.begin(), NoTransferFunctionList.end());
     }
 

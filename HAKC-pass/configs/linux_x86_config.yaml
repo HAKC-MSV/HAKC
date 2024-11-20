@@ -171,10 +171,10 @@ SafeTransitionFunctions:
     - "__ashrti3"
     - "__lshrti3"
 IgnoredTypes:
-    - "struct.list_head"
-    - "struct.proto"
-    - "struct.atomic64_s"
-    - "struct.atomic_s"
+    - "struct list_head"
+    - "struct proto"
+    - "struct atomic64_s"
+    - "struct atomic_s"
 IgnoredGlobals:
     - "kmalloc_caches"
 KernelAllocationSizeMap:

@@ -38,9 +38,10 @@ namespace hakc {
  */
     class HAKCFunctionAnalysis {
     protected:
-        CommonHAKCAnalysis &CommonAnalysis;
+        HAKCModuleAnalysis &ModuleAnalysis;
         HAKCCompartmentalizationPolicy &Policy;
         HAKCPointerManager PointerManager;
+        bool DebugActive;
 
         /**
          * @brief Global variables used as function arguments
@@ -96,9 +97,11 @@ namespace hakc {
 
         void handleLoad(LoadInst *load);
 
-        virtual void handleComparison(CmpInst *compare);
+        void handleComparison(CmpInst *compare);
 
         void handleCall(CallInst *call);
+
+        void handleStore(StoreInst *store);
 
         void handleBinaryOperator(BinaryOperator *binOp);
 
@@ -110,17 +113,7 @@ namespace hakc {
 
         void CheckForValidCompartmentTransitionAndUpdateIntraCompartmentCalls();
 
-        HAKCModuleAnalysis &getModuleAnalysis();
-
-        ConstantInt *getColor();
-
         HAKCTransformer &getTransformer();
-
-        std::set<Intrinsic::ID> GetIntrinsicsNeedingAuthenticatedArgs();
-
-        virtual std::set<Intrinsic::ID> GetIntrinsicsToClone();
-
-        std::set<Intrinsic::ID> GetInstrinsicsToSkip();
 
         void AddManagedPointer(Value *HAKCPointer);
 
@@ -143,10 +136,16 @@ namespace hakc {
 
         void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo);
 
-        bool DebugActive();
+        bool IsIntrinsicNeedingAuthentication(CallBase *Call);
+
+        bool IsIntrinsicNeedingCloning(CallBase *Call);
+
+        bool IsIntrinsicToSkip(CallBase *Call);
+
+        bool IsCallInIntrinsicSet(CallBase *Call, ArrayRef<Intrinsic::ID> IDs);
 
     public:
-        HAKCFunctionAnalysis(Function *F, CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);
+        HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis &ModuleAnalysis, HAKCCompartmentalizationPolicy &Policy);
 
         ~HAKCFunctionAnalysis() = default;
 
@@ -156,19 +155,7 @@ namespace hakc {
 
         virtual void setup();
 
-        std::set<StringRef> GetNoTransferFunctions();
-
-        std::set<StringRef> GetSafeTransitionFunctions();
-
-        std::set<hakc_transfer_def_t> GetHAKCTransferFunctions();
-
-        std::map<std::string, HAKCAllocationSize> GetKernelAllocationSizeMap();
-
-        std::set<StringRef> GetIgnoredTypes();
-
-        std::set<hakc_function_def_t> GetHAKCFunctions();
-
-        Value *getDef(Value *, bool, bool);
+        Value *getDef(Value *, bool);
 
         Instruction *
         FindUseInsertionPoint(Value *v, std::set<Instruction *> &users);
@@ -200,6 +187,8 @@ namespace hakc {
         virtual bool PointerShouldBeManaged(Use &use);
 
         bool IsPHIOfGlobalsOnly(Value *V);
+
+        HAKCModuleAnalysis &GetModuleAnalysis();
 
     };
 

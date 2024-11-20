@@ -21,7 +21,7 @@
 #include <sstream>
 #include <algorithm>
 
-std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
     if (!type) {
         CommonHAKCAnalysis::getWriter() << "Trying to find null type\n";
         throw std::exception();
@@ -50,11 +50,11 @@ std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DI
 //    return StructName;
 //}
 
-void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::shared_ptr <HAKCTypeInfo> &HAKCType) {
+void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::shared_ptr<HAKCTypeInfo> &HAKCType) {
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo()) {
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *type << " -> " << HAKCType->GetName() << "\n";
     }
-    std::set <dwarf::Tag> TagsToSize = {
+    std::set<dwarf::Tag> TagsToSize = {
             dwarf::DW_TAG_structure_type,
             dwarf::DW_TAG_union_type,
     };
@@ -180,7 +180,7 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
     return Name;
 }
 
-std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::HandleType(const DIType *type) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::HandleType(const DIType *type) {
     auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo();
 
     if (debug) {
@@ -241,7 +241,7 @@ GlobalVariable *hakc::HAKCTypeIdentifier::FindGlobal(const DIGlobalVariable *DIG
     return GetModule().getGlobalVariable(Name, true);
 }
 
-std::shared_ptr <hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(const DIGlobalVariable *DIGV) {
+std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(const DIGlobalVariable *DIGV) {
     auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo(DIGV->getName());
     if (debug) {
         CommonHAKCAnalysis::getWriter() << "Analyzing Global " << *DIGV << "\n";
@@ -280,7 +280,7 @@ std::shared_ptr <hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(co
 }
 
 void hakc::HAKCTypeIdentifier::AddGlobalMapping(const DIGlobalVariable *DIGV,
-                                                const std::shared_ptr <HAKCGlobalInfo> &HAKCSymbol) {
+                                                const std::shared_ptr<HAKCGlobalInfo> &HAKCSymbol) {
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo(DIGV->getName())) {
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *DIGV << " -> " << HAKCSymbol->GetName() << "\n";
     }
@@ -288,7 +288,7 @@ void hakc::HAKCTypeIdentifier::AddGlobalMapping(const DIGlobalVariable *DIGV,
 //    AddLLVMTypeMapping(HAKCSymbol->GetType(), HAKCSymbol->GetGlobalVariable()->getValueType());
 }
 
-std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction(const DISubprogram *SubProg) {
+std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction(const DISubprogram *SubProg) {
     auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo(SubProg->getName());
 
     if (debug) {
@@ -340,7 +340,7 @@ std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunctio
 }
 
 void hakc::HAKCTypeIdentifier::AddFunctionMapping(const DISubprogram *SubProg,
-                                                  const std::shared_ptr <HAKCFunctionInfo> &HAKCFunction) {
+                                                  const std::shared_ptr<HAKCFunctionInfo> &HAKCFunction) {
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo(SubProg->getName())) {
         CommonHAKCAnalysis::getWriter() << "Adding mapping " << *SubProg << " -> " << *HAKCFunction << "\n";
     }
@@ -352,8 +352,7 @@ void hakc::HAKCTypeIdentifier::AddFunctionMapping(const DISubprogram *SubProg,
 void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObject *> &GlobalSet) {
     if (auto *ConstStruct = dyn_cast<ConstantStruct>(V)) {
         for (auto &Member: ConstStruct->operands()) {
-            auto *MemberDef = AnalysisHelper.getDef(Member.get(), false,
-                                                    AnalysisHelper.GetSystemInfo().OutputDebugInfo());
+            auto *MemberDef = AnalysisHelper.getDef(Member.get(), false);
             if (auto *GlobalObj = dyn_cast<GlobalObject>(MemberDef)) {
                 GlobalSet.insert(GlobalObj);
             } else {
@@ -364,8 +363,7 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
         GlobalSet.insert(GlobalObj);
     } else if (auto *ConstArray = dyn_cast<ConstantArray>(V)) {
         for (auto &Member: ConstArray->operands()) {
-            auto MemberDef = AnalysisHelper.getDef(Member.get(), false,
-                                                   AnalysisHelper.GetSystemInfo().OutputDebugInfo());
+            auto MemberDef = AnalysisHelper.getDef(Member.get(), false);
             if (auto *GlobalMember = dyn_cast<GlobalObject>(MemberDef)) {
                 GlobalSet.insert(GlobalMember);
             } else {
@@ -374,8 +372,7 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
         }
     } else if (auto *I = dyn_cast<Instruction>(V)) {
         for (auto &Op: I->operands()) {
-            auto MemberDef = AnalysisHelper.getDef(Op.get(), false,
-                                                   AnalysisHelper.GetSystemInfo().OutputDebugInfo(I->getFunction()));
+            auto MemberDef = AnalysisHelper.getDef(Op.get(), false);
             if (auto *GlobalMember = dyn_cast<GlobalObject>(MemberDef)) {
                 GlobalSet.insert(GlobalMember);
             }
@@ -383,7 +380,7 @@ void hakc::HAKCTypeIdentifier::FindAllGlobalsUsed(Value *V, std::set<GlobalObjec
     }
 }
 
-std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFunction(Function *F) {
+std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFunction(Function *F) {
     auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo(F);
 
     for (const auto &UnmappedFunc: UnmappedFunctions) {
@@ -411,7 +408,7 @@ std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFu
     return FuncInfo;
 }
 
-std::shared_ptr <hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGlobal(GlobalObject *GlobalObj) {
+std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGlobal(GlobalObject *GlobalObj) {
     auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo(GlobalObj);
     if (CommonHAKCAnalysis::IsStringType(GlobalObj->getValueType())) {
         return nullptr;
@@ -449,7 +446,7 @@ std::shared_ptr <hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGlob
 }
 
 void hakc::HAKCTypeIdentifier::AddUsedGlobals(std::set<GlobalObject *> &GlobalObjects,
-                                              const std::shared_ptr <hakc::HAKCSymbolInfo> &UserSymbol) {
+                                              const std::shared_ptr<hakc::HAKCSymbolInfo> &UserSymbol) {
     for (auto *UsedGlobal: GlobalObjects) {
         auto debug = AnalysisHelper.GetSystemInfo().OutputDebugInfo(UsedGlobal);
         auto Symbol = FindSymbol(UsedGlobal);
@@ -477,7 +474,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInGlobals() {
             if (AnalysisHelper.GetSystemInfo().OutputDebugInfo(GV)) {
                 CommonHAKCAnalysis::getWriter() << "Searching for globals in " << *GV << "\n";
             }
-            std::set < GlobalObject * > GlobalsUsed;
+            std::set<GlobalObject *> GlobalsUsed;
             FindAllGlobalsUsed(GV->getInitializer(), GlobalsUsed);
             AddUsedGlobals(GlobalsUsed, it.second);
         }
@@ -485,7 +482,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInGlobals() {
 }
 
 void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
-                                                            std::vector <std::shared_ptr<HAKCIndirectCallSourceLink>> &Path) {
+                                                            std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path) {
     if (auto *Arg = dyn_cast<Argument>(V)) {
         auto HAKCType = FindType(Arg->getType());
         if (!HAKCType) {
@@ -575,7 +572,7 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
 }
 
 void hakc::HAKCTypeIdentifier::FindIndirectCallSource(CallInst *CallI,
-                                                      std::vector <std::shared_ptr<HAKCIndirectCallSourceLink>> &Path) {
+                                                      std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path) {
     if (!CallI->isIndirectCall()) {
         CommonHAKCAnalysis::getWriter() << *CallI << " is not an indirect call\n";
         throw std::exception();
@@ -605,7 +602,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
             CommonHAKCAnalysis::getWriter() << "Searching for globals in Function " << F->getName() << "\n";
         }
 
-        std::set < GlobalObject * > GlobalsUsed;
+        std::set<GlobalObject *> GlobalsUsed;
         for (auto InstIt = inst_begin(F); InstIt != inst_end(F); ++InstIt) {
             auto *I = &(*InstIt);
             if (I->isDebugOrPseudoInst() || isa<IntrinsicInst>(I)) {
@@ -636,7 +633,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Source of indirect call operand in Function "
                                                         << F->getName() << ": "
-                                                        << AnalysisHelper.getDef(Call->getCalledOperand(), true, false)
+                                                        << AnalysisHelper.getDef(Call->getCalledOperand(), true)
                                                         << "\n";
                     }
                     auto HAKCType = FindCalledFunctionType(FunctionTy);
@@ -651,7 +648,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
                         }
                         throw std::exception();
                     }
-                    std::vector <std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath;
+                    std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath;
                     if (!HAKCType->GetLLVMType()) {
                         HAKCType->SetLLVMType(FunctionTy);
                     }
@@ -664,7 +661,7 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
     }
 }
 
-std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(Type *Ty) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(Type *Ty) {
 //    auto Search = [Ty](Type *T) {
 //        return Ty == T;
 //    };
@@ -688,7 +685,7 @@ std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(Type *Ty
     return nullptr;
 }
 
-std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindCalledFunctionType(FunctionType *FunctionTy) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindCalledFunctionType(FunctionType *FunctionTy) {
     if (!FunctionTy) {
         CommonHAKCAnalysis::getWriter() << "Trying to find null FunctionTy\n";
         throw std::exception();
@@ -697,7 +694,7 @@ std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindCalledFunctio
     return FindType(FunctionTy);
 }
 
-std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::FindFunction(Function *F, bool SearchUnmapped) {
+std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::FindFunction(Function *F, bool SearchUnmapped) {
     for (auto &it: functions) {
         if (it.second->GetFunction() == F) {
             return it.second;
@@ -713,7 +710,7 @@ std::shared_ptr <hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::FindFunction(
     return nullptr;
 }
 
-std::shared_ptr <hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::FindGlobal(GlobalVariable *GV, bool SearchUnmapped) {
+std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::FindGlobal(GlobalVariable *GV, bool SearchUnmapped) {
     for (auto &it: globals) {
         if (it.second->GetGlobalVariable() == GV) {
             return it.second;
@@ -729,7 +726,7 @@ std::shared_ptr <hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::FindGlobal(Glob
     return nullptr;
 }
 
-std::shared_ptr <hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::FindSymbol(Value *V, bool SearchUnmapped) {
+std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::FindSymbol(Value *V, bool SearchUnmapped) {
     if (auto *GV = dyn_cast<GlobalVariable>(V)) {
         return FindGlobal(GV, SearchUnmapped);
     }
@@ -819,7 +816,7 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
     }
 }
 
-std::shared_ptr <hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(Type *Ty) {
+std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(Type *Ty) {
     std::string Name;
     llvm::raw_string_ostream sstream(Name);
     if (auto *StructTy = dyn_cast<StructType>(Ty)) {
@@ -1077,7 +1074,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
     auto GlobalCount = globals.size() + UnmappedGlobals.size();
     if (GlobalCount > 0) {
         out << "globals:\n";
-        std::vector <std::shared_ptr<HAKCGlobalInfo>> SortedGlobals;
+        std::vector<std::shared_ptr<HAKCGlobalInfo>> SortedGlobals;
         SortedGlobals.reserve(GlobalCount);
         for (auto &it: globals) {
             SortedGlobals.push_back(it.second);
@@ -1086,7 +1083,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
             SortedGlobals.push_back(Unmapped);
         }
         llvm::sort(SortedGlobals.begin(), SortedGlobals.end(),
-                   [](const std::shared_ptr <HAKCGlobalInfo> &LHS, const std::shared_ptr <HAKCGlobalInfo> &RHS) {
+                   [](const std::shared_ptr<HAKCGlobalInfo> &LHS, const std::shared_ptr<HAKCGlobalInfo> &RHS) {
                        return LHS->GetName() < RHS->GetName();
                    });
         for (auto &it: SortedGlobals) {
@@ -1097,7 +1094,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
     auto FunctionCount = functions.size() + UnmappedFunctions.size();
     if (FunctionCount > 0) {
         out << "functions:\n";
-        std::vector <std::shared_ptr<HAKCFunctionInfo>> SortedFunctions;
+        std::vector<std::shared_ptr<HAKCFunctionInfo>> SortedFunctions;
         SortedFunctions.reserve(FunctionCount);
         for (auto &it: functions) {
             SortedFunctions.push_back(it.second);
@@ -1106,7 +1103,7 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
             SortedFunctions.push_back(Unmapped);
         }
         llvm::sort(SortedFunctions.begin(), SortedFunctions.end(),
-                   [](const std::shared_ptr <HAKCFunctionInfo> &LHS, const std::shared_ptr <HAKCFunctionInfo> &RHS) {
+                   [](const std::shared_ptr<HAKCFunctionInfo> &LHS, const std::shared_ptr<HAKCFunctionInfo> &RHS) {
                        return LHS->GetName() < RHS->GetName();
                    });
         for (auto &it: SortedFunctions) {

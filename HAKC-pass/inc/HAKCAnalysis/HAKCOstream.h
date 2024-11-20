@@ -12,6 +12,9 @@
 #include "llvm/IR/Module.h"
 #include "llvm/IR/DebugInfoMetadata.h"
 
+#include "HAKCCompartmentalizationPolicy/HAKCCompartment.h"
+#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
+
 using namespace llvm;
 
 namespace hakc {
@@ -97,6 +100,17 @@ namespace hakc {
 
         friend HAKCOstream &operator<<(HAKCOstream &hos, const DIType *DiType) {
             hos.printDIType(DiType, 0);
+            return hos;
+        }
+
+        friend HAKCOstream& operator<<(HAKCOstream &hos, const hakc::HAKCCompartment &Compartment) {
+            hos.os << "Compartment " << Compartment.GetCompartmentIDValue();
+            return hos;
+        }
+
+        friend HAKCOstream& operator<<(HAKCOstream &hos, const hakc::HAKCCompartmentDivision &Division) {
+            hos << Division.GetHAKCCompartment();
+            hos.os << " Division " << Division.GetDivisionID()->getZExtValue();
             return hos;
         }
     };

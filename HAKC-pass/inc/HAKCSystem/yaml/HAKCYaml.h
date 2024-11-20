@@ -113,6 +113,7 @@ namespace hakc {
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLAllocationType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLTransferType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLCustomTransferType);
+LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLFunctionDefinitionType);
 
 template<>
 struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
@@ -178,7 +179,6 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
         io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
 
-        io.mapOptional("CompartmentTransferFunctions", YamlConfig.CompartmentTransferFunctions);
         io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
         io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);
         io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
@@ -190,7 +190,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
         io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
         io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
-        io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
+        io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctionList);
     }
 };
 
