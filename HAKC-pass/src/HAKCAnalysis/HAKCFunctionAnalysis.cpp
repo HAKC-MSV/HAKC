@@ -955,7 +955,6 @@ namespace hakc {
             return;
         }
 
-        auto CurrentSymbol = getTransformer().GetSysInfo()->findSymbol(CurrentFunction);
         if (IsHAKCFunction(call->getCalledFunction())) {
             HAKCFunctionCalls.insert(call);
         }
@@ -1051,8 +1050,7 @@ namespace hakc {
                         }
                     }
                 } else if (isa<AllocaInst>(def)) {
-                    if (!functionIsAnalysisCandidate(
-                            call->getCalledFunction())) {
+                    if (!functionIsAnalysisCandidate(call->getCalledFunction())) {
                         if (DebugActive) {
                             CommonHAKCAnalysis::getWriter() << "Function called by " << *call
                                                             << " is not an analysis candidate\n";

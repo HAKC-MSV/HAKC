@@ -467,14 +467,14 @@ namespace hakc {
             }
 
             if (auto *GV = dyn_cast<GlobalValue>(BaseDefinition)) {
-                ProtectedValue = Manager->GetFunctionAnalysis()->SignGlobalPointerWithColor(GV, Policy);
+                ProtectedValue = Manager->GetFunctionAnalysis()->SignGlobalPointerWithColor(GV);
             } else {
                 auto *BaseDefI = dyn_cast<Instruction>(BaseDefinition);
                 if (!BaseDefI) {
                     CommonHAKCAnalysis::getWriter() << "Unexpected BaseDefinition for " << *this << " in function "
                                                     << Manager->GetFunctionAnalysis()->getFunction().getName() << "\n";
                 }
-                ProtectedValue = Manager->GetFunctionAnalysis()->CreateMissingTransfer(BaseDefI, Policy);
+                ProtectedValue = Manager->GetFunctionAnalysis()->CreateMissingTransfer(BaseDefI);
             }
         }
 
@@ -607,7 +607,7 @@ namespace hakc {
             }
         } else {
             Value *I = nullptr;
-            if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction(Policy) || isa<CallBase>(BaseDefinition)) {
+            if (!Manager->GetFunctionAnalysis()->isCompartmentalizedFunction() || isa<CallBase>(BaseDefinition)) {
                 I = Manager->CreateSafePointerAtLocation(BaseDefinition, AuthenticationInsertPoint);
             }
 
