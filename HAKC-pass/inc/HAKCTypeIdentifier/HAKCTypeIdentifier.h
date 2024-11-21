@@ -14,7 +14,6 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Transforms/Utils/Local.h"
 
-#include "HAKCDebugInfoProcessor.h"
 #include "HAKCFunctionInfo.h"
 #include "HAKCGlobalInfo.h"
 

@@ -816,7 +816,7 @@ namespace hakc {
             return Managed;
         }
 
-        if (HAKCAnalysis.PointerShouldBeConsideredCode(Pointer)) {
+        if (CommonHAKCAnalysis::PointerShouldBeConsideredCode(Pointer)) {
             CodeAuthenticationsAdded++;
             return GetFunctionAnalysis().AddCodeAuthCheckAtLocation(Pointer, InsertLocation);
         } else {

@@ -29,8 +29,6 @@ namespace hakc {
 
         HAKCSystemInformation SystemInfo;
 
-        static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
-
         static bool IsFunctionInHAKCTransferFunctionList(Function *F, iterator_range<HAKCTransferList::iterator> Range);
 
         void InitConfig(StringRef ConfigPath);
@@ -136,7 +134,7 @@ namespace hakc {
 
         static void SortGlobalList(std::vector<GlobalVariable *> &GlobalList);
 
-        static void SortFunctionList(std::vector<Function *> &FuncList);
+        static void SortFunctionList(FunctionList &FuncList);
 
         static bool IsUncompartmentalizedSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy);
 
@@ -149,6 +147,10 @@ namespace hakc {
         HAKCCustomAllocation GetAllocationDefinition(Function *F);
 
         bool FunctionIsAnalysisCandidate(Function *F);
+
+        static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
+
+        static bool PointerShouldBeConsideredCode(Value *Pointer);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

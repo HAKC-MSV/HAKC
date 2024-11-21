@@ -22,7 +22,7 @@ namespace hakc {
     protected:
         SmallVector<HAKCCompartment, 8> UsedCompartments;
         CommonHAKCAnalysis &CommonAnalysis;
-        std::vector<Function *> AnalysisFunctions;
+        FunctionList AnalysisFunctions;
         HAKCTypeIdentifier &TypeIdentifier;
         HAKCCompartmentalizationPolicy &Policy;
         HAKCTransformer Transformer;
@@ -69,8 +69,6 @@ namespace hakc {
 
         void AddTransferFunctions();
 
-        void CompartmentalizeFunction(Function *F);
-
     public:
 
         HAKCModuleAnalysis(CommonHAKCAnalysis &CommonAnalysis, HAKCCompartmentalizationPolicy &Policy);
@@ -96,6 +94,8 @@ namespace hakc {
         HAKCTypeIdentifier &GetTypeIdentifier();
 
         HAKCTransformer &GetTransformer();
+
+        bool FunctionIsInAnalysisSet(Function *F);
     };
 
 }// namespace hakc

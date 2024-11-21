@@ -299,7 +299,7 @@ namespace hakc {
     }
 
     void HAKCModuleAnalysis::AddTransferFunctions() {
-        std::vector<Function *> FuncsNeedingTransfers;
+        FunctionList FuncsNeedingTransfers;
         for (auto &F: GetModule().functions()) {
             auto Compartment = Policy.GetDivision(&F).GetHAKCCompartment();
 
@@ -775,6 +775,10 @@ namespace hakc {
         gcfp->setLinkage(GlobalValue::ExternalLinkage);
         gcfp->setConstant(true);
         gcfp->setInitializer(getctx);
+    }
+
+    bool HAKCModuleAnalysis::FunctionIsInAnalysisSet(Function *F) {
+        return CommonHAKCAnalysis::IsFunctionInFunctionList(F, make_range(AnalysisFunctions.begin(), AnalysisFunctions.end()));
     }
 
     // TODO: Add this to config definition

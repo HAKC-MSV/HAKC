@@ -56,12 +56,11 @@ namespace hakc {
                                                     << " ("
                                                     << CallI->getArgOperand(
                                                             HAKCTransferFunction->GetCompartmentIdIdx()->getZExtValue())
-                                                    << ") to "
-                                                    << TargetCompartment.GetCompartmentIDValue() << "\n";
+                                                    << ") to " << TargetCompartment.GetCompartmentIDValue() << "\n";
 
                 }
 
-                UpdateHAKCFunctionParameters_Arch(CallI, TargetCompartment, HAKCTransferFunction, Policy);
+                UpdateHAKCFunctionParameters(CallI, TargetCompartment, HAKCTransferFunction);
                 if (DebugActive) {
                     CommonHAKCAnalysis::getWriter() << "After update call is " << CallI << "\n";
                 }
@@ -525,15 +524,6 @@ namespace hakc {
         return false;
     }
 
-    bool HAKCFunctionAnalysis::IsManualSafePointer(CallInst *Call) {
-        if (Call->getCalledFunction()) {
-            auto SafePointerNames = GetSafePointerFunctionNames();
-            return SafePointerNames.find(Call->getCalledFunction()->getName()) != SafePointerNames.end();
-        }
-
-        return false;
-    }
-
     /**
          * @brief Returns true if a pointer should be authenticated
          * @param ptr
@@ -562,15 +552,9 @@ namespace hakc {
 //            }
 
             bool IsInline = call->isInlineAsm();
-            bool IsManualSafe = IsManualSafePointer(call);
-            if (IsInline || IsManualSafe) {
+            if (IsInline) {
                 if (DebugActive) {
-                    if (IsInline) {
-                        CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
-                    }
-                    if (IsManualSafe) {
-                        CommonHAKCAnalysis::getWriter() << "Value " << *ptr << " is a manual safe pointer\n";
-                    }
+                    CommonHAKCAnalysis::getWriter() << "Call is Inline Assembly\n";
                 }
                 /* These are usually the result of reading a register value */
                 return GetModuleAnalysis().GetCommonAnalysis().ValueIsUsedAsPointer(call);
@@ -968,9 +952,8 @@ namespace hakc {
         }
 
         bool needsAuthenticatedArgs = (call->isInlineAsm() ||
-                                       (GetModuleAnalysis().functionInAnalysisSet(call->getCalledFunction()) &&
-                                        !CommonHAKCAnalysis::IsOutsideTransferFunc(call->getCalledFunction())) ||
-                                       callIsSafeTransition(call));
+                                       (GetModuleAnalysis().FunctionIsInAnalysisSet(call->getCalledFunction()) &&
+                                        !CommonHAKCAnalysis::IsOutsideTransferFunc(call->getCalledFunction())));
 
         if (isa<IntrinsicInst>(call)) {
             needsAuthenticatedArgs = IsIntrinsicNeedingAuthentication(call);
@@ -1374,16 +1357,37 @@ namespace hakc {
         AddInstrumentation(!Compartment.IsUncompartmentalized());
     }
 
-    bool HAKCFunctionAnalysis::PointerIsAuthenticated_Arch(Value *Pointer) {
-        return false;
+    void
+    HAKCFunctionAnalysis::UpdateHAKCFunctionParameters(CallInst *CallI, HAKCCompartment &TargetCompartment,
+                                                       hakc_transfer_def_t &HAKCTransferFunction) {
+        if (DebugActive) {
+            CommonHAKCAnalysis::getWriter() << "Setting "
+                                            << *CallI->getArgOperand(
+                                                    HAKCTransferFunction->GetCompartmentIdIdx()->getZExtValue())
+                                            << " to be " << *TargetCompartment.GetCompartmentID() << "\n";
+        }
+        CallI->setOperand(HAKCTransferFunction->GetCompartmentIdIdx()->getZExtValue(),
+                          TargetCompartment.GetCompartmentID());
+
+        if (HAKCTransferFunction->GetDivisionIdIdx() != nullptr) {
+            auto *F = CallI->getFunction();
+            HAKCCompartmentDivision Division;
+            if (CommonHAKCAnalysis::IsOutsideTransferFunc(F)) {
+                auto transferTargetName = F->getName().substr(OUTSIDE_TRANSFER_PREFIX.size());
+                auto *TransferTarget = F->getParent()->getFunction(transferTargetName);
+                Division = Policy.GetDivision(TransferTarget);
+            } else {
+                Division = Policy.GetDivision(F);
+            }
+
+            if (DebugActive) {
+                CommonHAKCAnalysis::getWriter() << "Setting argument "
+                                                << HAKCTransferFunction->GetDivisionIdIdx()->getZExtValue() << " to be "
+                                                << Division << "\n";
+            }
+            CallI->setOperand(HAKCTransferFunction->GetDivisionIdIdx()->getZExtValue(), Division.GetDivisionID());
+        }
     }
 
-    bool HAKCFunctionAnalysis::PointerShouldBeConsideredCode(Value *Pointer) {
-        if (Pointer->getType()->isPointerTy()) {
-            /*return Pointer->getType()->getPointerElementType()->isFunctionTy();*/
-            return Pointer->getType()->isFunctionTy();
-        }
-        return false;
-    }
 
 }// namespace hakc

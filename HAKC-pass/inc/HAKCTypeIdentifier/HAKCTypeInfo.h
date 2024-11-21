@@ -18,7 +18,7 @@ namespace hakc {
     public:
         HAKCTypeInfo(StringRef Name, bool DebugActive);
 
-        ~HAKCTypeInfo() = default;
+        virtual ~HAKCTypeInfo() = default;
 
         void AddMember(const std::shared_ptr<HAKCTypeInfo> &TypeUse, unsigned BitOffset);
 
