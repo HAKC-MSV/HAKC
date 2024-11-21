@@ -58,10 +58,38 @@ namespace hakc {
         return hos;
     }
 
+    HAKCPointerBase::HAKCPointerBase(Value *BaseDefinition, unsigned ID) : BaseDefinition(BaseDefinition),
+                                                              AuthenticatedPointer(nullptr), HAKCTy(nullptr), ID(ID) {
+
+    }
+
+    Value *HAKCPointerBase::GetBaseDefinition() const {
+        return BaseDefinition;
+    }
+
+    HAKCTypeP HAKCPointerBase::GetType() {
+        return HAKCTy;
+    }
+
+    void HAKCPointerBase::SetType(HAKCTypeP NewHAKCTy) {
+        HAKCTy = std::move(NewHAKCTy);
+    }
+
+    Value *HAKCPointerBase::GetAuthenticatedPointer() {
+        return AuthenticatedPointer;
+    }
+
+    void HAKCPointerBase::SetAuthenticatedPointer(Value *NewAuthenticatedPointer) {
+        AuthenticatedPointer = NewAuthenticatedPointer;
+    }
+
+    unsigned HAKCPointerBase::GetID() const {
+        return 0;
+    }
+
 
     ManagedHAKCPointer::ManagedHAKCPointer(Value *Pointer, HAKCPointerManager &Manager, unsigned ID) :
-            BaseDefinition(nullptr),
-            AuthenticatedPointer(nullptr),
+            HAKCPointerBase(Pointer, ID),
             ProtectedPointer(nullptr),
             DebugActive(Manager.DebugIsActive()),
             Manager(Manager),
@@ -69,16 +97,10 @@ namespace hakc {
             ManuallyTransferred(false),
             PurposefullyIgnored(false),
             AuthenticatedIsCopyOfBase(false),
-            ID(ID),
-            HAKCTy(nullptr),
             AuthenticatedUses(),
             ProtectedUses(),
             CloneUses() {
-        InitBaseDefinition(Pointer);
-    }
-
-    unsigned ManagedHAKCPointer::GetID() const {
-        return ID;
+        InitBaseDefinitionInfo();
     }
 
     std::set<ManagedHAKCPointerUseP> ManagedHAKCPointer::GetAllUses() {
@@ -96,11 +118,9 @@ namespace hakc {
         return Result;
     }
 
-    void ManagedHAKCPointer::InitBaseDefinition(Value *Pointer) {
-        BaseDefinition = Pointer;
+    void ManagedHAKCPointer::InitBaseDefinitionInfo() {
         PurposefullyIgnored =
-                Manager.GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsIgnoredGlobal(
-                        BaseDefinition) /*|| isa<Constant>(BaseDefinition)*/;
+                Manager.GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsIgnoredGlobal(BaseDefinition);
 
         if (PurposefullyIgnored) {
             if (DebugActive) {
@@ -210,15 +230,6 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << *this << " adding Clone Use " << *UPtr << "\n";
         }
         CloneUses.insert(UPtr);
-    }
-
-
-    Value *ManagedHAKCPointer::GetBaseDefinition() const {
-        return BaseDefinition;
-    }
-
-    Value *ManagedHAKCPointer::GetAuthenticatedPointer() {
-        return AuthenticatedPointer;
     }
 
     Value *ManagedHAKCPointer::GetProtectedPointer() {
@@ -365,10 +376,6 @@ namespace hakc {
             }
         } else if (CommonHAKCAnalysis::IsMultiSSAUser(BaseDefinition)) {
             AlreadyAuthenticated = AllIncomingValuesAreAuthenticated();
-        }
-
-        if (!AlreadyAuthenticated) {
-            AlreadyAuthenticated = Manager.GetFunctionAnalysis().PointerIsAuthenticated_Arch(BaseDefinition);
         }
 
         return AlreadyAuthenticated;

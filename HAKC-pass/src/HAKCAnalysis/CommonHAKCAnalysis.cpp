@@ -607,9 +607,17 @@ namespace hakc {
                    });
     }
 
-    void CommonHAKCAnalysis::SortFunctionList(std::vector<Function *> &FuncList) {
+    void CommonHAKCAnalysis::SortFunctionList(FunctionList &FuncList) {
         llvm::sort(FuncList.begin(), FuncList.end(),
                    [](Function *LHS, Function *RHS) { return LHS->getName().str() < RHS->getName().str(); });
+    }
+
+    bool CommonHAKCAnalysis::PointerShouldBeConsideredCode(Value *Pointer) {
+        if (Pointer->getType()->isPointerTy()) {
+            /*return Pointer->getType()->getPointerElementType()->isFunctionTy();*/
+            return Pointer->getType()->isFunctionTy();
+        }
+        return false;
     }
 
     bool CommonHAKCAnalysis::IsUncompartmentalizedSymbol(GlobalValue *GV, HAKCCompartmentalizationPolicy &Policy) {

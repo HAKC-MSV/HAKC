@@ -42,7 +42,7 @@ namespace hakc {
          * @param I
          * @return The last Instruction created, placed immediately prior to I
          */
-        virtual Value *CreateSafePointer(ManagedHAKCPointerP HAKCPointer, Instruction *I);
+        virtual Value *CreateSafePointer(HAKCPointerBaseP HAKCPointer, Instruction *I);
 
         /**
          * Create a HAKC Pointer check at I
@@ -69,7 +69,7 @@ namespace hakc {
          * @return
          */
         virtual Instruction *
-        CreateCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
+        CreateCompartmentTransfer(HAKCPointerBaseP HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
 
         /**
          * Creates a Compartment Transfer of ManagedHAKCPointer at I. The arguments to the transfer function are:
@@ -90,7 +90,7 @@ namespace hakc {
          * @return
          */
         virtual Instruction *
-        CreateSizedCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target,
+        CreateSizedCompartmentTransfer(HAKCPointerBaseP HAKCPointer, Instruction *I, GlobalValue *Target,
                                        bool IsData, ConstantInt *Size);
 
         /**
@@ -172,7 +172,7 @@ namespace hakc {
         */
 //        virtual bool ValidateHAKCIntegerPointerSize(ManagedHAKCPointerP HAKCPointer);
 
-        virtual unsigned GetPointerAddrSpace(ManagedHAKCPointerP HAKCPointer);
+        virtual unsigned GetPointerAddrSpace(HAKCPointerBaseP HAKCPointer);
 
         static unsigned GetPointerAddrSpace(Value *V);
 
@@ -192,8 +192,6 @@ namespace hakc {
 
         std::map<Function *, Function *> VariadicTransferFunctions;
 
-        StructType *EntryTokenType;
-
         std::string getUniqueAddressable_Name(Function *F);
 
         std::string getKstrtab_entry_name(Function *F);
@@ -205,7 +203,7 @@ namespace hakc {
          * @param HAKCPointer
          * @param I
          */
-        void ValidateHAKCPointerAndLocation(const ManagedHAKCPointerP &HAKCPointer, Instruction *I);
+        void ValidateHAKCPointerAndLocation(const HAKCPointerBaseP &HAKCPointer, Instruction *I);
 
         /**
          * Performs the transformations needed for creating a safe pointer
@@ -245,7 +243,7 @@ namespace hakc {
          */
         Type *GetEntryTokenType(unsigned AddrSpace);
 
-        virtual ConstantInt *GetObjectSizeInBytes(hakc::ManagedHAKCPointerP HAKCPointer);
+        virtual ConstantInt *GetObjectSizeInBytes(hakc::HAKCPointerBaseP HAKCPointer);
 
         virtual ConstantInt *GetObjectSizeInBytes(hakc::HAKCTypeP HAKCType);
 
@@ -276,7 +274,7 @@ namespace hakc {
          * @return
          */
         virtual void
-        CreateTransferArguments(ManagedHAKCPointerP HAKCPointer, GlobalValue *Target, bool IsData, ConstantInt *Size,
+        CreateTransferArguments(HAKCPointerBaseP HAKCPointer, GlobalValue *Target, bool IsData, ConstantInt *Size,
                                 SmallVector<Value *> &Result);
 
 
@@ -288,7 +286,7 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual Instruction *CreateDefaultTransfer(hakc::ManagedHAKCPointerP HAKCPointer,
+        virtual Instruction *CreateDefaultTransfer(hakc::HAKCPointerBaseP HAKCPointer,
                                                    GlobalValue *Target,
                                                    bool IsData,
                                                    ConstantInt *Size);
@@ -301,12 +299,12 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual Instruction *CreateCustomTransfer(hakc::ManagedHAKCPointerP HAKCPointer,
+        virtual Instruction *CreateCustomTransfer(hakc::HAKCPointerBaseP HAKCPointer,
                                                   GlobalValue *Target,
                                                   bool IsData,
                                                   ConstantInt *Size);
 
-        bool HAKCPointerHasCustomTransfer(ManagedHAKCPointerP HAKCPointer);
+        bool HAKCPointerHasCustomTransfer(HAKCPointerBaseP HAKCPointer);
 
         Value *CreatePointerCast(ManagedHAKCPointerP HAKCPointer, PointerType *PointerTy);
 
@@ -317,11 +315,11 @@ namespace hakc {
          * @param HAKCPointer
          * @return
          */
-        virtual hakc_custom_transfer_def_t GetCustomTransferFunction(ManagedHAKCPointerP HAKCPointer);
+        virtual hakc_custom_transfer_def_t GetCustomTransferFunction(HAKCPointerBaseP HAKCPointer);
 
         void ValidateLocation(Instruction *I);
 
-        virtual void ValidateHAKCPointer(ManagedHAKCPointerP HAKCPointer);
+        virtual void ValidateHAKCPointer(HAKCPointerBaseP HAKCPointer);
 
         Function *CreateNonVariadicTransferFunction(Function *F);
 
@@ -344,19 +342,19 @@ namespace hakc {
 
         bool DebugIsActive();
 
-        virtual HAKCTypeP FindEntryBitcast(ManagedHAKCPointerP HAKCPointerP, Instruction *I, Function *Target);
+        virtual HAKCTypeP FindEntryBitcast(HAKCPointerBaseP HAKCPointerP, Instruction *I, Function *Target);
 
         virtual hakc_custom_transfer_def_t GetCustomTransferFunctionForType(HAKCTypeP HAKCType);
 
         virtual Instruction *
-        CreateVoidCastCompartmentTransfer(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target,
+        CreateVoidCastCompartmentTransfer(HAKCPointerBaseP HAKCPointer, Instruction *I, GlobalValue *Target,
                                           HAKCTypeP TypeToUse);
 
         virtual bool NoKernelTransfers(Function *Target);
 
         void InitNewFunction(Function *F, StringRef EntryBlockName);
 
-        ManagedHAKCPointerP CreateNewManagedPointer(Value *BaseDefinition);
+        HAKCPointerBaseP CreateNewManagedPointer(Value *BaseDefinition);
     };
 }// namespace hakc
 

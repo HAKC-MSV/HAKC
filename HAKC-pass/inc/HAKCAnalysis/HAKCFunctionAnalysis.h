@@ -84,8 +84,6 @@ namespace hakc {
 
         bool phiNodeUsesValue(PHINode *phiNode, Value *target, std::set<PHINode *> &visited);
 
-        bool IsManualSafePointer(CallInst *Call);
-
         void HandleInstruction(Instruction *I);
 
         Instruction *getUserInst(User *user);
@@ -124,18 +122,16 @@ namespace hakc {
 
         void MaybeAddCompareToDirectUsers(CmpInst *CmpI);
 
-//        virtual std::set<StringRef> GetSafePointerFunctionNames() = 0;
-
         void UpdateHAKCFunctionParameters();
-
-//        virtual void UpdateHAKCFunctionParameters_Arch(CallInst *CallI, HAKCCompartment &TargetCompartment,
-//                                                       hakc_transfer_def_t &HAKCTransferFunction) = 0;
 
         void AddInstrumentation(bool RelocateSection);
 
         void CheckAndReplaceArgument(Value *V, Instruction *I, unsigned ArgNo);
 
         bool IsCallInIntrinsicSet(CallBase *Call, ArrayRef<Intrinsic::ID> IDs);
+
+        void UpdateHAKCFunctionParameters(CallInst *CallI, HAKCCompartment &TargetCompartment,
+                                          hakc_transfer_def_t &HAKCTransferFunction);
 
     public:
         HAKCFunctionAnalysis(Function *F, HAKCModuleAnalysis &ModuleAnalysis, HAKCCompartmentalizationPolicy &Policy);
@@ -165,10 +161,6 @@ namespace hakc {
         virtual Instruction *SignGlobalPointerWithColor(GlobalValue *GlobalVar);
 
         Instruction *GetFinalAllocaDef(AllocaInst *Alloca);
-
-        bool PointerIsAuthenticated_Arch(Value *Pointer);
-
-        bool PointerShouldBeConsideredCode(Value *Pointer);
 
         bool PointerShouldBeManaged(Use &use);
 

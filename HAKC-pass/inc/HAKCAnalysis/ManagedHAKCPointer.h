@@ -31,6 +31,10 @@ namespace hakc {
 
     class HAKCPointerManager;
 
+    class HAKCPointerBase;
+
+    using HAKCPointerBaseP = std::shared_ptr<HAKCPointerBase>;
+
     /**
      * Stores Instruction and Operand to change
      */
@@ -86,21 +90,88 @@ namespace hakc {
         friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerUse &HAKCPointerUse);
     };
 
-    /**
-     * A single managed Pointer.  Contains the original definition of the pointer, an authenticated pointer suitable
-     * for dereferencing, and a protected pointer to be used in function arguments.  The base definition and
-     * protected pointer can be different if BaseDefinition is from an external function call.
-     */
-    class ManagedHAKCPointer {
+    class HAKCPointerBase {
     protected:
         /**
          * The original source of a pointer
          */
         Value *BaseDefinition;
+
         /**
-         * A pointer suitable for dereferencing
-         */
+ * A pointer suitable for dereferencing
+ */
         Value *AuthenticatedPointer;
+
+        HAKCTypeP HAKCTy;
+
+        unsigned ID;
+    public:
+        HAKCPointerBase(Value *BaseDefinition, unsigned ID);
+
+        virtual ~HAKCPointerBase() = default;
+
+        Value *GetBaseDefinition() const;
+
+        HAKCTypeP GetType();
+
+        void SetType(HAKCTypeP NewHAKCTy);
+
+        Value *GetAuthenticatedPointer();
+
+        virtual void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
+
+        unsigned GetID() const;
+
+        friend bool operator==(const HAKCPointerBase &lhs, Value *V) {
+            return lhs.GetBaseDefinition() == V;
+        }
+
+        friend bool operator!=(const HAKCPointerBase &lhs, Value *V) {
+            return !(lhs == V);
+        }
+
+        friend bool operator==(Value *V, const HAKCPointerBase &rhs) {
+            return (rhs == V);
+        }
+
+        friend bool operator!=(Value *V, const HAKCPointerBase &rhs) {
+            return !(V == rhs);
+        }
+
+        friend bool operator==(const HAKCPointerBase &lhs, const HAKCPointerBase &rhs) {
+            return lhs.GetBaseDefinition() == rhs.GetBaseDefinition();
+        }
+
+        friend bool operator!=(const HAKCPointerBase &lhs, const HAKCPointerBase &rhs) {
+            return !(lhs == rhs);
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const HAKCPointerBase &ManagedPointer) {
+            hos << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
+            if (ManagedPointer.GetBaseDefinition()) {
+                hos << " [";
+                if (isa<Argument>(ManagedPointer.GetBaseDefinition()) ||
+                    isa<GlobalValue>(ManagedPointer.GetBaseDefinition())) {
+                    hos << "  ";
+                }
+                hos << ManagedPointer.GetBaseDefinition() << "  ]";
+            }
+            return hos;
+        }
+
+        friend HAKCOstream &operator<<(HAKCOstream &hos, const HAKCPointerBaseP &ManagedPointer) {
+            hos << *ManagedPointer;
+            return hos;
+        }
+    };
+
+    /**
+     * A single managed Pointer.  Contains the original definition of the pointer, an authenticated pointer suitable
+     * for dereferencing, and a protected pointer to be used in function arguments.  The base definition and
+     * protected pointer can be different if BaseDefinition is from an external function call.
+     */
+    class ManagedHAKCPointer : public HAKCPointerBase {
+    protected:
         /**
          * A pointer belonging to the current function compartment
          */
@@ -116,10 +187,6 @@ namespace hakc {
         bool PurposefullyIgnored;
 
         bool AuthenticatedIsCopyOfBase;
-
-        unsigned ID;
-
-        HAKCTypeP HAKCTy;
 
         /**
          * Pointer uses and their replacements
@@ -174,9 +241,7 @@ namespace hakc {
     public:
         ManagedHAKCPointer(Value *Pointer, HAKCPointerManager &Manager, unsigned ID);
 
-        Value *GetBaseDefinition() const;
-
-        Value *GetAuthenticatedPointer();
+        ~ManagedHAKCPointer() = default;
 
         Value *GetProtectedPointer();
 
@@ -204,8 +269,6 @@ namespace hakc {
 
         bool DetermineIfBasePointerIsAuthenticated();
 
-        unsigned GetID() const;
-
         void AddAuthenticatedUse(const ManagedHAKCPointerUseP &UPtr);
 
         void AddProtectedUse(const ManagedHAKCPointerUseP &UPtr);
@@ -216,60 +279,12 @@ namespace hakc {
 
         void UpdateUserCounts();
 
-        void SetAuthenticatedPointer(Value *NewAuthenticatedPointer);
-
-        HAKCTypeP GetType();
-
-        void SetType(HAKCTypeP HAKCTy);
+        void SetAuthenticatedPointer(Value *NewAuthenticatedPointer) override;
 
     private:
-        void InitBaseDefinition(Value *Pointer);
+        void InitBaseDefinitionInfo();
 
         void CheckPointerReplacement(Value *Old, Value *New, StringRef TypeName) const;
-
-
-    public:
-        friend bool operator==(const ManagedHAKCPointer &lhs, Value *V) {
-            return lhs.GetBaseDefinition() == V;
-        }
-
-        friend bool operator!=(const ManagedHAKCPointer &lhs, Value *V) {
-            return !(lhs == V);
-        }
-
-        friend bool operator==(Value *V, const ManagedHAKCPointer &rhs) {
-            return (rhs == V);
-        }
-
-        friend bool operator!=(Value *V, const ManagedHAKCPointer &rhs) {
-            return !(V == rhs);
-        }
-
-        friend bool operator==(const ManagedHAKCPointer &lhs, const ManagedHAKCPointer &rhs) {
-            return lhs.GetBaseDefinition() == rhs.GetBaseDefinition();
-        }
-
-        friend bool operator!=(const ManagedHAKCPointer &lhs, const ManagedHAKCPointer &rhs) {
-            return !(lhs == rhs);
-        }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointer &ManagedPointer) {
-            hos << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
-            if (ManagedPointer.GetBaseDefinition()) {
-                hos << " [";
-                if (isa<Argument>(ManagedPointer.GetBaseDefinition()) ||
-                    isa<GlobalValue>(ManagedPointer.GetBaseDefinition())) {
-                    hos << "  ";
-                }
-                hos << ManagedPointer.GetBaseDefinition() << "  ]";
-            }
-            return hos;
-        }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerP &ManagedPointer) {
-            hos << *ManagedPointer;
-            return hos;
-        }
     };
 
 } // hakc
