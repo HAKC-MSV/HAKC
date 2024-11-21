@@ -61,6 +61,21 @@ namespace hakc {
         HAKCYAMLAllocationType() : FunctionName(), AllocationType(InvalidAllocationType), Arguments() {}
     };
 
+    struct HAKCYAMLFileType {
+        HAKCYAMLStringType PathRoot;
+        HAKCYAMLStringSequenceType Files;
+
+        HAKCYAMLFileType() : PathRoot(), Files() {}
+    };
+
+    struct HAKCYAMLStructType {
+        HAKCYAMLStringType StructType;
+        HAKCYAMLStringSequenceType StructSubType;
+
+        HAKCYAMLStructType() : StructType(), StructSubType() {}
+    };
+
+
     struct HAKCYAMLFunctionDefinitionType {
         HAKCYAMLStringType FunctionName;
         unsigned PointerIdx;
@@ -118,10 +133,10 @@ namespace hakc {
         HAKCYAMLStringType CodeValidationFunction;
         HAKCYAMLStringType DataValidationFunction;
         HAKCYAMLStringSequenceType NoTransferFunctions;
-        HAKCYAMLStringSequenceType SeparateNamespacePaths;
-        HAKCYAMLStringSequenceType HAKCSourcePaths;
+        // HAKCYAMLStringSequenceType SeparateNamespacePaths;
+        // HAKCYAMLStringSequenceType HAKCSourcePaths;
         HAKCYAMLStringSequenceType SafeTransitionFunctions;
-        HAKCYAMLStringSequenceType IgnoredTypes;
+        // HAKCYAMLStringSequenceType IgnoredTypes;
         HAKCYAMLStringSequenceType IgnoredGlobals;
         HAKCYAMLStringSequenceType TransferFunctions;
         HAKCYAMLStringSequenceType PassDebugSymbols;
@@ -130,6 +145,9 @@ namespace hakc {
         HAKCYAMLSequence <HAKCYAMLCustomTransferType> CustomTransferFunctions;
         HAKCYAMLSequence <HAKCYAMLFunctionDefinitionType> CompartmentalizationSupportFunctions;
         HAKCYAMLSequence <HAKCYAMLAllocationType> AllocationFunctions;
+        HAKCYAMLSequence <HAKCYAMLFileType> SeparateNamespacePaths;
+        HAKCYAMLSequence <HAKCYAMLFileType> HAKCSourcePaths;
+        HAKCYAMLSequence <HAKCYAMLStructType> IgnoredTypes;
         HAKCYAMLTransferType DefaultCompartmentTransfer;
         HAKCYAMLTransferType PerCPUCompartmentTransfer;
     };
