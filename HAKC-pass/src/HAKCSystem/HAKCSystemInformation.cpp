@@ -52,9 +52,28 @@ namespace hakc {
                                                                                      HAKCSystemInfo.GetModule()));
         HAKCSystemInfo.DataValidationFunction = dyn_cast<Function>(DataValidation.getCallee());
 
-        HAKCSystemInfo.SeparateNamespacePathList.append(YamlConfig.SeparateNamespacePaths.begin(),
-                                                        YamlConfig.SeparateNamespacePaths.end());
-        HAKCSystemInfo.HAKCSourcePathList.append(YamlConfig.HAKCSourcePaths.begin(), YamlConfig.HAKCSourcePaths.end());
+        for (auto &FileType: YamlConfig.SeparateNamespacePaths) {
+            auto PathRoot = FileType.PathRoot; 
+            CommonHAKCAnalysis::getWriter() << "PathRoot: " << PathRoot << "\n";
+            for (auto &FileName: FileType.Files) {
+                CommonHAKCAnalysis::getWriter() << "\tFile: " << PathRoot << FileName << "\n";
+                auto File = PathRoot + FileName; 
+                YamlConfig.SeparateNamespacePathsList.push_back(File); 
+            }
+        }
+        HAKCSystemInfo.SeparateNamespacePathList.append(YamlConfig.SeparateNamespacePathsList.begin(),
+                                                        YamlConfig.SeparateNamespacePathsList.end());
+        
+        for (auto &FileType: YamlConfig.HAKCSourcePaths) {
+            auto PathRoot = FileType.PathRoot; 
+            CommonHAKCAnalysis::getWriter() << "PathRoot: " << PathRoot << "\n";
+            for (auto &FileName: FileType.Files) {
+                CommonHAKCAnalysis::getWriter() << "\tFile: " << PathRoot << FileName << "\n";
+                auto File = PathRoot + FileName; 
+                YamlConfig.HAKCSourcePathsList.push_back(File); 
+            }
+        }
+        HAKCSystemInfo.HAKCSourcePathList.append(YamlConfig.HAKCSourcePathsList.begin(), YamlConfig.HAKCSourcePathsList.end());
 
         for (auto &FunctionName: YamlConfig.SafeTransitionFunctions) {
             auto *F = HAKCSystemInfo.GetModule().getFunction(FunctionName);
@@ -93,10 +112,14 @@ namespace hakc {
             }
         }
 
-        for (auto &TypeName: YamlConfig.IgnoredTypes) {
-            auto *Ty = StructType::getTypeByName(HAKCSystemInfo.GetModule().getContext(), TypeName);
-            if (Ty) {
-                HAKCSystemInfo.IgnoredTypeSet.insert(Ty);
+        for (auto &StructType: YamlConfig.IgnoredTypes) {
+            auto StructTypeName = StructType.StructType;
+            for (auto &StructSubTypeName: StructType.StructSubType) {
+                auto StructName = StructTypeName + StructSubTypeName; 
+                auto *Ty = StructType::getTypeByName(HAKCSystemInfo.GetModule().getContext(), StructName);
+                if (Ty) {
+                    HAKCSystemInfo.IgnoredTypeSet.insert(Ty);
+                }
             }
         }
 

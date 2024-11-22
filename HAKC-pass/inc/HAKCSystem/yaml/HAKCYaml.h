@@ -133,13 +133,13 @@ namespace hakc {
         HAKCYAMLStringType CodeValidationFunction;
         HAKCYAMLStringType DataValidationFunction;
         HAKCYAMLStringSequenceType NoTransferFunctions;
-        // HAKCYAMLStringSequenceType SeparateNamespacePaths;
-        // HAKCYAMLStringSequenceType HAKCSourcePaths;
         HAKCYAMLStringSequenceType SafeTransitionFunctions;
-        // HAKCYAMLStringSequenceType IgnoredTypes;
         HAKCYAMLStringSequenceType IgnoredGlobals;
         HAKCYAMLStringSequenceType TransferFunctions;
         HAKCYAMLStringSequenceType PassDebugSymbols;
+        HAKCYAMLStringSequenceType SeparateNamespacePathsList;
+        HAKCYAMLStringSequenceType HAKCSourcePathsList; 
+        HAKCYAMLStringSequenceType IgnoredTypesList; 
         bool OutputAllDebugInfo;
 
         HAKCYAMLSequence <HAKCYAMLCustomTransferType> CustomTransferFunctions;
@@ -157,6 +157,9 @@ LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLAllocationType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLTransferType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLCustomTransferType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLFunctionDefinitionType);
+LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLFileType);
+LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLStructType);
+
 
 template<>
 struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
@@ -186,6 +189,23 @@ struct yaml::MappingTraits<hakc::HAKCYAMLFunctionDefinitionType> {
         io.mapOptional("compartment-idx", FunctionDefinition.CompartmentIdx);
         io.mapOptional("division-idx", FunctionDefinition.DivisionIdx);
         io.mapOptional("size-idx", FunctionDefinition.SizeIdx);
+    }
+};
+
+template<>
+struct yaml::MappingTraits<hakc::HAKCYAMLStructType> {
+    static void mapping(yaml::IO &io, hakc::HAKCYAMLStructType &Struct) {
+        io.mapRequired("type", Struct.StructType);
+        io.mapRequired("subtypes", Struct.StructSubType);
+
+    }
+};
+
+template<>
+struct yaml::MappingTraits<hakc::HAKCYAMLFileType> {
+    static void mapping(yaml::IO &io, hakc::HAKCYAMLFileType &File) {
+        io.mapRequired("path_root", File.PathRoot);
+        io.mapRequired("file_names", File.Files);
     }
 };
 
@@ -227,7 +247,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
         io.mapOptional("HAKCSourcePathList", YamlConfig.HAKCSourcePaths);
         io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
-        io.mapOptional("IgnoredTypeSet", YamlConfig.IgnoredTypes);
+        io.mapOptional("IgnoredTypes", YamlConfig.IgnoredTypes);
         io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
         io.mapOptional("AllocationFunctions", YamlConfig.AllocationFunctions);
         io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);

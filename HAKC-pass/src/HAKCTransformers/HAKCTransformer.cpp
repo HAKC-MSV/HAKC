@@ -223,7 +223,8 @@ Value *hakc::HAKCTransformer::CreateSafePointer(HAKCPointerBaseP HAKCPointer, In
         return HAKCPointer->GetAuthenticatedPointer();
     }
 
-    auto *SafePtr = CreateSafePointer_Arch(HAKCPointer, I);
+    // auto *SafePtr = CreateSafePointer_Arch(HAKCPointer, I);
+    auto *SafePtr = CreateSafePointer(HAKCPointer, I);
 /*    if (SafePtr->getType() != HAKCPointer->getType()) {
         CommonHAKCAnalysis::getWriter() << "SafePtr and HAKCPointerBase are not the same Type!\n"
                                         << "SafePtr: ";
@@ -455,6 +456,7 @@ hakc::HAKCTransformer::CreateCustomTransfer(hakc::HAKCPointerBaseP HAKCPointer, 
 
     auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
     return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetDivision, HAKCPointer, Size, IsData);
+    // return CustomTransfer->CreateCustomTransfer(HAKCPointer, TargetDivision, IsData, Size);
 }
 
 Instruction *
@@ -481,6 +483,8 @@ hakc::HAKCTransformer::CreateSignWithColor(hakc::ManagedHAKCPointerP HAKCPointer
 
     return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithDivisionName(), HAKCAuthenticationRetType(AddrSpace),
                                     Args, HAKCPointer->GetBaseDefinition());
+    // return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithColor(), HAKCAuthenticationRetType(AddrSpace),
+    //                                 Args, HAKCPointer->GetBaseDefinition());
 }
 
 bool hakc::HAKCTransformer::HAKCPointerHasCustomTransfer(hakc::HAKCPointerBaseP HAKCPointer) {

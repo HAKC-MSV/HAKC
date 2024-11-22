@@ -26,13 +26,13 @@ namespace hakc {
 
         HAKCTypeP GetTargetType() const;
 
-//        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-//                                            hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) = 0;
-//
-//        virtual Instruction *
-//        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-//                                hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
-//                                HAKCTypeP dstTy) = 0;
+       virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                           hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, bool IsData) = 0;
+
+       virtual Instruction *
+       CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                               hakc::ManagedHAKCPointerP HAKCPointer, Value *Size, HAKCTypeP srcTy,
+                               HAKCTypeP dstTy) = 0;
 
     protected:
         HAKCTypeP TargetType;

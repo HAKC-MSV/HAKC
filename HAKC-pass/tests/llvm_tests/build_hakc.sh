@@ -2,6 +2,10 @@
 export ROOT=$(git rev-parse --show-toplevel)
 
 cd $ROOT
+# cd build-kuzu
+# cmake -G Ninja -DBUILD_PYTHON=True -DCMAKE_INSTALL_PREFIX=$(realpath ../install) -DCMAKE_BUILD_TYPE=Release ..
+# cmake --build . -j$(nproc) --target install
+# pip3 install -r $(realpath ../kuzu/tools/python_api/requirements_dev.txt
 
 rm -rf $ROOT/cmake-build-hakc-pass-linux-x86/*
 
