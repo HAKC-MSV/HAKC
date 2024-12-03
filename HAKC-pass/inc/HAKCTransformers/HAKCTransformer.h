@@ -25,7 +25,6 @@
 using namespace llvm;
 
 namespace hakc {
-
     /**
      * A  class that defines the API for creating HAKC transformations.
      * Must be subclassed to provide architecture specific functionality.
@@ -134,7 +133,7 @@ namespace hakc {
          * @param Original
          * @param Transfer
          */
-//        void CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer);
+        //        void CreateTransferFunctionFinalize_Arch(Function *Original, Function *Transfer);
 
         /**
          * Perform architecture specific transformations prior to an argument transfer to a target compartment
@@ -170,7 +169,7 @@ namespace hakc {
         * Returns true if ManagedHAKCPointer is an appropriately sized integer for use as a pointer
         * @param HAKCPointer
         */
-//        virtual bool ValidateHAKCIntegerPointerSize(ManagedHAKCPointerP HAKCPointer);
+        //        virtual bool ValidateHAKCIntegerPointerSize(ManagedHAKCPointerP HAKCPointer);
 
         virtual unsigned GetPointerAddrSpace(HAKCPointerBaseP HAKCPointer);
 
@@ -211,7 +210,7 @@ namespace hakc {
          * @param I
          * @return
          */
-//        virtual Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) = 0;
+        //        virtual Value *CreateSafePointer_Arch(ManagedHAKCPointerP HAKCPointer, Instruction *I) = 0;
 
         /**
          * Creates a Call to the specified function
@@ -222,9 +221,10 @@ namespace hakc {
          */
         CallInst *CreateCall(StringRef name, Type *RetTy, ArrayRef<Value *> Args);
 
-        CallInst *CreateCall(Function *Callee, ArrayRef<Value*> Args);
+        CallInst *CreateCall(Function *Callee, ArrayRef<Value *> Args);
 
-        Instruction *CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
+        Instruction *CreateCallWithResultCast(StringRef Name, Type *RetTy, ArrayRef<Value *> Args,
+                                              Value *ValueToTypeMatch);
 
         Instruction *CreateCallWithResultCast(Function *Callee, ArrayRef<Value *> Args, Value *ValueToTypeMatch);
 
@@ -299,9 +299,7 @@ namespace hakc {
          * @param Size
          * @return
          */
-        virtual Instruction *CreateCustomTransfer(hakc::HAKCPointerBaseP HAKCPointer,
-                                                  GlobalValue *Target,
-                                                  bool IsData,
+        virtual Instruction *CreateCustomTransfer(hakc::HAKCPointerBase &HAKCPointer, GlobalValue *Target, bool IsData,
                                                   ConstantInt *Size);
 
         bool HAKCPointerHasCustomTransfer(HAKCPointerBaseP HAKCPointer);
@@ -356,6 +354,6 @@ namespace hakc {
 
         HAKCPointerBaseP CreateNewManagedPointer(Value *BaseDefinition);
     };
-}// namespace hakc
+} // namespace hakc
 
 #endif//HAKC_HAKCTRANSFORMER_H

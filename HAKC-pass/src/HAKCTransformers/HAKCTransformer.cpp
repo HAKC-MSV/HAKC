@@ -420,9 +420,7 @@ CallInst *hakc::HAKCTransformer::CreateCall(StringRef name, Type *RetTy, ArrayRe
 
 Instruction *
 hakc::HAKCTransformer::CreateSizedCompartmentTransfer(hakc::HAKCPointerBaseP HAKCPointer, Instruction *I,
-                                                      GlobalValue *Target,
-                                                      bool IsData,
-                                                      ConstantInt *Size) {
+                                                      GlobalValue *Target, bool IsData, ConstantInt *Size) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
     Instruction *Transfer;
     if (TargetIsKernel(Target)) {
@@ -445,7 +443,7 @@ hakc::HAKCTransformer::CreateSizedCompartmentTransfer(hakc::HAKCPointerBaseP HAK
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateCustomTransfer(hakc::HAKCPointerBaseP HAKCPointer, GlobalValue *Target, bool IsData,
+hakc::HAKCTransformer::CreateCustomTransfer(hakc::HAKCPointerBase &HAKCPointer, GlobalValue *Target, bool IsData,
                                             ConstantInt *Size) {
     auto CustomTransfer = GetCustomTransferFunction(HAKCPointer);
     if (!CustomTransfer) {
