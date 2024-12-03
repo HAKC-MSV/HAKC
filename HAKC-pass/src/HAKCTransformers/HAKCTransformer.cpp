@@ -458,7 +458,7 @@ hakc::HAKCTransformer::CreateCustomTransfer(hakc::HAKCPointerBase &HAKCPointer, 
 }
 
 Instruction *
-hakc::HAKCTransformer::CreateSignWithColor(hakc::ManagedHAKCPointerP HAKCPointer, Instruction *I,
+hakc::HAKCTransformer::CreateSignWithDivision(hakc::ManagedHAKCPointerP HAKCPointer, Instruction *I,
                                            GlobalValue *Target, bool IsData) {
     ValidateHAKCPointerAndLocation(HAKCPointer, I);
     auto AddrSpace = GetPointerAddrSpace(HAKCPointer);

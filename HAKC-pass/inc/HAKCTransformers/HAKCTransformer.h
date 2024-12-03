@@ -111,7 +111,7 @@ namespace hakc {
          * @return
          */
         virtual Instruction *
-        CreateSignWithColor(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
+        CreateSignWithDivision(ManagedHAKCPointerP HAKCPointer, Instruction *I, GlobalValue *Target, bool IsData);
 
 
         /**

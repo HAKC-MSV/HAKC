@@ -1276,7 +1276,7 @@ namespace hakc {
             throw std::exception();
         }
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer().CreateSignWithColor(HAKCPointer, InsertionPoint, &getFunction(),
+        return getTransformer().CreateSignWithDivision(HAKCPointer, InsertionPoint, &getFunction(),
                                                     !isa<Function>(GlobalVar));
     }
 
