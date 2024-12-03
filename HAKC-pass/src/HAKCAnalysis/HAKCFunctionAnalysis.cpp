@@ -3,7 +3,6 @@
 //
 #include "llvm/IR/InlineAsm.h"
 #include "llvm/IR/InstIterator.h"
-#include "llvm/IR/Verifier.h"
 
 #include "HAKCAnalysis/HAKCFunctionAnalysis.h"
 #include "HAKCAnalysis/ManagedHAKCPointer.h"
@@ -101,9 +100,9 @@ namespace hakc {
 
         Instruction *TransferCall;
         if (Size == nullptr) {
-            TransferCall = getTransformer().CreateCompartmentTransfer(HAKCPointer, I, &getFunction(), isData);
+            TransferCall = getTransformer().CreateCompartmentTransfer(*HAKCPointer, I, &getFunction(), isData);
         } else {
-            TransferCall = getTransformer().CreateSizedCompartmentTransfer(HAKCPointer, I, &getFunction(), isData,
+            TransferCall = getTransformer().CreateSizedCompartmentTransfer(*HAKCPointer, I, &getFunction(), isData,
                                                                            Size);
         }
         TransferCall->setDebugLoc(debugLoc);
@@ -254,7 +253,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *bitcast = getTransformer().CreateDataAuthentication(HAKCPointer, location);
+        auto *bitcast = getTransformer().CreateDataAuthentication(*HAKCPointer, location);
         return bitcast;
     }
 
@@ -264,7 +263,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *SafePointer = getTransformer().CreateCodeAuthentication(HAKCPointer, Location);
+        auto *SafePointer = getTransformer().CreateCodeAuthentication(*HAKCPointer, Location);
         return SafePointer;
     }
 
@@ -320,7 +319,7 @@ namespace hakc {
             CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << SignedPtr << "\n";
             throw std::exception();
         }
-        auto *SafePtr = getTransformer().CreateSafePointer(HAKCPointer, Location);
+        auto *SafePtr = getTransformer().CreateSafePointer(*HAKCPointer, Location);
         if (DebugActive) {
             CommonHAKCAnalysis::getWriter() << "Created Safe Pointer\n\t" << *SafePtr << "\nFor Signed Pointer\n\t"
                                             << *SignedPtr << "\nat\n" << *Location << "\n";
@@ -1276,8 +1275,8 @@ namespace hakc {
             throw std::exception();
         }
         auto *InsertionPoint = FindUseInsertionPoint(GlobalVar, UserInstructions);
-        return getTransformer().CreateSignWithDivision(HAKCPointer, InsertionPoint, &getFunction(),
-                                                    !isa<Function>(GlobalVar));
+        return getTransformer().CreateSignWithDivision(*HAKCPointer, InsertionPoint, &getFunction(),
+                                                       !isa<Function>(GlobalVar));
     }
 
     void HAKCFunctionAnalysis::createMissingTransfers() {
@@ -1300,7 +1299,7 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Could not find Managed Pointer for " << NewValue << "\n";
                 throw std::exception();
             }
-            Replacement = getTransformer().CreateBitCast(HAKCPointer, Oper->getDestTy(), I);
+            Replacement = getTransformer().CreateBitCast(*HAKCPointer, Oper->getDestTy(), I);
         } else if (V == OldValue) {
             Replacement = NewValue;
         } else {
