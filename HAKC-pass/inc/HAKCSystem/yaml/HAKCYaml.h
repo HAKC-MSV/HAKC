@@ -82,42 +82,46 @@ namespace hakc {
         unsigned SizeIdx;
         unsigned CompartmentIdx;
         unsigned DivisionIdx;
+        unsigned IsCodeIdx;
 
         HAKCYAMLFunctionDefinitionType()
                 : FunctionName(), PointerIdx(HAKCTransferFunction::MissingIdx),
                   SizeIdx(HAKCTransferFunction::MissingIdx), CompartmentIdx(HAKCTransferFunction::MissingIdx),
-                  DivisionIdx(HAKCTransferFunction::MissingIdx) {}
+                  DivisionIdx(HAKCTransferFunction::MissingIdx), IsCodeIdx(HAKCTransferFunction::MissingIdx) {}
 
         bool IsValid() const { return !FunctionName.empty(); }
-    };
-
-    struct HAKCYAMLTransferType : public HAKCYAMLFunctionDefinitionType {
-        HAKCYAMLTransferType() : HAKCYAMLFunctionDefinitionType() {}
 
         Function *GetFunction(Module &M) {
             if (!IsValid()) {
                 return nullptr;
             }
             unsigned BitCount = 64;
-            SmallVector<Type *> ArgTypes = {
-                    PointerType::get(M.getContext(), 0)
+            SmallVector<Type *, HAKCTransferFunction::MaxArgIndex> ArgTypes = {
+                PointerType::get(M.getContext(), 0)
             };
             if (PointerIdx != HAKCTransferFunction::MissingIdx) {
-                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+                ArgTypes[PointerIdx] = IntegerType::get(M.getContext(), BitCount);
             }
             if (SizeIdx != HAKCTransferFunction::MissingIdx) {
-                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+                ArgTypes[SizeIdx] = IntegerType::get(M.getContext(), BitCount);
             }
             if (CompartmentIdx != HAKCTransferFunction::MissingIdx) {
-                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+                ArgTypes[CompartmentIdx] = IntegerType::get(M.getContext(), BitCount);
             }
             if (DivisionIdx != HAKCTransferFunction::MissingIdx) {
-                ArgTypes.push_back(IntegerType::get(M.getContext(), BitCount));
+                ArgTypes[DivisionIdx] = IntegerType::get(M.getContext(), BitCount);
+            }
+            if (IsCodeIdx != HAKCTransferFunction::MissingIdx) {
+                ArgTypes[IsCodeIdx] = IntegerType::get(M.getContext(), 1);
             }
 
             auto *FuncType = FunctionType::get(PointerType::get(M.getContext(), 0), ArgTypes, false);
             return dyn_cast<Function>(M.getOrInsertFunction(FunctionName, FuncType).getCallee());
         }
+    };
+
+    struct HAKCYAMLTransferType : public HAKCYAMLFunctionDefinitionType {
+        HAKCYAMLTransferType() : HAKCYAMLFunctionDefinitionType() {}
     };
 
     struct HAKCYAMLCustomTransferType : public HAKCYAMLTransferType {
@@ -149,6 +153,7 @@ namespace hakc {
         HAKCYAMLSequence <HAKCYAMLFileType> HAKCSourcePaths;
         HAKCYAMLSequence <HAKCYAMLStructType> IgnoredTypes;
         HAKCYAMLTransferType DefaultCompartmentTransfer;
+        HAKCYAMLFunctionDefinitionType SignWithDivision;
         HAKCYAMLTransferType PerCPUCompartmentTransfer;
     };
 } // hakc
@@ -159,6 +164,16 @@ LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLCustomTransferType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLFunctionDefinitionType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLFileType);
 LLVM_YAML_IS_SEQUENCE_VECTOR(hakc::HAKCYAMLStructType);
+
+inline void ValidateHAKCDefinition(hakc::HAKCYAMLFunctionDefinitionType &Definition) {
+#define FieldCheck(Def, Field) if (Def.Field != hakc::HAKCTransferFunction::MissingIdx && Def.Field > hakc::HAKCTransferFunction::MaxArgIndex) { errs() << "Invalid Index Value for " << #Field << " : " << Def.Field << "\n"; throw std::exception(); }
+    FieldCheck(Definition, CompartmentIdx);
+    FieldCheck(Definition, DivisionIdx);
+    FieldCheck(Definition, PointerIdx);
+    FieldCheck(Definition, IsCodeIdx);
+    FieldCheck(Definition, SizeIdx);
+#undef FieldCheck
+}
 
 
 template<>
@@ -189,6 +204,8 @@ struct yaml::MappingTraits<hakc::HAKCYAMLFunctionDefinitionType> {
         io.mapOptional("compartment-idx", FunctionDefinition.CompartmentIdx);
         io.mapOptional("division-idx", FunctionDefinition.DivisionIdx);
         io.mapOptional("size-idx", FunctionDefinition.SizeIdx);
+        io.mapOptional("is-code-idx", FunctionDefinition.IsCodeIdx);
+        ValidateHAKCDefinition(FunctionDefinition);
     }
 };
 
@@ -217,6 +234,8 @@ struct yaml::MappingTraits<hakc::HAKCYAMLTransferType> {
         io.mapRequired("compartment-idx", TransferType.CompartmentIdx);
         io.mapRequired("division-idx", TransferType.DivisionIdx);
         io.mapOptional("size-idx", TransferType.SizeIdx);
+        io.mapOptional("is-code-idx", TransferType.IsCodeIdx);
+        ValidateHAKCDefinition(TransferType);
     }
 };
 
@@ -229,6 +248,8 @@ struct yaml::MappingTraits<hakc::HAKCYAMLCustomTransferType> {
         io.mapRequired("division-idx", CustomTransfer.DivisionIdx);
         io.mapRequired("type", CustomTransfer.TypeName);
         io.mapOptional("size-idx", CustomTransfer.SizeIdx);
+        io.mapOptional("is-code-idx", CustomTransfer.IsCodeIdx);
+        ValidateHAKCDefinition(CustomTransfer);
     }
 };
 
@@ -241,6 +262,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
         io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
         io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
+        io.mapRequired("SignWithDivisionFunction", YamlConfig.SignWithDivision);
 
         io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
         io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);

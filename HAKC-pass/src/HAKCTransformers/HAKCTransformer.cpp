@@ -476,7 +476,7 @@ hakc::HAKCTransformer::CreateSignWithDivision(hakc::HAKCPointerBase &HAKCPointer
             OperandCast, CompartmentIDValue, IsCodeValue
     };
 
-    return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithDivisionName(), HAKCAuthenticationRetType(AddrSpace),
+    return CreateCallWithResultCast(ModuleAnalysis.GetCommonAnalysis().GetSystemInfo().SignWithDivision()->getName(), HAKCAuthenticationRetType(AddrSpace),
                                     Args, HAKCPointer.GetBaseDefinition());
     // return CreateCallWithResultCast(ModuleAnalysis.HAKCSignWithColor(), HAKCAuthenticationRetType(AddrSpace),
     //                                 Args, HAKCPointer.GetBaseDefinition());
@@ -702,7 +702,7 @@ hakc::HAKCTransformer::CreateVoidCastCompartmentTransfer(hakc::HAKCPointerBase &
     if (auto CustomTransfer = GetCustomTransferFunctionForType(TypeToUse)) {
         /* custom transfer exists, give the most specific transfer possible */
         Transfer = CustomTransfer->CreateTransferWithCasts(HAKCIRBuilder, TargetDivision, HAKCPointer, size,
-                                                           HAKCPointer.GetType(), TypeToUse);
+                                                           HAKCPointer.GetType(), TypeToUse, HAKCPointer.GetBaseDefinition()->getType()->isFunctionTy());
 
         if (DebugIsActive()) {
             CommonHAKCAnalysis::getWriter() << "custom xfer result:\n";

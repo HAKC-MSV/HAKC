@@ -5,12 +5,11 @@
 #ifndef HAKC_HAKCCOMPARTMENTALIZATIONPOLICY_H
 #define HAKC_HAKCCOMPARTMENTALIZATIONPOLICY_H
 
-#include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h"
+#include "kuzu.hpp"
+
 #include "HAKCCompartment.h"
 #include "HAKCCompartmentDivision.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
-
-#include "kuzu.hpp"
 
 namespace hakc {
 

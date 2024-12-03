@@ -3,6 +3,7 @@
 //
 
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
+
 #include "llvm/IR/Constants.h"
 
 using namespace llvm;
@@ -11,20 +12,28 @@ namespace hakc {
     HAKCTransferFunction::HAKCTransferFunction(Function *F, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
                                                unsigned int DivisionIdx, unsigned int SizeIdx) :
             HAKCFunctionDefinition(F), SignedPtrIdx(nullptr), CompartmentIdIdx(nullptr), DivisionIdIdx(nullptr),
-            SizeIdx(nullptr) {
-        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, SizeIdx);
+            SizeIdx(nullptr), IsCodeIdx(nullptr) {
+        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, SizeIdx, hakc::HAKCTransferFunction::MissingIdx);
     }
 
     HAKCTransferFunction::HAKCTransferFunction(Function *F, unsigned int SignedPtrIdx, unsigned int CompartmentIdIdx,
                                                unsigned int DivisionIdx) : HAKCFunctionDefinition(F),
                                                                            SignedPtrIdx(nullptr),
                                                                            CompartmentIdIdx(nullptr),
-                                                                           DivisionIdIdx(nullptr), SizeIdx(nullptr) {
-        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, MissingIdx);
+                                                                           DivisionIdIdx(nullptr), SizeIdx(nullptr), IsCodeIdx(nullptr) {
+        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, MissingIdx, hakc::HAKCTransferFunction::MissingIdx);
+    }
+
+    HAKCTransferFunction::HAKCTransferFunction(Function *F, unsigned SignedPtrIdx, unsigned CompartmentIdIdx,
+    unsigned DivisionIdx, unsigned SizeIdx, unsigned IsCodePtrIdx) : HAKCFunctionDefinition(F),
+                                                                       SignedPtrIdx(nullptr),
+                                                                       CompartmentIdIdx(nullptr),
+                                                                       DivisionIdIdx(nullptr), SizeIdx(nullptr), IsCodeIdx(nullptr) {
+        CreateIndexes(SignedPtrIdx, CompartmentIdIdx, DivisionIdx, SizeIdx, IsCodePtrIdx);
     }
 
     void HAKCTransferFunction::CreateIndexes(unsigned int PtrIdx, unsigned int CompartmentIdx,
-                                             unsigned int DivisionIdx, unsigned int SzIdx) {
+                                             unsigned int DivisionIdx, unsigned int SzIdx, unsigned IsCodePtrIdx) {
         unsigned IndexBitSize = 64;
         if (PtrIdx != MissingIdx) {
             this->SignedPtrIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), PtrIdx);
@@ -37,6 +46,9 @@ namespace hakc {
         }
         if (SzIdx != MissingIdx) {
             this->SizeIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), SzIdx);
+        }
+        if (IsCodePtrIdx != MissingIdx) {
+            this->IsCodeIdx = ConstantInt::get(IntegerType::get(F->getContext(), IndexBitSize), IsCodePtrIdx);
         }
     }
 
@@ -54,5 +66,9 @@ namespace hakc {
 
     ConstantInt *HAKCTransferFunction::GetSizeIdx() const {
         return SizeIdx;
+    }
+
+    ConstantInt * HAKCTransferFunction::GetIsCodePtrIdx() const {
+        return IsCodeIdx;
     }
 } // hakc

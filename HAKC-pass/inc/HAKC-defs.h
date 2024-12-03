@@ -5,13 +5,8 @@
 #ifndef PMC_HAKC_DEFS_H
 #define PMC_HAKC_DEFS_H
 
-#include "llvm/IR/Argument.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Intrinsics.h"
-
-#include <set>
-#include <vector>
 
 /* Macro value defined in CheriBSD sys/module.h */
 #define HAKC_CHERIBSD_COMPARTMENT_METADATA_TYPE 5

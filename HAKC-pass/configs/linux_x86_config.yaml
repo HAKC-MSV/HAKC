@@ -9,6 +9,7 @@ CustomTransferFunctions:
   - { type: "struct socket *", name: "hakc_transfer_socket", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
 CodeValidationFunction: "check_hakc_code_access"
 DataValidationFunction: "check_hakc_data_access"
+SignWithDivisionFunction: { name: "hakc_sign_pointer_with_color", ptr-idx: 0, compartment-idx: 1, is-code-idx: 2 }
 DefaultCompartmentTransferFunction: { name: "hakc_transfer_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
 PerCPUCompartmentTransferFunction: { name: "hakc_transfer_percpu_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
 CompartmentalizationSupportFunctions:

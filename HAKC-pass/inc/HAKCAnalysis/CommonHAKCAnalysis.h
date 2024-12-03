@@ -5,10 +5,7 @@
 #ifndef HAKC_COMMONHAKCANALYSIS_H
 #define HAKC_COMMONHAKCANALYSIS_H
 
-#include "HAKCPass.h"
-#include "HAKCFunctionDefinition/HAKCFunctionDefinition.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
-#include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 #include "HAKCOstream.h"
 #include "HAKCSystem/HAKCSystemInformation.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
@@ -34,6 +31,8 @@ namespace hakc {
         void InitConfig(StringRef ConfigPath);
 
     public:
+        virtual ~CommonHAKCAnalysis() = default;
+
         explicit CommonHAKCAnalysis(Module &M, StringRef ConfigPath);
 
         HAKCSystemInformation &GetSystemInfo();

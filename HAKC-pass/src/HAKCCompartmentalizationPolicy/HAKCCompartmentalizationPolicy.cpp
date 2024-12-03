@@ -9,8 +9,6 @@
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentDivision.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
-#include <string_view>
-
 namespace hakc {
     HAKCCompartmentalizationPolicy::HAKCCompartmentalizationPolicy(bool Debug, LLVMContext &Ctx,
                                                                    hakc_compartment_id_t DefaultCompartmentID,

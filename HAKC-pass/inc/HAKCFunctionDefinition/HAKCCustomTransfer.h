@@ -27,15 +27,18 @@ namespace hakc {
         HAKCTypeP GetTargetType() const;
 
        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
-                                           hakc::HAKCPointerBase &HAKCPointer, Value *Size, bool IsData) = 0;
+                                           hakc::HAKCPointerBase &HAKCPointer, Value *Size, bool IsData);
 
        virtual Instruction *
        CreateTransferWithCasts(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
                                hakc::HAKCPointerBase &HAKCPointer, Value *Size, HAKCTypeP srcTy,
-                               HAKCTypeP dstTy) = 0;
+                               HAKCTypeP dstTy, bool IsData);
 
     protected:
         HAKCTypeP TargetType;
+
+        virtual Instruction *CreateTransfer(IRBuilder<> &HAKCIRBuilder, HAKCCompartmentDivision &CompartmentDivision,
+                                    Value *Pointer, Value *Size, bool IsData);
     };
 
     typedef std::shared_ptr<HAKCCustomTransfer> hakc_custom_transfer_def_t;

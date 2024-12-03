@@ -5,15 +5,10 @@
 #ifndef HAKC_HAKCSYSTEMINFORMATION_H
 #define HAKC_HAKCSYSTEMINFORMATION_H
 
-#include <set>
-#include <map>
 #include <string>
 #include "llvm/Support/YAMLTraits.h"
 #include "llvm/IR/Module.h"
 #include "HAKCSystem/HAKCAllocationSize.h"
-#include "llvm/ADT/ilist.h"
-#include "llvm/ADT/StringSet.h"
-#include "llvm/IR/ValueMap.h"
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
 #include "HAKCFunctionDefinition/HAKCCustomTransfer.h"
 #include "HAKCSystem/yaml/HAKCYaml.h"
@@ -63,6 +58,7 @@ namespace hakc {
         StringRef DatabasePath() const;
         Function* CodeValidation() const;
         Function* DataValidation() const;
+        Function* SignWithDivision() const;
         hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
         HAKCTypeIdentifier &GetTypeIdentifier();
 
@@ -77,6 +73,7 @@ namespace hakc {
         HAKCTransferList CompartmentTransferFunctionList;
         Function *CodeValidationFunction;
         Function *DataValidationFunction;
+        Function *SignWithDivisionFunction;
         hakc::hakc_transfer_def_t DefaultCompartmentTransfer;
         hakc::hakc_transfer_def_t PerCPUCompartmentTransfer;
         FunctionList CompartmentalizationSupportFunctionList;
