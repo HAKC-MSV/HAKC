@@ -1,4 +1,4 @@
-target_sources(HAKC-Compartmentalizer PRIVATE
+set(HAKC_SOURCES ${HAKC_SOURCES}
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCTypeIdentifier.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCInfo.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCTypeInfo.cpp
@@ -6,4 +6,6 @@ target_sources(HAKC-Compartmentalizer PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCFunctionInfo.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCSymbolInfo.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/HAKCIndirectCallSource.cpp
+
+        PARENT_SCOPE
 )

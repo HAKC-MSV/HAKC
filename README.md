@@ -12,18 +12,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 1. `ROOT=$PWD`
 1. `git submodule update --init --recursive`
 
-## Build Kuzu
-1. `mkdir build-kuzu`
-2. `cd build-kuzu`
-3. ```
-   cmake -G Ninja -DHAKC_KUZU=True -DBUILD_PYTHON=True 
-   -DCMAKE_INSTALL_PREFIX=$(realpath ../install) 
-   -DCMAKE_BUILD_TYPE=Release ..
-   ```
-4. `cmake --build . -j$(nproc) --target install`
-5. `pip3 install -r $(realpath ../kuzu/tools/python_api/requirements_dev.txt`
-
-## Build LLVM 12
+## Build LLVM
 1. `cd llvm-project`
 2. `git apply ../llvm-patches/*.patch`
 3. `cd ..`
@@ -40,6 +29,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -DLLVM_TARGETS_TO_BUILD='X86;AArch64;ARM' \
    -DLLVM_USE_LINKER=lld \
    -DLLVM_ENABLE_IDE=True \
+   -DLLVM_ENABLE_RTTI=True \
+   -DLLVM_ENABLE_EH=True \
    -DHAKC_LLVM=True ..
    ```
 7. `cmake --build . --target install -j$(nproc)`
@@ -47,26 +38,19 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Build the HAKC compiler pass
 1. `cd $ROOT`
-2. `mkdir cmake-build-hakc-pass-{linux-{armv8,armv9,x86},cheribsd-morello}`
-3. `cd cmake-build-hakc-pass-linux-armv8`
+2. `mkdir cmake-build-hakc-pass`
+3. `cd cmake-build-hakc-pass`
 4. ```
    cmake -G Ninja \
    -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
    -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-   -DCMAKE_C_COMPILER=$(realpath ..)/install/bin/clang \
-   -DCMAKE_CXX_COMPILER=$(realpath ..)/install/bin/clang++ \
-   -DHAKC_LINUX_ARMV8=True \
    ..
    ```
 5. `cmake --build . -j$(nproc) --target install`
-6. Repeat steps 3-5 for the other directories created in step 2, but replacing `-DHAKC_LINUX_ARMV8=True` with 
-    * `-DHAKC_LINUX_ARMV9=True` for `armv9`
-    * `-DHAKC_LINUX_X86=True` for `x86`
-    * `-DHAKC_CHERIBSD_MORELLO=True` for `Morello`
 
 ## Build the Kernel
 
-1. `export BUILD_TYPE=linux-armv8`
+1. `export BUILD_TYPE=linux-x86`
 2. `cd $ROOT`
 3. `mkdir -p build-$BUILD_TYPE/hakc-dag-analysis`
 4. `cd linux`
