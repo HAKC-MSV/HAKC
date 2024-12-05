@@ -11,15 +11,11 @@
 #include "llvm/IR/DebugInfoMetadata.h"
 #include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Intrinsics.h"
 
 #include "llvm/Support/Path.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/ADT/StringRef.h"
-
-#include <sstream>
-#include <algorithm>
 
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
     if (!type) {
@@ -29,26 +25,9 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIT
     auto it = types.find(type);
     if (it == types.end()) {
         return nullptr;
-    } else {
-        return it->second;
     }
+    return it->second;
 }
-
-//std::string hakc::HAKCTypeIdentifier::ConstructStructName(StructType *StructTy) {
-//    std::string StructName;
-//    if (StructTy->hasName()) {
-//        llvm::raw_string_ostream sstream(StructName);
-//        sstream << StructTy->getName();
-//
-//        StructName.erase(std::remove(StructName.begin(), StructName.end(), '%'), StructName.end());
-//        for (unsigned i = 0; i < StructName.size(); i++) {
-//            if (StructName[i] == '.') {
-//                StructName[i] = ' ';
-//            }
-//        }
-//    }
-//    return StructName;
-//}
 
 void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::shared_ptr<HAKCTypeInfo> &HAKCType) {
     if (AnalysisHelper.GetSystemInfo().OutputDebugInfo()) {
@@ -801,14 +780,13 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
                         continue;
                     }
                 }
-//                AddLLVMTypeMapping(HAKCType, LLVMTy);
+                HAKCType->SetLLVMType(LLVMTy);
             } else if (auto *CallI = dyn_cast<CallInst>(I)) {
                 if (CallI->isIndirectCall()) {
                     auto *FunctionTy = GetIndirectCallFunctionType(CallI);
                     auto HAKCType = FindCalledFunctionType(FunctionTy);
                     if (!HAKCType) {
                         HAKCType = CreateNoDebugType(FunctionTy);
-//                        AddLLVMTypeMapping(HAKCType, FunctionTy);
                     }
                 }
             }

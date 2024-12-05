@@ -6,7 +6,6 @@
 #define HAKC_HAKCFUNCTIONINFO_H
 
 #include "HAKCSymbolInfo.h"
-#include "llvm/IR/Function.h"
 #include "HAKCIndirectCallSource.h"
 
 using namespace llvm;
@@ -32,11 +31,6 @@ namespace hakc {
     protected:
         std::set<std::shared_ptr<HAKCFunctionInfo>> DirectCalls;
         std::set<std::shared_ptr<HAKCIndirectCallSource>> IndirectCalls;
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, HAKCFunctionInfo &HAKCFuncInfo) {
-            hos.GetOS() << HAKCFuncInfo;
-            return hos;
-        }
     };
 
 } // hakc

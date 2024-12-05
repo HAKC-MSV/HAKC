@@ -9,7 +9,7 @@
 #include "llvm/IR/DerivedTypes.h"
 
 namespace hakc {
-    HAKCOstream hos;
+    HAKCWriter HAKC_Writer;
 
     bool CommonHAKCAnalysis::IsNoTransferFunction(Function *F) {
         return IsFunctionInFunctionList(F, SystemInfo.NoTransferFunctions());
@@ -106,8 +106,8 @@ namespace hakc {
         return IsFunctionInFunctionList(F, SystemInfo.CompartmentalizationSupportFunctions());
     }
 
-    hakc::HAKCOstream &CommonHAKCAnalysis::getWriter() {
-        return hos;
+    hakc::HAKCWriter &CommonHAKCAnalysis::getWriter() {
+        return HAKC_Writer;
     }
 
     bool CommonHAKCAnalysis::IsPointerLikeType(Type *Ty) {
@@ -482,7 +482,7 @@ namespace hakc {
     }
 
     void CommonHAKCAnalysis::VerifyFunction(Function *F) {
-        if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter().GetOS())) {
+        if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter().ostream())) {
             CommonHAKCAnalysis::getWriter() << "Verification failed for function\n" << F << "\n";
             throw std::exception();
         }

@@ -14,6 +14,8 @@ namespace hakc {
 
     class HAKCFunctionDefinition {
     public:
+        virtual ~HAKCFunctionDefinition() = default;
+
         explicit HAKCFunctionDefinition(Function *F);
 
         StringRef GetName() const;

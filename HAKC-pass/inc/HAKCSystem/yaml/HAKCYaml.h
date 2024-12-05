@@ -9,7 +9,6 @@
 #include <string>
 
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
-#include "HAKCAnalysis/HAKCOstream.h"
 
 typedef std::string HAKCYAMLStringType;
 
@@ -28,30 +27,6 @@ namespace hakc {
         MultiplyTwoArguments,
         ArgumentGEP
     };
-
-    HAKCOstream &operator<<(HAKCOstream &hos, const enum HAKCAllocationTypeEnum AllocationType) {
-        switch(AllocationType) {
-            case InvalidAllocationType:
-                hos << "InvalidAllocationType";
-                return hos;
-            case SimpleArgumentSize:
-                hos << "SimpleArgumentSize";
-                return hos;
-            case SimpleStaticSize:
-                hos << "SimpleStaticSize";
-                return hos;
-            case StaticPlusArgument:
-                hos << "StaticPlusArgument";
-                return hos;
-            case MultiplyTwoArguments:
-                hos << "MultiplyTwoArguments";
-                return hos;
-            case ArgumentGEP:
-                hos << "ArgumentGEP";
-                return hos;
-        }
-        return hos;
-    }
 
     struct HAKCYAMLAllocationType {
         HAKCYAMLStringType FunctionName;

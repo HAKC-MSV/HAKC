@@ -5,16 +5,12 @@
 #ifndef HAKC_MANAGEDHAKCPOINTER_H
 #define HAKC_MANAGEDHAKCPOINTER_H
 
-#include <map>
 #include <set>
 #include "llvm/IR/Value.h"
-#include "llvm/Support/raw_ostream.h"
 #include "llvm/IR/User.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Dominators.h"
 
 #include "HAKCTypeIdentifier/HAKCTypeInfo.h"
-#include "HAKCAnalysis/HAKCOstream.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 using namespace llvm;
@@ -86,8 +82,6 @@ namespace hakc {
         friend bool operator!=(const ManagedHAKCPointerUse &lhs, const ManagedHAKCPointerUse &rhs) {
             return !(lhs == rhs);
         }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerUse &HAKCPointerUse);
     };
 
     class HAKCPointerBase {
@@ -144,24 +138,6 @@ namespace hakc {
 
         friend bool operator!=(const HAKCPointerBase &lhs, const HAKCPointerBase &rhs) {
             return !(lhs == rhs);
-        }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, const HAKCPointerBase &ManagedPointer) {
-            hos << "Managed Pointer " << std::to_string(ManagedPointer.GetID());
-            if (ManagedPointer.GetBaseDefinition()) {
-                hos << " [";
-                if (isa<Argument>(ManagedPointer.GetBaseDefinition()) ||
-                    isa<GlobalValue>(ManagedPointer.GetBaseDefinition())) {
-                    hos << "  ";
-                }
-                hos << ManagedPointer.GetBaseDefinition() << "  ]";
-            }
-            return hos;
-        }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, const HAKCPointerBaseP &ManagedPointer) {
-            hos << *ManagedPointer;
-            return hos;
         }
     };
 

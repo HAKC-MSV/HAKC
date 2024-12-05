@@ -216,8 +216,7 @@ namespace hakc {
 
         BasicBlock *DominatorBlock = findDominatorUseBlock(v, users);
         if (!DominatorBlock) {
-            CommonHAKCAnalysis::getWriter() << "Could not find block for " << v << "\n";
-            getFunction().print(CommonHAKCAnalysis::getWriter().GetOS());
+            CommonHAKCAnalysis::getWriter() << "Could not find block for " << v << "\n" << getFunction();
             throw std::exception();
         }
 

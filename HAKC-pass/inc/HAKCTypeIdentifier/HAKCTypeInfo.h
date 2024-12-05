@@ -10,10 +10,8 @@
 
 #include <map>
 #include "llvm/IR/DebugInfoMetadata.h"
-#include "HAKCAnalysis/HAKCOstream.h"
 
 namespace hakc {
-
     class HAKCTypeInfo : public HAKCInfo {
     public:
         HAKCTypeInfo(StringRef Name, bool DebugActive);
@@ -23,12 +21,15 @@ namespace hakc {
         void AddMember(const std::shared_ptr<HAKCTypeInfo> &TypeUse, unsigned BitOffset);
 
         std::string GetYaml(unsigned Indents) override;
+
         std::string getTypeStringRepresentation();
 
         void SetSizeInBits(unsigned Size);
+
         std::string getYaml();
 
         unsigned GetSizeInBits();
+
         std::string getName();
 
         const DIType *GetDbgType();
@@ -42,6 +43,7 @@ namespace hakc {
         void SetLLVMType(Type *Ty);
 
         std::string getHash();
+
         std::string GetYamlHeader(unsigned Indents) const override;
 
         StringRef GetYamlIdentifier() const override;
@@ -57,7 +59,7 @@ namespace hakc {
         bool IsPointerType();
 
     protected:
-        std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo>>> Members;
+        std::map<unsigned, std::set<std::shared_ptr<HAKCTypeInfo> > > Members;
         unsigned SizeInBits;
         const DIType *DbgType;
         Type *LLVMType;
@@ -65,7 +67,7 @@ namespace hakc {
 
         bool IsPointerToPointer(const DIType *DiType);
 
-        const DIType* StripTypeModifiers(const DIType *DiType);
+        const DIType *StripTypeModifiers(const DIType *DiType);
 
     public:
         friend bool operator==(const HAKCTypeInfo &lhs, const HAKCTypeInfo &rhs) {
@@ -114,15 +116,9 @@ namespace hakc {
         friend bool operator!=(const HAKCYamlType &YamlType, const std::shared_ptr<HAKCTypeInfo> &TypeInfo) {
             return !(YamlType == TypeInfo);
         }
-
-        friend HAKCOstream &operator<<(HAKCOstream &hos, HAKCTypeInfo &TypeInfo) {
-            hos.GetOS() << TypeInfo;
-            return hos;
-        }
     };
 
     typedef std::shared_ptr<HAKCTypeInfo> HAKCTypeP;
-
 } // hakc
 
 #endif //HAKC_HAKCTYPEINFO_H

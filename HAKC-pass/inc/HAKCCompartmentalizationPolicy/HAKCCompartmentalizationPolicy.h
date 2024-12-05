@@ -18,6 +18,7 @@ namespace hakc {
     typedef std::shared_ptr<HAKCCompartment> HAKCCompartmentP;
     typedef std::shared_ptr<HAKCCompartmentDivision> HAKCDivisionP;
     typedef std::unique_ptr<kuzu::main::PreparedStatement> HAKCPreparedStatementP;
+
     typedef kuzu::common::Value HAKCDBValue;
     typedef std::unique_ptr<HAKCDBValue> HAKCDBValueP;
 

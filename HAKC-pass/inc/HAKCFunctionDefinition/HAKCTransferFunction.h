@@ -5,7 +5,7 @@
 #ifndef HAKC_HAKCTRANSFERFUNCTION_H
 #define HAKC_HAKCTRANSFERFUNCTION_H
 
-#include <llvm/IR/Instructions.h>
+#include "llvm/IR/Instructions.h"
 #include "HAKCFunctionDefinition.h"
 
 namespace hakc {

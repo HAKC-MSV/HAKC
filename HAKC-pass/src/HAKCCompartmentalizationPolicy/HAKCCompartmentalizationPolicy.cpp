@@ -88,6 +88,7 @@ namespace hakc {
                 "MATCH (d:HAKCDivision)-[:InCompartment]->(c:HAKCCompartment) WHERE d.DivisionID = $division_id AND "
                 "c.CompartmentID = $compartment_id RETURN d.AccessToken as AccessToken");
         std::unordered_map<std::string, HAKCDBValueP> Arguments;
+
         Arguments["division_id"] = std::make_unique<HAKCDBValue>(DivisionID);
         Arguments["compartment_id"] = std::make_unique<HAKCDBValue>(CompartmentID);
         auto Result = Execute(Statement, Arguments);
@@ -139,7 +140,7 @@ namespace hakc {
     HAKCCompartmentalizationPolicy::Execute(HAKCPreparedStatementP &PreparedStmt,
                                             std::unordered_map<std::string, HAKCDBValueP> &Arguments) {
         CheckConnection();
-        auto Result = Conn->executeWithParams(PreparedStmt.get(), Arguments);
+        auto Result = Conn->executeWithParams(PreparedStmt.get(), std::move(Arguments));
         if (!Result->isSuccess()) {
             CommonHAKCAnalysis::getWriter() << "Failed to execute query: " << Result->getErrorMessage() << "\n";
             throw std::exception();

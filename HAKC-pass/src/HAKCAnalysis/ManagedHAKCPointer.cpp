@@ -51,13 +51,6 @@ namespace hakc {
                    });
     }
 
-    HAKCOstream &operator<<(HAKCOstream &hos, const ManagedHAKCPointerUse &HAKCPointerUse) {
-        hos << "[" << std::to_string(HAKCPointerUse.getID()) << "] Argument "
-            << std::to_string(HAKCPointerUse.getOperandNo()) << " of " << HAKCPointerUse.getUser()
-            << " for " << HAKCPointerUse.getManagedPtr();
-        return hos;
-    }
-
     HAKCPointerBase::HAKCPointerBase(Value *BaseDefinition, unsigned ID) : BaseDefinition(BaseDefinition),
                                                               AuthenticatedPointer(nullptr), HAKCTy(nullptr), ID(ID) {
 
@@ -84,7 +77,7 @@ namespace hakc {
     }
 
     unsigned HAKCPointerBase::GetID() const {
-        return 0;
+        return ID;
     }
 
 

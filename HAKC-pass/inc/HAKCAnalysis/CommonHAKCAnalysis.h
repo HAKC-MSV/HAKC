@@ -6,11 +6,11 @@
 #define HAKC_COMMONHAKCANALYSIS_H
 
 #include "HAKCFunctionDefinition/HAKCTransferFunction.h"
-#include "HAKCOstream.h"
 #include "HAKCSystem/HAKCSystemInformation.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 
 #include <map>
+#include "HAKCSystem/HAKCWriter.h"
 
 namespace hakc {
 
@@ -89,7 +89,7 @@ namespace hakc {
 
         bool functionIsTransferCandidate(Function *F, HAKCCompartmentalizationPolicy &Policy);
 
-        static hakc::HAKCOstream &getWriter();
+        static hakc::HAKCWriter &getWriter();
 
         static FunctionType *GetDataAuthenticationFunctionType(Module &M, unsigned AddrSpace = 0);
 
