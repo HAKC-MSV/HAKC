@@ -17,22 +17,22 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
 
-static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"),
-                                                   cl::location(HAKC_ANALYSIS), cl::Required);
-static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME",
-                                                     cl::desc("Enable debug output for a specific function"),
-                                                     cl::location(HAKC_DEBUG_NAME));
-static cl::opt<std::string, true> HAKC_DAG_ANALYSIS_ROOT_CL("HAKC_DAG_ANALYSIS_ROOT", cl::desc(""),
-                                                            cl::location(HAKC_DAG_ANALYSIS_ROOT));
-static cl::opt<std::string, true> HAKC_ARCH_CONFIG_CL("HAKC_ARCH_CONFIG", cl::desc("Path to HAKC arch yaml"),
-                                                      cl::location(HAKC_ARCH_CONFIG), cl::Required);
-static cl::opt<std::string, true> HAKC_COMPARTMENT_PATH_CL("HAKC_COMPARTMENT_PATH",
-                                                           cl::desc("Path to HAKC compartment yaml"),
-                                                           cl::location(HAKC_COMPARTMENT_PATH), cl::Required);
-static cl::opt<std::string, true> HAKC_NO_KERNEL_TRANSFERS_CL("HAKC_NO_KERNEL_TRANSFERS", cl::desc(""),
-                                                              cl::location(HAKC_NO_KERNEL_TRANSFERS));
-static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", cl::desc(""),
-                                                         cl::location(HAKC_MORELLO_HYBRID));
+// static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"),
+//                                                    cl::location(HAKC_ANALYSIS), cl::Required);
+// static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME",
+//                                                      cl::desc("Enable debug output for a specific function"),
+//                                                      cl::location(HAKC_DEBUG_NAME));
+// static cl::opt<std::string, true> HAKC_DAG_ANALYSIS_ROOT_CL("HAKC_DAG_ANALYSIS_ROOT", cl::desc(""),
+//                                                             cl::location(HAKC_DAG_ANALYSIS_ROOT));
+static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path to HAKC Configuration File"),
+                                                      cl::location(HAKC_CONFIG_PATH), cl::Required);
+// static cl::opt<std::string, true> HAKC_COMPARTMENT_PATH_CL("HAKC_COMPARTMENT_PATH",
+//                                                            cl::desc("Path to HAKC compartment yaml"),
+//                                                            cl::location(HAKC_COMPARTMENT_PATH), cl::Required);
+// static cl::opt<std::string, true> HAKC_NO_KERNEL_TRANSFERS_CL("HAKC_NO_KERNEL_TRANSFERS", cl::desc(""),
+//                                                               cl::location(HAKC_NO_KERNEL_TRANSFERS));
+// static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", cl::desc(""),
+//                                                          cl::location(HAKC_MORELLO_HYBRID));
 
 namespace hakc {
     bool runDataAccessGraphAnalysis(Module &M) {
@@ -60,7 +60,7 @@ namespace hakc {
         }
         raw_fd_ostream out(Path, err);
         if (!err) {
-            CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
+            CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
             HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
             out.close();
         } else {
@@ -73,7 +73,7 @@ namespace hakc {
 
     bool runCompartmentalization(Module &M) {
         bool PerformTransformations = true;
-        CommonHAKCAnalysis HAKCAnalysis(M, HAKC_ARCH_CONFIG);
+        CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
 
         StringRef CurrentSourceName(M.getSourceFileName());
         for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {
