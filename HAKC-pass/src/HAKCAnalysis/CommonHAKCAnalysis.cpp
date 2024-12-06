@@ -71,7 +71,7 @@ namespace hakc {
         ErrorOr<std::unique_ptr<MemoryBuffer>> mb = MemoryBuffer::getFile(ConfigPath);
         yaml::Input yin(mb.get()->getMemBufferRef().getBuffer());
 
-        // yaml is actually parsed here, for some reason
+        // yaml parsed here 
         yin >> SystemConfig;
         if (yin.error()) {
             CommonHAKCAnalysis::getWriter() << "Error parsing config file " << ConfigPath << "\n";

@@ -17,64 +17,29 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
 
-// static cl::opt<std::string, true> HAKC_ANALYSIS_CL("HAKC_ANALYSIS", cl::desc("Specify HAKC Pass Mode"),
-//                                                    cl::location(HAKC_ANALYSIS), cl::Required);
-// static cl::opt<std::string, true> HAKC_DEBUG_NAME_CL("HAKC_DEBUG_NAME",
-//                                                      cl::desc("Enable debug output for a specific function"),
-//                                                      cl::location(HAKC_DEBUG_NAME));
-// static cl::opt<std::string, true> HAKC_DAG_ANALYSIS_ROOT_CL("HAKC_DAG_ANALYSIS_ROOT", cl::desc(""),
-//                                                             cl::location(HAKC_DAG_ANALYSIS_ROOT));
+
 static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path to HAKC Configuration File"),
                                                       cl::location(HAKC_CONFIG_PATH), cl::Required);
-// static cl::opt<std::string, true> HAKC_COMPARTMENT_PATH_CL("HAKC_COMPARTMENT_PATH",
-//                                                            cl::desc("Path to HAKC compartment yaml"),
-//                                                            cl::location(HAKC_COMPARTMENT_PATH), cl::Required);
-// static cl::opt<std::string, true> HAKC_NO_KERNEL_TRANSFERS_CL("HAKC_NO_KERNEL_TRANSFERS", cl::desc(""),
-//                                                               cl::location(HAKC_NO_KERNEL_TRANSFERS));
-// static cl::opt<std::string, true> HAKC_MORELLO_HYBRID_CL("HAKC_MORELLO_HYBRID", cl::desc(""),
-//                                                          cl::location(HAKC_MORELLO_HYBRID));
 
 namespace hakc {
-    bool runDataAccessGraphAnalysis(Module &M) {
-        auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
-        auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
-
-        if (HAKC_DAG_ANALYSIS_ROOT.empty()) {
-            CommonHAKCAnalysis::getWriter() << HAKC_DAG_ANALYSIS_ROOT << " is not set!\n";
-            throw std::exception();
-        }
-
-        auto Prefix = HAKC_DAG_ANALYSIS_ROOT;
-        if (Prefix.back() != llvm::sys::path::get_separator().back()) {
-            Prefix += llvm::sys::path::get_separator();
-        }
-        auto Path = Prefix;
-        Path += P;
-        Path += ".dag.yml";
-
-        std::error_code err;
-        err = sys::fs::create_directories(sys::path::parent_path(Path));
-        if (err) {
-            CommonHAKCAnalysis::getWriter() << "Failed to create " << sys::path::parent_path(Path) << "\n";
-            throw std::exception();
-        }
-        raw_fd_ostream out(Path, err);
-        if (!err) {
-            CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
-            HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
-            out.close();
-        } else {
-            CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
-            throw std::exception();
-        }
-
-        return false;
-    }
-
-    bool runCompartmentalization(Module &M) {
-        bool PerformTransformations = true;
+    bool RunHAKCAnalysis(Module &M) {
+        // wrapper for getting analysis type 
         CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
+        
+        if(HAKCAnalysis.GetSystemInfo().PassMode == RunDataAccessGraphAnalysis){
+            runDataAccessGraphAnalysis(HAKCAnalysis);
+        }
+        else if(HAKCAnalysis.GetSystemInfo().PassMode == RunCompartmentalization){
+            runCompartmentalization(HAKCAnalysis);
+        }
+        else{
+            CommonHAKCAnalysis::getWriter() << "Failed to get valid PassMode (this should never be called)\n";
+        }
 
+    }
+    bool runDataAccessGraphAnalysis(CommonHAKCAnalysis &HAKCAnalysis) {
+        bool PerformTransformations = true;
+        Module &M = HAKCAnalysis.GetModule();
         StringRef CurrentSourceName(M.getSourceFileName());
         for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {
             if (CurrentSourceName.contains(path)) {
@@ -100,23 +65,34 @@ namespace hakc {
 
         return true;
     }
+    bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
+        Module &M = HAKCAnalysis.GetModule();
 
-    struct HAKCPass : public PassInfoMixin<HAKCPass> {
-        const std::vector<std::pair<StringRef, std::function<bool(Module &)>>> available_options =
-                {
-                        {"dag",              runDataAccessGraphAnalysis},
-                        {"compartmentalize", runCompartmentalization}
-                };
+        auto Path = HAKCAnalysis.GetSystemInfo().DagAnalysisRootPath;
 
-        PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
-            for (const auto &opt: available_options) {
-                if (opt.first == HAKC_ANALYSIS) {
-                    return opt.second(M) ? PreservedAnalyses::none() : PreservedAnalyses::all();
-                }
-            }
-            return PreservedAnalyses::all();
+        std::error_code err;
+        err = sys::fs::create_directories(sys::path::parent_path(Path));
+        if (err) {
+            CommonHAKCAnalysis::getWriter() << "Failed to create " << sys::path::parent_path(Path) << "\n";
+            throw std::exception();
+        }
+        raw_fd_ostream out(Path, err);
+        if (!err) {
+            HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
+            out.close();
+        } else {
+            CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
+            throw std::exception();
         }
 
+        return false;
+    }
+    
+
+    struct HAKCPass : public PassInfoMixin<HAKCPass> {
+        PreservedAnalyses run(Module &M, ModuleAnalysisManager &MAM) {
+            return RunHAKCAnalysis(M) ? PreservedAnalyses::none() : PreservedAnalyses::all();
+        }
         static bool isRequired() { return true; }
     };
 }// namespace hakc
