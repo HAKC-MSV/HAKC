@@ -17,6 +17,9 @@
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/ADT/StringRef.h"
 
+extern std::string SOURCE_PATH;
+extern std::string BUILD_PATH;
+
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
     if (!type) {
         CommonHAKCAnalysis::getWriter() << "Trying to find null type\n";
@@ -1006,14 +1009,13 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
         return Path.str();
     }
 
-    // TODO: Use SystemInformation to get these strings
-    auto *SourcePath = std::getenv(hakc::HAKC_SOURCE_PATH.str().c_str());
+    auto *SourcePath = SOURCE_PATH.c_str(); 
     if (!SourcePath || std::strlen(SourcePath) == 0) {
         CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
         throw std::exception();
     }
 
-    auto *BuildPath = std::getenv(hakc::HAKC_BUILD_PATH.str().c_str());
+    auto *BuildPath = BUILD_PATH.c_str(); 
     if (!BuildPath || std::strlen(BuildPath) == 0) {
         CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
         throw std::exception();

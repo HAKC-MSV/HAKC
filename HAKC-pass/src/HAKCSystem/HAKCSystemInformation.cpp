@@ -189,6 +189,14 @@ namespace hakc {
     StringRef HAKCSystemInformation::GetDagAnalysisRootPath() const {
         return DagAnalysisRootPath;
     }
+    
+    StringRef HAKCSystemInformation::GetSourcePath() const{
+        return SourcePath; 
+    }
+
+    StringRef HAKCSystemInformation::GetBuildPath() const{
+        return BuildPath; 
+    }
 
     hakc::HAKCPassModeTypeEnum HAKCSystemInformation::GetPassMode() const {
         return PassMode;

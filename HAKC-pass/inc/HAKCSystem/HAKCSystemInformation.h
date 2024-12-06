@@ -63,6 +63,8 @@ namespace hakc {
         hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
         HAKCTypeIdentifier &GetTypeIdentifier();
         StringRef GetDagAnalysisRootPath() const;
+        StringRef GetSourcePath() const;
+        StringRef GetBuildPath() const;
         hakc::HAKCPassModeTypeEnum GetPassMode() const;
     protected:
         CommonHAKCAnalysis &CommonAnalysis;

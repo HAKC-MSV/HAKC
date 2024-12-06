@@ -19,6 +19,8 @@
 
 // critical reference guide for cl: https://llvm.org/docs/CommandLine.html#internal-vs-external-storage
 std::string HAKC_CONFIG_PATH;
+std::string SOURCE_PATH;
+std::string BUILD_PATH;
 
 static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path to HAKC Configuration File"),
                                                       cl::location(HAKC_CONFIG_PATH), cl::Required);
@@ -54,8 +56,19 @@ namespace hakc {
         return true;
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
-        auto Path = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath();
-        errs() << "Got to Path " << Path << "\n";
+        Module &M = HAKCAnalysis.GetModule();
+        SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
+        BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
+        auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
+        auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
+        
+        auto Prefix = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath().str(); 
+        if (Prefix.back() != llvm::sys::path::get_separator().back()) {
+            Prefix += llvm::sys::path::get_separator();
+        }
+        auto Path = Prefix;
+        Path += P;
+        Path += ".dag.yml";
 
         std::error_code err;
         err = sys::fs::create_directories(sys::path::parent_path(Path));
@@ -80,8 +93,16 @@ namespace hakc {
     }
 
     bool RunHAKCAnalysis(Module &M) {
+        
+        if(HAKC_CONFIG_PATH.empty()){
+            errs() << "HAKC_CONFIG_PATH parameter '-mllvm -HAKC_CONFIG=somepath' not specifiecd\n";
+            throw std::exception();
+        }
+        errs() << HAKC_CONFIG_PATH << "\n"; 
         // wrapper for getting analysis type 
+        errs() << "here001\n";
         CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
+        errs() << "here002\n";
         
         if(HAKCAnalysis.GetSystemInfo().GetPassMode() == RunDataAccessGraphAnalysis){
             return runDataAccessGraphAnalysis(HAKCAnalysis);
