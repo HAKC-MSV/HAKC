@@ -560,7 +560,7 @@ hakc::HAKCTransformer::FindEntryBitcast(hakc::HAKCPointerBase &HAKCPointer, Inst
      */
     Argument *TargetV = nullptr;
     Type *BitcastType = nullptr;
-    User *BitcastUser;
+    User *BitcastUser = nullptr; 
     for (auto &Arg: I->getFunction()->args()) {
         if (HAKCPointer.GetBaseDefinition() == &Arg) {
             TargetV = Target->getArg(Arg.getArgNo());

@@ -52,7 +52,6 @@ namespace hakc {
         return true;
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
-        Module &M = HAKCAnalysis.GetModule();
 
         auto Path = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath();
 

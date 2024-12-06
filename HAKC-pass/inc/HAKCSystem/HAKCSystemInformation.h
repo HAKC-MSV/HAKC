@@ -73,8 +73,9 @@ namespace hakc {
         std::string Database;
         std::string SourcePath;
         std::string BuildPath;
-        hakc::HAKCPassModeTypeEnum PassMode;
         std::string DagAnalysisRootPath;
+        hakc::HAKCPassModeTypeEnum PassMode;
+        HAKCStringList IncludePathsList;
         FunctionList NoTransferFunctionList;
         HAKCTransferList CompartmentTransferFunctionList;
         Function *CodeValidationFunction;
@@ -85,7 +86,6 @@ namespace hakc {
         FunctionList CompartmentalizationSupportFunctionList;
         HAKCSymbolList SymbolsToOutputDebugInfo;
         HAKCStringList SeparateNamespacePathList;
-        HAKCStringList IncludePathsList;
         HAKCStringList HAKCSourcePathList;
         FunctionList SafeTransitionFunctionList;
         HAKCTypeSet IgnoredTypeSet;
