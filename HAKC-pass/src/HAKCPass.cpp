@@ -17,6 +17,8 @@
 #include "llvm/Passes/PassPlugin.h"
 #include "llvm/Support/CommandLine.h"
 
+// critical reference guide for cl: https://llvm.org/docs/CommandLine.html#internal-vs-external-storage
+std::string HAKC_CONFIG_PATH;
 
 static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path to HAKC Configuration File"),
                                                       cl::location(HAKC_CONFIG_PATH), cl::Required);
@@ -52,7 +54,6 @@ namespace hakc {
         return true;
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
-
         auto Path = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath();
 
         std::error_code err;

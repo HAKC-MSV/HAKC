@@ -9,7 +9,8 @@
 namespace hakc {
     HAKCSystemInformation::HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis) : CommonAnalysis(CommonAnalysis),
         TypeIdentifier(CommonAnalysis), DebugOutput(false), Arch(), Platform(),
-        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), PassMode(InvalidPassModeType), IncludePathsList(), NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
+        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), PassMode(InvalidPassModeType), IncludePathsList(),
+        NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
         DataValidationFunction(nullptr), SignWithDivisionFunction(nullptr), DefaultCompartmentTransfer(nullptr),
         PerCPUCompartmentTransfer(nullptr), CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(),
         SeparateNamespacePathList(), HAKCSourcePathList(), SafeTransitionFunctionList(), IgnoredTypeSet(),
@@ -56,7 +57,7 @@ namespace hakc {
 
 
         HAKCSystemInfo.IncludePathsList.append(YamlConfig.IncludePathsList.begin(),
-                                                YamlConfig.IncludePathsList.end());
+                                               YamlConfig.IncludePathsList.end());
 
         for (auto &FileType: YamlConfig.SeparateNamespacePaths) {
             auto PathRoot = FileType.PathRoot;
@@ -184,11 +185,13 @@ namespace hakc {
     StringRef HAKCSystemInformation::DatabasePath() const {
         return Database;
     }
+
     StringRef HAKCSystemInformation::GetDagAnalysisRootPath() const {
         return DagAnalysisRootPath;
     }
+
     hakc::HAKCPassModeTypeEnum HAKCSystemInformation::GetPassMode() const {
-        return PassMode; 
+        return PassMode;
     }
 
 
@@ -200,7 +203,7 @@ namespace hakc {
         return DataValidationFunction;
     }
 
-    Function * HAKCSystemInformation::SignWithDivision() const {
+    Function *HAKCSystemInformation::SignWithDivision() const {
         return SignWithDivisionFunction;
     }
 
