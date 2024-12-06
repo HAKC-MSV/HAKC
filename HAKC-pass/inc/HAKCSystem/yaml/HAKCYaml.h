@@ -253,12 +253,11 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlConfig &YamlConfig) {
         io.mapRequired("Arch", YamlConfig.Arch);
         io.mapRequired("Platform", YamlConfig.Platform);
-        io.mapRequired("Database", YamlConfig.Database);
         io.mapRequired("SourcePath", YamlConfig.SourcePath);
         io.mapRequired("BuildPath", YamlConfig.BuildPath);
         io.mapRequired("DagAnalysisRootPath", YamlConfig.DagAnalysisRootPath);
         io.mapRequired("PassMode", YamlConfig.PassMode);
-        io.mapRequired("IncludePathsList", YamlConfig.IncludePathsList);
+        io.mapRequired("IncludePaths", YamlConfig.IncludePathsList);
         io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
         io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
         io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
@@ -276,6 +275,12 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
         io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
         io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
+
+        if (YamlConfig.PassMode == hakc::RunCompartmentalization) {
+            io.mapRequired("Database", YamlConfig.Database);
+        } else if (YamlConfig.PassMode == hakc::RunDataAccessGraphAnalysis) {
+            io.mapOptional("Database", YamlConfig.Database);
+        }
     }
 };
 

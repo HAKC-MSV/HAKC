@@ -1006,6 +1006,7 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
         return Path.str();
     }
 
+    // TODO: Use SystemInformation to get these strings
     auto *SourcePath = std::getenv(hakc::HAKC_SOURCE_PATH.str().c_str());
     if (!SourcePath || std::strlen(SourcePath) == 0) {
         CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
@@ -1087,5 +1088,11 @@ void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
         for (auto &it: SortedFunctions) {
             out.indent(HAKCInfo::IndentSpaces()) << "- " << it->GetYaml(HAKCInfo::IndentSpaces()) << "\n";
         }
+    }
+}
+
+void hakc::HAKCTypeIdentifier::GetHAKCTypes(SmallVectorImpl<HAKCTypeP> &Results) {
+    for (auto &it : types) {
+        Results.push_back(it.second);
     }
 }

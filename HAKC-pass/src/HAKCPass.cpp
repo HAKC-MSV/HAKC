@@ -55,18 +55,23 @@ namespace hakc {
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
         auto Path = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath();
+        errs() << "Got to Path " << Path << "\n";
 
         std::error_code err;
         err = sys::fs::create_directories(sys::path::parent_path(Path));
         if (err) {
+            errs() << "1\n";
             CommonHAKCAnalysis::getWriter() << "Failed to create " << sys::path::parent_path(Path) << "\n";
             throw std::exception();
         }
+        errs() << "2\n";
         raw_fd_ostream out(Path, err);
         if (!err) {
+            errs() << "About to output YAML\n";
             HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
             out.close();
         } else {
+            errs() << "3\n";
             CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
             throw std::exception();
         }
