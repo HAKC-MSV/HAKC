@@ -22,7 +22,7 @@ extern std::string BUILD_PATH;
 
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
     if (!type) {
-        CommonHAKCAnalysis::getWriter() << "Trying to find null type\n";
+        errs() << "Trying to find null type\n";
         throw std::exception();
     }
     auto it = types.find(type);
@@ -75,8 +75,8 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
                 } else if (i == SubroutineTy->getTypeArray()->getNumOperands() - 1) {
                     out << "...";
                 } else {
-                    CommonHAKCAnalysis::getWriter() << "Null operand at " << i << " for " << *type << "\n";
-                    CommonHAKCAnalysis::getWriter() << "Current type: " << Name << "\n";
+                    errs() << "Null operand at " << i << " for " << *type << "\n";
+                    errs() << "Current type: " << Name << "\n";
                     throw std::exception();
                 }
             } else {
@@ -145,7 +145,7 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
         } else if (CompositeTy->getTag() == dwarf::DW_TAG_enumeration_type) {
             out << "enum " << CompositeTy->getName();
         } else {
-            CommonHAKCAnalysis::getWriter() << "Unhandled DICompositeType tag\n" << CompositeTy << "\n";
+            errs() << "Unhandled DICompositeType tag\n" << CompositeTy << "\n";
             throw std::exception();
         }
     } else if (auto *BaseTy = dyn_cast<DIBasicType>(type)) {
@@ -155,7 +155,7 @@ std::string hakc::HAKCTypeIdentifier::GetTypeName(const DIType *type) {
             out << BaseTy->getName();
         }
     } else {
-        CommonHAKCAnalysis::getWriter() << "Unhandled DIType\n" << type << "\n";
+        errs() << "Unhandled DIType\n" << type << "\n";
         throw std::exception();
     }
 
@@ -240,7 +240,7 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
     if (!DIGVTy) {
         DIGVTy = HandleType(DIGV->getType());
         if (!DIGVTy) {
-            CommonHAKCAnalysis::getWriter() << "Unable to handle DIType " << *DIGV->getType() << " for Global " << *DIGV
+            errs() << "Unable to handle DIType " << *DIGV->getType() << " for Global " << *DIGV
                                             << "\n";
             throw std::exception();
         }
@@ -301,7 +301,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     }
     auto DIGVTy = FindType(SubProg->getType());
     if (!DIGVTy) {
-        CommonHAKCAnalysis::getWriter() << GetModule() << "Could not find HAKCType of " << F->getName()
+        errs() << GetModule() << "Could not find HAKCType of " << F->getName()
                                         << " with DIType " << *SubProg->getType() << "\n";
         throw std::exception();
     }
@@ -422,7 +422,7 @@ std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGloba
         UnmappedGlobals.insert(GlobalInfo);
         return GlobalInfo;
     } else {
-        CommonHAKCAnalysis::getWriter() << "Unsupported GlobalObj: " << *GlobalObj << "\n";
+        errs() << "Unsupported GlobalObj: " << *GlobalObj << "\n";
         throw std::exception();
     }
 }
@@ -556,7 +556,7 @@ void hakc::HAKCTypeIdentifier::CreateIndirectCallSourceLink(Value *V,
 void hakc::HAKCTypeIdentifier::FindIndirectCallSource(CallInst *CallI,
                                                       std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> &Path) {
     if (!CallI->isIndirectCall()) {
-        CommonHAKCAnalysis::getWriter() << *CallI << " is not an indirect call\n";
+        errs() << *CallI << " is not an indirect call\n";
         throw std::exception();
     }
 
@@ -569,7 +569,7 @@ void hakc::HAKCTypeIdentifier::FindIndirectCallSource(CallInst *CallI,
 
 FunctionType *hakc::HAKCTypeIdentifier::GetIndirectCallFunctionType(CallInst *CallI) {
     if (!CallI->isIndirectCall()) {
-        CommonHAKCAnalysis::getWriter() << "Trying to get type from a Call that is not an indirect call\n";
+        errs() << "Trying to get type from a Call that is not an indirect call\n";
         throw std::exception();
     }
 //    return dyn_cast<FunctionType>(CallI->getCalledOperand()->getType()->getPointerElementType());
@@ -620,12 +620,12 @@ void hakc::HAKCTypeIdentifier::FindUsesInFunctions() {
                     }
                     auto HAKCType = FindCalledFunctionType(FunctionTy);
                     if (!HAKCType) {
-                        CommonHAKCAnalysis::getWriter() << "Could not find called HAKCType for " << *Call
+                        errs() << "Could not find called HAKCType for " << *Call
                                                         << " with Searched Type " << *FunctionTy
                                                         << " in Function " << F->getName() << "\n";
                         HAKCType = FindType(Call->getCalledOperand()->getType());
                         if (HAKCType) {
-                            CommonHAKCAnalysis::getWriter() << "But the Pointer HAKCType exists: "
+                            errs() << "But the Pointer HAKCType exists: "
                                                             << HAKCType->GetName() << "\n";
                         }
                         throw std::exception();
@@ -669,7 +669,7 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(Type *Ty)
 
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindCalledFunctionType(FunctionType *FunctionTy) {
     if (!FunctionTy) {
-        CommonHAKCAnalysis::getWriter() << "Trying to find null FunctionTy\n";
+        errs() << "Trying to find null FunctionTy\n";
         throw std::exception();
     }
 
@@ -767,7 +767,7 @@ void hakc::HAKCTypeIdentifier::FindTypesInFunctions() {
                 }
                 auto HAKCType = FindType(DebugV->getType());
                 if (!HAKCType) {
-                    CommonHAKCAnalysis::getWriter() << "Could not find HAKCType for DIType " << *DebugV->getType()
+                    errs() << "Could not find HAKCType for DIType " << *DebugV->getType()
                                                     << "\n";
                     throw std::exception();
                 }
@@ -1011,13 +1011,13 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
 
     auto *SourcePath = SOURCE_PATH.c_str(); 
     if (!SourcePath || std::strlen(SourcePath) == 0) {
-        CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
+        errs() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
         throw std::exception();
     }
 
     auto *BuildPath = BUILD_PATH.c_str(); 
     if (!BuildPath || std::strlen(BuildPath) == 0) {
-        CommonHAKCAnalysis::getWriter() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
+        errs() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
         throw std::exception();
     }
 
@@ -1030,7 +1030,7 @@ std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
         length = std::strlen(SourcePath);
         Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
     } else {
-        CommonHAKCAnalysis::getWriter() << "Path " << Path << " does not start with either "
+        errs() << "Path " << Path << " does not start with either "
                                         << BuildPath << " or " << SourcePath << "!\n";
         throw std::exception();
     }

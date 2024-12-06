@@ -30,7 +30,7 @@ namespace hakc {
 
     void ManagedHAKCPointerUse::setUser(User *U) {
         if (!U) {
-            CommonHAKCAnalysis::getWriter() << "Trying to set a null user for " << UserP << "\n";
+            errs() << "Trying to set a null user for " << UserP << "\n";
             throw std::exception();
         }
         UserP = U;
@@ -134,6 +134,7 @@ namespace hakc {
                                             << Manager.GetFunctionAnalysis().getFunction().getName() << "\n";
 
             if (!PurposefullyIgnored) {
+                errs() << "!PurposefullyIgnored\n";
                 throw std::exception();
             } else {
                 CommonHAKCAnalysis::getWriter() << "Allowing change since " << *this << " is purposefully ignored\n";
@@ -146,6 +147,7 @@ namespace hakc {
         this->ProtectedPointer = NewProtectedPointer;
         if (!PointerSetsCanBeEqual()) {
             if (this->ProtectedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+                errs() << "exception in SetProtectedPointer\n";
                 CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
                                                 << " in function "
                                                 << Manager.GetFunctionAnalysis().getFunction().getName() << "\n";
@@ -159,6 +161,7 @@ namespace hakc {
         this->AuthenticatedPointer = NewAuthenticatedPointer;
         if (!PointerSetsCanBeEqual()) {
             if (this->AuthenticatedPointer && this->ProtectedPointer == this->AuthenticatedPointer) {
+                errs() << "exception in SetAuthenticatedPointer\n";
                 CommonHAKCAnalysis::getWriter() << "Authenticated and Protected pointers are the same for " << *this
                                                 << " in function\n" << Manager.GetFunctionAnalysis().getFunction()
                                                 << "\n";
@@ -170,14 +173,14 @@ namespace hakc {
     void ManagedHAKCPointer::RegisterManualHAKCTransfer(CallBase *CallI) {
         if (!Manager.GetFunctionAnalysis().GetModuleAnalysis().GetCommonAnalysis().IsHAKCTransferFunction(
                 CallI->getCalledFunction())) {
-            CommonHAKCAnalysis::getWriter() << CallI << " is not a HAKC Transfer function!\n";
+            errs() << CallI << " is not a HAKC Transfer function!\n";
             throw std::exception();
         }
         auto *TransferTypeCast = CommonHAKCAnalysis::GetTargetTypeCast(dyn_cast<CallInst>(CallI),
                                                                        BaseDefinition->getType());
         if (ProtectedPointer) {
             if (TransferTypeCast != ProtectedPointer) {
-                CommonHAKCAnalysis::getWriter() << "Pointer already has a protected pointer: " << ProtectedPointer
+                errs() << "Pointer already has a protected pointer: " << ProtectedPointer
                                                 << "\n";
                 throw std::exception();
             }
@@ -271,7 +274,7 @@ namespace hakc {
             ValuesToCheck.insert(BinOp->getOperand(0));
             ValuesToCheck.insert(BinOp->getOperand(1));
         } else {
-            CommonHAKCAnalysis::getWriter() << "Unexpected MultiSSA User: " << BaseDefinition << "\n";
+            errs() << "Unexpected MultiSSA User: " << BaseDefinition << "\n";
             throw std::exception();
         }
 
@@ -459,6 +462,7 @@ namespace hakc {
         }
 
         if (!ProtectedValue && GetProtectedUserCount() > 0) {
+            errs() << "exception in MaybeCreateProtectedPointer\n";
             CommonHAKCAnalysis::getWriter() << "The protected pointer of " << *this << " is " << ProtectedPointer
                                             << " but is not manually transferred\n";
             throw std::exception();
@@ -601,6 +605,7 @@ namespace hakc {
         }
 
         if (!AuthenticatedPointer) {
+            errs() << "exception in CreateBaseAuthenticatedPointer";
             CommonHAKCAnalysis::getWriter() << "Failed to create authenticated pointer for " << *this
                                             << " in Function\n" << Manager.GetFunctionAnalysis().getFunction()
                                             << "\n";
@@ -692,6 +697,7 @@ namespace hakc {
                 if (CreateAuthenticatedCopies) {
                     auto *AuthenticatedValue = CreateAuthenticatedValue(SortedUse);
                     if (!AuthenticatedValue) {
+                        errs() << "exception in CreatePointerReplacements\n";
                         CommonHAKCAnalysis::getWriter() << "Could not find Authenticated Value for " << *SortedUse
                                                         << "\n";
                         throw std::exception();
@@ -708,6 +714,7 @@ namespace hakc {
                 if (CreateProtectedCopies) {
                     auto *ProtectedValue = CreateProtectedValue(SortedUse);
                     if (!ProtectedValue) {
+                        errs() << "exception in CreatePointerReplacements\n";
                         CommonHAKCAnalysis::getWriter() << "Could not find Protected Value for " << *SortedUse << "\n";
                         throw std::exception();
                     }
@@ -801,6 +808,7 @@ namespace hakc {
     void ManagedHAKCPointer::SetUseOperand(User *U, Value *Replacement, const ManagedHAKCPointerUseP &PointerUse,
                                            bool IsAuthenticatedUse) {
         if (PurposefullyIgnored) {
+            errs() << "exception in SetUseOperand\n";
             CommonHAKCAnalysis::getWriter() << "Trying to set operand of purposefully ignored pointer " << *this
                                             << "\n";
             throw std::exception();
@@ -826,7 +834,8 @@ namespace hakc {
                 }
                 return;
             }
-            CommonHAKCAnalysis::getWriter() << "Invalid PointerUse " << *PointerUse << " for User "
+            errs() << "exception in SetUseOperand\n";
+            CommonHAKCAnalysis::getWriter()  << "Invalid PointerUse " << *PointerUse << " for User "
                                             << *U << " of " << *this << " in function\n"
                                             << Manager.GetFunctionAnalysis().getFunction() << "\n";
             throw std::exception();
@@ -911,7 +920,7 @@ namespace hakc {
                             CommonHAKCAnalysis::getWriter() << "Unable to find Authenticated replacement of "
                                                             << *CloneUse << "\n";
                             Manager.PrintAuthenticatedValues();
-                            CommonHAKCAnalysis::getWriter() << "\n" << Manager.GetFunctionAnalysis().getFunction()
+                            errs() << "\n" << Manager.GetFunctionAnalysis().getFunction()
                                                             << "\n";
                             throw std::exception();
                         } else {
@@ -923,7 +932,7 @@ namespace hakc {
                         }
                     }
                     if (!AuthenticatedUser) {
-                        CommonHAKCAnalysis::getWriter() << "AuthenticatedVersion is not a User: "
+                        errs() << "AuthenticatedVersion is not a User: "
                                                         << AuthenticatedVersion << "\n"
                                                         << Manager.GetFunctionAnalysis().getFunction() << "\n";
                         throw std::exception();
@@ -948,10 +957,11 @@ namespace hakc {
                 if (!Replacement) {
                     if (Manager.GetManagedPointer(CloneUse->get()) == nullptr ||
                         UseIsManagedAndHasUsers(CloneUse, false)) {
+                        errs() << "exception in TransformClones\n";
                         CommonHAKCAnalysis::getWriter() << "Unable to find Protected replacement of "
                                                         << *CloneUse << "\n";
                         Manager.PrintProtectedValues();
-                        CommonHAKCAnalysis::getWriter() << "\n" << Manager.GetFunctionAnalysis().getFunction() << "\n";
+                        errs() << "\n" << Manager.GetFunctionAnalysis().getFunction() << "\n";
                         throw std::exception();
                     } else {
                         if (DebugActive) {
@@ -962,7 +972,7 @@ namespace hakc {
                     }
                 }
                 if (!ProtectedUser) {
-                    CommonHAKCAnalysis::getWriter() << "ProtectedVersion is not a User: " << ProtectedVersion << "\n"
+                    errs() << "ProtectedVersion is not a User: " << ProtectedVersion << "\n"
                                                     << Manager.GetFunctionAnalysis().getFunction() << "\n";
                     throw std::exception();
                 }
@@ -1017,6 +1027,7 @@ namespace hakc {
             }
 
             if (!Replacement) {
+                errs() << "exception in TransformUseSet\n";
                 CommonHAKCAnalysis::getWriter() << "Unable to find " << ReplacementSource << " replacement of "
                                                 << *SortedUse << "\n" << Manager.GetFunctionAnalysis().getFunction()
                                                 << "\n";
@@ -1033,7 +1044,7 @@ namespace hakc {
             }
 
             if (!isa<User>(ReplacementUser)) {
-                CommonHAKCAnalysis::getWriter() << "Invalid ReplacementUser: " << *ReplacementUser << "\n";
+                errs() << "Invalid ReplacementUser: " << *ReplacementUser << "\n";
                 throw std::exception();
             }
 

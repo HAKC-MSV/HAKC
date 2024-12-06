@@ -60,10 +60,10 @@ namespace hakc {
 
     void CommonHAKCAnalysis::InitConfig(StringRef ConfigPath) {
         if (!sys::fs::exists(ConfigPath)) {
-            CommonHAKCAnalysis::getWriter() << "Could not find YAML file " << ConfigPath << "\n";
+            errs() << "Could not find YAML file " << ConfigPath << "\n";
             throw std::exception();
         } else if (!sys::fs::is_regular_file(ConfigPath)) {
-            CommonHAKCAnalysis::getWriter() << ConfigPath << " is not a regular file\n";
+            errs() << ConfigPath << " is not a regular file\n";
             throw std::exception();
         }
 
@@ -74,7 +74,7 @@ namespace hakc {
         // yaml parsed here 
         yin >> SystemConfig;
         if (yin.error()) {
-            CommonHAKCAnalysis::getWriter() << "Error parsing config file " << ConfigPath << "\n";
+            errs() << "Error parsing config file " << ConfigPath << "\n";
             throw std::exception();
         }
 
@@ -191,7 +191,7 @@ namespace hakc {
     CommonHAKCAnalysis::findDefChain(Value *v, bool followLoad, SmallVectorImpl<Value *> &Results) {
         auto debug = GetSystemInfo().OutputDebugInfo();
         if (v == nullptr) {
-            CommonHAKCAnalysis::getWriter() << "v is null\n";
+            errs() << "v is null\n";
             throw std::exception();
         }
         if (DefchainCache.find(v) != DefchainCache.end()) {
@@ -325,7 +325,7 @@ namespace hakc {
         SmallVector<Value *> Chain;
         findDefChain(V, followLoad, Chain);
         if (Chain.empty()) {
-            CommonHAKCAnalysis::getWriter() << "Def Chain for " << V << " is empty!\n";
+            errs() << "Def Chain for " << V << " is empty!\n";
             throw std::exception();
         }
         return Chain.back();
@@ -388,7 +388,7 @@ namespace hakc {
             if (metadata) {
                 auto attrName = Attribute::getNameFromAttrKind(Kind);
                 if (attrName.empty()) {
-                    CommonHAKCAnalysis::getWriter() << "Invalid AttrKind name for value " << std::to_string(Kind)
+                    errs() << "Invalid AttrKind name for value " << std::to_string(Kind)
                                                     << "\n";
                     throw std::exception();
                 }
@@ -483,7 +483,7 @@ namespace hakc {
 
     void CommonHAKCAnalysis::VerifyFunction(Function *F) {
         if (llvm::verifyFunction(*F, &CommonHAKCAnalysis::getWriter().ostream())) {
-            CommonHAKCAnalysis::getWriter() << "Verification failed for function\n" << F << "\n";
+            errs() << "Verification failed for function\n" << F << "\n";
             throw std::exception();
         }
     }
@@ -698,7 +698,7 @@ namespace hakc {
 
         auto err = sys::fs::real_path(FilenameVec, RealPath, true);
         if (err) {
-            CommonHAKCAnalysis::getWriter() << "Could not get real path to " << M.getSourceFileName() << "\n";
+            errs() << "Could not get real path to " << M.getSourceFileName() << "\n";
             throw std::exception();
         }
         return RealPath.str().str();

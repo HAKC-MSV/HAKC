@@ -34,6 +34,13 @@ namespace hakc {
         RunCompartmentalization
     };
 
+    enum HAKCTestModeTypeEnum {
+        InvalidTestModeType,
+        TestModeDisabled,
+        TestModeDefault,
+        TestModeSuppliedDAG
+    };
+
     struct HAKCYAMLAllocationType {
         HAKCYAMLStringType FunctionName;
         HAKCAllocationTypeEnum AllocationType;
@@ -112,6 +119,7 @@ namespace hakc {
     };
 
     struct HAKCYamlConfig {
+        HAKCTestModeTypeEnum  TestMode;
         HAKCYAMLStringType Arch;
         HAKCYAMLStringType Platform;
         HAKCYAMLStringType Database;
@@ -132,6 +140,7 @@ namespace hakc {
         HAKCYAMLStringSequenceType IncludePathsList;
         bool OutputAllDebugInfo;
 
+        // HAKCYAMLSequence <HAKCYAMLFunctionDefinitionType> NoTransferFunctions;
         HAKCYAMLSequence <HAKCYAMLCustomTransferType> CustomTransferFunctions;
         HAKCYAMLSequence <HAKCYAMLFunctionDefinitionType> CompartmentalizationSupportFunctions;
         HAKCYAMLSequence <HAKCYAMLAllocationType> AllocationFunctions;
@@ -173,12 +182,21 @@ struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
     }
 };
 
-
 template<>
 struct yaml::ScalarEnumerationTraits<hakc::HAKCPassModeTypeEnum> {
     static void enumeration(IO &io, hakc::HAKCPassModeTypeEnum &value) {
         io.enumCase(value, "RunDataAccessGraphAnalysis", hakc::RunDataAccessGraphAnalysis);
         io.enumCase(value, "RunCompartmentalization", hakc::RunCompartmentalization);
+    }
+};
+
+template<>
+struct yaml::ScalarEnumerationTraits<hakc::HAKCTestModeTypeEnum> {
+    static void enumeration(IO &io, hakc::HAKCTestModeTypeEnum &value) {
+        io.enumCase(value, "InvalidTestModeType", hakc::InvalidTestModeType);
+        io.enumCase(value, "TestModeDisabled", hakc::TestModeDisabled);
+        io.enumCase(value, "TestModeDefault", hakc::TestModeDefault);
+        io.enumCase(value, "TestModeSuppliedDAG", hakc::TestModeSuppliedDAG);
     }
 };
 
@@ -251,36 +269,80 @@ struct yaml::MappingTraits<hakc::HAKCYAMLCustomTransferType> {
 template<>
 struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
     static void mapping(yaml::IO &io, hakc::HAKCYamlConfig &YamlConfig) {
-        io.mapRequired("Arch", YamlConfig.Arch);
-        io.mapRequired("Platform", YamlConfig.Platform);
-        io.mapRequired("SourcePath", YamlConfig.SourcePath);
-        io.mapRequired("BuildPath", YamlConfig.BuildPath);
-        io.mapRequired("DagAnalysisRootPath", YamlConfig.DagAnalysisRootPath);
-        io.mapRequired("PassMode", YamlConfig.PassMode);
-        io.mapRequired("IncludePaths", YamlConfig.IncludePathsList);
-        io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
-        io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
-        io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
-        io.mapRequired("SignWithDivisionFunction", YamlConfig.SignWithDivision);
+        // setting default TestMode to TestModeDisabled 
+        io.mapOptional("TestMode", YamlConfig.TestMode, hakc::TestModeDisabled);
 
-        io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
-        io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);
-        io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
-        io.mapOptional("HAKCSourcePathList", YamlConfig.HAKCSourcePaths);
-        io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
-        io.mapOptional("IgnoredTypes", YamlConfig.IgnoredTypes);
-        io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
-        io.mapOptional("AllocationFunctions", YamlConfig.AllocationFunctions);
-        io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
-        io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
-        io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
-        io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
-
-        if (YamlConfig.PassMode == hakc::RunCompartmentalization) {
-            io.mapRequired("Database", YamlConfig.Database);
-        } else if (YamlConfig.PassMode == hakc::RunDataAccessGraphAnalysis) {
-            io.mapOptional("Database", YamlConfig.Database);
+        if(YamlConfig.TestMode == hakc::InvalidTestModeType){
+            errs() << "Supplied TestMode is invalid\n";
+            throw std::exception(); 
         }
+        else if(YamlConfig.TestMode == hakc::TestModeDisabled){
+
+            io.mapRequired("Arch", YamlConfig.Arch);
+            io.mapRequired("Platform", YamlConfig.Platform);
+            io.mapRequired("SourcePath", YamlConfig.SourcePath);
+            io.mapRequired("BuildPath", YamlConfig.BuildPath);
+            io.mapRequired("DagAnalysisRootPath", YamlConfig.DagAnalysisRootPath);
+            io.mapRequired("PassMode", YamlConfig.PassMode);
+            io.mapRequired("IncludePaths", YamlConfig.IncludePathsList);
+            io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
+            io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
+            io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
+            io.mapRequired("SignWithDivisionFunction", YamlConfig.SignWithDivision);
+
+            io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
+            io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);
+            io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
+            io.mapOptional("HAKCSourcePathList", YamlConfig.HAKCSourcePaths);
+            io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
+            io.mapOptional("IgnoredTypes", YamlConfig.IgnoredTypes);
+            io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
+            io.mapOptional("AllocationFunctions", YamlConfig.AllocationFunctions);
+            io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
+            io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
+            io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
+            io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
+
+            if (YamlConfig.PassMode == hakc::RunCompartmentalization) {
+                io.mapRequired("Database", YamlConfig.Database);
+            } else if (YamlConfig.PassMode == hakc::RunDataAccessGraphAnalysis) {
+                io.mapOptional("Database", YamlConfig.Database);
+            }
+
+        }
+        else if(YamlConfig.TestMode == hakc::TestModeDefault){
+
+            io.mapRequired("Arch", YamlConfig.Arch);
+            io.mapRequired("Platform", YamlConfig.Platform);
+            io.mapRequired("SourcePath", YamlConfig.SourcePath);
+            io.mapRequired("BuildPath", YamlConfig.BuildPath);
+            io.mapOptional("DagAnalysisRootPath", YamlConfig.DagAnalysisRootPath);
+            io.mapOptional("PassMode", YamlConfig.PassMode);
+            io.mapOptional("IncludePaths", YamlConfig.IncludePathsList);
+            io.mapOptional("CodeValidationFunction", YamlConfig.CodeValidationFunction);
+            io.mapOptional("DataValidationFunction", YamlConfig.DataValidationFunction);
+            io.mapOptional("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);
+            io.mapOptional("SignWithDivisionFunction", YamlConfig.SignWithDivision);
+
+            io.mapOptional("CompartmentalizationSupportFunctions", YamlConfig.CompartmentalizationSupportFunctions);
+            io.mapOptional("NoTransferFunctions", YamlConfig.NoTransferFunctions);
+            io.mapOptional("SeparateNamespacePathList", YamlConfig.SeparateNamespacePaths);
+            io.mapOptional("HAKCSourcePathList", YamlConfig.HAKCSourcePaths);
+            io.mapOptional("SafeTransitionFunctions", YamlConfig.SafeTransitionFunctions);
+            io.mapOptional("IgnoredTypes", YamlConfig.IgnoredTypes);
+            io.mapOptional("IgnoredGlobals", YamlConfig.IgnoredGlobals);
+            io.mapOptional("AllocationFunctions", YamlConfig.AllocationFunctions);
+            io.mapOptional("OutputDebugInfo", YamlConfig.OutputAllDebugInfo, false);
+            io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
+            io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
+            io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
+            io.mapOptional("Database", YamlConfig.Database);
+
+        }
+        else if(YamlConfig.TestMode == hakc::TestModeSuppliedDAG){
+            // TODO
+        }
+        
     }
 };
 

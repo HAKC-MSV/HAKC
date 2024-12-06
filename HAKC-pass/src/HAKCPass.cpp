@@ -30,6 +30,8 @@ namespace hakc {
     bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
         bool PerformTransformations = true;
         Module &M = HAKCAnalysis.GetModule();
+        SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
+        BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
         StringRef CurrentSourceName(M.getSourceFileName());
         for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {
             if (CurrentSourceName.contains(path)) {
@@ -73,19 +75,17 @@ namespace hakc {
         std::error_code err;
         err = sys::fs::create_directories(sys::path::parent_path(Path));
         if (err) {
-            errs() << "1\n";
-            CommonHAKCAnalysis::getWriter() << "Failed to create " << sys::path::parent_path(Path) << "\n";
+            errs() << "Failed to create " << sys::path::parent_path(Path) << "\n";
             throw std::exception();
         }
-        errs() << "2\n";
+        errs() << "about to raw_fd_ostream\n";
         raw_fd_ostream out(Path, err);
         if (!err) {
             errs() << "About to output YAML\n";
             HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().OutputYAML(out);
             out.close();
         } else {
-            errs() << "3\n";
-            CommonHAKCAnalysis::getWriter() << "Failed to open " << Path << "\n";
+            errs() << "Failed to open " << Path << "\n";
             throw std::exception();
         }
 
@@ -111,7 +111,7 @@ namespace hakc {
             return runCompartmentalization(HAKCAnalysis);
         }
         else if(HAKCAnalysis.GetSystemInfo().GetPassMode() == InvalidPassModeType){
-            CommonHAKCAnalysis::getWriter() << "Failed to get valid PassMode (this should never be called)\n";
+            errs() << "Failed to get valid PassMode (this should never be called)\n";
             throw std::exception();
         }
         return false; 
