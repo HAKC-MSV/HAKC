@@ -9,7 +9,7 @@
 namespace hakc {
     HAKCSystemInformation::HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis) : CommonAnalysis(CommonAnalysis),
         TypeIdentifier(CommonAnalysis), DebugOutput(false), Arch(), Platform(),
-        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), IncludePathsList(), PassMode(), NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
+        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), IncludePathsList(), PassMode(InvalidPassModeType), NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
         DataValidationFunction(nullptr), SignWithDivisionFunction(nullptr), DefaultCompartmentTransfer(nullptr),
         PerCPUCompartmentTransfer(nullptr), CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(),
         SeparateNamespacePathList(), HAKCSourcePathList(), SafeTransitionFunctionList(), IgnoredTypeSet(),
@@ -184,6 +184,13 @@ namespace hakc {
     StringRef HAKCSystemInformation::DatabasePath() const {
         return Database;
     }
+    StringRef HAKCSystemInformation::GetDagAnalysisRootPath() const {
+        return DagAnalysisRootPath;
+    }
+    hakc::HAKCPassModeTypeEnum HAKCSystemInformation::GetPassMode() const {
+        return PassMode; 
+    }
+
 
     Function *HAKCSystemInformation::CodeValidation() const {
         return CodeValidationFunction;

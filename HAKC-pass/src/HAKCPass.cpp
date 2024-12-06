@@ -23,7 +23,7 @@ static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path t
 
 namespace hakc {
     
-    bool runDataAccessGraphAnalysis(CommonHAKCAnalysis &HAKCAnalysis) {
+    bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
         bool PerformTransformations = true;
         Module &M = HAKCAnalysis.GetModule();
         StringRef CurrentSourceName(M.getSourceFileName());
@@ -51,10 +51,10 @@ namespace hakc {
 
         return true;
     }
-    bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
+    bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
         Module &M = HAKCAnalysis.GetModule();
 
-        auto Path = HAKCAnalysis.GetSystemInfo().DagAnalysisRootPath;
+        auto Path = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath();
 
         std::error_code err;
         err = sys::fs::create_directories(sys::path::parent_path(Path));
@@ -78,15 +78,17 @@ namespace hakc {
         // wrapper for getting analysis type 
         CommonHAKCAnalysis HAKCAnalysis(M, HAKC_CONFIG_PATH);
         
-        if(HAKCAnalysis.GetSystemInfo().PassMode == RunDataAccessGraphAnalysis){
-            runDataAccessGraphAnalysis(HAKCAnalysis);
+        if(HAKCAnalysis.GetSystemInfo().GetPassMode() == RunDataAccessGraphAnalysis){
+            return runDataAccessGraphAnalysis(HAKCAnalysis);
         }
-        else if(HAKCAnalysis.GetSystemInfo().PassMode == RunCompartmentalization){
-            runCompartmentalization(HAKCAnalysis);
+        else if(HAKCAnalysis.GetSystemInfo().GetPassMode() == RunCompartmentalization){
+            return runCompartmentalization(HAKCAnalysis);
         }
-        else{
+        else if(HAKCAnalysis.GetSystemInfo().GetPassMode() == InvalidPassModeType){
             CommonHAKCAnalysis::getWriter() << "Failed to get valid PassMode (this should never be called)\n";
+            throw std::exception();
         }
+        return false; 
     }
 
     struct HAKCPass : public PassInfoMixin<HAKCPass> {

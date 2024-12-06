@@ -29,6 +29,7 @@ namespace hakc {
     };
 
     enum HAKCPassModeTypeEnum {
+        InvalidPassModeType,
         RunDataAccessGraphAnalysis,
         RunCompartmentalization
     };

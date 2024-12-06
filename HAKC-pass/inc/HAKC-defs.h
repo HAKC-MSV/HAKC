@@ -19,14 +19,6 @@
 
 constexpr size_t BITS_PER_BYTE = 8;
 
-// extern std::string HAKC_ANALYSIS;
-// extern std::string HAKC_DEBUG_NAME;
-// extern std::string HAKC_DAG_ANALYSIS_ROOT;
-// extern std::string HAKC_CONFIG_PATH;
-// extern std::string HAKC_COMPARTMENT_PATH;
-// extern std::string HAKC_NO_KERNEL_TRANSFERS;
-// extern std::string HAKC_MORELLO_HYBRID;
-
 using namespace llvm;
 
 namespace hakc {

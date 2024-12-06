@@ -62,9 +62,8 @@ namespace hakc {
         Function* SignWithDivision() const;
         hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
         HAKCTypeIdentifier &GetTypeIdentifier();
-        hakc::HAKCPassModeTypeEnum PassMode;
-
-        std::string DagAnalysisRootPath;
+        StringRef GetDagAnalysisRootPath() const;
+        hakc::HAKCPassModeTypeEnum GetPassMode() const;
     protected:
         CommonHAKCAnalysis &CommonAnalysis;
         HAKCTypeIdentifier TypeIdentifier;
@@ -74,6 +73,8 @@ namespace hakc {
         std::string Database;
         std::string SourcePath;
         std::string BuildPath;
+        hakc::HAKCPassModeTypeEnum PassMode;
+        std::string DagAnalysisRootPath;
         FunctionList NoTransferFunctionList;
         HAKCTransferList CompartmentTransferFunctionList;
         Function *CodeValidationFunction;
