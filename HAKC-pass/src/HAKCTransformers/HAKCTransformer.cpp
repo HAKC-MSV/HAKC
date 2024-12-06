@@ -622,7 +622,7 @@ hakc::HAKCTransformer::FindEntryBitcast(hakc::HAKCPointerBase &HAKCPointer, Inst
 
     if (DebugIsActive()) {
         CommonHAKCAnalysis::getWriter() << "Value " << HAKCPointer;
-        if (BitcastType) {
+        if (BitcastType && BitcastUser) {
             CommonHAKCAnalysis::getWriter() << " is cast to " << *BitcastType << " by Instruction " << *BitcastUser;
         } else {
             CommonHAKCAnalysis::getWriter() << " is not bitcast";

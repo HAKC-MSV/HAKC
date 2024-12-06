@@ -28,6 +28,11 @@ namespace hakc {
         ArgumentGEP
     };
 
+    enum HAKCPassModeTypeEnum {
+        RunDataAccessGraphAnalysis,
+        RunCompartmentalization
+    };
+
     struct HAKCYAMLAllocationType {
         HAKCYAMLStringType FunctionName;
         HAKCAllocationTypeEnum AllocationType;
@@ -109,8 +114,12 @@ namespace hakc {
         HAKCYAMLStringType Arch;
         HAKCYAMLStringType Platform;
         HAKCYAMLStringType Database;
+        HAKCYAMLStringType SourcePath;
+        HAKCYAMLStringType BuildPath;
+        HAKCYAMLStringType DagAnalysisRootPath;
         HAKCYAMLStringType CodeValidationFunction;
         HAKCYAMLStringType DataValidationFunction;
+        HAKCPassModeTypeEnum  PassMode;
         HAKCYAMLStringSequenceType NoTransferFunctions;
         HAKCYAMLStringSequenceType SafeTransitionFunctions;
         HAKCYAMLStringSequenceType IgnoredGlobals;
@@ -119,6 +128,7 @@ namespace hakc {
         HAKCYAMLStringSequenceType SeparateNamespacePathsList;
         HAKCYAMLStringSequenceType HAKCSourcePathsList; 
         HAKCYAMLStringSequenceType IgnoredTypesList; 
+        HAKCYAMLStringSequenceType IncludePathsList;
         bool OutputAllDebugInfo;
 
         HAKCYAMLSequence <HAKCYAMLCustomTransferType> CustomTransferFunctions;
@@ -159,6 +169,15 @@ struct yaml::ScalarEnumerationTraits<hakc::HAKCAllocationTypeEnum> {
         io.enumCase(value, "StaticPlusArgument", hakc::StaticPlusArgument);
         io.enumCase(value, "MultiplyTwoArguments", hakc::MultiplyTwoArguments);
         io.enumCase(value, "ArgumentGEP", hakc::ArgumentGEP);
+    }
+};
+
+
+template<>
+struct yaml::ScalarEnumerationTraits<hakc::HAKCPassModeTypeEnum> {
+    static void enumeration(IO &io, hakc::HAKCPassModeTypeEnum &value) {
+        io.enumCase(value, "RunDataAccessGraphAnalysis", hakc::RunDataAccessGraphAnalysis);
+        io.enumCase(value, "RunCompartmentalization", hakc::RunCompartmentalization);
     }
 };
 
@@ -234,6 +253,11 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
         io.mapRequired("Arch", YamlConfig.Arch);
         io.mapRequired("Platform", YamlConfig.Platform);
         io.mapRequired("Database", YamlConfig.Database);
+        io.mapRequired("SourcePath", YamlConfig.SourcePath);
+        io.mapRequired("BuildPath", YamlConfig.BuildPath);
+        io.mapRequired("DagAnalysisRootPath", YamlConfig.DagAnalysisRootPath);
+        io.mapRequired("PassMode", YamlConfig.PassMode);
+        io.mapRequired("IncludePathsList", YamlConfig.IncludePathsList);
         io.mapRequired("CodeValidationFunction", YamlConfig.CodeValidationFunction);
         io.mapRequired("DataValidationFunction", YamlConfig.DataValidationFunction);
         io.mapRequired("DefaultCompartmentTransferFunction", YamlConfig.DefaultCompartmentTransfer);

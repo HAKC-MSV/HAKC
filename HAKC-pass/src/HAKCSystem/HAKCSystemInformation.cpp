@@ -20,6 +20,10 @@ namespace hakc {
         HAKCSystemInfo.Arch = YamlConfig.Arch;
         HAKCSystemInfo.Platform = YamlConfig.Platform;
         HAKCSystemInfo.Database = YamlConfig.Database;
+        HAKCSystemInfo.SourcePath = YamlConfig.SourcePath;
+        HAKCSystemInfo.BuildPath = YamlConfig.BuildPath;
+        HAKCSystemInfo.DagAnalysisRootPath = YamlConfig.DagAnalysisRootPath;
+        HAKCSystemInfo.PassMode = YamlConfig.PassMode;
         HAKCSystemInfo.DebugOutput = YamlConfig.OutputAllDebugInfo;
 
         for (auto &FunctionName: YamlConfig.NoTransferFunctions) {
@@ -49,6 +53,10 @@ namespace hakc {
                                                                              CommonHAKCAnalysis::GetDataAuthenticationFunctionType(
                                                                                  HAKCSystemInfo.GetModule()));
         HAKCSystemInfo.DataValidationFunction = dyn_cast<Function>(DataValidation.getCallee());
+
+
+        HAKCSystemInfo.IncludePathsList.append(YamlConfig.IncludePathsList.begin(),
+                                                YamlConfig.IncludePathsList.end());
 
         for (auto &FileType: YamlConfig.SeparateNamespacePaths) {
             auto PathRoot = FileType.PathRoot;

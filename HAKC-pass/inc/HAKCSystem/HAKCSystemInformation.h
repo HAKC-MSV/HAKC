@@ -54,6 +54,7 @@ namespace hakc {
         iterator_range<HAKCStringList::iterator> HAKCSourcePaths();
         iterator_range<HAKCCustomTransferList::iterator> HAKCCustomTransfers();
         iterator_range<HAKCCustomAllocationList::iterator> AllocationFunctions();
+        iterator_range<HAKCStringList::iterator> IncludePaths();
 
         StringRef DatabasePath() const;
         Function* CodeValidation() const;
@@ -69,6 +70,10 @@ namespace hakc {
         std::string Arch;
         std::string Platform;
         std::string Database;
+        std::string SourcePath;
+        std::string BuildPath;
+        std::string DagAnalysisRootPath;
+        hakc::HAKCPassModeTypeEnum PassMode;
         FunctionList NoTransferFunctionList;
         HAKCTransferList CompartmentTransferFunctionList;
         Function *CodeValidationFunction;
@@ -79,6 +84,7 @@ namespace hakc {
         FunctionList CompartmentalizationSupportFunctionList;
         HAKCSymbolList SymbolsToOutputDebugInfo;
         HAKCStringList SeparateNamespacePathList;
+        HAKCStringList IncludePathsList;
         HAKCStringList HAKCSourcePathList;
         FunctionList SafeTransitionFunctionList;
         HAKCTypeSet IgnoredTypeSet;

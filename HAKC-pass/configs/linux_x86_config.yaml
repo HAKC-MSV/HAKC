@@ -1,6 +1,11 @@
-Arch:             X86
-Platform:         Linux
-Database:         hakc-dag-analysis/hakc-db
+Arch:                 X86
+Platform:             Linux
+Database:             hakc-dag-analysis/hakc-db
+SourcePath:           somepath
+BuildPath:            somepath
+DagAnalysisRootPath:  somepath
+PassMode:             RunDataAccessGraphAnalysis
+IncludePaths:         somepath
 CustomTransferFunctions:
   - { type: "char *", name: "hakc_transfer_string", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
   - { type: "struct sk_buff*", name: "hakc_transfer_skb", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
