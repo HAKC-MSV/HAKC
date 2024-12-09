@@ -66,28 +66,10 @@ namespace hakc {
 
         hakc::HAKCPassModeTypeEnum GetPassMode() const;
         StringRef GetArch() const; 
-        StringRef GetPlatform() const; 
-        StringRef GetDatabase() const; 
+        StringRef GetPlatform() const;
         StringRef GetSourcePath() const;
         StringRef GetBuildPath() const;
         StringRef GetDagAnalysisRootPath() const;
-        HAKCStringList GetIncludePathsList() const;
-        FunctionList GetNoTransferFunctionList() const;
-        HAKCTransferList GetCompartmentTransferFunctionList() const;
-        Function *GetCodeValidationFunction() const;
-        Function *GetDataValidationFunction() const;
-        Function *GetSignWithDivisionFunction() const;
-        hakc::hakc_transfer_def_t GetDefaultCompartmentTransfer() const;
-        hakc::hakc_transfer_def_t GetPerCPUCompartmentTransfer() const;
-        FunctionList GetCompartmentalizationSupportFunctionList() const;
-        HAKCSymbolList GetSymbolsToOutputDebugInfo() const;
-        HAKCStringList GetSeparateNamespacePathList() const;
-        HAKCStringList GetHAKCSourcePathList() const;
-        FunctionList GetSafeTransitionFunctionList() const;
-        HAKCTypeSet GetIgnoredTypeSet() const;
-        HAKCGlobalVariableList GetIgnoredGlobalList() const;
-        HAKCCustomAllocationList GetAllocationFunctionList() const;
-        HAKCCustomTransferList GetCustomTransferList() const;
 
     protected:
         CommonHAKCAnalysis &CommonAnalysis;
