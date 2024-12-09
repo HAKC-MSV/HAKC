@@ -5,9 +5,10 @@
 #include "HAKCTypeIdentifier/HAKCIndirectCallSource.h"
 
 namespace hakc {
-    HAKCIndirectCallSource::HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink>> SourcePath,
+    HAKCIndirectCallSource::HAKCIndirectCallSource(std::vector<std::shared_ptr<HAKCIndirectCallSourceLink> > SourcePath,
                                                    const std::shared_ptr<HAKCTypeInfo> &HAKCType,
-                                                   bool debug) : HAKCInfo(HAKCType->GetName(), debug),
+                                                   bool debug) : HAKCInfo(HAKCType->GetCommonHAKCAnalysis(),
+                                                                          HAKCType->GetName(), debug),
                                                                  HAKCType(HAKCType), SourcePath(SourcePath) {
     }
 
@@ -25,7 +26,7 @@ namespace hakc {
             unsigned Count = 0;
             for (auto &link: SourcePath) {
                 sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- "
-                                                                   << link->GetYaml(Indents + HAKCInfo::IndentSpaces());
+                        << link->GetYaml(Indents + HAKCInfo::IndentSpaces());
                 if (++Count != SourcePath.size()) {
                     sstream << "\n";
                 }
@@ -61,8 +62,9 @@ namespace hakc {
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(Argument *Arg, const std::shared_ptr<HAKCTypeInfo> &HAKCType,
-                                                           bool Debug) :
-            HAKCInfo("Argument Indirect Call Link", Debug), LinkYamlTokens() {
+                                                           bool Debug) : HAKCInfo(HAKCType->GetCommonHAKCAnalysis(),
+                                                                             "Argument Indirect Call Link", Debug),
+                                                                         LinkYamlTokens() {
         InputYamlHeader();
         InputLinkType("Argument");
         InputArgument(Arg);
@@ -71,7 +73,7 @@ namespace hakc {
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
                                                            bool Debug)
-            : HAKCInfo("Global Indirect Call Link", Debug), LinkYamlTokens() {
+        : HAKCInfo(GlobalInfo->GetCommonHAKCAnalysis(), "Global Indirect Call Link", Debug), LinkYamlTokens() {
         InputHAKCSymbol(GlobalInfo);
     }
 
@@ -84,15 +86,17 @@ namespace hakc {
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCSymbolInfo> &HAKCSymbol,
-                                                           bool Debug) : HAKCInfo("Global Indirect Call Link", Debug),
+                                                           bool Debug) : HAKCInfo(HAKCSymbol->GetCommonHAKCAnalysis(),
+                                                                             "Global Indirect Call Link", Debug),
                                                                          LinkYamlTokens() {
         InputHAKCSymbol(HAKCSymbol);
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCGlobalInfo> &GlobalInfo,
                                                            int OffsetInBits,
-                                                           bool Debug) : HAKCInfo("Global Member Indirect Call Link",
-                                                                                  Debug), LinkYamlTokens() {
+                                                           bool Debug) : HAKCInfo(GlobalInfo->GetCommonHAKCAnalysis(),
+                                                                             "Global Member Indirect Call Link",
+                                                                             Debug), LinkYamlTokens() {
         InputYamlHeader();
         InputLinkType("GlobalMember");
         InputBitoffset(OffsetInBits);
@@ -100,8 +104,10 @@ namespace hakc {
     }
 
     HAKCIndirectCallSourceLink::HAKCIndirectCallSourceLink(const std::shared_ptr<HAKCTypeInfo> &HAKCType,
-                                                           int OffsetInBits, bool Debug) : HAKCInfo(
-            "Type member dereference", Debug), LinkYamlTokens() {
+                                                           int OffsetInBits,
+                                                           bool Debug) : HAKCInfo(HAKCType->GetCommonHAKCAnalysis(),
+                                                                             "Type member dereference", Debug),
+                                                                         LinkYamlTokens() {
         InputYamlHeader();
         InputLinkType("PointerDereference");
         InputBitoffset(OffsetInBits);

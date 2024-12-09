@@ -10,17 +10,17 @@
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
-    HAKCTypeInfo::HAKCTypeInfo(StringRef Name, bool DebugActive) : HAKCInfo(Name, DebugActive), Members(),
-                                                                   SizeInBits(0), DbgType(nullptr), LLVMType(nullptr),
-                                                                   DbgTypeName() {
-
+    HAKCTypeInfo::HAKCTypeInfo(CommonHAKCAnalysis &Analysis, StringRef Name,
+                               bool DebugActive) : HAKCInfo(Analysis, Name, DebugActive), Members(),
+                                                   SizeInBits(0), DbgType(nullptr), LLVMType(nullptr),
+                                                   DbgTypeName() {
     }
 
     void HAKCTypeInfo::SetSizeInBits(unsigned int Size) {
         SizeInBits = Size;
     }
 
-    unsigned HAKCTypeInfo::GetSizeInBits() {
+    unsigned HAKCTypeInfo::GetSizeInBits() const {
         return SizeInBits;
     }
 
@@ -44,13 +44,13 @@ namespace hakc {
         return LLVMType;
     }
 
-    bool HAKCTypeInfo::IsIntegerType() {
-        if(DbgType) {
-            if(auto *DiBasicTy = dyn_cast<DIBasicType>(DbgType)) {
+    bool HAKCTypeInfo::IsIntegerType() const {
+        if (DbgType) {
+            if (auto *DiBasicTy = dyn_cast<DIBasicType>(DbgType)) {
                 ArrayRef<unsigned> IntegerEncodings = {
-                        dwarf::DW_ATE_address,
-                        dwarf::DW_ATE_signed,
-                        dwarf::DW_ATE_unsigned
+                    dwarf::DW_ATE_address,
+                    dwarf::DW_ATE_signed,
+                    dwarf::DW_ATE_unsigned
                 };
                 auto Encoding = DiBasicTy->getEncoding();
                 auto Search = [Encoding](unsigned E) {
@@ -58,16 +58,16 @@ namespace hakc {
                 };
                 return llvm::any_of(IntegerEncodings, Search);
             }
-        } else if(LLVMType) {
+        } else if (LLVMType) {
             return LLVMType->isPointerTy();
         }
         return false;
     }
 
     bool HAKCTypeInfo::IsPointerType() {
-        if(DbgType) {
+        if (DbgType) {
             return DbgType->getTag() == dwarf::DW_TAG_pointer_type;
-        } else if(LLVMType) {
+        } else if (LLVMType) {
             return LLVMType->isPointerTy();
         }
         return false;
@@ -81,20 +81,20 @@ namespace hakc {
     const DIType *HAKCTypeInfo::StripTypeModifiers(const DIType *DiType) {
         auto *Result = DiType;
 
-        if(auto *DiDerivedType = dyn_cast<DIDerivedType>(DiType)) {
+        if (auto *DiDerivedType = dyn_cast<DIDerivedType>(DiType)) {
             auto TagToFind = DiDerivedType->getTag();
 
             auto Search = [TagToFind](dwarf::Tag Tag) {
                 return Tag == TagToFind;
             };
 
-            ArrayRef<dwarf::Tag> TagsToRemove = {
-                    dwarf::DW_TAG_volatile_type,
-                    dwarf::DW_TAG_const_type,
-                    dwarf::DW_TAG_restrict_type
+            SmallVector<dwarf::Tag> TagsToRemove = {
+                dwarf::DW_TAG_volatile_type,
+                dwarf::DW_TAG_const_type,
+                dwarf::DW_TAG_restrict_type
             };
-            if(llvm::any_of(TagsToRemove, Search)) {
-                if(DiDerivedType->getBaseType()) {
+            if (llvm::any_of(TagsToRemove, Search)) {
+                if (DiDerivedType->getBaseType()) {
                     Result = StripTypeModifiers(DiDerivedType->getBaseType());
                 }
             }
@@ -106,8 +106,8 @@ namespace hakc {
     bool HAKCTypeInfo::IsPointerToPointer(const DIType *DiType) {
         DiType = StripTypeModifiers(DiType);
         if (auto *DerivedTy = dyn_cast<DIDerivedType>(DiType)) {
-            if(DerivedTy->getTag() == dwarf::DW_TAG_pointer_type) {
-                if(DerivedTy->getBaseType()) {
+            if (DerivedTy->getTag() == dwarf::DW_TAG_pointer_type) {
+                if (DerivedTy->getBaseType()) {
                     auto *BaseTy = StripTypeModifiers(DerivedTy->getBaseType());
                     return BaseTy->getTag() == dwarf::DW_TAG_pointer_type;
                 }
@@ -118,7 +118,7 @@ namespace hakc {
     }
 
     bool HAKCTypeInfo::IsPointerToPointer() {
-        if(DbgType) {
+        if (DbgType) {
             return IsPointerToPointer(DbgType);
         }
 
@@ -148,7 +148,7 @@ namespace hakc {
             }
 
             CommonHAKCAnalysis::getWriter() << "Trying to change LLVM Type for " << GetName() << " from " << *LLVMType
-                                            << " to " << *Ty << "\n";
+                    << " to " << *Ty << "\n";
             throw std::exception();
         }
         LLVMType = Ty;

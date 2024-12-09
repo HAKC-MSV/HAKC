@@ -5,11 +5,8 @@
 #ifndef PMC_HAKCTYPEIDENTIFIER_H
 #define PMC_HAKCTYPEIDENTIFIER_H
 
-#include "llvm/ADT/SmallString.h"
 #include "llvm/IR/Instructions.h"
-#include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
-#include "llvm/Support/MD5.h"
 #include "llvm/IR/DebugInfo.h"
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/Transforms/Utils/Local.h"

@@ -202,73 +202,74 @@ namespace hakc {
         return DagAnalysisRootPath;
     }
 
-    HAKCStringList GetIncludePathsList() const {
-        return IncludePathsList;
-    }
-
-    FunctionList GetNoTransferFunctionList() const {
-        return NoTransferFunctionList;
-    }
-
-    HAKCTransferList GetCompartmentTransferFunctionList() const {
-        return CompartmentTransferFunctionList;
-    }
-
-    Function *GetCodeValidationFunction() const {
-        return CodeValidationFunction;
-    }
-
-    Function *GetDataValidationFunction() const {
-        return DataValidationFunction;
-    }
-
-    Function *GetSignWithDivisionFunction() const {
-        return SignWithDivisionFunction;
-    }
-
-    hakc::hakc_transfer_def_t GetDefaultCompartmentTransfer() const {
-        return DefaultCompartmentTransfer;
-    }
-
-    hakc::hakc_transfer_def_t GetPerCPUCompartmentTransfer() const {
-        return PerCPUCompartmentTransfer;
-    }
-
-    FunctionList GetCompartmentalizationSupportFunctionList() const {
-        return CompartmentalizationSupportFunctionList;
-    }
-
-    HAKCSymbolList GetSymbolsToOutputDebugInfo() const {
-        return SymbolsToOutputDebugInfo;
-    }
-
-    HAKCStringList GetSeparateNamespacePathList() const {
-        return SeparateNamespacePathList;
-    }
-
-    HAKCStringList GetHAKCSourcePathList() const {
-        return HAKCSourcePathList;
-    }
-
-    FunctionList GetSafeTransitionFunctionList() const {
-        return SafeTransitionFunctionList;
-    }
-
-    HAKCTypeSet GetIgnoredTypeSet() const {
-        return IgnoredTypeSet; 
-    }
-
-    HAKCGlobalVariableList GetIgnoredGlobalList() const {
-        return IgnoredGlobalList;
-    }
-
-    HAKCCustomAllocationList GetAllocationFunctionList() const {
-        return AllocationFunctionList;
-    }
-
-    HAKCCustomTransferList GetCustomTransferList() const {
-        return CustomTransferList; 
-    }
+    // TODO: Follow the coding paradigm that uses `make_range` as below
+    // HAKCStringList GetIncludePathsList() const {
+    //     return IncludePathsList;
+    // }
+    //
+    // FunctionList GetNoTransferFunctionList() const {
+    //     return NoTransferFunctionList;
+    // }
+    //
+    // HAKCTransferList GetCompartmentTransferFunctionList() const {
+    //     return CompartmentTransferFunctionList;
+    // }
+    //
+    // Function *GetCodeValidationFunction() const {
+    //     return CodeValidationFunction;
+    // }
+    //
+    // Function *GetDataValidationFunction() const {
+    //     return DataValidationFunction;
+    // }
+    //
+    // Function *GetSignWithDivisionFunction() const {
+    //     return SignWithDivisionFunction;
+    // }
+    //
+    // hakc::hakc_transfer_def_t GetDefaultCompartmentTransfer() const {
+    //     return DefaultCompartmentTransfer;
+    // }
+    //
+    // hakc::hakc_transfer_def_t GetPerCPUCompartmentTransfer() const {
+    //     return PerCPUCompartmentTransfer;
+    // }
+    //
+    // FunctionList GetCompartmentalizationSupportFunctionList() const {
+    //     return CompartmentalizationSupportFunctionList;
+    // }
+    //
+    // HAKCSymbolList GetSymbolsToOutputDebugInfo() const {
+    //     return SymbolsToOutputDebugInfo;
+    // }
+    //
+    // HAKCStringList GetSeparateNamespacePathList() const {
+    //     return SeparateNamespacePathList;
+    // }
+    //
+    // HAKCStringList GetHAKCSourcePathList() const {
+    //     return HAKCSourcePathList;
+    // }
+    //
+    // FunctionList GetSafeTransitionFunctionList() const {
+    //     return SafeTransitionFunctionList;
+    // }
+    //
+    // HAKCTypeSet GetIgnoredTypeSet() const {
+    //     return IgnoredTypeSet;
+    // }
+    //
+    // HAKCGlobalVariableList GetIgnoredGlobalList() const {
+    //     return IgnoredGlobalList;
+    // }
+    //
+    // HAKCCustomAllocationList GetAllocationFunctionList() const {
+    //     return AllocationFunctionList;
+    // }
+    //
+    // HAKCCustomTransferList GetCustomTransferList() const {
+    //     return CustomTransferList;
+    // }
 
     Function *HAKCSystemInformation::CodeValidation() const {
         return CodeValidationFunction;

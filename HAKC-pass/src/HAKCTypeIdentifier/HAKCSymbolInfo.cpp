@@ -4,7 +4,6 @@
 
 #include "HAKCTypeIdentifier/HAKCSymbolInfo.h"
 #include "llvm/Support/raw_ostream.h"
-#include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 #include "llvm/Support/FileSystem.h"
@@ -12,19 +11,13 @@
 
 #include <utility>
 
-hakc::HAKCSymbolInfo::HAKCSymbolInfo(StringRef Name, bool DebugActive) : HAKCInfo(Name, DebugActive), Type(nullptr),
-                                                                         UsedSymbols(), GlobalObj(nullptr),
-                                                                         DbgType(nullptr), DefiningLocation(nullptr),
-                                                                         DefiningLine(0), LocalScope(nullptr) {
 
+hakc::HAKCSymbolInfo::HAKCSymbolInfo(CommonHAKCAnalysis &Analysis, StringRef Name,
+                                     bool DebugActive) : HAKCInfo(Analysis, Name, DebugActive), Type(nullptr),
+                                                         UsedSymbols(), GlobalObj(nullptr),
+                                                         DbgType(nullptr), DefiningLocation(nullptr),
+                                                         DefiningLine(0), LocalScope(nullptr) {
 }
-
-// hakc::HAKCSymbolInfo::HAKCSymbolInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCInfo(Name, DebugActive), Analysis(Analysis), Type(nullptr),
-//                                                                          UsedSymbols(), GlobalObj(nullptr),
-//                                                                          DbgType(nullptr), DefiningLocation(nullptr),
-//                                                                          DefiningLine(0), LocalScope(nullptr) {
-
-// }
 
 void hakc::HAKCSymbolInfo::SetType(std::shared_ptr<HAKCTypeInfo> HAKCType) {
     Type = std::move(HAKCType);
@@ -128,7 +121,7 @@ std::string hakc::HAKCSymbolInfo::GetYaml(unsigned Indents) {
         unsigned Count = 0;
         for (auto &Symbol: UsedSymbols) {
             sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(
-                    Indents + HAKCInfo::IndentSpaces());
+                Indents + HAKCInfo::IndentSpaces());
             if (++Count != UsedSymbols.size()) {
                 sstream << "\n";
             }

@@ -5,9 +5,9 @@
 #ifndef HAKC_HAKCINDIRECTCALLSOURCE_H
 #define HAKC_HAKCINDIRECTCALLSOURCE_H
 
-#include "llvm/IR/Instructions.h"
-#include "HAKCTypeInfo.h"
 #include "HAKCGlobalInfo.h"
+#include "HAKCTypeInfo.h"
+
 
 using namespace llvm;
 

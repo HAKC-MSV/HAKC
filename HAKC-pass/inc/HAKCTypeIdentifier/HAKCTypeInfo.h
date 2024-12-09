@@ -5,32 +5,28 @@
 #ifndef HAKC_HAKCTYPEINFO_H
 #define HAKC_HAKCTYPEINFO_H
 
+#include <map>
+#include <set>
+
+#include "llvm/IR/DebugInfoMetadata.h"
+
 #include "HAKCTypeIdentifier/HAKCInfo.h"
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlType.h"
 
-#include <map>
-#include "llvm/IR/DebugInfoMetadata.h"
+using namespace llvm;
 
 namespace hakc {
     class HAKCTypeInfo : public HAKCInfo {
     public:
-        HAKCTypeInfo(StringRef Name, bool DebugActive);
-
-        virtual ~HAKCTypeInfo() = default;
+        HAKCTypeInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
         void AddMember(const std::shared_ptr<HAKCTypeInfo> &TypeUse, unsigned BitOffset);
 
         std::string GetYaml(unsigned Indents) override;
 
-        std::string getTypeStringRepresentation();
-
         void SetSizeInBits(unsigned Size);
 
-        std::string getYaml();
-
-        unsigned GetSizeInBits();
-
-        std::string getName();
+        unsigned GetSizeInBits() const;
 
         const DIType *GetDbgType();
 
@@ -42,8 +38,6 @@ namespace hakc {
 
         void SetLLVMType(Type *Ty);
 
-        std::string getHash();
-
         std::string GetYamlHeader(unsigned Indents) const override;
 
         StringRef GetYamlIdentifier() const override;
@@ -54,7 +48,7 @@ namespace hakc {
 
         std::shared_ptr<HAKCTypeInfo> GetPointeeType();
 
-        bool IsIntegerType();
+        bool IsIntegerType() const;
 
         bool IsPointerType();
 

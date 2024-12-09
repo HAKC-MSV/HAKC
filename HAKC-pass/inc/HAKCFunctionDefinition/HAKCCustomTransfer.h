@@ -5,8 +5,7 @@
 #ifndef HAKC_HAKCCUSTOMTRANSFER_H
 #define HAKC_HAKCCUSTOMTRANSFER_H
 
-#include <llvm/IR/IRBuilder.h>
-#include "llvm/IR/Module.h"
+#include "llvm/IR/IRBuilder.h"
 #include "HAKCTransferFunction.h"
 #include "HAKCCompartmentalizationPolicy/HAKCCompartmentalizationPolicy.h"
 #include "HAKCAnalysis/ManagedHAKCPointer.h"

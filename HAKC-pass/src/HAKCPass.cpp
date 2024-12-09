@@ -19,8 +19,8 @@
 
 // critical reference guide for cl: https://llvm.org/docs/CommandLine.html#internal-vs-external-storage
 std::string HAKC_CONFIG_PATH;
-std::string SOURCE_PATH;
-std::string BUILD_PATH;
+// std::string SOURCE_PATH;
+// std::string BUILD_PATH;
 
 static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path to HAKC Configuration File"),
                                                       cl::location(HAKC_CONFIG_PATH), cl::Required);
@@ -30,8 +30,8 @@ namespace hakc {
     bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
         bool PerformTransformations = true;
         Module &M = HAKCAnalysis.GetModule();
-        SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
-        BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
+        // SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
+        // BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
         StringRef CurrentSourceName(M.getSourceFileName());
         for (auto &path: HAKCAnalysis.GetSystemInfo().HAKCSourcePaths()) {
             if (CurrentSourceName.contains(path)) {
@@ -59,10 +59,10 @@ namespace hakc {
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
         Module &M = HAKCAnalysis.GetModule();
-        SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
-        BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
+        // SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
+        // BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
         auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
-        auto P = HAKCTypeIdentifier::GetTransformedPath(BasePath);
+        auto P = HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().GetTransformedPath(BasePath);
         
         auto Prefix = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath().str(); 
         if (Prefix.back() != llvm::sys::path::get_separator().back()) {

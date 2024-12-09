@@ -2,31 +2,25 @@
 // Created by de29664 on 5/2/23.
 //
 
-#include "HAKCTypeIdentifier/HAKCInfo.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include "HAKCTypeIdentifier/HAKCInfo.h"
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
 
-#include "llvm/Support/FileSystem.h"
-
-#include <sstream>
-
 namespace hakc {
-    StringRef HAKCInfo::GetName() const {
-        return Name;
-    }
-
-    // HAKCInfo::HAKCInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : Analysis(Analysis), DebugActive(DebugActive), Name(Name.str()) {
-    //     if (Name.empty()) {
-    //         CommonHAKCAnalysis::getWriter() << "Name is empty!\n";
-    //         throw std::exception();
-    //     }
-    // }
-
-    HAKCInfo::HAKCInfo(StringRef Name, bool DebugActive) : DebugActive(DebugActive), Name(Name.str()) {
+    HAKCInfo::HAKCInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : Analysis(Analysis),
+        DebugActive(DebugActive), Name(Name.str()) {
         if (Name.empty()) {
             CommonHAKCAnalysis::getWriter() << "Name is empty!\n";
             throw std::exception();
         }
+    }
+
+    CommonHAKCAnalysis &HAKCInfo::GetCommonHAKCAnalysis() {
+        return Analysis;
+    }
+
+    StringRef HAKCInfo::GetName() const {
+        return Name;
     }
 
     raw_ostream &operator<<(raw_ostream &os, HAKCInfo &Info) {

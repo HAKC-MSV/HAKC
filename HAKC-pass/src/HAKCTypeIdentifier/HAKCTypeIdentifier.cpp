@@ -2,7 +2,6 @@
 // Created by derrick on 9/8/21.
 //
 #include "HAKCTypeIdentifier/HAKCTypeIdentifier.h"
-#include "HAKC-defs.h"
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 #include "HAKCTypeIdentifier/HAKCFunctionInfo.h"
 #include "HAKCTypeIdentifier/HAKCGlobalInfo.h"
@@ -40,7 +39,7 @@ void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::sha
             dwarf::DW_TAG_structure_type,
             dwarf::DW_TAG_union_type,
     };
-    if (isa<DIBasicType>(type) || TagsToSize.find(type->getTag()) != TagsToSize.end()) {
+    if (isa<DIBasicType>(type) || TagsToSize.contains(type->getTag())) {
         HAKCType->SetSizeInBits(type->getSizeInBits());
     }
     HAKCType->SetDbgType(type);
@@ -51,7 +50,7 @@ void hakc::HAKCTypeIdentifier::AddTypeMapping(const DIType *type, const std::sha
 
 unsigned hakc::HAKCTypeIdentifier::GetAnonymousID(const DIType *type) {
     unsigned ID;
-    if (AnonymousNumberMapping.find(type) == AnonymousNumberMapping.end()) {
+    if (AnonymousNumberMapping.contains(type)) {
         AnonymousNumberMapping[type] = CurrentAnonID;
         ID = CurrentAnonID;
         CurrentAnonID++;
@@ -180,7 +179,7 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::HandleType(const D
             CommonHAKCAnalysis::getWriter() << "Creating HAKCTypeInfo for\n" << type << "\n";
         }
         auto TypeName = GetTypeName(type);
-        TypeP = std::make_shared<HAKCTypeInfo>(TypeName, debug);
+        TypeP = std::make_shared<HAKCTypeInfo>(AnalysisHelper, TypeName, debug);
         if (auto *BasicType = dyn_cast<DIBasicType>(type)) {
             auto *IntTy = IntegerType::get(GetModule().getContext(), BasicType->getSizeInBits());
             TypeP->SetLLVMType(IntTy);
@@ -195,12 +194,12 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::HandleType(const D
                 dwarf::DW_TAG_volatile_type,
                 dwarf::DW_TAG_restrict_type,
         };
-        if (TagsToConsider.find(DerivedTy->getTag()) != TagsToConsider.end()) {
+        if (TagsToConsider.contains(DerivedTy->getTag())) {
             if (debug) {
                 CommonHAKCAnalysis::getWriter() << "Creating HAKCTypeInfo for\n" << type << "\n";
             }
             auto TypeName = GetTypeName(type);
-            TypeP = std::make_shared<HAKCTypeInfo>(TypeName, debug);
+            TypeP = std::make_shared<HAKCTypeInfo>(AnalysisHelper, TypeName, debug);
             AddTypeMapping(type, TypeP);
         }
     } else {
@@ -249,7 +248,7 @@ std::shared_ptr<hakc::HAKCGlobalInfo> hakc::HAKCTypeIdentifier::HandleGlobal(con
         DIGVTy->SetLLVMType(GV->getValueType());
     }
 
-    auto GVP = std::make_shared<HAKCGlobalInfo>(DIGV->getName(), debug);
+    auto GVP = std::make_shared<HAKCGlobalInfo>(AnalysisHelper, DIGV->getName(), debug);
     GVP->SetType(DIGVTy);
     GVP->SetGlobalVariable(GV);
     GVP->SetDefiningLocation(DIGV->getFile(), DIGV->getLine());
@@ -309,7 +308,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::HandleFunction
     if (!DIGVTy->GetLLVMType()) {
         DIGVTy->SetLLVMType(F->getFunctionType());
     }
-    auto FP = std::make_shared<HAKCFunctionInfo>(SubProg->getName(), debug);
+    auto FP = std::make_shared<HAKCFunctionInfo>(AnalysisHelper, SubProg->getName(), debug);
     FP->SetType(DIGVTy);
     FP->SetFunction(F);
     FP->SetDefiningLocation(SubProg->getFile(), SubProg->getLine());
@@ -373,7 +372,7 @@ std::shared_ptr<hakc::HAKCFunctionInfo> hakc::HAKCTypeIdentifier::AddUnmappedFun
     if (debug) {
         CommonHAKCAnalysis::getWriter() << "Adding unmapped Function " << F->getName() << "\n";
     }
-    auto FuncInfo = std::make_shared<HAKCFunctionInfo>(F->getName(), debug);
+    auto FuncInfo = std::make_shared<HAKCFunctionInfo>(AnalysisHelper, F->getName(), debug);
     FuncInfo->SetFunction(F);
     auto HAKCType = FindCalledFunctionType(F->getFunctionType());
     if (!HAKCType) {
@@ -406,7 +405,7 @@ std::shared_ptr<hakc::HAKCSymbolInfo> hakc::HAKCTypeIdentifier::AddUnmappedGloba
         if (debug) {
             CommonHAKCAnalysis::getWriter() << "Adding unmapped Global Variable " << GV->getName() << "\n";
         }
-        auto GlobalInfo = std::make_shared<HAKCGlobalInfo>(GlobalObj->getName(), debug);
+        auto GlobalInfo = std::make_shared<HAKCGlobalInfo>(AnalysisHelper, GlobalObj->getName(), debug);
         auto HAKCType = FindType(GlobalObj->getValueType());
         if (!HAKCType) {
             HAKCType = CreateNoDebugType(GlobalObj->getValueType());
@@ -810,7 +809,7 @@ std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::CreateNoDebugType(
         sstream << *Ty;
     }
 
-    auto HAKCType = std::make_shared<HAKCTypeInfo>(Name, AnalysisHelper.GetSystemInfo().OutputDebugInfo());
+    auto HAKCType = std::make_shared<HAKCTypeInfo>(AnalysisHelper, Name, AnalysisHelper.GetSystemInfo().OutputDebugInfo());
     HAKCType->SetLLVMType(Ty);
     return HAKCType;
 }

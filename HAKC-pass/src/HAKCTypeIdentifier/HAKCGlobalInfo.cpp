@@ -7,9 +7,6 @@
 // #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
-    // HAKCGlobalInfo::HAKCGlobalInfo(StringRef Name, bool DebugActive) : HAKCSymbolInfo(Name, DebugActive) {
-
-    // }
     HAKCGlobalInfo::HAKCGlobalInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCSymbolInfo(Analysis, Name, DebugActive) {
 
     }

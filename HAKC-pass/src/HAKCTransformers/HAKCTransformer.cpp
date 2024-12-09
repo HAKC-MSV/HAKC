@@ -824,8 +824,8 @@ Function *hakc::HAKCTransformer::GetTransferFunction(Function *F) {
 }
 
 bool hakc::HAKCTransformer::NoKernelTransfers(Function *Target) {
-    return hakc::CommonHAKCAnalysis::IsUncompartmentalizedSymbol(Target, CompartmentalizationPolicy) &&
-           !CommonHAKCAnalysis::NoKernelTransferFunctionsSet();
+    return hakc::CommonHAKCAnalysis::IsUncompartmentalizedSymbol(Target, CompartmentalizationPolicy) /*&&
+           !CommonHAKCAnalysis::NoKernelTransferFunctionsSet()*/;
 }
 
 void

@@ -5,18 +5,18 @@
 #ifndef HAKC_HAKCINFO_H
 #define HAKC_HAKCINFO_H
 
-#include <set>
-
-#include "llvm/ADT/StringRef.h"
-#include "llvm/Support/raw_ostream.h"
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
+#include <string>
 
 using namespace llvm;
 
 namespace hakc {
 
+    class CommonHAKCAnalysis;
+
     class HAKCInfo {
     public:
+        virtual ~HAKCInfo() = default;
+
         virtual std::string GetYaml(unsigned Indents) = 0;
 
         virtual StringRef GetYamlIdentifier() const = 0;
@@ -31,13 +31,14 @@ namespace hakc {
 
         static unsigned int EntrySpaces();
 
+        CommonHAKCAnalysis &GetCommonHAKCAnalysis();
+
     protected:
-        // CommonHAKCAnalysis &Analysis;
+        CommonHAKCAnalysis &Analysis;
         bool DebugActive;
         std::string Name;
 
-        explicit HAKCInfo(StringRef Name, bool DebugActive);
-        // explicit HAKCInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
+        explicit HAKCInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
     };
 

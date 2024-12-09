@@ -6,13 +6,8 @@
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
-    // HAKCFunctionInfo::HAKCFunctionInfo(StringRef Name, bool DebugActive) : HAKCSymbolInfo(Name, DebugActive),
-    //                                                                        DirectCalls(), IndirectCalls() {
-
-    // }
-    HAKCFunctionInfo::HAKCFunctionInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCSymbolInfo(Analysis, Name, DebugActive),
-                                                                           DirectCalls(), IndirectCalls() {
-
+    HAKCFunctionInfo::HAKCFunctionInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCSymbolInfo(
+        Analysis, Name, DebugActive), DirectCalls(), IndirectCalls() {
     }
 
     void HAKCFunctionInfo::SetFunction(Function *F) {
@@ -54,7 +49,7 @@ namespace hakc {
             Count = 0;
             for (auto &Symbol: DirectCalls) {
                 sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << Symbol->GetYamlHeader(
-                        Indents + HAKCInfo::IndentSpaces());
+                    Indents + HAKCInfo::IndentSpaces());
                 if (++Count != DirectCalls.size()) {
                     sstream << "\n";
                 }
@@ -66,7 +61,7 @@ namespace hakc {
             sstream.indent(Indents + EntrySpaces()) << "IndirectCalls:\n";
             for (auto &IndirectSource: IndirectCalls) {
                 sstream.indent(Indents + HAKCInfo::IndentSpaces()) << "- " << IndirectSource->GetYaml(
-                        Indents + HAKCInfo::IndentSpaces());
+                    Indents + HAKCInfo::IndentSpaces());
                 if (++Count != IndirectCalls.size()) {
                     sstream << "\n";
                 }

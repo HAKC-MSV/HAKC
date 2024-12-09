@@ -6,18 +6,12 @@
 #define HAKC_HAKCSYMBOLINFO_H
 
 #include "HAKCTypeInfo.h"
-// #include "HAKC-defs.h"
-#include "llvm/IR/GlobalObject.h"
 #include "HAKCCompartmentalizationPolicy/yaml/HAKCYamlSymbol.h"
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
     class HAKCSymbolInfo : public HAKCInfo {
     public:
-        HAKCSymbolInfo(StringRef Name, bool DebugActive);
-        // HAKCSymbolInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
-
-        virtual ~HAKCSymbolInfo() = default;
+        HAKCSymbolInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
         void SetType(std::shared_ptr<HAKCTypeInfo> HAKCType);
 
@@ -62,7 +56,6 @@ namespace hakc {
         const DIFile *DefiningLocation;
         unsigned DefiningLine;
         const DIScope *LocalScope;
-        // CommonHAKCAnalysis &Analysis;
 
         void SetGlobalObj(GlobalObject *GlobalObj);
 

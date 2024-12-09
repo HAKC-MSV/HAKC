@@ -6,16 +6,13 @@
 #define HAKC_HAKCGLOBALINFO_H
 
 #include "llvm/IR/GlobalVariable.h"
-// #include "HAKC-defs.h"
 #include "HAKCSymbolInfo.h"
-// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
 
     class HAKCGlobalInfo : public HAKCSymbolInfo {
     public:
-        HAKCGlobalInfo(StringRef Name, bool DebugActive);
-        // HAKCGlobalInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
+        HAKCGlobalInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
         void SetGlobalVariable(GlobalVariable *GV);
 
