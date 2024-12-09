@@ -19,6 +19,13 @@ hakc::HAKCSymbolInfo::HAKCSymbolInfo(StringRef Name, bool DebugActive) : HAKCInf
 
 }
 
+// hakc::HAKCSymbolInfo::HAKCSymbolInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCInfo(Name, DebugActive), Analysis(Analysis), Type(nullptr),
+//                                                                          UsedSymbols(), GlobalObj(nullptr),
+//                                                                          DbgType(nullptr), DefiningLocation(nullptr),
+//                                                                          DefiningLine(0), LocalScope(nullptr) {
+
+// }
+
 void hakc::HAKCSymbolInfo::SetType(std::shared_ptr<HAKCTypeInfo> HAKCType) {
     Type = std::move(HAKCType);
 }
@@ -35,7 +42,7 @@ std::string hakc::HAKCSymbolInfo::GetTransformedPathName(const DIFile *File) con
     SmallString<128> PathName(File->getFilename());
 
     sys::fs::make_absolute(File->getDirectory(), PathName);
-    auto Path = HAKCTypeIdentifier::GetTransformedPath(PathName);
+    auto Path = Analysis.GetTransformedPath(PathName);
     return Path;
 }
 

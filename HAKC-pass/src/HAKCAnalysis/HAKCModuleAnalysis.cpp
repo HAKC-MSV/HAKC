@@ -288,6 +288,7 @@ namespace hakc {
         if (F->isDeclaration()) {
             return false;
         }
+        // CommonAnalysis.GetSystemInfo().notr
         if (CommonHAKCAnalysis::NoKernelTransferFunctionsSet()) {
             auto Compartment = Policy.GetDivision(F).GetHAKCCompartment();
             if (Compartment.IsUncompartmentalized()) {

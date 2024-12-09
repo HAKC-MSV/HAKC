@@ -9,6 +9,7 @@
 
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/raw_ostream.h"
+// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 using namespace llvm;
 
@@ -31,10 +32,12 @@ namespace hakc {
         static unsigned int EntrySpaces();
 
     protected:
+        // CommonHAKCAnalysis &Analysis;
         bool DebugActive;
         std::string Name;
 
         explicit HAKCInfo(StringRef Name, bool DebugActive);
+        // explicit HAKCInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
     };
 

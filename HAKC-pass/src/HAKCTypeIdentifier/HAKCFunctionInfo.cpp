@@ -6,7 +6,11 @@
 #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 namespace hakc {
-    HAKCFunctionInfo::HAKCFunctionInfo(StringRef Name, bool DebugActive) : HAKCSymbolInfo(Name, DebugActive),
+    // HAKCFunctionInfo::HAKCFunctionInfo(StringRef Name, bool DebugActive) : HAKCSymbolInfo(Name, DebugActive),
+    //                                                                        DirectCalls(), IndirectCalls() {
+
+    // }
+    HAKCFunctionInfo::HAKCFunctionInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive) : HAKCSymbolInfo(Analysis, Name, DebugActive),
                                                                            DirectCalls(), IndirectCalls() {
 
     }

@@ -6,7 +6,9 @@
 #define HAKC_HAKCFUNCTIONINFO_H
 
 #include "HAKCSymbolInfo.h"
+// #include "HAKC-defs.h"
 #include "HAKCIndirectCallSource.h"
+// #include "HAKCAnalysis/CommonHAKCAnalysis.h"
 
 using namespace llvm;
 
@@ -14,7 +16,8 @@ namespace hakc {
 
     class HAKCFunctionInfo : public HAKCSymbolInfo {
     public:
-        HAKCFunctionInfo(StringRef Name, bool DebugActive);
+        HAKCFunctionInfo( StringRef Name, bool DebugActive);
+        // HAKCFunctionInfo(CommonHAKCAnalysis &Analysis, StringRef Name, bool DebugActive);
 
         void SetFunction(Function *F);
 

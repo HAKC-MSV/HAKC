@@ -7,6 +7,7 @@
 
 #include "llvm/IR/Verifier.h"
 #include "llvm/IR/DerivedTypes.h"
+#include "llvm/Support/Path.h"
 
 namespace hakc {
     HAKCWriter HAKC_Writer;
@@ -596,10 +597,6 @@ namespace hakc {
         return result;
     }
 
-    bool CommonHAKCAnalysis::NoKernelTransferFunctionsSet() {
-        return !HAKC_NO_KERNEL_TRANSFERS.empty();
-    }
-
     void CommonHAKCAnalysis::SortGlobalList(std::vector<GlobalVariable *> &GlobalList) {
         llvm::sort(GlobalList.begin(), GlobalList.end(),
                    [](GlobalVariable *LHS, GlobalVariable *RHS) {
@@ -747,4 +744,45 @@ namespace hakc {
         return CallIsUsedAsPointer;
 
     }
+
+    std::string CommonHAKCAnalysis::GetTransformedPath(StringRef Path) {
+        if (Path.empty()) {
+            return Path.str();
+        }
+        
+        auto *SourcePath = SystemInfo.GetSourcePath().str().c_str();
+        if (!SourcePath || std::strlen(SourcePath) == 0) {
+            errs() << "Invalid " << SourcePath << "!\n";
+            throw std::exception();
+        }
+
+        auto *BuildPath = SystemInfo.GetBuildPath().str().c_str();
+        if (!BuildPath || std::strlen(BuildPath) == 0) {
+            errs() << "Invalid " << BuildPath << "!\n";
+            throw std::exception();
+        }
+
+        unsigned length;
+        std::string Replacement;
+        if (Path.starts_with(BuildPath)) {
+            length = std::strlen(BuildPath);
+            Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
+        } else if (Path.starts_with(SourcePath)) {
+            length = std::strlen(SourcePath);
+            Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
+        } else {
+            errs() << "Path " << Path << " does not start with either "
+                                            << BuildPath << " or " << SourcePath << "!\n";
+            throw std::exception();
+        }
+
+        if (!sys::path::is_separator(Path[length])) {
+            Replacement += sys::path::get_separator();
+        }
+
+        auto Result = Path.str();
+        Result.replace(0, length, Replacement);
+        return Result;
+    }
+
 }// namespace hakc

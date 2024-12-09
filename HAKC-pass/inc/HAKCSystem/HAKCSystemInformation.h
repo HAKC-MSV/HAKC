@@ -61,14 +61,38 @@ namespace hakc {
         Function* DataValidation() const;
         Function* SignWithDivision() const;
         hakc_transfer_def_t CompartmentTransfer(bool PerCPU) const;
+
         HAKCTypeIdentifier &GetTypeIdentifier();
-        StringRef GetDagAnalysisRootPath() const;
+
+        hakc::HAKCPassModeTypeEnum GetPassMode() const;
+        StringRef GetArch() const; 
+        StringRef GetPlatform() const; 
+        StringRef GetDatabase() const; 
         StringRef GetSourcePath() const;
         StringRef GetBuildPath() const;
-        hakc::HAKCPassModeTypeEnum GetPassMode() const;
+        StringRef GetDagAnalysisRootPath() const;
+        HAKCStringList GetIncludePathsList() const;
+        FunctionList GetNoTransferFunctionList() const;
+        HAKCTransferList GetCompartmentTransferFunctionList() const;
+        Function *GetCodeValidationFunction() const;
+        Function *GetDataValidationFunction() const;
+        Function *GetSignWithDivisionFunction() const;
+        hakc::hakc_transfer_def_t GetDefaultCompartmentTransfer() const;
+        hakc::hakc_transfer_def_t GetPerCPUCompartmentTransfer() const;
+        FunctionList GetCompartmentalizationSupportFunctionList() const;
+        HAKCSymbolList GetSymbolsToOutputDebugInfo() const;
+        HAKCStringList GetSeparateNamespacePathList() const;
+        HAKCStringList GetHAKCSourcePathList() const;
+        FunctionList GetSafeTransitionFunctionList() const;
+        HAKCTypeSet GetIgnoredTypeSet() const;
+        HAKCGlobalVariableList GetIgnoredGlobalList() const;
+        HAKCCustomAllocationList GetAllocationFunctionList() const;
+        HAKCCustomTransferList GetCustomTransferList() const;
+
     protected:
         CommonHAKCAnalysis &CommonAnalysis;
         HAKCTypeIdentifier TypeIdentifier;
+        hakc::HAKCPassModeTypeEnum PassMode;
         bool DebugOutput;
         std::string Arch;
         std::string Platform;
@@ -76,7 +100,6 @@ namespace hakc {
         std::string SourcePath;
         std::string BuildPath;
         std::string DagAnalysisRootPath;
-        hakc::HAKCPassModeTypeEnum PassMode;
         HAKCStringList IncludePathsList;
         FunctionList NoTransferFunctionList;
         HAKCTransferList CompartmentTransferFunctionList;

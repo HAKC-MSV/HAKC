@@ -61,8 +61,6 @@ namespace hakc {
 
         static bool IsCapabilityReassignmentFunc(Function *F);
 
-        static bool NoKernelTransferFunctionsSet();
-
         static bool IsPointerLikeType(Type *Ty);
 
         std::string GetOutsideTransferName(Function *F);
@@ -150,6 +148,8 @@ namespace hakc {
         static bool IsFunctionInFunctionList(Function *F, iterator_range<FunctionList::iterator> Range);
 
         static bool PointerShouldBeConsideredCode(Value *Pointer);
+
+        std::string GetTransformedPath(StringRef Path);
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

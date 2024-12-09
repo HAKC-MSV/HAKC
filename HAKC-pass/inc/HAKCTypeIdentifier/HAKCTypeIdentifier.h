@@ -36,7 +36,7 @@ namespace hakc {
 
         void OutputYAML(raw_ostream &out);
 
-        static std::string GetTransformedPath(StringRef Path);
+        std::string GetTransformedPath(StringRef Path);
 
         HAKCSymbolP FindSymbol(Value *V, bool SearchUnmapped = false);
 

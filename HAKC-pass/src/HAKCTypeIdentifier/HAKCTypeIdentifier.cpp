@@ -1004,45 +1004,45 @@ void hakc::HAKCTypeIdentifier::ProcessDebugInfo() {
     FindUsesInFunctions();
 }
 
-std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
-    if (Path.empty()) {
-        return Path.str();
-    }
+// std::string hakc::HAKCTypeIdentifier::GetTransformedPath(StringRef Path) {
+//     if (Path.empty()) {
+//         return Path.str();
+//     }
+    
+//     auto *SourcePath = AnalysisHelper.GetSystemInfo().GetSourcePath().c_str();
+//     if (!SourcePath || std::strlen(SourcePath) == 0) {
+//         errs() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
+//         throw std::exception();
+//     }
 
-    auto *SourcePath = SOURCE_PATH.c_str(); 
-    if (!SourcePath || std::strlen(SourcePath) == 0) {
-        errs() << "Invalid " << hakc::HAKC_SOURCE_PATH << "!\n";
-        throw std::exception();
-    }
+//     auto *BuildPath = BUILD_PATH.c_str(); 
+//     if (!BuildPath || std::strlen(BuildPath) == 0) {
+//         errs() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
+//         throw std::exception();
+//     }
 
-    auto *BuildPath = BUILD_PATH.c_str(); 
-    if (!BuildPath || std::strlen(BuildPath) == 0) {
-        errs() << "Invalid " << hakc::HAKC_BUILD_PATH << "!\n";
-        throw std::exception();
-    }
+//     unsigned length;
+//     std::string Replacement;
+//     if (Path.starts_with(BuildPath)) {
+//         length = std::strlen(BuildPath);
+//         Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
+//     } else if (Path.starts_with(SourcePath)) {
+//         length = std::strlen(SourcePath);
+//         Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
+//     } else {
+//         errs() << "Path " << Path << " does not start with either "
+//                                         << BuildPath << " or " << SourcePath << "!\n";
+//         throw std::exception();
+//     }
 
-    unsigned length;
-    std::string Replacement;
-    if (Path.starts_with(BuildPath)) {
-        length = std::strlen(BuildPath);
-        Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
-    } else if (Path.starts_with(SourcePath)) {
-        length = std::strlen(SourcePath);
-        Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
-    } else {
-        errs() << "Path " << Path << " does not start with either "
-                                        << BuildPath << " or " << SourcePath << "!\n";
-        throw std::exception();
-    }
+//     if (!sys::path::is_separator(Path[length])) {
+//         Replacement += sys::path::get_separator();
+//     }
 
-    if (!sys::path::is_separator(Path[length])) {
-        Replacement += sys::path::get_separator();
-    }
-
-    auto Result = Path.str();
-    Result.replace(0, length, Replacement);
-    return Result;
-}
+//     auto Result = Path.str();
+//     Result.replace(0, length, Replacement);
+//     return Result;
+// }
 
 void hakc::HAKCTypeIdentifier::OutputYAML(raw_ostream &out) {
     auto RealPath = CommonHAKCAnalysis::GetModuleFullPath(GetModule());
