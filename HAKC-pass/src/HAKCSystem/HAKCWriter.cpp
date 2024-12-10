@@ -71,10 +71,10 @@ namespace hakc {
         return *this;
     }
 
-    HAKCWriter &HAKCWriter::operator<<(bool b) {
-        os << (b ? "True" : "False");
-        return *this;
-    }
+    // HAKCWriter &HAKCWriter::operator<<(bool b) {
+    //     os << (b ? "True" : "False");
+    //     return *this;
+    // }
 
     HAKCWriter &HAKCWriter::operator<<(Function &F) {
         F.print(os, nullptr);

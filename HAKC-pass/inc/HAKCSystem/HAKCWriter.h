@@ -39,7 +39,7 @@ namespace hakc {
 
         HAKCWriter &operator<<(unsigned long i);
 
-        HAKCWriter &operator<<(bool b);
+        //HAKCWriter &operator<<(bool b);
 
         HAKCWriter &operator<<(Function &F);
 

@@ -165,6 +165,10 @@ def adjust_compartmentalization(db_dir: str, adjustment: HAKCCompartmentalizatio
     compartmentalization = HAKCCompartmentalization()
     kernel_division = HAKCDivision(HAKCCompartmentalization.kernel_division,
                                    HAKCCompartmentalization.kernel_compartment_id)
+    if adjustment.add_kernel_division:
+        kernel_compartment = HAKCCompartment(HAKCCompartmentalization.kernel_compartment_id)
+        compartmentalization.add_division(kernel_division, kernel_compartment)
+
     with tqdm.tqdm(total=len(symbols)) as pbar:
         for symbol in symbols:
             compartmentalization.add_persistent_node(symbol, already_persisted=True)

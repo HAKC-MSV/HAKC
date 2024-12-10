@@ -43,22 +43,11 @@ namespace hakc {
     const StringRef HAKC_MODPARAM_TEXT_SECTION = ".hakc.modparam_ctx.text";
     const StringRef HAKC_MODPARAM_FUNCP_SECTION = ".hakc.modparam_ctx_fp";
 
-    /* Environment Variables */
-    // const StringRef COMPARTMENT_PATH_ENV_VAR = "HAKC_COMPARTMENT_PATH";
-    // const StringRef HAKC_DEBUG_ENV_VAR = "HAKC_DEBUG_NAME";
-    // const StringRef HAKC_DB_PATH_ENV_VAR = "HAKC_DB_PATH";
-    // const StringRef DAG_ANALYSIS_ROOT_ENV_VAR = "HAKC_DAG_ANALYSIS_ROOT";
-    // const StringRef HAKC_ENV_VAR = "HAKC_ANALYSIS";
-    // const StringRef HAKC_NO_KERNEL_TRANSFERS = "HAKC_NO_KERNEL_TRANSFERS";
-    // const StringRef HAKC_MORELLO_HYBRID_ENV_VAR = "HAKC_MORELLO_HYBRID";
-    // const StringRef HAKC_SOURCE_PATH = "HAKC_SOURCE_PATH";
-    // const StringRef HAKC_BUILD_PATH = "HAKC_BUILD_PATH";
-
-    const StringRef HAKC_SOURCE_PATH_REPLACEMENT = "_HAKC_SOURCE_PATH_";
-    const StringRef HAKC_BUILD_PATH_REPLACEMENT = "_HAKC_BUILD_PATH_";
+    const StringRef HAKC_SOURCE_PATH_REPLACEMENT = "$HAKC_SOURCE_PATH$";
+    const StringRef HAKC_BUILD_PATH_REPLACEMENT = "$HAKC_BUILD_PATH$";
 
     typedef enum {
-        SILVER_CLIQUE,
+        NO_CLIQUE,
         GREEN_CLIQUE,
         RED_CLIQUE,
         ORANGE_CLIQUE,
@@ -74,7 +63,6 @@ namespace hakc {
         VIOLET_CLIQUE,
         CRIMSON_CLIQUE,
         GOLD_CLIQUE,
-        NO_CLIQUE
     } sym_color_t;
 
     typedef enum {

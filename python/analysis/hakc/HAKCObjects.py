@@ -498,10 +498,12 @@ class HAKCAdjustment(yaml.YAMLObject):
 class HAKCCompartmentalizationAdjustment(yaml.YAMLObject):
     yaml_tag = "!HAKCAdjustments"
     compartmentalize_entry = 'compartmentalize'
+    add_kernel_compartment_entry = 'add-kernel-division'
 
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         self.adjustment_regexes = dict()
+        self.add_kernel_division = kwargs.get(HAKCCompartmentalizationAdjustment.add_kernel_compartment_entry, False)
         for adjustment in sorted(kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set()), key=lambda e: e.path):
             escaped_path = re.escape(adjustment.path)
             self.adjustment_regexes[re.compile(escaped_path)] = adjustment

@@ -5,6 +5,7 @@ SourcePath:           @PWD@
 BuildPath:            @PWD@/build
 DagAnalysisRootPath:  @PWD@
 PassMode:             RunCompartmentalization
+#PassMode:             RunDataAccessGraphAnalysis
 IncludePaths:         []
 #CustomTransferFunctions:
 #  - { type: "char *", name: "hakc_transfer_string", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }

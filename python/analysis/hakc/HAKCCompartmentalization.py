@@ -92,10 +92,13 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             division = HAKCDivision(division_id, compartment_id, division_count=compartment.division_count)
         self.set_symbol_division(symbol, division, compartment)
 
-    def set_symbol_division(self, symbol: HAKCSymbol, division: HAKCDivision, compartment: HAKCCompartment):
+    def add_division(self, division: HAKCDivision, compartment: HAKCCompartment):
         compartment.add_division(division)
-
         self.add_persistent_edge(division, compartment, key=HAKCDivision.InCompartmentTable)
+
+
+    def set_symbol_division(self, symbol: HAKCSymbol, division: HAKCDivision, compartment: HAKCCompartment):
+        self.add_division(division, compartment)
         self.add_persistent_edge(symbol, division, key=HAKCSymbol.InDivisionTable)
 
     def get_division(self, symbol: HAKCSymbol) -> HAKCDivision | None:
