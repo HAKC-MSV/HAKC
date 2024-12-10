@@ -8,8 +8,8 @@
 
 namespace hakc {
     HAKCSystemInformation::HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis) : CommonAnalysis(CommonAnalysis),
-        TypeIdentifier(CommonAnalysis), DebugOutput(false), Arch(), Platform(),
-        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), PassMode(InvalidPassModeType), IncludePathsList(),
+        TypeIdentifier(CommonAnalysis), DebugOutput(false), PassMode(InvalidPassModeType), Arch(), Platform(),
+        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), IncludePathsList(),
         NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
         DataValidationFunction(nullptr), SignWithDivisionFunction(nullptr), DefaultCompartmentTransfer(nullptr),
         PerCPUCompartmentTransfer(nullptr), CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(),

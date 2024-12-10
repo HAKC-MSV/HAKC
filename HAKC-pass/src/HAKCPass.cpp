@@ -62,7 +62,7 @@ namespace hakc {
         // SOURCE_PATH = HAKCAnalysis.GetSystemInfo().GetSourcePath();
         // BUILD_PATH = HAKCAnalysis.GetSystemInfo().GetBuildPath();
         auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
-        auto P = HAKCAnalysis.GetSystemInfo().GetTypeIdentifier().GetTransformedPath(BasePath);
+        auto P = HAKCAnalysis.GetTransformedPath(BasePath);
         
         auto Prefix = HAKCAnalysis.GetSystemInfo().GetDagAnalysisRootPath().str(); 
         if (Prefix.back() != llvm::sys::path::get_separator().back()) {

@@ -74,8 +74,8 @@ namespace hakc {
     protected:
         CommonHAKCAnalysis &CommonAnalysis;
         HAKCTypeIdentifier TypeIdentifier;
-        hakc::HAKCPassModeTypeEnum PassMode;
         bool DebugOutput;
+        hakc::HAKCPassModeTypeEnum PassMode;
         std::string Arch;
         std::string Platform;
         std::string Database;
