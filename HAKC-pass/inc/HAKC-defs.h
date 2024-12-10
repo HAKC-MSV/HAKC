@@ -43,8 +43,13 @@ namespace hakc {
     const StringRef HAKC_MODPARAM_TEXT_SECTION = ".hakc.modparam_ctx.text";
     const StringRef HAKC_MODPARAM_FUNCP_SECTION = ".hakc.modparam_ctx_fp";
 
+<<<<<<< Updated upstream
     const StringRef HAKC_SOURCE_PATH_REPLACEMENT = "$HAKC_SOURCE_PATH$";
     const StringRef HAKC_BUILD_PATH_REPLACEMENT = "$HAKC_BUILD_PATH$";
+=======
+    const StringRef HAKC_SOURCE_PATH_REPLACEMENT = "_HAKC_SOURCE_PATH_";
+    const StringRef HAKC_BUILD_PATH_REPLACEMENT = "_HAKC_BUILD_PATH_";
+>>>>>>> Stashed changes
 
     typedef enum {
         NO_CLIQUE,

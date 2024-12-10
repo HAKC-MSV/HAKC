@@ -26,6 +26,7 @@ static cl::opt<std::string, true> HAKC_CONFIG_CL("HAKC_CONFIG", cl::desc("Path t
 namespace hakc {
     
     bool runCompartmentalization(CommonHAKCAnalysis &HAKCAnalysis) {
+        errs() << "running compartmentalization\n";
         bool PerformTransformations = true;
         Module &M = HAKCAnalysis.GetModule();
         StringRef CurrentSourceName(M.getSourceFileName());
@@ -46,7 +47,7 @@ namespace hakc {
         if (PerformTransformations) {
             HAKCCompartmentalizationPolicy Policy(HAKCAnalysis.GetSystemInfo().OutputDebugInfo(),
                                                   M.getContext(), KERNEL_COMPARTMENT,
-                                                  KERNEL_DIVISION, HAKCAnalysis.GetSystemInfo().DatabasePath());
+                                                  KERNEL_DIVISION, HAKCAnalysis.GetSystemInfo().GetDatabasePath());
             HAKCModuleAnalysis ModuleTransformation(HAKCAnalysis, Policy);
             ModuleTransformation.performTransformations();
         }
@@ -54,6 +55,7 @@ namespace hakc {
         return true;
     }
     bool runDataAccessGraphAnalysis (CommonHAKCAnalysis &HAKCAnalysis) {
+        errs() << "running dag\n";
         Module &M = HAKCAnalysis.GetModule();
         auto BasePath = CommonHAKCAnalysis::GetModuleFullPath(M);
         auto P = HAKCAnalysis.GetTransformedPath(BasePath);

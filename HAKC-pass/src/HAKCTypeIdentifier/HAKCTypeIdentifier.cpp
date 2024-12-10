@@ -16,9 +16,6 @@
 #include "llvm/BinaryFormat/Dwarf.h"
 #include "llvm/ADT/StringRef.h"
 
-extern std::string SOURCE_PATH;
-extern std::string BUILD_PATH;
-
 std::shared_ptr<hakc::HAKCTypeInfo> hakc::HAKCTypeIdentifier::FindType(const DIType *type) {
     if (!type) {
         errs() << "Trying to find null type\n";

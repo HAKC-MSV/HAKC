@@ -122,7 +122,7 @@ namespace hakc {
         HAKCTestModeTypeEnum  TestMode;
         HAKCYAMLStringType Arch;
         HAKCYAMLStringType Platform;
-        HAKCYAMLStringType Database;
+        HAKCYAMLStringType DatabasePath;
         HAKCYAMLStringType SourcePath;
         HAKCYAMLStringType BuildPath;
         HAKCYAMLStringType DagAnalysisRootPath;
@@ -304,9 +304,9 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
             io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
 
             if (YamlConfig.PassMode == hakc::RunCompartmentalization) {
-                io.mapRequired("Database", YamlConfig.Database);
+                io.mapRequired("DatabasePath", YamlConfig.DatabasePath);
             } else if (YamlConfig.PassMode == hakc::RunDataAccessGraphAnalysis) {
-                io.mapOptional("Database", YamlConfig.Database);
+                io.mapOptional("DatabasePath", YamlConfig.DatabasePath);
             }
 
         }
@@ -336,7 +336,7 @@ struct yaml::MappingTraits<hakc::HAKCYamlConfig> {
             io.mapOptional("DebugOutputSymbols", YamlConfig.PassDebugSymbols);
             io.mapOptional("PerCPUCompartmentTransferFunction", YamlConfig.PerCPUCompartmentTransfer);
             io.mapOptional("CustomTransferFunctions", YamlConfig.CustomTransferFunctions);
-            io.mapOptional("Database", YamlConfig.Database);
+            io.mapOptional("DatabasePath", YamlConfig.DatabasePath);
 
         }
         else if(YamlConfig.TestMode == hakc::TestModeSuppliedDAG){

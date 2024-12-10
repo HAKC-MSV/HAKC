@@ -367,11 +367,22 @@ def main():
     parser.add_argument('--delete-existing-db', action='store_true',
                         help='Deletes existing database when creating a new compartmentalization', dest='delete_db',
                         default=True)
+    parser.add_argument('--dump-dag', dest='dump_dag', help='dump DAG to json')
+
 
     args = parser.parse_args()
 
     profile = None
     setup_logging(log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
+
+    # dump dag to json file 
+    # https://networkx.org/documentation/stable/reference/readwrite/json_graph.html
+    # python3 python/analysis/hakc-dag.py --create-dag --dag-files-root $HAKC_DAG_ROOT
+    if args.dump_dag:
+        # todo ask derrick to test this 
+        logger.info(f'dump dag mode for file: {args.dump_dag}')
+        # data = tree_data(G, root[, ident, children])
+        # logger.info(f'data: {data}')
 
     if args.db_dir is None or len(args.db_dir) == 0:
         raise RuntimeError(f'Must specify a database directory')

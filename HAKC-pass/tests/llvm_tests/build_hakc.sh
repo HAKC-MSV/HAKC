@@ -14,3 +14,6 @@ cmake -G Ninja \
 ..
 
 cmake --build . -j$(nproc) --target install
+
+# search for file contents: 
+# grep -rnw $ROOT/HAKC-pass -e '?'

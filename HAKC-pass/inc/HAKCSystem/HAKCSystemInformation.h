@@ -56,7 +56,6 @@ namespace hakc {
         iterator_range<HAKCCustomAllocationList::iterator> AllocationFunctions();
         iterator_range<HAKCStringList::iterator> IncludePaths();
 
-        StringRef DatabasePath() const;
         Function* CodeValidation() const;
         Function* DataValidation() const;
         Function* SignWithDivision() const;
@@ -67,6 +66,7 @@ namespace hakc {
         hakc::HAKCPassModeTypeEnum GetPassMode() const;
         StringRef GetArch() const; 
         StringRef GetPlatform() const;
+        StringRef GetDatabasePath() const;
         StringRef GetSourcePath() const;
         StringRef GetBuildPath() const;
         StringRef GetDagAnalysisRootPath() const;
@@ -78,7 +78,7 @@ namespace hakc {
         hakc::HAKCPassModeTypeEnum PassMode;
         std::string Arch;
         std::string Platform;
-        std::string Database;
+        std::string DatabasePath;
         std::string SourcePath;
         std::string BuildPath;
         std::string DagAnalysisRootPath;

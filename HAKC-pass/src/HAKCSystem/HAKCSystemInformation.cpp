@@ -9,7 +9,7 @@
 namespace hakc {
     HAKCSystemInformation::HAKCSystemInformation(CommonHAKCAnalysis &CommonAnalysis) : CommonAnalysis(CommonAnalysis),
         TypeIdentifier(CommonAnalysis), DebugOutput(false), PassMode(InvalidPassModeType), Arch(), Platform(),
-        Database(), SourcePath(), BuildPath(), DagAnalysisRootPath(), IncludePathsList(),
+        DatabasePath(), SourcePath(), BuildPath(), DagAnalysisRootPath(), IncludePathsList(),
         NoTransferFunctionList(), CompartmentTransferFunctionList(), CodeValidationFunction(nullptr),
         DataValidationFunction(nullptr), SignWithDivisionFunction(nullptr), DefaultCompartmentTransfer(nullptr),
         PerCPUCompartmentTransfer(nullptr), CompartmentalizationSupportFunctionList(), SymbolsToOutputDebugInfo(),
@@ -20,7 +20,7 @@ namespace hakc {
     void operator<<(HAKCSystemInformation &HAKCSystemInfo, HAKCYamlConfig &YamlConfig) {
         HAKCSystemInfo.Arch = YamlConfig.Arch;
         HAKCSystemInfo.Platform = YamlConfig.Platform;
-        HAKCSystemInfo.Database = YamlConfig.Database;
+        HAKCSystemInfo.DatabasePath = YamlConfig.DatabasePath;
         HAKCSystemInfo.SourcePath = YamlConfig.SourcePath;
         HAKCSystemInfo.BuildPath = YamlConfig.BuildPath;
         HAKCSystemInfo.DagAnalysisRootPath = YamlConfig.DagAnalysisRootPath;
@@ -188,6 +188,10 @@ namespace hakc {
 
     hakc::HAKCPassModeTypeEnum HAKCSystemInformation::GetPassMode() const {
         return PassMode;
+    }
+
+    StringRef HAKCSystemInformation::GetDatabasePath() const{
+        return DatabasePath; 
     }
     
     StringRef HAKCSystemInformation::GetSourcePath() const{
