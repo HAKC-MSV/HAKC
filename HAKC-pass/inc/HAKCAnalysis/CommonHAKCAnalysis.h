@@ -149,7 +149,7 @@ namespace hakc {
 
         static bool PointerShouldBeConsideredCode(Value *Pointer);
 
-        std::string GetTransformedPath(StringRef Path);
+        std::string GetTransformedPath(StringRef Path) const;
 
     private:
         static bool valueHasAttribute(Value *v, Attribute::AttrKind Kind);

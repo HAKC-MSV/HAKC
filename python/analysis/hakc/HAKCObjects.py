@@ -102,6 +102,7 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         return {
             schema[0]: hash(self),
             schema[1]: self.division_id,
+            schema[2]: self.access_token
         }
 
     def compute_access_token(self, allowable_accesses: list['HAKCDivision']) -> int:

@@ -106,7 +106,7 @@ class HAKCDatabase:
         RETURN DISTINCT indirect.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.IndirectCallTable}
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        df = response.get_as_pd()
+        df = response.get_as_pl()
         for table_name, entries in df.to_dict(as_series=False).items():
             if len(entries) > 0:
                 result[table_name] = entries
@@ -116,7 +116,7 @@ class HAKCDatabase:
         RETURN DISTINCT direct.{HAKCSymbol.get_primary_key().column_name} AS {HAKCFunction.DirectCallTable}
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
-        df = response.get_as_pd()
+        df = response.get_as_pl()
         for table_name, entries in df.to_dict(as_series=False).items():
             if len(entries) > 0:
                 result[table_name] = entries

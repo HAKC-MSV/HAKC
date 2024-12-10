@@ -745,20 +745,19 @@ namespace hakc {
 
     }
 
-    std::string CommonHAKCAnalysis::GetTransformedPath(StringRef Path) {
-
+    std::string CommonHAKCAnalysis::GetTransformedPath(StringRef Path) const {
         if (Path.empty()) {
             return Path.str();
         }
         
-        std::string SourcePath = SystemInfo.GetSourcePath().str(); 
-        if(SourcePath.length() == 0) {
+        auto SourcePath = SystemInfo.GetSourcePath();
+        if(SourcePath.size() == 0) {
             errs() << "Invalid " << SourcePath << "!\n";
             throw std::exception();
         }
         
-        std::string BuildPath = SystemInfo.GetBuildPath().str();
-        if (BuildPath.length() == 0) {
+        auto BuildPath = SystemInfo.GetBuildPath();
+        if (BuildPath.size() == 0) {
             errs() << "Invalid " << BuildPath << "!\n";
             throw std::exception();
         }
@@ -766,10 +765,10 @@ namespace hakc {
         unsigned length;
         std::string Replacement;
         if (Path.starts_with(BuildPath)) {
-            length = BuildPath.length(); 
+            length = BuildPath.size();
             Replacement = HAKC_BUILD_PATH_REPLACEMENT.str();
         } else if (Path.starts_with(SourcePath)) {
-            length = SourcePath.length();
+            length = SourcePath.size();
             Replacement = HAKC_SOURCE_PATH_REPLACEMENT.str();
         } else {
             errs() << "Path " << Path << " does not start with either "
