@@ -4,6 +4,7 @@ Database:             @PWD@/hakc-db
 SourcePath:           @PWD@
 BuildPath:            @PWD@/build
 DagAnalysisRootPath:  @PWD@
+OutputDebugInfo:      true
 PassMode:             RunCompartmentalization
 #PassMode:             RunDataAccessGraphAnalysis
 IncludePaths:         []

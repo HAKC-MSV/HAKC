@@ -13,6 +13,10 @@ namespace hakc {
     HAKCWriter::HAKCWriter(): os(errs()) {
     }
 
+    raw_ostream & HAKCWriter::ostream() {
+        return os;
+    }
+
     void HAKCWriter::printDIType(const DIType *type, unsigned indents) {
         if (!type) {
             return;
@@ -71,10 +75,20 @@ namespace hakc {
         return *this;
     }
 
-    // HAKCWriter &HAKCWriter::operator<<(bool b) {
-    //     os << (b ? "True" : "False");
-    //     return *this;
-    // }
+    HAKCWriter &HAKCWriter::operator<<(bool b) {
+        os << (b ? "True" : "False");
+        return *this;
+    }
+
+    HAKCWriter &HAKCWriter::operator<<(std::string str) {
+        os << str;
+        return *this;
+    }
+
+    HAKCWriter &HAKCWriter::operator<<(const char* s) {
+        os << s;
+        return *this;
+    }
 
     HAKCWriter &HAKCWriter::operator<<(Function &F) {
         F.print(os, nullptr);
@@ -157,7 +171,7 @@ namespace hakc {
     }
 
     HAKCWriter &HAKCWriter::operator<<(const ManagedHAKCPointerUse &HAKCPointerUse) {
-        os << "[" << std::to_string(HAKCPointerUse.getID()) << "] Argument " << HAKCPointerUse.getOperandNo() << " of "
+        os << "[" << HAKCPointerUse.getID() << "] Argument " << HAKCPointerUse.getOperandNo() << " of "
                 << HAKCPointerUse.getUser() << " for ";
         *this << HAKCPointerUse.getManagedPtr();
         return *this;

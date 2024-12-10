@@ -21,7 +21,8 @@ namespace hakc {
     class HAKCWriter {
     public:
         HAKCWriter();
-        raw_ostream& ostream();
+
+        raw_ostream &ostream();
 
     protected:
         raw_ostream &os;
@@ -39,7 +40,11 @@ namespace hakc {
 
         HAKCWriter &operator<<(unsigned long i);
 
-        //HAKCWriter &operator<<(bool b);
+        HAKCWriter &operator<<(bool b);
+
+        HAKCWriter &operator<<(std::string str);
+
+        HAKCWriter &operator<<(const char* s);
 
         HAKCWriter &operator<<(Function &F);
 

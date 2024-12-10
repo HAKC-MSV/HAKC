@@ -360,11 +360,11 @@ namespace hakc {
                 if (PointerIsTransferred) {
                     AlreadyAuthenticated = PointerIsTransferred;
                 } else {
-                    // if (DebugActive) {
-                    //     CommonHAKCAnalysis::getWriter() << "IsIntrinsicNeedingCloning(" << *Call << ") = "
-                    //                                     << Manager.GetFunctionAnalysis().IsIntrinsicNeedingCloning(Call)
-                    //                                     << "\n";
-                    // }
+                    if (DebugActive) {
+                        CommonHAKCAnalysis::getWriter() << "IsIntrinsicNeedingCloning(" << *Call << ") = "
+                                                        << Manager.GetFunctionAnalysis().IsIntrinsicNeedingCloning(Call)
+                                                        << "\n";
+                    }
                     AlreadyAuthenticated = Manager.GetFunctionAnalysis().IsIntrinsicNeedingCloning(Call);
                 }
             } else if (Call->isInlineAsm()) {
