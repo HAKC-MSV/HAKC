@@ -3,12 +3,10 @@ import multiprocessing as mp
 from typing import Type
 
 import kuzu
-# import polars as pl
 import pandas as pd
-
+from .HAKCBase import HAKCDBNode, HAKCDBRelation
 from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable, HAKCDivision, \
     HAKCCompartment, HAKCCompilationUnit
-from .HAKCBase import HAKCDBNode, HAKCDBRelation
 
 logger = logging.getLogger('hakc-dag')
 
