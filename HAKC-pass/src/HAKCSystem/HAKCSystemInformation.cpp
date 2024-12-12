@@ -182,10 +182,6 @@ namespace hakc {
         return CommonAnalysis.GetModule();
     }
 
-    StringRef HAKCSystemInformation::DatabasePath() const {
-        return Database;
-    }
-
     hakc::HAKCPassModeTypeEnum HAKCSystemInformation::GetPassMode() const {
         return PassMode;
     }

@@ -54,7 +54,10 @@ class HAKCDatabase:
         RETURN sym.{HAKCSymbol.get_primary_key().column_name} AS symbol_hash;
         """
         response = self.execute_prepared_stmt(cmd)
-        return response.get_as_pd()['symbol_hash'].to_list()
+        # return response.get_as_pd()['symbol_hash'].to_list()
+        ret = response.get_as_df()['symbol_hash'].to_list()
+        logger.info(f'response0 df: {ret}')
+        return ret
 
     def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
         result = self._get_symbols(
@@ -94,7 +97,9 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
         if response.has_next():
-            resp_dict = response.get_as_pd().to_dict(as_series=False)
+            # resp_dict = response.get_as_pd().to_dict(as_series=False)
+            resp_dict = response.get_as_df().to_dict(orient='records')
+            logger.info(f'resp_dict df: {resp_dict}')
             return HAKCCompilationUnit(filename=resp_dict['filename'][0]), resp_dict['line'][0]
         return None
 
@@ -127,7 +132,7 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
         df = response.get_as_pl()
-        for table_name, entries in df.to_dict(as_series=False).items():
+        for table_name, entries in df.to_dict(orient='records').items():
             if len(entries) > 0:
                 result[table_name] = entries
         return result

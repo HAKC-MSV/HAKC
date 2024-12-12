@@ -1,0 +1,21 @@
+TestMode:             TestModeDefault
+Arch:                 X86
+Platform:             Linux
+DatabasePath:         hakc-dag-analysis/hakc-db
+SourcePath:           /home/al32163/hakc/HAKC/HAKC-pass/tests/General/test_0/
+BuildPath:            /home/al32163/hakc/HAKC/HAKC-pass/tests/General/test_0/
+DagAnalysisRootPath:  dag_analysis
+PassMode:             RunCompartmentalization
+IncludePaths:         
+  - somepath
+  - somepath
+CodeValidationFunction: "check_hakc_code_access"
+DataValidationFunction: "check_hakc_data_access"
+SignWithDivisionFunction: { name: "hakc_sign_pointer_with_color", ptr-idx: 0, compartment-idx: 1, is-code-idx: 2 }
+DefaultCompartmentTransferFunction: { name: "hakc_transfer_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
+PerCPUCompartmentTransferFunction: { name: "hakc_transfer_percpu_to_clique", ptr-idx: 0, size-idx: 1, compartment-idx: 2, division-idx: 3 }
+IgnoredTypes:
+    - { type: struct, subtypes: [list_head, proto, atomic64_s, atomic_s] }
+DebugOutputSymbols:
+  - "foo"
+  
