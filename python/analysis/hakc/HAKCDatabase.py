@@ -132,7 +132,7 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=symbol_hash)
         df = response.get_as_pl()
-        for table_name, entries in df.to_dict(orient='records').items():
+        for table_name, entries in df.to_dict(as_series=False).items():
             if len(entries) > 0:
                 result[table_name] = entries
         return result

@@ -1,5 +1,6 @@
 # -*- Python -*-
 
+import subprocess
 import os
 
 # Setup config name.
@@ -8,62 +9,43 @@ config.name = "HAKC" + config.name_suffix
 # Setup source root.
 config.test_source_root = os.path.dirname(__file__)
 
-# Setup default compiler flags 
-clang_hakc_cflags = [config.target_cflags]
+# `pip install -r $(realpath ../../../../python/requirements.txt)`
 
-# If libc++ was used to build XRAY libraries, libc++ is needed. Fix applied
-# to Linux only since -rpath may not be portable. This can be extended to
-# other platforms.
-if config.libcxx_used == "1" and config.host_os == "Linux":
-    clang_hakc_cflags = clang_hakc_cflags + (
-        ["-L%s -lc++ -Wl,-rpath=%s" % (config.llvm_shlib_dir, config.llvm_shlib_dir)]
-    )
+# %HAKC_ROOT =          /home/al32163/hakc/HAKC
+# test_source_root =    /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/hakc
+# %s =                  /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/hakc/TestCases/Posix/hakc-testn.c
+# CONFIG_NAME =         /home/al32163/hakc/HAKC/llvm-project/compiler-rt/test/hakc/TestCases/Posix/hakc-testn_config.yml
+# pwd =                 /home/al32163/hakc/HAKC/cmake-build-hakc-llvm/llvm-project/llvm/projects/compiler-rt/test/hakc/X86_64LinuxConfig/TestCases/Posix
+# clangxx_hakc =        /home/al32163/hakc/HAKC/cmake-build-hakc-llvm/llvm-project/llvm/./bin/clang 
 
-clang_hakc_cxxflags = config.cxx_mode_flags + clang_hakc_cflags
+# todo: are relative paths here ok? 
+config.substitutions.append(("%clang_hakc ", "%HAKC_ROOT/install/bin/clang"))
+config.substitutions.append(("%clangxx_hakc", "%HAKC_ROOT/install/bin/clang++"))
 
+# run these commands in each test file 
+config.substitutions.append(("%HAKC_SETUP",                 "mkdir -p build"))
+config.substitutions.append(("%HAKC_YAML_REPLACE_PATHS",    "cat %HAKC_YAML_CONFIG.in | sed 's,@PWD@,'%HAKC_TEST_PATH',g' > %HAKC_YAML_CONFIG.tmp"))
+config.substitutions.append(("%HAKC_YAML_CHANGE_MODE_DAG",  "cat %HAKC_YAML_CONFIG.tmp | sed 's,@PASS_MODE@,RunDataAccessGraphAnalysis,g' > %HAKC_YAML_CONFIG_DAG"))
+config.substitutions.append(("%HAKC_YAML_CHANGE_MODE_COMP", "cat %HAKC_YAML_CONFIG.tmp | sed 's,@PASS_MODE@,RunCompartmentalization,g' > %HAKC_YAML_CONFIG_COMP"))
+config.substitutions.append(("%HAKC_PYTHON_VENV",           "python3 -m venv %HAKC_ROOT/python/venv && source %HAKC_ROOT/python/venv/bin/activate"))
+config.substitutions.append(("%HAKC_PASS_DAG_ANALYSIS",     "%clangxx_hakc -fpass-plugin=%HAKC_TEST_PASS -Xclang -load -Xclang %HAKC_TEST_PASS -mllvm -HAKC_CONFIG=%HAKC_YAML_CONFIG_DAG -g -S -emit-llvm -O2 -o %t.ll -c %s"))
+config.substitutions.append(("%HAKC_PYTHON_CREATE_DAG",     "env PYTHONPATH=%HAKC_PYTHON_PATH python %HAKC_ROOT/python/analysis/hakc-dag.py --log-level INFO --dag-files-root %HAKC_DAG_ROOT_PATH --db-dir %HAKC_DB_PATH --create-dag --single-thread"))
+config.substitutions.append(("%HAKC_PYTHON_ADJUST_DAG",     "env PYTHONPATH=%HAKC_PYTHON_PATH python %HAKC_ROOT/python/analysis/hakc-dag.py --log-level INFO --db-dir %HAKC_DB_PATH --adjust --adjust-path %HAKC_YAML_ADJUSTMENT"))
+config.substitutions.append(("%HAKC_PASS_COMPARTMENTALIZE", "%clangxx_hakc -fpass-plugin=%HAKC_TEST_PASS -Xclang -load -Xclang %HAKC_TEST_PASS -mllvm -HAKC_CONFIG=%HAKC_YAML_CONFIG_COMP -g -S -emit-llvm -O2 -o %t.ll -c %s"))
 
-def build_invocation(compile_flags):
-    return " " + " ".join([config.clang] + compile_flags) + " "
+# recursive substitutions
+config.substitutions.append(("%HAKC_YAML_CONFIG",       "%HAKC_TEST_PATH/%FNAME_config.yml"))
+config.substitutions.append(("%HAKC_YAML_ADJUSTMENT",   "%HAKC_TEST_PATH/%FNAME_adjustments.yml"))
+config.substitutions.append(("%HAKC_YAML_CONFIG_DAG",   "%HAKC_TEST_PATH/%FNAME_config_dag.yml"))
+config.substitutions.append(("%HAKC_YAML_CONFIG_COMP",  "%HAKC_TEST_PATH/%FNAME_config_comp.yml"))
+config.substitutions.append(("%HAKC_DB_PATH",           "%HAKC_TEST_PATH/hakc-db"))
+config.substitutions.append(("%HAKC_DAG_ROOT_PATH",     "%HAKC_TEST_PATH/dag_analysis/_HAKC_SOURCE_PATH_"))
+config.substitutions.append(("%HAKC_TEST_PASS",         "%HAKC_ROOT/install/lib/HAKC-Compartmentalizer.so"))
+config.substitutions.append(("%HAKC_PYTHON_PATH",       "%HAKC_ROOT/kuzu/tools/python_api/build"))
 
-
-# Assume that llvm-hakc is in the config.llvm_tools_dir.
-llvm_hakc = os.path.join(config.llvm_tools_dir, "llvm-hakc")
-
-# Setup substitutions.
-if config.host_os == "Linux":
-    libdl_flag = "-ldl"
-else:
-    libdl_flag = ""
-
-config.substitutions.append(("%clang ", build_invocation([config.target_cflags])))
-config.substitutions.append(
-    ("%clangxx ", build_invocation(config.cxx_mode_flags + [config.target_cflags]))
-)
-config.substitutions.append(("%clang_hakc ", build_invocation(clang_hakc_cflags)))
-config.substitutions.append(("%clangxx_hakc", build_invocation(clang_hakc_cxxflags)))
-config.substitutions.append(("%llvm_hakc", llvm_hakc))
-config.substitutions.append(
-    (
-        "%hakclib",
-        (
-            "-lm -lpthread %s -lrt -L%s "
-            "-Wl,-whole-archive -lclang_rt.hakc%s -Wl,-no-whole-archive"
-        )
-        % (libdl_flag, config.compiler_rt_libdir, config.target_suffix),
-    )
-)
+config.substitutions.append(("%FNAME", "$(basename %s .c)"))
+config.substitutions.append(("%HAKC_TEST_PATH", "$(dirname %s)"))
+config.substitutions.append(("%HAKC_ROOT", "$(realpath " + config.test_source_root + "/../../../../)"))
 
 # Default test suffixes.
 config.suffixes = [".c", ".cpp"]
-
-if config.host_os not in ["FreeBSD", "Linux", "NetBSD", "OpenBSD"]:
-    config.unsupported = True
-elif "64" not in config.host_arch:
-    if "arm" in config.host_arch:
-        if "-mthumb" in config.target_cflags:
-            config.unsupported = True
-    else:
-        config.unsupported = True
-
-if config.host_os == "NetBSD":
-    config.substitutions.insert(0, ("%run", config.netbsd_nomprotect_prefix))
