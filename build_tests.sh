@@ -38,14 +38,14 @@ cd $HAKC_ROOT/cmake-build-hakc-llvm/llvm-project/llvm/projects/compiler-rt/test/
 
 if [[ -n "$1" ]]; then
     # llvm-lit -v TestCases/Posix/hakc-test$1.c
-    if [[ -n "$1" ]]; then
-        echo TestCases/Posix/hakc_test$1.c
-        llvm-lit -a --timeout $2 TestCases/Posix/hakc_test$1.c
+    if [[ -n "$2" ]]; then
+        echo TestCases/Posix/hakc_test$1/hakc_test$1.c
+        llvm-lit -a --timeout $2 TestCases/Posix/hakc_test$1/hakc_test$1.c
     else
-        echo TestCases/Posix/hakc_test$1.c
-        llvm-lit -a --timeout 15 TestCases/Posix/hakc_test$1.c
+        echo TestCases/Posix/hakc_test$1/hakc_test$1.c
+        llvm-lit -a --timeout 15 TestCases/Posix/hakc_test$1/hakc_test$1.c
     fi
 
 else
-    llvm-lit .
+    llvm-lit -a --timeout 15 .
 fi

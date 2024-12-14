@@ -47,7 +47,7 @@ namespace hakc {
         } else if (const auto *GV = dyn_cast<GlobalVariable>(V)) {
             os << "Global " << GV->getName();
         } else if (auto *Arg = dyn_cast<Argument>(V)) {
-            os << "Argument " << Arg->getArgNo() << " of " << Arg->getParent()->getName();
+            os << "__Argument " << Arg->getArgNo() << " of " << Arg->getParent()->getName();
         } else {
             os << *V;
         }

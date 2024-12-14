@@ -209,20 +209,20 @@ namespace hakc {
             Value *curr = *working_list.begin();
             working_list.erase(curr);
 
-            if (DefchainCache.find(curr) != DefchainCache.end()) {
-                auto CachedChain = DefchainCache[curr];
-                if (debug) {
-                    CommonHAKCAnalysis::getWriter() << "Adding cached chain for " << curr << " containing "
-                                                    << CachedChain.size() << " links\n";
-                }
-                for (auto *Link: CachedChain) {
-                    if (debug) {
-                        CommonHAKCAnalysis::getWriter() << "\t" << Link << "\n";
-                    }
-                    Results.push_back(Link);
-                }
-                continue;
-            }
+            // if (DefchainCache.find(curr) != DefchainCache.end()) {
+            //     auto CachedChain = DefchainCache[curr];
+            //     if (debug) {
+            //         CommonHAKCAnalysis::getWriter() << "Adding cached chain for " << curr << " containing "
+            //                                         << CachedChain.size() << " links\n";
+            //     }
+            //     for (auto *Link: CachedChain) {
+            //         if (debug) {
+            //             CommonHAKCAnalysis::getWriter() << "\t" << Link << "\n";
+            //         }
+            //         Results.push_back(Link);
+            //     }
+            //     continue;
+            // }
 
             if (auto *gep = dyn_cast<GetElementPtrInst>(curr)) {
                 if (debug) {
@@ -280,8 +280,16 @@ namespace hakc {
                     goto add_to_chain;
                 }
 
-                auto *LHSDef = getDef(binOp->getOperand(0), false);
+                // instruction that seems to cause infinite loop: 
+                // %4 = load i32, ptr %0, align 4, !dbg !25, !tbaa !27
+                // %5 = add nsw i32 %4, 1, !dbg !25
+                CommonHAKCAnalysis::getWriter() << "______binop : "<< binOp << "\n";
+                CommonHAKCAnalysis::getWriter() << "______get def 0, binop0 arg0: "<< binOp->getOperand(0) << "\n";
+                // auto *LHSDef = getDef(binOp->getOperand(0), false);
+                auto *LHSDef = binOp->getOperand(0);
+                CommonHAKCAnalysis::getWriter() << "______get def 1, binop1 arg1: "<< binOp->getOperand(1) << "\n";
                 auto *RHSDef = getDef(binOp->getOperand(1), false);
+                // auto *RHSDef = binOp->getOperand(1);
                 if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand " << binOp->getOperand(0) << "\n";
@@ -307,6 +315,7 @@ namespace hakc {
                 }
             }
             add_to_chain:
+            CommonHAKCAnalysis::getWriter() << "______add_to_chain " << curr << "\n";
             Results.push_back(curr);
         }
 
@@ -648,6 +657,7 @@ namespace hakc {
     }
 
     bool CommonHAKCAnalysis::IsAllocation(Value *V) {
+        CommonHAKCAnalysis::getWriter() << "______get def 2\n";
         V = getDef(V, false);
         if (auto *call = dyn_cast<CallInst>(V)) {
             if (IsAllocationFunction(call->getCalledFunction())) {

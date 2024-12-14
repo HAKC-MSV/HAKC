@@ -7,21 +7,23 @@
 // RUN: %HAKC_PYTHON_CREATE_DAG
 // RUN: %HAKC_PYTHON_ADJUST_DAG
 // RUN: %HAKC_PASS_COMPARTMENTALIZE
-// run checks
-// RUN: cat %t.ll | FileCheck %s || exit 1
-
-// testing never used struct types 
-struct list_head{
+// RUN: %HAKC_EVALUATE
+struct data_struct {
     int a;
 };
 
-int foo(struct list_head * ListHead) {
-    if(ListHead){
-        return 1;
+struct data_struct2 {
+    int (*f)(struct data_struct *);
+};
+
+int foo(struct data_struct2 *a) {
+    if (a) {
+        struct data_struct b;
+        b.a = 0;
+        return a->f(&b);
     }
     return 0;
 }
 
-// note: incomplete test. need derricks help for expected behavior 
 // CHECK-LABEL: HAKC_XFER_foo
-// CHECK: %2 = call i32 @HAKC_ORIG_foo(%struct.list_head* %0)
+// CHECK: %7 = call i32 @HAKC_ORIG_foo(%struct.data_struct2* %6)

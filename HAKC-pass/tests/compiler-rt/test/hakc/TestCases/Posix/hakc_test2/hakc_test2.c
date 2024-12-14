@@ -7,8 +7,7 @@
 // RUN: %HAKC_PYTHON_CREATE_DAG
 // RUN: %HAKC_PYTHON_ADJUST_DAG
 // RUN: %HAKC_PASS_COMPARTMENTALIZE
-// run checks
-// RUN: cat %t.ll | FileCheck %s || exit 1
+// RUN: %HAKC_EVALUATE
 struct linked_list {
     struct linked_list *next;
 };

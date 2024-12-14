@@ -3,10 +3,10 @@
 add-kernel-division: true
 compartmentalize:
   - !HAKCAdjustment
-    path: "$HAKC_SOURCE_PATH$"
+    path: "_HAKC_SOURCE_PATH_"
     division_id: 0
     compartment_id: 0
   - !HAKCAdjustment
-    path: "$HAKC_SOURCE_PATH$/test0.c"
+    path: "_HAKC_SOURCE_PATH_/hakc_test0.c"
     division_id: 7
     compartment_id: 1

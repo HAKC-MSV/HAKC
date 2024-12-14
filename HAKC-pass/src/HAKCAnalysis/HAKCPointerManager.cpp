@@ -333,9 +333,9 @@ namespace hakc {
                 CommonHAKCAnalysis::getWriter() << "Unexpected use of " << *UPtr << " --- " << UPtr->get()
                                                 << " --- with " << *ManagedPointer << " in \n";
                 if (!isa<Argument>(UPtr->getUser()) && !isa<Instruction>(UPtr->getUser())) {
-                    CommonHAKCAnalysis::getWriter() << GetFunctionAnalysis().getFunction().getParent();
+                    CommonHAKCAnalysis::getWriter() << "here0 " << GetFunctionAnalysis().getFunction().getParent();
                 } else {
-                    CommonHAKCAnalysis::getWriter() << GetFunctionAnalysis().getFunction();
+                    CommonHAKCAnalysis::getWriter() << "here1 " << GetFunctionAnalysis().getFunction();
                 }
                 CommonHAKCAnalysis::getWriter() << "\n";
                 throw std::exception();

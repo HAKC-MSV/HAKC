@@ -222,17 +222,36 @@ Value *hakc::HAKCTransformer::CreateSafePointer(HAKCPointerBase &HAKCPointer, In
         return HAKCPointer.GetAuthenticatedPointer();
     }
 
+    ///
+    Value *voidCast;
+
+    unsigned AddrSpace = GetPointerAddrSpace(HAKCPointer);
+
+    // todo: derrick, please check this code; getint8ptrty replaced with getintptrty, hakcpointer replaced with hakcpointer.getbasedefinition
+    if  (HAKCPointer.GetBaseDefinition()->getType()->isIntegerTy()) {
+        voidCast = HAKCIRBuilder.CreateIntToPtr(HAKCPointer.GetBaseDefinition(), HAKCIRBuilder.getPtrTy(AddrSpace));
+    } else{
+        voidCast = HAKCIRBuilder.CreateBitCast(HAKCPointer.GetBaseDefinition(), HAKCIRBuilder.getPtrTy(AddrSpace));
+    }
+
+    Value *maxUserAddr = HAKCIRBuilder.CreateIntToPtr(ConstantInt::get(HAKCIRBuilder.getInt64Ty(), 0x0000ffffffffffff), voidCast->getType());
+    Value *addrCheck = HAKCIRBuilder.CreateICmpUGT(voidCast, maxUserAddr);
+    Value *ptrToInt = HAKCIRBuilder.CreatePtrToInt(voidCast, HAKCIRBuilder.getInt64Ty());
+    Value *orValue = HAKCIRBuilder.CreateOr(ptrToInt, 0xFFFF000000000000);
+    Value *orCast = HAKCIRBuilder.CreateIntToPtr(orValue, HAKCPointer.GetBaseDefinition()->getType());
+    auto SafePtr = HAKCIRBuilder.CreateSelect(addrCheck, orCast, HAKCPointer.GetBaseDefinition());
+    ////
+
+    // todo: anesathu; fix this, also add better debugging here probably 
     // auto *SafePtr = CreateSafePointer_Arch(HAKCPointer, I);
-    auto *SafePtr = CreateSafePointer(HAKCPointer, I);
-/*    if (SafePtr->getType() != HAKCPointer.getType()) {
+    // auto *SafePtr = CreateSafePointer(HAKCPointer, I);
+
+    if (SafePtr->getType() != HAKCPointer.GetBaseDefinition()->getType()) {
         CommonHAKCAnalysis::getWriter() << "SafePtr and HAKCPointerBase are not the same Type!\n"
-                                        << "SafePtr: ";
-        SafePtr->print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\nHAKCPointerBase: ";
-        HAKCPointer.print(CommonHAKCAnalysis::getWriter());
-        CommonHAKCAnalysis::getWriter() << "\n";
+                                        << "SafePtr: " << SafePtr->getType(); 
+        CommonHAKCAnalysis::getWriter() << "\nHAKCPointerBase: " << HAKCPointer.GetBaseDefinition()->getType() << "\n";
         throw std::exception();
-    }*/
+    }
     HAKCPointer.SetAuthenticatedPointer(SafePtr);
     return SafePtr;
 }
