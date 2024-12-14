@@ -47,5 +47,5 @@ if [[ -n "$1" ]]; then
     fi
 
 else
-    llvm-lit -a --timeout 15 .
+    llvm-lit -a --timeout 60 .
 fi

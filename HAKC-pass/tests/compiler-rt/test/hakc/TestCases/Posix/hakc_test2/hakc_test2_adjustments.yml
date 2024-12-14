@@ -7,6 +7,6 @@ compartmentalize:
     division_id: 0
     compartment_id: 0
   - !HAKCAdjustment
-    path: "_HAKC_SOURCE_PATH_/hakc_test1.c"
+    path: "_HAKC_SOURCE_PATH_/hakc_test2.c"
     division_id: 7
     compartment_id: 1

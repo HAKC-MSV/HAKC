@@ -285,11 +285,9 @@ namespace hakc {
                 // %5 = add nsw i32 %4, 1, !dbg !25
                 CommonHAKCAnalysis::getWriter() << "______binop : "<< binOp << "\n";
                 CommonHAKCAnalysis::getWriter() << "______get def 0, binop0 arg0: "<< binOp->getOperand(0) << "\n";
-                // auto *LHSDef = getDef(binOp->getOperand(0), false);
-                auto *LHSDef = binOp->getOperand(0);
+                auto *LHSDef = getDef(binOp->getOperand(0), false);
                 CommonHAKCAnalysis::getWriter() << "______get def 1, binop1 arg1: "<< binOp->getOperand(1) << "\n";
                 auto *RHSDef = getDef(binOp->getOperand(1), false);
-                // auto *RHSDef = binOp->getOperand(1);
                 if (!isa<Constant>(LHSDef) && ValueIsUsedAsPointer(LHSDef)) {
                     if (debug) {
                         CommonHAKCAnalysis::getWriter() << "Adding LHS Binary Operand " << binOp->getOperand(0) << "\n";

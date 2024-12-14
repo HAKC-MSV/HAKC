@@ -473,7 +473,6 @@ hakc::HAKCTransformer::CreateCustomTransfer(hakc::HAKCPointerBase &HAKCPointer, 
 
     auto TargetDivision = CompartmentalizationPolicy.GetDivision(Target);
     return CustomTransfer->CreateTransfer(HAKCIRBuilder, TargetDivision, HAKCPointer, Size, IsData);
-    // return CustomTransfer->CreateCustomTransfer(HAKCPointer, TargetDivision, IsData, Size);
 }
 
 Instruction *
