@@ -14,8 +14,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fdiagnostics-color=always")
 
 if(HAKC_LLVM)
     # Force these values since our pass needs them
-    set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;lld" CACHE STRING "HAKC Projects")
-    set(LLVM_ENABLE_RUNTIMES "compiler-rt" CACHE STRING "HAKC Runtimes")
+    set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;lld;compiler-rt" CACHE STRING "HAKC Projects")
     set(LLVM_TARGETS_TO_BUILD "X86;AArch64;ARM" CACHE STRING "HAKC Archs")
     set(LLVM_ENABLE_IDE ON)
     set(LLVM_ENABLE_RTTI ON)
