@@ -4,7 +4,8 @@ set(HAKC_LIT_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(HAKC_TESTSUITES)
 set(HAKC_FDR_TESTSUITES)
 
-set(HAKC_TEST_DEPS ${SANITIZER_COMMON_LIT_TEST_DEPS} hakc)
+# make sure this is disabled! It is looking for some existing dependency, named the same as the project here, but for hakc it doesn't exist! 
+# set(HAKC_TEST_DEPS ${SANITIZER_COMMON_LIT_TEST_DEPS} hakc)
 
 set(HAKC_TEST_ARCH ${HAKC_SUPPORTED_ARCH})
 if (COMPILER_RT_BUILD_HAKC)
@@ -23,5 +24,4 @@ configure_lit_site_cfg(
   endif()
   
 add_lit_testsuite(check-hakc "Running the hakc tests"
-${HAKC_TESTSUITES}
-DEPENDS ${HAKC_TEST_DEPS})
+${HAKC_TESTSUITES})
