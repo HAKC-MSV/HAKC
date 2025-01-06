@@ -17,5 +17,3 @@ for patch in $(ls $HAKC_LLVM_PATCH_PATH/*.hakc.patch); do
   echo "Applying patch $patch"
   exec_cmd_and_check_status "$cmd_to_run"
 done
-
-exit 0
