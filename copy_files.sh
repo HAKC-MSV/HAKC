@@ -16,5 +16,5 @@ rm -rf $HAKC_ROOT/llvm-project/llvm/include/hakc
 rm -rf $HAKC_ROOT/llvm-project/llvm/lib/hakc
 
 # copy over hakc includes and source code to be built with llvm 
-cp -r $HAKC_ROOT/HAKC-pass/HAKC-pass-old/inc* $HAKC_ROOT/llvm-project/llvm/include/hakc
-cp -r $HAKC_ROOT/HAKC-pass/HAKC-pass-old/src* $HAKC_ROOT/llvm-project/llvm/lib/hakc
+cp -r $HAKC_ROOT/HAKC-pass/inc* $HAKC_ROOT/llvm-project/llvm/include/hakc
+cp -r $HAKC_ROOT/HAKC-pass/src* $HAKC_ROOT/llvm-project/llvm/lib/hakc
