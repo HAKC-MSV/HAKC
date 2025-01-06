@@ -5,27 +5,18 @@
 source vars.sh 
 
 short_hash=${HAKC_LLVM_COMMIT:0:8}
-git_gen_diff_files='git diff --name-only $HAKC_LLVM_COMMIT -- :^compiler-rt/lib/hakc/* :^compiler-rt/test/hakc/* :^llvm/lib/hakc/* :^llvm/include/llvm/hakc/*'
-git_gen_diff_patch='git diff $HAKC_LLVM_COMMIT -- :^compiler-rt/lib/hakc/* :^compiler-rt/test/hakc/* :^llvm/lib/hakc/* :^llvm/include/llvm/hakc/*'
 
 # TODO: merge with Derrick's patch generation 
 # using .hakc.patch so Derrick's existing patches aren't removed 
-rm -rf $HAKC_ROOT/llvm-patches/*.hakc.patch
+rm -rf $HAKC_LLVM_PATCH_PATH/*.hakc.patch
 
-cd $HAKC_ROOT/llvm-project
-
+cd $HAKC_LLVM_SOURCE_PATH
 git add -A
-
-# Note: the for loop is a bit picky with how it executes commands, so use a while loop instead with 'read line'
-$git_gen_diff_files | while read fname; do
-   :
-   # need special git diff command to exclude the source code that we copied over 
-   # goal is to generate patches for code that is already in llvm-project, not new source files (though this may change)
+for fname in $(git diff --name-only $HAKC_LLVM_COMMIT); do
    patch_name=${fname//"./"/""} # strip ./
    patch_name=${patch_name//"/"/"_"} # replace / with _
-   patch_name=${patch_name//"."/"_"} # replace . with _ 
-   echo $patch_name
-   git diff $HAKC_LLVM_COMMIT $fname > $HAKC_ROOT/llvm-patches/"$patch_name""_""$short_hash".hakc.patch
+   patch_name=${patch_name//"."/"_"} # replace . with _
+   exec_cmd_and_check_status git diff $HAKC_LLVM_COMMIT $fname > $HAKC_LLVM_PATCH_PATH/"$patch_name""_""$short_hash".hakc.patch
 done
 
 exit 0

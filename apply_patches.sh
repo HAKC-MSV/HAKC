@@ -5,7 +5,7 @@ source vars.sh
 
 git_patch='git apply'
 
-cd $HAKC_ROOT/llvm-project
+exec_cmd_and_check_status "cd $HAKC_ROOT/llvm-project"
 
 # if first command argument is -R, then revert the patches
 if [ "$1" == "-R" ]; then
@@ -14,8 +14,8 @@ fi
 
 for patch in $(ls $HAKC_ROOT/llvm-patches/*.hakc.patch); do
   cmd_to_run="$git_patch $patch"
-  echo $cmd_to_run
-  bash "$cmd_to_run"
+  echo "Applying patch $patch"
+  exec_cmd_and_check_status "$cmd_to_run"
 done
 
 exit 0

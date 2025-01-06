@@ -9,8 +9,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Set up
 
-1. `ROOT=$PWD`
-1. `git submodule update --init --recursive`
+1. `./init.sh`
 
 ## Build LLVM
 1. `cd llvm-project`
@@ -34,19 +33,6 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    -DHAKC_LLVM=True ..
    ```
 7. `cmake --build . --target install -j$(nproc)`
-
-
-## Build the HAKC compiler pass
-1. `cd $ROOT`
-2. `mkdir cmake-build-hakc-pass`
-3. `cd cmake-build-hakc-pass`
-4. ```
-   cmake -G Ninja \
-   -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
-   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-   ..
-   ```
-5. `cmake --build . -j$(nproc) --target install`
 
 ## Build the Kernel
 
