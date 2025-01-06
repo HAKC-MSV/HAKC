@@ -1,0 +1,34 @@
+COMPARTMENTS:
+  - CLIQUES:
+      - ACCESS_TOKEN: 81920
+        COLOR: CRIMSON_CLIQUE
+    ENTRY_TOKEN: 81920
+    ID: 1
+    TARGETS:
+      - 2
+  - CLIQUES:
+      - ACCESS_TOKEN: 147456
+        COLOR: CRIMSON_CLIQUE
+    ENTRY_TOKEN: 147456
+    ID: 2
+    TARGETS:
+      - 1
+FILES:
+  - GUID: 0
+    PATH: /data/ja18738/testcase/source.c
+    SYMBOLS:
+      - CLIQUE: CRIMSON_CLIQUE
+        COMPARTMENT: 1
+        IS_GLOBAL: 'Yes'
+        NAME: make_my_struct
+  - GUID: 0
+    PATH: /data/ja18738/testcase/dest.c
+    SYMBOLS:
+      - CLIQUE: CRIMSON_CLIQUE
+        COMPARTMENT: 2
+        IS_GLOBAL: 'Yes'
+        NAME: do_something_with_void_my_struct
+      - CLIQUE: CRIMSON_CLIQUE
+        COMPARTMENT: 2
+        IS_GLOBAL: 'Yes'
+        NAME: do_something_with_my_struct

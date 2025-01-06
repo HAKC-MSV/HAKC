@@ -12,7 +12,8 @@ endif ()
 # Compiler flags
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fdiagnostics-color=always")
 
-if(HAKC_LLVM)
+# need to make some changes here, since the HAKC pass will now be built alongside llvm 
+if(LLVM_ENABLE_HAKC)
     # Force these values since our pass needs them
     set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;lld;compiler-rt" CACHE STRING "HAKC Projects")
     set(LLVM_TARGETS_TO_BUILD "X86;AArch64;ARM" CACHE STRING "HAKC Archs")
@@ -20,7 +21,7 @@ if(HAKC_LLVM)
     set(LLVM_ENABLE_RTTI ON)
     set(LLVM_ENABLE_EH ON)
     add_subdirectory(llvm-project/llvm)
-else()
+    # else()
     set(HAKC_PASS_LIB "HAKC-Compartmentalizer" CACHE STRING "HAKC Pass Name")
     set(BUILD_PYTHON True CACHE BOOL "Build Kuzu Python bindings")
 
@@ -30,22 +31,22 @@ else()
     # 1. VERIFY LLVM INSTALLATION DIR
     #===============================================================================
     # Set this to a valid LLVM installation dir
-    if (NOT DEFINED LT_LLVM_INSTALL_DIR)
-        set(LT_LLVM_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "LLVM installation directory")
-    endif (NOT DEFINED LT_LLVM_INSTALL_DIR)
+    # if (NOT DEFINED LT_LLVM_INSTALL_DIR)
+    #     set(LT_LLVM_INSTALL_DIR ${CMAKE_INSTALL_PREFIX} CACHE PATH "LLVM installation directory")
+    # endif (NOT DEFINED LT_LLVM_INSTALL_DIR)
 
     # A bit of a sanity checking
-    set(LT_LLVM_INCLUDE_DIR "${LT_LLVM_INSTALL_DIR}/include/llvm")
-    if (NOT EXISTS "${LT_LLVM_INCLUDE_DIR}")
-        message(FATAL_ERROR
-                " LT_LLVM_INSTALL_DIR (${LT_LLVM_INCLUDE_DIR}) is invalid.")
-    endif ()
+    # set(LT_LLVM_INCLUDE_DIR "${LT_LLVM_INSTALL_DIR}/include/llvm")
+    # if (NOT EXISTS "${LT_LLVM_INCLUDE_DIR}")
+    #     message(FATAL_ERROR
+    #             " LT_LLVM_INSTALL_DIR (${LT_LLVM_INCLUDE_DIR}) is invalid.")
+    # endif ()
 
-    set(LT_LLVM_CMAKE_FILE "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake")
-    if (NOT EXISTS "${LT_LLVM_CMAKE_FILE}")
-        message(FATAL_ERROR
-                " LT_LLVM_CMAKE_FILE (${LT_LLVM_CMAKE_FILE}) is invalid.")
-    endif ()
+    # set(LT_LLVM_CMAKE_FILE "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/LLVMConfig.cmake")
+    # if (NOT EXISTS "${LT_LLVM_CMAKE_FILE}")
+    #     message(FATAL_ERROR
+    #             " LT_LLVM_CMAKE_FILE (${LT_LLVM_CMAKE_FILE}) is invalid.")
+    # endif ()
 
     #===============================================================================
     # 2. LOAD LLVM CONFIGURATION
@@ -53,17 +54,17 @@ else()
     #===============================================================================
     # Add the location of LLVMConfig.cmake to CMake search paths (so that
     # find_package can locate it)
-    list(APPEND CMAKE_PREFIX_PATH "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/")
+    # list(APPEND CMAKE_PREFIX_PATH "${LT_LLVM_INSTALL_DIR}/lib/cmake/llvm/")
 
-    find_package(LLVM REQUIRED CONFIG)
+    # find_package(LLVM REQUIRED CONFIG)
 
-    message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
-    message(STATUS "Using LLVMConfig.cmake in: ${LT_LLVM_INSTALL_DIR}")
+    # message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
+    # message(STATUS "Using LLVMConfig.cmake in: ${LT_LLVM_INSTALL_DIR}")
 
-    include(LLVMConfig)
+    # include(LLVMConfig)
 
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
     add_subdirectory(kuzu)
-    add_subdirectory(HAKC-pass)
+    # add_subdirectory(HAKC-pass)
 endif()

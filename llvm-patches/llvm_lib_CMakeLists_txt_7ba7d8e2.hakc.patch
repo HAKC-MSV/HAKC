@@ -1,0 +1,15 @@
+diff --git a/llvm/lib/CMakeLists.txt b/llvm/lib/CMakeLists.txt
+index 638c3bd6f90f..2e25d50c13be 100644
+--- a/llvm/lib/CMakeLists.txt
++++ b/llvm/lib/CMakeLists.txt
+@@ -49,6 +49,10 @@ endif()
+ add_subdirectory(WindowsDriver)
+ add_subdirectory(WindowsManifest)
+ 
++if (LLVM_ENABLE_HAKC)
++  add_subdirectory(hakc)
++endif()
++
+ set(LLVMCONFIGLIBRARYDEPENDENCIESINC "${LLVM_BINARY_DIR}/tools/llvm-config/LibraryDependencies.inc")
+ 
+ # Special components which don't have any source attached but aggregate other
