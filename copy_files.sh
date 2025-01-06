@@ -2,8 +2,6 @@
 # clear old files and copy hakc source files to correct destination 
 source vars.sh
 
-exec_cmd_and_check_status "cd $HAKC_LLVM_BUILD_PATH"
-
 exec_cmd_and_check_status "rm -rf $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/projects/compiler-rt/test/hakc"
 exec_cmd_and_check_status "rm -rf $HAKC_ROOT/llvm-project/compiler-rt/lib/hakc"
 exec_cmd_and_check_status "rm -rf $HAKC_ROOT/llvm-project/compiler-rt/test/hakc"
