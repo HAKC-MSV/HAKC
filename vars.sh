@@ -1,3 +1,5 @@
+export HAKC_LLVM_COMMIT='7ba7d8e2f7b6445b60679da826210cdde29eaf8b'
+
 export HAKC_ROOT=$(git rev-parse --show-toplevel)
 export HAKC_INSTALL_PATH=$HAKC_ROOT/install
 export HAKC_LLVM_BUILD_PATH=$HAKC_ROOT/cmake-build-hakc-llvm
