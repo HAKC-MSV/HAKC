@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/pseudo/lib/grammar/CMakeLists.txt b/clang-tools-extra/pseudo/lib/grammar/CMakeLists.txt
+deleted file mode 100644
+index bb08ebab0fa6..000000000000
+--- a/clang-tools-extra/pseudo/lib/grammar/CMakeLists.txt
++++ /dev/null
+@@ -1,10 +0,0 @@
+-set(LLVM_LINK_COMPONENTS Support)
+-
+-add_clang_library(clangPseudoGrammar
+-  Grammar.cpp
+-  GrammarBNF.cpp
+-  LRGraph.cpp
+-  LRTable.cpp
+-  LRTableBuild.cpp
+-  )
+-

@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/other_Verilog.cl b/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/other_Verilog.cl
+deleted file mode 100644
+index 4ca87e32e7d5..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/other_Verilog.cl
++++ /dev/null
+@@ -1 +0,0 @@
+-const int OTHERVERILOGINT = 2;

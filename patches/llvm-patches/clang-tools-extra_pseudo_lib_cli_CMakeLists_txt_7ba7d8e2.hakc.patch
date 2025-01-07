@@ -1,0 +1,21 @@
+diff --git a/clang-tools-extra/pseudo/lib/cli/CMakeLists.txt b/clang-tools-extra/pseudo/lib/cli/CMakeLists.txt
+deleted file mode 100644
+index 68e644f62fde..000000000000
+--- a/clang-tools-extra/pseudo/lib/cli/CMakeLists.txt
++++ /dev/null
+@@ -1,15 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  )
+-
+-add_clang_library(clangPseudoCLI
+-  CLI.cpp
+-
+-  # FIXME export the headers from clangPseudoCXX instead
+-  DEPENDS
+-  cxx_gen
+-
+-  LINK_LIBS
+-  clangPseudoGrammar
+-  clangPseudoCXX
+-  )

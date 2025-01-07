@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/objc/missing-hash.rst b/clang-tools-extra/docs/clang-tidy/checks/objc/missing-hash.rst
+deleted file mode 100644
+index ea8f775897c2..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/objc/missing-hash.rst
++++ /dev/null
+@@ -1,16 +0,0 @@
+-.. title:: clang-tidy - objc-missing-hash
+-
+-objc-missing-hash
+-=================
+-
+-Finds Objective-C implementations that implement ``-isEqual:`` without also
+-appropriately implementing ``-hash``.
+-
+-Apple documentation highlights that objects that are equal must have the same
+-hash value:
+-https://developer.apple.com/documentation/objectivec/1418956-nsobject/1418795-isequal?language=objc
+-
+-Note that the check only verifies the presence of ``-hash`` in scenarios where
+-its omission could result in unexpected behavior. The verification of the
+-implementation of ``-hash`` is the responsibility of the developer, e.g.,
+-through the addition of unit tests to verify the implementation.

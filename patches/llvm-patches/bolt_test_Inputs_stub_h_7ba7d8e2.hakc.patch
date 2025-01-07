@@ -1,0 +1,17 @@
+diff --git a/bolt/test/Inputs/stub.h b/bolt/test/Inputs/stub.h
+deleted file mode 100644
+index ad33aa3587f2..000000000000
+--- a/bolt/test/Inputs/stub.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#ifndef BOLT_TEST_STUB_H
+-#define BOLT_TEST_STUB_H
+-
+-void *memcpy(void *dest, const void *src, unsigned long n);
+-void *memset(void *dest, int c, unsigned long n);
+-int printf(const char *format, ...);
+-void exit(int status);
+-int puts(const char *s);
+-int rand(void);
+-
+-#endif

@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/system/system-header.h b/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/system/system-header.h
+deleted file mode 100644
+index 8a394a9b3e3e..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/system/system-header.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-#ifndef SYSTEM_HEADER_H
+-#define SYSTEM_HEADER_H
+-
+-#define SYSTEM_MACRO(m) int m = 0
+-
+-namespace SYSTEM_NS {
+-class structure {
+-  int member;
+-};
+-
+-float global;
+-
+-void function() {
+-}
+-}
+-
+-#endif // SYSTEM_HEADER_H

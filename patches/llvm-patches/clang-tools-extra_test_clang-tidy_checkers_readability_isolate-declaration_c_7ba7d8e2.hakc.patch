@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/isolate-declaration.c b/clang-tools-extra/test/clang-tidy/checkers/readability/isolate-declaration.c
+deleted file mode 100644
+index e1960a15b8d8..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/isolate-declaration.c
++++ /dev/null
+@@ -1,13 +0,0 @@
+-// RUN: %check_clang_tidy %s readability-isolate-declaration %t
+-
+-void c_specific(void) {
+-  void (*signal(int sig, void (*func)(int)))(int);
+-  int i = sizeof(struct S { int i; });
+-  int j = sizeof(struct T { int i; }), k;
+-  // CHECK-MESSAGES: [[@LINE-1]]:3: warning: multiple declarations in a single statement reduces readability
+-  // CHECK-FIXES: int j = sizeof(struct T { int i; });
+-  // CHECK-FIXES: {{^  }}int k;
+-
+-  void g(struct U { int i; } s);                // One decl
+-  void h(struct V { int i; } s), m(int i, ...); // Two decls
+-}

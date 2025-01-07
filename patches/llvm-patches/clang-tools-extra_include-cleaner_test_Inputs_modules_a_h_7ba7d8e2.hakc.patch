@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/include-cleaner/test/Inputs/modules/a.h b/clang-tools-extra/include-cleaner/test/Inputs/modules/a.h
+deleted file mode 100644
+index 0b502e27d342..000000000000
+--- a/clang-tools-extra/include-cleaner/test/Inputs/modules/a.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#pragma once
+-class A {};

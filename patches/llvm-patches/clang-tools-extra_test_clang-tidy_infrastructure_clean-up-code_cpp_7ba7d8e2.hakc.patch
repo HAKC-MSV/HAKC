@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/clean-up-code.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/clean-up-code.cpp
+deleted file mode 100644
+index bb2230803cea..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/clean-up-code.cpp
++++ /dev/null
+@@ -1,14 +0,0 @@
+-// RUN: %check_clang_tidy %s misc-unused-using-decls %t -- --fix-notes
+-// RUN: %check_clang_tidy %s misc-unused-using-decls %t -- --fix-notes -format-style=none --
+-// RUN: %check_clang_tidy %s misc-unused-using-decls %t -- --fix-notes -format-style=llvm --
+-namespace a { class A {}; }
+-namespace b {
+-using a::A;
+-}
+-namespace c {}
+-// CHECK-MESSAGES: :[[@LINE-3]]:10: warning: using decl 'A' is unused [misc-unused-using-decls]
+-// CHECK-FIXES: {{^namespace a { class A {}; }$}}
+-// CHECK-FIXES-NOT: namespace
+-// CHECK-FIXES: {{^namespace c {}$}}
+-// FIXME: cleanupAroundReplacements leaves whitespace. Otherwise we could just
+-// check the next line.

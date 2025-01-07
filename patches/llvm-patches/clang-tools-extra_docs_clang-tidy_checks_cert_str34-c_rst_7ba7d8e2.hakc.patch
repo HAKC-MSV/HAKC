@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cert/str34-c.rst b/clang-tools-extra/docs/clang-tidy/checks/cert/str34-c.rst
+deleted file mode 100644
+index ddbb2164c77c..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cert/str34-c.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - cert-str34-c
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../bugprone/signed-char-misuse.html
+-
+-cert-str34-c
+-============
+-
+-The `cert-str34-c` check is an alias, please see
+-:doc:`bugprone-signed-char-misuse <../bugprone/signed-char-misuse>`
+-for more information.

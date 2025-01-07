@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/noexcept-move-operations.rst b/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/noexcept-move-operations.rst
+deleted file mode 100644
+index a4b0f7d17253..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/noexcept-move-operations.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - cppcoreguidelines-noexcept-move-operations
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../performance/noexcept-move-constructor.html
+-
+-cppcoreguidelines-noexcept-move-operations
+-==========================================
+-
+-This check implements `C.66 <https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c66-make-move-operations-noexcept>`_
+-from the C++ Core Guidelines.
+-
+-The `cppcoreguidelines-noexcept-move-operations` check is an alias, please see
+-:doc:`performance-noexcept-move-constructor <../performance/noexcept-move-constructor>`
+-for more information.

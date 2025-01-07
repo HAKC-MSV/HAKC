@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/CoverageProblems/Level2B.h b/clang-tools-extra/test/modularize/Inputs/CoverageProblems/Level2B.h
+deleted file mode 100644
+index 25b70179c934..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/CoverageProblems/Level2B.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#define MACRO_2B 1

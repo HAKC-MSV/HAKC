@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/validate-check-names.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/validate-check-names.cpp
+deleted file mode 100644
+index 35bfb09de8ed..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/validate-check-names.cpp
++++ /dev/null
+@@ -1,2 +0,0 @@
+-// Check names may only contain alphanumeric characters, '-', '_', and '.'.
+-// RUN: clang-tidy -checks=* -list-checks | grep '^    ' | cut -b5- | not grep -v '^[a-zA-Z0-9_.\-]\+$'

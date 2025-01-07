@@ -1,0 +1,14 @@
+diff --git a/bolt/test/AArch64/dw_cfa_gnu_window_save.test b/bolt/test/AArch64/dw_cfa_gnu_window_save.test
+deleted file mode 100644
+index 2e044b399720..000000000000
+--- a/bolt/test/AArch64/dw_cfa_gnu_window_save.test
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# Check that llvm-bolt can handle DW_CFA_GNU_window_save on AArch64.
+-
+-RUN: yaml2obj %p/Inputs/dw_cfa_gnu_window_save.yaml &> %t.exe
+-RUN: llvm-bolt %t.exe -o %t.bolt 2>&1 | FileCheck %s
+-
+-CHECK-NOT: paciasp
+-CHECK-NOT: autiasp
+-CHECK-NOT: ERROR: unable to fill CFI.

@@ -1,0 +1,12 @@
+diff --git a/clang/include/clang/CIR/CMakeLists.txt b/clang/include/clang/CIR/CMakeLists.txt
+deleted file mode 100644
+index f8d6f407a03d..000000000000
+--- a/clang/include/clang/CIR/CMakeLists.txt
++++ /dev/null
+@@ -1,6 +0,0 @@
+-set(MLIR_INCLUDE_DIR ${LLVM_MAIN_SRC_DIR}/../mlir/include ) # --includedir
+-set(MLIR_TABLEGEN_OUTPUT_DIR ${CMAKE_BINARY_DIR}/tools/mlir/include)
+-include_directories(${MLIR_INCLUDE_DIR})
+-include_directories(${MLIR_TABLEGEN_OUTPUT_DIR})
+-
+-add_subdirectory(Dialect)

@@ -1,0 +1,14 @@
+diff --git a/bolt/test/X86/broken_dynsym.test b/bolt/test/X86/broken_dynsym.test
+deleted file mode 100644
+index f89fe4aaa474..000000000000
+--- a/bolt/test/X86/broken_dynsym.test
++++ /dev/null
+@@ -1,8 +0,0 @@
+-## This test checks if BOLT can process stripped binaries, where symbol's section
+-## header index is corrupted due to strip tool.
+-
+-# RUN: yaml2obj %p/Inputs/broken_dynsym.yaml -o %t
+-# RUN: llvm-strip -s %t
+-# RUN: llvm-bolt %t -o %t.bolt --allow-stripped | FileCheck %s
+-
+-# CHECK-NOT: section index out of bounds

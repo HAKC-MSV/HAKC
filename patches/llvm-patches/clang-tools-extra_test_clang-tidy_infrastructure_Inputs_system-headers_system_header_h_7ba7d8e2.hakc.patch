@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/system-headers/system_header.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/system-headers/system_header.h
+deleted file mode 100644
+index 1a3014e83745..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/system-headers/system_header.h
++++ /dev/null
+@@ -1 +0,0 @@
+-class Foo { Foo(int); };

@@ -1,0 +1,29 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/bugprone/assignment-in-if-condition.rst b/clang-tools-extra/docs/clang-tidy/checks/bugprone/assignment-in-if-condition.rst
+deleted file mode 100644
+index 9fa37c059381..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/bugprone/assignment-in-if-condition.rst
++++ /dev/null
+@@ -1,23 +0,0 @@
+-.. title:: clang-tidy - bugprone-assignment-in-if-condition
+-
+-bugprone-assignment-in-if-condition
+-===================================
+-
+-Finds assignments within conditions of `if` statements.
+-Such assignments are bug-prone because they may have been intended as equality tests.
+-
+-This check finds all assignments within `if` conditions, including ones that are not flagged
+-by `-Wparentheses` due to an extra set of parentheses, and including assignments that call
+-an overloaded `operator=()`. The identified assignments violate 
+-`BARR group "Rule 8.2.c" <https://barrgroup.com/embedded-systems/books/embedded-c-coding-standard/statement-rules/if-else-statements>`_.
+-
+-.. code-block:: c++
+-
+-  int f = 3;
+-  if(f = 4) { // This is identified by both `Wparentheses` and this check - should it have been: `if (f == 4)` ?
+-    f = f + 1;
+-  }
+-
+-  if((f == 5) || (f = 6)) { // the assignment here `(f = 6)` is identified by this check, but not by `-Wparentheses`. Should it have been `(f == 6)` ?
+-    f = f + 2;
+-  }

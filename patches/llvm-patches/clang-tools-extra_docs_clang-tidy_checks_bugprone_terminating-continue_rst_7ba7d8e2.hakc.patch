@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/bugprone/terminating-continue.rst b/clang-tools-extra/docs/clang-tidy/checks/bugprone/terminating-continue.rst
+deleted file mode 100644
+index 222de9003733..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/bugprone/terminating-continue.rst
++++ /dev/null
+@@ -1,17 +0,0 @@
+-.. title:: clang-tidy - bugprone-terminating-continue
+-
+-bugprone-terminating-continue
+-=============================
+-
+-Detects ``do while`` loops with a condition always evaluating to false that
+-have a ``continue`` statement, as this ``continue`` terminates the loop
+-effectively.
+-
+-.. code-block:: c++
+-
+-  void f() {
+-  do {
+-    // some code
+-    continue; // terminating continue
+-    // some other code
+-  } while(false);

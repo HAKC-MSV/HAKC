@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Rectangle.cpp b/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Rectangle.cpp
+deleted file mode 100644
+index 7ffc769157eb..000000000000
+--- a/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Rectangle.cpp
++++ /dev/null
+@@ -1,12 +0,0 @@
+-#include "Rectangle.h"
+-
+-Rectangle::Rectangle(double width, double height)
+-        : width_(width), height_(height) {}
+-
+-double Rectangle::area() const {
+-    return width_ * height_;
+-}
+-
+-double Rectangle::perimeter() const {
+-    return 2 * (width_ + height_);
+-}
+\ No newline at end of file

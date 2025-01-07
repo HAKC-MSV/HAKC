@@ -1,0 +1,27 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-pipe.rst b/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-pipe.rst
+deleted file mode 100644
+index b0504e9baeec..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-pipe.rst
++++ /dev/null
+@@ -1,21 +0,0 @@
+-.. title:: clang-tidy - android-cloexec-pipe
+-
+-android-cloexec-pipe
+-====================
+-
+-This check detects usage of ``pipe()``. Using ``pipe()`` is not recommended, ``pipe2()`` is the
+-suggested replacement. The check also adds the O_CLOEXEC flag that marks the file descriptor to
+-be closed in child processes. Without this flag a sensitive file descriptor can be leaked to a
+-child process, potentially into a lower-privileged SELinux domain.
+-
+-Examples:
+-
+-.. code-block:: c++
+-
+-  pipe(pipefd);
+-
+-Suggested replacement:
+-
+-.. code-block:: c++
+-
+-  pipe2(pipefd, O_CLOEXEC);

@@ -1,0 +1,14 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/BrokenTypes.h b/clang/test/APINotes/Inputs/Headers/BrokenTypes.h
+deleted file mode 100644
+index fee054b74cf7..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/BrokenTypes.h
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#ifndef BROKEN_TYPES_H
+-#define BROKEN_TYPES_H
+-
+-char break_me_function(void *ptr);
+-
+-extern char break_me_variable;
+-
+-#endif // BROKEN_TYPES_H

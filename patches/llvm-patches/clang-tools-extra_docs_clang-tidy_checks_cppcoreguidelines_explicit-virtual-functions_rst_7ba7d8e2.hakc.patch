@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/explicit-virtual-functions.rst b/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/explicit-virtual-functions.rst
+deleted file mode 100644
+index e9a703c3b3e2..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/explicit-virtual-functions.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - cppcoreguidelines-explicit-virtual-functions
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../modernize/use-override.html
+-
+-cppcoreguidelines-explicit-virtual-functions
+-============================================
+-
+-The `cppcoreguidelines-explicit-virtual-functions` check is an alias, please see
+-:doc:`modernize-use-override <../modernize/use-override>`
+-for more information.

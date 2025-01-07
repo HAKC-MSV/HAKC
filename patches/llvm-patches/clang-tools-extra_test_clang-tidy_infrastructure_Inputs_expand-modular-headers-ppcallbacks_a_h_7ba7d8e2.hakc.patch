@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/a.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/a.h
+deleted file mode 100644
+index 6651b4fa9139..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/a.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#define a

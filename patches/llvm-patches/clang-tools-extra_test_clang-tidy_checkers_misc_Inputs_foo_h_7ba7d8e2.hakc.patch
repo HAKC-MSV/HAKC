@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/foo.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/foo.h
+deleted file mode 100644
+index a158d915f0a1..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/foo.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#pragma once
+-void foo();

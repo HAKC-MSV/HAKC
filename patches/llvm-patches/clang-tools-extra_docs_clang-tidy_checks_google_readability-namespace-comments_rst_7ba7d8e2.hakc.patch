@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/google/readability-namespace-comments.rst b/clang-tools-extra/docs/clang-tidy/checks/google/readability-namespace-comments.rst
+deleted file mode 100644
+index 56f7d27c23ce..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/google/readability-namespace-comments.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - google-readability-namespace-comments
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../llvm/namespace-comment.html
+-
+-google-readability-namespace-comments
+-=====================================
+-
+-The `google-readability-namespace-comments check` is an alias, please see
+-:doc:`llvm-namespace-comment <../llvm/namespace-comment>` for more information.

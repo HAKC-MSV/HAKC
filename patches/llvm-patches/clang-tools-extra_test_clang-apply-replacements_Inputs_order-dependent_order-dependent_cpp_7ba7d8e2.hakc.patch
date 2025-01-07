@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/order-dependent/order-dependent.cpp b/clang-tools-extra/test/clang-apply-replacements/Inputs/order-dependent/order-dependent.cpp
+deleted file mode 100644
+index 5b98860c4559..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/order-dependent/order-dependent.cpp
++++ /dev/null
+@@ -1 +0,0 @@
+-class MyType {};

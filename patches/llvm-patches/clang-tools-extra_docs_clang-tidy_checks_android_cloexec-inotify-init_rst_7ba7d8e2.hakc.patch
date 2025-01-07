@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-inotify-init.rst b/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-inotify-init.rst
+deleted file mode 100644
+index cee4c7bf4fed..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-inotify-init.rst
++++ /dev/null
+@@ -1,17 +0,0 @@
+-.. title:: clang-tidy - android-cloexec-inotify-init
+-
+-android-cloexec-inotify-init
+-============================
+-
+-The usage of ``inotify_init()`` is not recommended, it's better to use
+-``inotify_init1()``.
+-
+-Examples:
+-
+-.. code-block:: c++
+-
+-  inotify_init();
+-
+-  // becomes
+-
+-  inotify_init1(IN_CLOEXEC);

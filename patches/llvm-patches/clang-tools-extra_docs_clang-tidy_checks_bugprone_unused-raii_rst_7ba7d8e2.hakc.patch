@@ -1,0 +1,36 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/bugprone/unused-raii.rst b/clang-tools-extra/docs/clang-tidy/checks/bugprone/unused-raii.rst
+deleted file mode 100644
+index f1987c5319da..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/bugprone/unused-raii.rst
++++ /dev/null
+@@ -1,30 +0,0 @@
+-.. title:: clang-tidy - bugprone-unused-raii
+-
+-bugprone-unused-raii
+-====================
+-
+-Finds temporaries that look like RAII objects.
+-
+-The canonical example for this is a scoped lock.
+-
+-.. code-block:: c++
+-
+-  {
+-    scoped_lock(&global_mutex);
+-    critical_section();
+-  }
+-
+-The destructor of the scoped_lock is called before the ``critical_section`` is
+-entered, leaving it unprotected.
+-
+-We apply a number of heuristics to reduce the false positive count of this
+-check:
+-
+-- Ignore code expanded from macros. Testing frameworks make heavy use of this.
+-
+-- Ignore types with trivial destructors. They are very unlikely to be RAII
+-  objects and there's no difference when they are deleted.
+-
+-- Ignore objects at the end of a compound statement (doesn't change behavior).
+-
+-- Ignore objects returned from a call.

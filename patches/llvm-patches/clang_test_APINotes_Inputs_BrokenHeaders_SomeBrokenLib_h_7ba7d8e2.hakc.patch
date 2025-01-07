@@ -1,0 +1,12 @@
+diff --git a/clang/test/APINotes/Inputs/BrokenHeaders/SomeBrokenLib.h b/clang/test/APINotes/Inputs/BrokenHeaders/SomeBrokenLib.h
+deleted file mode 100644
+index b09c6f63eae0..000000000000
+--- a/clang/test/APINotes/Inputs/BrokenHeaders/SomeBrokenLib.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef SOME_BROKEN_LIB_H
+-#define SOME_BROKEN_LIB_H
+-
+-void do_something_with_pointers(int *ptr1, int *ptr2);
+-
+-#endif // SOME_BROKEN_LIB_H

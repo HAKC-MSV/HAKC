@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/google/global-names-in-headers.rst b/clang-tools-extra/docs/clang-tidy/checks/google/global-names-in-headers.rst
+deleted file mode 100644
+index 4a071a9dc163..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/google/global-names-in-headers.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - google-global-names-in-headers
+-
+-google-global-names-in-headers
+-==============================
+-
+-Flag global namespace pollution in header files. Right now it only triggers on
+-``using`` declarations and directives.
+-
+-The relevant style guide section is
+-https://google.github.io/styleguide/cppguide.html#Namespaces.

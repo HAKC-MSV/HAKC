@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/c-copy-assignment-signature.rst b/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/c-copy-assignment-signature.rst
+deleted file mode 100644
+index 986b63bc5c78..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/c-copy-assignment-signature.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - cppcoreguidelines-c-copy-assignment-signature
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../misc/unconventional-assign-operator.html
+-
+-cppcoreguidelines-c-copy-assignment-signature
+-=============================================
+-
+-The `cppcoreguidelines-c-copy-assignment-signature` check is an alias, please see
+-:doc:`misc-unconventional-assign-operator <../misc/unconventional-assign-operator>`
+-for more information.

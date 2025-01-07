@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/list-checks.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/list-checks.cpp
+deleted file mode 100644
+index 674c118c179f..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/list-checks.cpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// RUN: mkdir -p %T/clang-tidy/list-checks/
+-// RUN: echo '{Checks: "-*,google-*"}' > %T/clang-tidy/.clang-tidy
+-// RUN: cd %T/clang-tidy/list-checks
+-// RUN: clang-tidy -list-checks | grep "^ *google-"

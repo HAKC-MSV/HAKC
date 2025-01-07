@@ -1,0 +1,31 @@
+diff --git a/clang-tools-extra/clang-apply-replacements/CMakeLists.txt b/clang-tools-extra/clang-apply-replacements/CMakeLists.txt
+deleted file mode 100644
+index 93198ccbfc40..000000000000
+--- a/clang-tools-extra/clang-apply-replacements/CMakeLists.txt
++++ /dev/null
+@@ -1,25 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  )
+-
+-add_clang_library(clangApplyReplacements
+-  lib/Tooling/ApplyReplacements.cpp
+-
+-  DEPENDS
+-  ClangDriverOptions
+-)
+-
+-clang_target_link_libraries(clangApplyReplacements
+-  PRIVATE
+-  clangAST
+-  clangBasic
+-  clangRewrite
+-  clangToolingCore
+-  clangToolingRefactoring
+-  )
+-
+-include_directories(
+-  ${CMAKE_CURRENT_SOURCE_DIR}
+-  include
+-  )
+-add_subdirectory(tool)

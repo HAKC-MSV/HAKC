@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/modularize/NoProblemsCoverage.modularize b/clang-tools-extra/test/modularize/NoProblemsCoverage.modularize
+deleted file mode 100644
+index bcb06f84b1fb..000000000000
+--- a/clang-tools-extra/test/modularize/NoProblemsCoverage.modularize
++++ /dev/null
+@@ -1 +0,0 @@
+-# RUN: modularize -I Includes1 -I Includes2 %S/Inputs/CoverageNoProblems/module.modulemap

@@ -1,0 +1,7 @@
+diff --git a/clang/test/ARCMT/Inputs/Module.framework/PrivateHeaders/ModulePrivate.h b/clang/test/ARCMT/Inputs/Module.framework/PrivateHeaders/ModulePrivate.h
+deleted file mode 100644
+index 0782336df9de..000000000000
+--- a/clang/test/ARCMT/Inputs/Module.framework/PrivateHeaders/ModulePrivate.h
++++ /dev/null
+@@ -1 +0,0 @@
+-int module_private;

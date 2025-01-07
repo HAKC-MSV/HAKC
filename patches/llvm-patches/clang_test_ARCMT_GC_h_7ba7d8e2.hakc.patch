@@ -1,0 +1,12 @@
+diff --git a/clang/test/ARCMT/GC.h b/clang/test/ARCMT/GC.h
+deleted file mode 100644
+index 4301baf27246..000000000000
+--- a/clang/test/ARCMT/GC.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-
+-@interface ExtInterface {
+-  __strong ExtInterface *myivar;
+-  __strong void *gcVar;
+-}
+-@end

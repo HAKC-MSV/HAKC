@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/misc/unused-alias-decls.rst b/clang-tools-extra/docs/clang-tidy/checks/misc/unused-alias-decls.rst
+deleted file mode 100644
+index 1b0a0cde059b..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/misc/unused-alias-decls.rst
++++ /dev/null
+@@ -1,14 +0,0 @@
+-.. title:: clang-tidy - misc-unused-alias-decls
+-
+-misc-unused-alias-decls
+-=======================
+-
+-
+-Finds unused namespace alias declarations.
+-
+-.. code-block:: c++
+-
+-  namespace my_namespace {
+-  class C {};
+-  }
+-  namespace unused_alias = ::my_namespace;

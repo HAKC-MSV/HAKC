@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/nolintbeginend-error-within-include.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/nolintbeginend-error-within-include.cpp
+deleted file mode 100644
+index dadf2985a48f..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/nolintbeginend-error-within-include.cpp
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// RUN: %check_clang_tidy %s google-explicit-constructor %t -- --header-filter=.* -system-headers -- -isystem %S/Inputs/nolintbeginend
+-
+-#include "error_in_include.inc"
+-// CHECK-MESSAGES: error_in_include.inc:1:11: warning: single-argument constructors must be marked explicit
+-
+-#include "nolint_in_include.inc"
+-
+-// CHECK-MESSAGES: Suppressed 1 warnings (1 NOLINT).

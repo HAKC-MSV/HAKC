@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/docs/clangd/DeveloperDocumentation.rst b/clang-tools-extra/docs/clangd/DeveloperDocumentation.rst
+deleted file mode 100644
+index aacf3675f979..000000000000
+--- a/clang-tools-extra/docs/clangd/DeveloperDocumentation.rst
++++ /dev/null
+@@ -1,3 +0,0 @@
+-:orphan:
+-:template: clangd_redirect.html
+-:redirect_target: https://clangd.llvm.org/design.html

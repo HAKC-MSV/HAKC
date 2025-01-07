@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/clangd/unittests/decision_forest_model/CategoricalFeature.h b/clang-tools-extra/clangd/unittests/decision_forest_model/CategoricalFeature.h
+deleted file mode 100644
+index dfb6ab3b199d..000000000000
+--- a/clang-tools-extra/clangd/unittests/decision_forest_model/CategoricalFeature.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-namespace ns1 {
+-namespace ns2 {
+-enum TestEnum { A, B, C, D };
+-} // namespace ns2
+-} // namespace ns1

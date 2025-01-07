@@ -1,0 +1,25 @@
+diff --git a/bolt/test/runtime/Inputs/fptr.c b/bolt/test/runtime/Inputs/fptr.c
+deleted file mode 100644
+index c4370e89bfd2..000000000000
+--- a/bolt/test/runtime/Inputs/fptr.c
++++ /dev/null
+@@ -1,19 +0,0 @@
+-// Make sure all printed values are the same and are updated after BOLT.
+-
+-#include <stdio.h>
+-
+-int main(int argc, char *argv[]);
+-
+-unsigned long Global = (unsigned long)main + 0x7fffffff;
+-
+-int main(int argc, char *argv[]) {
+-
+-  unsigned long Local = (unsigned long)&main + 0x7fffffff;
+-  unsigned long Local2 = &main + 0x7fffffff;
+-
+-  printf("Global = 0x%lx\n", Global);
+-  printf("Local = 0x%lx\n", Local);
+-  printf("Local2 = 0x%lx\n", Local2);
+-
+-  return 0;
+-}

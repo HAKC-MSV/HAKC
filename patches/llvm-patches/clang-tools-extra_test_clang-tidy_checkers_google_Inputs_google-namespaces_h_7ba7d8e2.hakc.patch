@@ -1,0 +1,13 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/google-namespaces.h b/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/google-namespaces.h
+deleted file mode 100644
+index f4d87f5bc951..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/google-namespaces.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-namespace {
+-int x;
+-}
+-
+-namespace spaaaace {
+-class core;
+-}

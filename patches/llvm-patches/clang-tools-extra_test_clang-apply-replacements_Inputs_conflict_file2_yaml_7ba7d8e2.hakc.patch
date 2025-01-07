@@ -1,0 +1,28 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/file2.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/file2.yaml
+deleted file mode 100644
+index d7339662fcbb..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/file2.yaml
++++ /dev/null
+@@ -1,22 +0,0 @@
+----
+-MainSourceFile: source2.cpp
+-Diagnostics:
+-  - DiagnosticName:  test-conflict
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/common.h
+-      FileOffset: 106
+-      Replacements:
+-        - FilePath:        $(path)/common.h
+-          Offset:          106
+-          Length:          26
+-          ReplacementText: 'int & elem : ints'
+-        - FilePath:        $(path)/common.h
+-          Offset:          140
+-          Length:          7
+-          ReplacementText: elem
+-        - FilePath:        $(path)/common.h
+-          Offset:          169
+-          Length:          1
+-          ReplacementText: nullptr
+-...

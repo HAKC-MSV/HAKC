@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical/identical.cpp b/clang-tools-extra/test/clang-apply-replacements/Inputs/identical/identical.cpp
+deleted file mode 100644
+index bc740fa12f55..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical/identical.cpp
++++ /dev/null
+@@ -1,2 +0,0 @@
+-class MyType {};
+-// CHECK: class MyType0 {};

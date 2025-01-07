@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/osx.coreFoundation.containers.OutOfBounds.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/osx.coreFoundation.containers.OutOfBounds.rst
+deleted file mode 100644
+index 2c6f30c4fbcf..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/osx.coreFoundation.containers.OutOfBounds.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-osx.coreFoundation.containers.OutOfBounds
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#osx-corefoundation-containers-outofbounds
+-
+-clang-analyzer-osx.coreFoundation.containers.OutOfBounds
+-========================================================
+-
+-Checks for index out-of-bounds when using 'CFArray' API.
+-
+-The `clang-analyzer-osx.coreFoundation.containers.OutOfBounds` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#osx-corefoundation-containers-outofbounds>`_
+-for more information.

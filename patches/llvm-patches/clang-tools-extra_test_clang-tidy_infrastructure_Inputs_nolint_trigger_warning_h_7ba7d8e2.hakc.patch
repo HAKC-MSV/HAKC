@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolint/trigger_warning.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolint/trigger_warning.h
+deleted file mode 100644
+index e8ebed25d38f..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolint/trigger_warning.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-void A1(const int &In, int &Out) {
+-  if (In > 123) // NOLINT
+-    Out = 123;
+-}
+-

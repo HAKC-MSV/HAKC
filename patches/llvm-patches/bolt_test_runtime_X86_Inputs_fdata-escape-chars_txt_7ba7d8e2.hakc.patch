@@ -1,0 +1,12 @@
+diff --git a/bolt/test/runtime/X86/Inputs/fdata-escape-chars.txt b/bolt/test/runtime/X86/Inputs/fdata-escape-chars.txt
+deleted file mode 100644
+index 076793dc9e42..000000000000
+--- a/bolt/test/runtime/X86/Inputs/fdata-escape-chars.txt
++++ /dev/null
+@@ -1,6 +0,0 @@
+-# PREAGR: B #main# #static symb backslash\# 1 0
+-# PREAGR: B #static symb backslash\# #symb whitespace# 1 0
+-# PREAGR: B #main# #symb whitespace# 1 0
+-# PREAGR: B #main# #symb backslash\# 1 0
+-# PREAGR: B #main# #symb backslash\# 1 0
+-# PREAGR: B #symb backslash\# #symb whitespace# 2 0

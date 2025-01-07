@@ -1,0 +1,35 @@
+diff --git a/clang/lib/Tooling/Refactoring/CMakeLists.txt b/clang/lib/Tooling/Refactoring/CMakeLists.txt
+deleted file mode 100644
+index d3077be8810a..000000000000
+--- a/clang/lib/Tooling/Refactoring/CMakeLists.txt
++++ /dev/null
+@@ -1,29 +0,0 @@
+-set(LLVM_LINK_COMPONENTS Support)
+-
+-add_clang_library(clangToolingRefactoring
+-  ASTSelection.cpp
+-  ASTSelectionRequirements.cpp
+-  AtomicChange.cpp
+-  Extract/Extract.cpp
+-  Extract/SourceExtraction.cpp
+-  Lookup.cpp
+-  RefactoringActions.cpp
+-  Rename/RenamingAction.cpp
+-  Rename/SymbolOccurrences.cpp
+-  Rename/USRFinder.cpp
+-  Rename/USRFindingAction.cpp
+-  Rename/USRLocFinder.cpp
+-
+-  LINK_LIBS
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangFormat
+-  clangIndex
+-  clangLex
+-  clangRewrite
+-  clangToolingCore
+-
+-  DEPENDS
+-  omp_gen
+-  )

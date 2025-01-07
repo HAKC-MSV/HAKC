@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/module.modulemap b/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/module.modulemap
+deleted file mode 100644
+index 39af7d5dcf36..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/module.modulemap
++++ /dev/null
+@@ -1,10 +0,0 @@
+-// module.modulemap
+-
+-module Level1A {
+-  header "Includes1/Level1A.h"
+-  export *
+-}
+-module Level2A {
+-  header "Includes2/Level2A.h"
+-  export *
+-}

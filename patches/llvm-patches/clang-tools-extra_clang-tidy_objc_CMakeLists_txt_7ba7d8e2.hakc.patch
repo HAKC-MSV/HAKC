@@ -1,0 +1,39 @@
+diff --git a/clang-tools-extra/clang-tidy/objc/CMakeLists.txt b/clang-tools-extra/clang-tidy/objc/CMakeLists.txt
+deleted file mode 100644
+index aa428fce56a5..000000000000
+--- a/clang-tools-extra/clang-tidy/objc/CMakeLists.txt
++++ /dev/null
+@@ -1,33 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FrontendOpenMP
+-  Support
+-  )
+-
+-add_clang_library(clangTidyObjCModule
+-  AssertEquals.cpp
+-  AvoidNSErrorInitCheck.cpp
+-  DeallocInCategoryCheck.cpp
+-  ForbiddenSubclassingCheck.cpp
+-  MissingHashCheck.cpp
+-  NSInvocationArgumentLifetimeCheck.cpp
+-  NSDateFormatterCheck.cpp
+-  ObjCTidyModule.cpp
+-  PropertyDeclarationCheck.cpp
+-  SuperSelfCheck.cpp
+-
+-  LINK_LIBS
+-  clangTidy
+-  clangTidyUtils
+-
+-  DEPENDS
+-  omp_gen
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(clangTidyObjCModule
+-  PRIVATE
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangLex
+-  )

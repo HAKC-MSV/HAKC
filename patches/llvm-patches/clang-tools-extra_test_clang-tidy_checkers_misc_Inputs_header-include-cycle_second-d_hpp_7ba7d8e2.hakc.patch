@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.second-d.hpp b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.second-d.hpp
+deleted file mode 100644
+index 80202da85618..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.second-d.hpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef SECOND
+-#define SECOND
+-#include "header-include-cycle.third-d.hpp"
+-#endif

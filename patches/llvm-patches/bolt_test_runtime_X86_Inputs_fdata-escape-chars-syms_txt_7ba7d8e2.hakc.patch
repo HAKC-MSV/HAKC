@@ -1,0 +1,9 @@
+diff --git a/bolt/test/runtime/X86/Inputs/fdata-escape-chars-syms.txt b/bolt/test/runtime/X86/Inputs/fdata-escape-chars-syms.txt
+deleted file mode 100644
+index bccbc131d8b2..000000000000
+--- a/bolt/test/runtime/X86/Inputs/fdata-escape-chars-syms.txt
++++ /dev/null
+@@ -1,3 +0,0 @@
+-symb_w_whitespace symb whitespace
+-symb_backslash_b symb backslash\
+-static_symb_backslash_b static symb backslash\

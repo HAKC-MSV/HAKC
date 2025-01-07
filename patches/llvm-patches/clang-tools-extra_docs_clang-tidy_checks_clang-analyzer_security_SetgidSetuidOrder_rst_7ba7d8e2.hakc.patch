@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.SetgidSetuidOrder.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.SetgidSetuidOrder.rst
+deleted file mode 100644
+index 82f22b11f77f..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.SetgidSetuidOrder.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-security.SetgidSetuidOrder
+-
+-clang-analyzer-security.SetgidSetuidOrder
+-=========================================
+-
+-Warn on possible reversed order of 'setgid(getgid()))' and 'setuid(getuid())'
+-(CERT: POS36-C).
+-
+-The clang-analyzer-security.SetgidSetuidOrder check is an alias of
+-Clang Static Analyzer security.SetgidSetuidOrder.

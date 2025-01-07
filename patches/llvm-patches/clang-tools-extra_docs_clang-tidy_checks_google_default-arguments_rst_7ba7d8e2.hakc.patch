@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/google/default-arguments.rst b/clang-tools-extra/docs/clang-tidy/checks/google/default-arguments.rst
+deleted file mode 100644
+index c02099c6ed1e..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/google/default-arguments.rst
++++ /dev/null
+@@ -1,8 +0,0 @@
+-.. title:: clang-tidy - google-default-arguments
+-
+-google-default-arguments
+-========================
+-
+-Checks that default arguments are not given for virtual methods.
+-
+-See https://google.github.io/styleguide/cppguide.html#Default_Arguments

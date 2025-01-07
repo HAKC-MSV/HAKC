@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/baz.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/baz.h
+deleted file mode 100644
+index 042e9ca40401..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/baz.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#pragma once
+-int baz();

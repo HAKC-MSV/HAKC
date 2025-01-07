@@ -1,0 +1,20 @@
+diff --git a/clang/lib/Tooling/Inclusions/CMakeLists.txt b/clang/lib/Tooling/Inclusions/CMakeLists.txt
+deleted file mode 100644
+index f9c2e6397ae7..000000000000
+--- a/clang/lib/Tooling/Inclusions/CMakeLists.txt
++++ /dev/null
+@@ -1,14 +0,0 @@
+-set(LLVM_LINK_COMPONENTS support)
+-
+-add_clang_library(clangToolingInclusions
+-  HeaderAnalysis.cpp
+-  HeaderIncludes.cpp
+-  IncludeStyle.cpp
+-
+-  LINK_LIBS
+-  clangBasic
+-  clangLex
+-  clangToolingCore
+-  )
+-
+-  add_subdirectory(Stdlib)

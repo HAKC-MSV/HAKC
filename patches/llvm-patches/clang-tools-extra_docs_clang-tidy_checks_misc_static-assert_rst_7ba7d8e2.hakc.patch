@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/misc/static-assert.rst b/clang-tools-extra/docs/clang-tidy/checks/misc/static-assert.rst
+deleted file mode 100644
+index 560d43f8d621..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/misc/static-assert.rst
++++ /dev/null
+@@ -1,12 +0,0 @@
+-.. title:: clang-tidy - misc-static-assert
+-
+-misc-static-assert
+-==================
+-
+-`cert-dcl03-c` redirects here as an alias for this check.
+-
+-Replaces ``assert()`` with ``static_assert()`` if the condition is evaluable
+-at compile time.
+-
+-The condition of ``static_assert()`` is evaluated at compile time which is
+-safer and more efficient.

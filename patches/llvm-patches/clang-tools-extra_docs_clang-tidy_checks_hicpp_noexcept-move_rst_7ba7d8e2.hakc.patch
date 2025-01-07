@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/hicpp/noexcept-move.rst b/clang-tools-extra/docs/clang-tidy/checks/hicpp/noexcept-move.rst
+deleted file mode 100644
+index 1f875f410e9a..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/hicpp/noexcept-move.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - hicpp-noexcept-move
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../performance/noexcept-move-constructor.html
+-
+-hicpp-noexcept-move
+-===================
+-
+-This check is an alias for :doc:`performance-noexcept-move-constructor
+-<../performance/noexcept-move-constructor>`.
+-Checks `rule 12.5.4 <https://www.perforce.com/resources/qac/high-integrity-cpp-coding-standard/special-member-functions>`_ to mark move assignment and move construction `noexcept`.

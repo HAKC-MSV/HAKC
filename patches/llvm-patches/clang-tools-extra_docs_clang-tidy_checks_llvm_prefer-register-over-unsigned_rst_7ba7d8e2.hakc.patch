@@ -1,0 +1,33 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/llvm/prefer-register-over-unsigned.rst b/clang-tools-extra/docs/clang-tidy/checks/llvm/prefer-register-over-unsigned.rst
+deleted file mode 100644
+index 5d78a188ebc9..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/llvm/prefer-register-over-unsigned.rst
++++ /dev/null
+@@ -1,27 +0,0 @@
+-.. title:: clang-tidy - llvm-prefer-register-over-unsigned
+-
+-llvm-prefer-register-over-unsigned
+-==================================
+-
+-Finds historical use of ``unsigned`` to hold vregs and physregs and rewrites
+-them to use ``Register``.
+-
+-Currently this works by finding all variables of unsigned integer type whose
+-initializer begins with an implicit cast from ``Register`` to ``unsigned``.
+-
+-.. code-block:: c++
+-
+-  void example(MachineOperand &MO) {
+-    unsigned Reg = MO.getReg();
+-    ...
+-  }
+-
+-becomes:
+-
+-.. code-block:: c++
+-
+-  void example(MachineOperand &MO) {
+-    Register Reg = MO.getReg();
+-    ...
+-  }
+-

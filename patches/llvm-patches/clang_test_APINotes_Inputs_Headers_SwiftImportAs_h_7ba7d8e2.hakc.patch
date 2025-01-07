@@ -1,0 +1,15 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/SwiftImportAs.h b/clang/test/APINotes/Inputs/Headers/SwiftImportAs.h
+deleted file mode 100644
+index a8f6d0248eae..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/SwiftImportAs.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-struct ImmortalRefType {};
+-
+-struct RefCountedType { int value; };
+-
+-inline void RCRetain(RefCountedType *x) { x->value++; }
+-inline void RCRelease(RefCountedType *x) { x->value--; }
+-
+-struct NonCopyableType { int value; };
+-struct CopyableType { int value; };

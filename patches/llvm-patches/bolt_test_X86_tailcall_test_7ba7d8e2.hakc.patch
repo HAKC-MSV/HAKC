@@ -1,0 +1,19 @@
+diff --git a/bolt/test/X86/tailcall.test b/bolt/test/X86/tailcall.test
+deleted file mode 100644
+index f00b04d255c0..000000000000
+--- a/bolt/test/X86/tailcall.test
++++ /dev/null
+@@ -1,13 +0,0 @@
+-## Verifies that llvm-bolt recognizes tailcalls and mark them
+-## in control flow graph.
+-
+-RUN: %clang %cflags %S/Inputs/tailcall.s -o %t.exe
+-RUN: llvm-bolt %t.exe -o %t.null --print-cfg 2>&1 | FileCheck %s
+-
+-CHECK:  Binary Function "foo"
+-CHECK:    jmp     bar # TAILCALL
+-CHECK:  End of Function "foo"
+-
+-CHECK:  Binary Function "bar"
+-CHECK:    jmp     baz # TAILCALL
+-CHECK:  End of Function "bar"

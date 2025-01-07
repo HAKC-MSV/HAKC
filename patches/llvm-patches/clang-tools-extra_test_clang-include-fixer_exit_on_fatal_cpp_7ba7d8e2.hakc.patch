@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/test/clang-include-fixer/exit_on_fatal.cpp b/clang-tools-extra/test/clang-include-fixer/exit_on_fatal.cpp
+deleted file mode 100644
+index fc8c95a03714..000000000000
+--- a/clang-tools-extra/test/clang-include-fixer/exit_on_fatal.cpp
++++ /dev/null
+@@ -1,10 +0,0 @@
+-// RUN: sed -e 's#//.*$##' %s > %t.cpp
+-// RUN: not clang-include-fixer -db=fixed -input='foo= "foo.h"' %t.cpp --
+-// RUN: FileCheck %s -input-file=%t.cpp
+-
+-// CHECK-NOT: #include
+-// CHECK: #include "doesnotexist.h"
+-// CHECK-NEXT: foo f;
+-
+-#include "doesnotexist.h"
+-foo f;

@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/clangd/unittests/xpc/CMakeLists.txt b/clang-tools-extra/clangd/unittests/xpc/CMakeLists.txt
+deleted file mode 100644
+index ac04c3f4aed6..000000000000
+--- a/clang-tools-extra/clangd/unittests/xpc/CMakeLists.txt
++++ /dev/null
+@@ -1,16 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  support
+-  )
+-
+-add_custom_target(ClangdXpcUnitTests)
+-add_unittest(ClangdXpcUnitTests ClangdXpcTests
+-  ConversionTests.cpp
+-  )
+-
+-target_link_libraries(ClangdXpcTests
+-  PRIVATE
+-  clangdXpcJsonConversions
+-  clangDaemon
+-  LLVMSupport
+-  LLVMTestingSupport
+-  )

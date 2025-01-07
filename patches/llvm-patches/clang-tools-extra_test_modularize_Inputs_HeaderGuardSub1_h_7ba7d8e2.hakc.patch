@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/HeaderGuardSub1.h b/clang-tools-extra/test/modularize/Inputs/HeaderGuardSub1.h
+deleted file mode 100644
+index 36ad80c92bb2..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/HeaderGuardSub1.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-#ifndef _HEADERGUARDSUB1_H_
+-#define _HEADERGUARDSUB1_H_
+-#include "HeaderGuardSubSub.h"
+-#include "HeaderGuardSubSubDefined.h"
+-#endif // _HEADERGUARDSUB1_H_

@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/avoid-c-arrays-ignores-strings.cpp b/clang-tools-extra/test/clang-tidy/checkers/modernize/avoid-c-arrays-ignores-strings.cpp
+deleted file mode 100644
+index f6d64848f9e3..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/avoid-c-arrays-ignores-strings.cpp
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// RUN: %check_clang_tidy %s modernize-avoid-c-arrays %t -- \
+-// RUN:  -config='{CheckOptions: { modernize-avoid-c-arrays.AllowStringArrays: true }}'
+-
+-const char name[] = "name";
+-const char array[] = {'n', 'a', 'm', 'e', '\0'};
+-// CHECK-MESSAGES: :[[@LINE-1]]:7: warning: do not declare C-style arrays, use std::array<> instead [modernize-avoid-c-arrays]
+-
+-void takeCharArray(const char name[]);
+-// CHECK-MESSAGES: :[[@LINE-1]]:26: warning: do not declare C-style arrays, use std::array<> instead [modernize-avoid-c-arrays]

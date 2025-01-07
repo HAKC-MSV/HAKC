@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/hicpp/member-init.rst b/clang-tools-extra/docs/clang-tidy/checks/hicpp/member-init.rst
+deleted file mode 100644
+index 341d8a79931e..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/hicpp/member-init.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-.. title:: clang-tidy - hicpp-member-init
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../cppcoreguidelines/pro-type-member-init.html
+-
+-hicpp-member-init
+-=================
+-
+-This check is an alias for :doc:`cppcoreguidelines-pro-type-member-init <../cppcoreguidelines/pro-type-member-init>`.
+-Implements the check for
+-`rule 12.4.2 <https://www.perforce.com/resources/qac/high-integrity-cpp-coding-standard/special-member-functions>`_
+-to initialize class members in the right order.

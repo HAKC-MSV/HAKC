@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/basic.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/basic.cpp
+deleted file mode 100644
+index e57350289c25..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/basic.cpp
++++ /dev/null
+@@ -1,5 +0,0 @@
+-// RUN: clang-tidy %s -checks='-*,llvm-namespace-comment' -- | FileCheck %s
+-
+-namespace i {
+-}
+-// CHECK: warning: namespace 'i' not terminated with a closing comment [llvm-namespace-comment]

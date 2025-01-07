@@ -1,0 +1,8 @@
+diff --git a/clang/bindings/python/tests/cindex/INPUTS/parse_arguments.c b/clang/bindings/python/tests/cindex/INPUTS/parse_arguments.c
+deleted file mode 100644
+index 7196486c78a1..000000000000
+--- a/clang/bindings/python/tests/cindex/INPUTS/parse_arguments.c
++++ /dev/null
+@@ -1,2 +0,0 @@
+-int DECL_ONE = 1;
+-int DECL_TWO = 2;

@@ -1,0 +1,12 @@
+diff --git a/bolt/test/Inputs/asm_main.c b/bolt/test/Inputs/asm_main.c
+deleted file mode 100644
+index f67f6c481a42..000000000000
+--- a/bolt/test/Inputs/asm_main.c
++++ /dev/null
+@@ -1,6 +0,0 @@
+-void foo(void);
+-
+-int main() {
+-  foo();
+-  return 0;
+-}

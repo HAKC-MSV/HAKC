@@ -1,0 +1,12 @@
+diff --git a/clang/bindings/python/tests/cindex/INPUTS/header2.h b/clang/bindings/python/tests/cindex/INPUTS/header2.h
+deleted file mode 100644
+index c4eddc0c5620..000000000000
+--- a/clang/bindings/python/tests/cindex/INPUTS/header2.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef HEADER2
+-#define HEADER2
+-
+-#include "header3.h"
+-
+-#endif

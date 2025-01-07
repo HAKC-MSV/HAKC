@@ -1,0 +1,17 @@
+diff --git a/bolt/unittests/Profile/CMakeLists.txt b/bolt/unittests/Profile/CMakeLists.txt
+deleted file mode 100644
+index e0aa0926b49c..000000000000
+--- a/bolt/unittests/Profile/CMakeLists.txt
++++ /dev/null
+@@ -1,11 +0,0 @@
+-add_bolt_unittest(ProfileTests
+-  DataAggregator.cpp
+-
+-  DISABLE_LLVM_LINK_LLVM_DYLIB
+-  )
+-
+-target_link_libraries(ProfileTests
+-  PRIVATE
+-  LLVMBOLTProfile
+-  )
+-

@@ -1,0 +1,20 @@
+diff --git a/clang/lib/Tooling/ASTDiff/CMakeLists.txt b/clang/lib/Tooling/ASTDiff/CMakeLists.txt
+deleted file mode 100644
+index 38cf5370bc49..000000000000
+--- a/clang/lib/Tooling/ASTDiff/CMakeLists.txt
++++ /dev/null
+@@ -1,14 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  )
+-
+-add_clang_library(clangToolingASTDiff
+-  ASTDiff.cpp
+-  LINK_LIBS
+-  clangBasic
+-  clangAST
+-  clangLex
+-
+-  DEPENDS
+-  omp_gen
+-  )

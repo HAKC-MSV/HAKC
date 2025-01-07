@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/clangd/test/exit-without-shutdown.test b/clang-tools-extra/clangd/test/exit-without-shutdown.test
+deleted file mode 100644
+index 7b22d0597d62..000000000000
+--- a/clang-tools-extra/clangd/test/exit-without-shutdown.test
++++ /dev/null
+@@ -1,4 +0,0 @@
+-# RUN: not clangd -lit-test < %s
+-{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"processId":123,"rootPath":"clangd","capabilities":{},"trace":"off"}}
+----
+-{"jsonrpc":"2.0","method":"exit"}

@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/system-header-throw.h b/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/system-header-throw.h
+deleted file mode 100644
+index 22d1bd45387b..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/system-header-throw.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#pragma clang system_header
+-
+-#define SYS_THROW(e) @throw e
+-
+-#define SYS_RAISE [NSException raise:@"example" format:@"fmt"]
+-

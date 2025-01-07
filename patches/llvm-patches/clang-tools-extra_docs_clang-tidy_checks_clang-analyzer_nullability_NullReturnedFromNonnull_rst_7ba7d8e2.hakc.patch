@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/nullability.NullReturnedFromNonnull.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/nullability.NullReturnedFromNonnull.rst
+deleted file mode 100644
+index d7f8f7ef3119..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/nullability.NullReturnedFromNonnull.rst
++++ /dev/null
+@@ -1,14 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-nullability.NullReturnedFromNonnull
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#nullability-nullreturnedfromnonnull
+-
+-clang-analyzer-nullability.NullReturnedFromNonnull
+-==================================================
+-
+-Warns when a null pointer is returned from a function that has _Nonnull return
+-type.
+-
+-The `clang-analyzer-nullability.NullReturnedFromNonnull` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#nullability-nullreturnedfromnonnull>`_
+-for more information.

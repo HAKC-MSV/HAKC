@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/file-filter/header2.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/file-filter/header2.h
+deleted file mode 100644
+index 09bfeabc8723..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/file-filter/header2.h
++++ /dev/null
+@@ -1 +0,0 @@
+-class A2 { A2(int); };

@@ -1,0 +1,23 @@
+diff --git a/bolt/tools/merge-fdata/CMakeLists.txt b/bolt/tools/merge-fdata/CMakeLists.txt
+deleted file mode 100644
+index f6a87a226898..000000000000
+--- a/bolt/tools/merge-fdata/CMakeLists.txt
++++ /dev/null
+@@ -1,17 +0,0 @@
+-set(LLVM_LINK_COMPONENTS Support)
+-
+-add_bolt_tool(merge-fdata
+-  merge-fdata.cpp
+-
+-  DISABLE_LLVM_LINK_LLVM_DYLIB
+-
+-  DEPENDS
+-  intrinsics_gen
+-)
+-
+-add_dependencies(bolt merge-fdata)
+-
+-# Emit relocations for BOLT meta test (bolt/test/runtime/meta-merge-fdata.test)
+-if (BOLT_INCLUDE_TESTS AND UNIX AND NOT APPLE)
+-  target_link_options(merge-fdata PRIVATE LINKER:--emit-relocs)
+-endif()

@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/vfsoverlay.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/vfsoverlay.cpp
+deleted file mode 100644
+index 5704b71fd10e..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/vfsoverlay.cpp
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// RUN: sed -e "s:INPUT_DIR:%S/Inputs/vfsoverlay:g" -e "s:OUT_DIR:%t:g" %S/Inputs/vfsoverlay/vfsoverlay.yaml > %t.yaml
+-// RUN: clang-tidy %s -checks='-*,modernize-use-nullptr' -vfsoverlay %t.yaml -- -I %t | FileCheck %s
+-// REQUIRES: shell
+-
+-#include "not_real.h"
+-
+-X *ptr = 0;
+-// CHECK: warning: use nullptr [modernize-use-nullptr]

@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/clang-change-namespace/Inputs/fake-std.h b/clang-tools-extra/test/clang-change-namespace/Inputs/fake-std.h
+deleted file mode 100644
+index 24d3f977af32..000000000000
+--- a/clang-tools-extra/test/clang-change-namespace/Inputs/fake-std.h
++++ /dev/null
+@@ -1,5 +0,0 @@
+-namespace std {
+-  class STD {};
+-}
+-
+-using namespace std;

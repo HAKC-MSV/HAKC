@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-query/Inputs/empty.script b/clang-tools-extra/test/clang-query/Inputs/empty.script
+deleted file mode 100644
+index 3c30abd1ae5d..000000000000
+--- a/clang-tools-extra/test/clang-query/Inputs/empty.script
++++ /dev/null
+@@ -1 +0,0 @@
+-# This file intentionally has no queries

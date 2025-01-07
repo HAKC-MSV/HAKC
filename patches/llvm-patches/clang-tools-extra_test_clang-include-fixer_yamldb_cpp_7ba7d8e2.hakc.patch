@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/test/clang-include-fixer/yamldb.cpp b/clang-tools-extra/test/clang-include-fixer/yamldb.cpp
+deleted file mode 100644
+index d17b41472b23..000000000000
+--- a/clang-tools-extra/test/clang-include-fixer/yamldb.cpp
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// RUN: sed -e 's#//.*$##' %s > %t.cpp
+-// RUN: clang-include-fixer -db=yaml -input=%p/Inputs/fake_yaml_db.yaml %t.cpp --
+-// RUN: FileCheck %s -input-file=%t.cpp
+-
+-// CHECK: #include "foo.h"
+-// CHECK: b::a::foo f;
+-
+-b::a::foo f;

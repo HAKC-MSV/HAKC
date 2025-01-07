@@ -1,0 +1,30 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/file1.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/file1.yaml
+deleted file mode 100644
+index a80cf82b2bf3..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/file1.yaml
++++ /dev/null
+@@ -1,24 +0,0 @@
+----
+-MainSourceFile:     ignore-conflict.cpp
+-Diagnostics:
+-  - DiagnosticName: test-ignore-conflict-insertion
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/ignore-conflict.cpp
+-      FileOffset: 0
+-      Replacements:
+-        - FilePath:        $(path)/ignore-conflict.cpp
+-          Offset:          0
+-          Length:          0
+-          ReplacementText: "#include <a.h>\n"
+-  - DiagnosticName: test-ignore-conflict-insertion
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/ignore-conflict.cpp
+-      FileOffset: 0
+-      Replacements:
+-        - FilePath:        $(path)/ignore-conflict.cpp
+-          Offset:          0
+-          Length:          0
+-          ReplacementText: "#include <b.h>\n"
+-...

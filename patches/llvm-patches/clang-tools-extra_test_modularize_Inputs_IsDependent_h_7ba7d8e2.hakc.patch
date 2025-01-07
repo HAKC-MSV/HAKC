@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/IsDependent.h b/clang-tools-extra/test/modularize/Inputs/IsDependent.h
+deleted file mode 100644
+index 492811026603..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/IsDependent.h
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// This header depends on SomeTypes.h for the TypeInt typedef.
+-
+-typedef TypeInt NewTypeInt;
+-typedef OtherTypeInt OtherNewTypeInt;

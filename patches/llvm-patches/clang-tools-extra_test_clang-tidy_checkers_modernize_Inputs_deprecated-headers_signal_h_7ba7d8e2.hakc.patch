@@ -1,0 +1,3 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/Inputs/deprecated-headers/signal.h b/clang-tools-extra/test/clang-tidy/checkers/modernize/Inputs/deprecated-headers/signal.h
+deleted file mode 100644
+index e69de29bb2d1..000000000000

@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/test/clang-reorder-fields/PlainCStructFieldsOrder.c b/clang-tools-extra/test/clang-reorder-fields/PlainCStructFieldsOrder.c
+deleted file mode 100644
+index 32ce569df943..000000000000
+--- a/clang-tools-extra/test/clang-reorder-fields/PlainCStructFieldsOrder.c
++++ /dev/null
+@@ -1,14 +0,0 @@
+-// RUN: clang-reorder-fields -record-name Foo -fields-order z,w,y,x %s -- | FileCheck %s
+-
+-struct Foo {
+-  const int* x; // CHECK:      {{^  double z;}}
+-  int y;        // CHECK-NEXT: {{^  int w;}}
+-  double z;     // CHECK-NEXT: {{^  int y;}}
+-  int w;        // CHECK-NEXT: {{^  const int\* x}}
+-};
+-
+-int main(void) {
+-  const int x = 13;
+-  struct Foo foo = { &x, 0, 1.29, 17 }; // CHECK: {{^  struct Foo foo = { 1.29, 17, 0, &x };}} 
+-  return 0;
+-}

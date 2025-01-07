@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/docs/clangd/Features.rst b/clang-tools-extra/docs/clangd/Features.rst
+deleted file mode 100644
+index 05b8efd1b670..000000000000
+--- a/clang-tools-extra/docs/clangd/Features.rst
++++ /dev/null
+@@ -1,4 +0,0 @@
+-:orphan:
+-:template: clangd_redirect.html
+-:redirect_target: https://clangd.llvm.org/features.html
+-

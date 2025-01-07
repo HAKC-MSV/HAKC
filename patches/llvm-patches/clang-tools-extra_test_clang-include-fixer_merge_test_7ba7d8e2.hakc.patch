@@ -1,0 +1,39 @@
+diff --git a/clang-tools-extra/test/clang-include-fixer/merge.test b/clang-tools-extra/test/clang-include-fixer/merge.test
+deleted file mode 100644
+index 6e65e518be4c..000000000000
+--- a/clang-tools-extra/test/clang-include-fixer/merge.test
++++ /dev/null
+@@ -1,33 +0,0 @@
+-# RUN: find-all-symbols -merge-dir=%S/Inputs/merge %t.merged
+-# RUN: sed '/^#/d' %s > %t.golden
+-# RUN: diff --strip-trailing-cr -u %t.golden %t.merged
+----
+-Name:            bar
+-Contexts:
+-  - ContextType:     Namespace
+-    ContextName:     a
+-FilePath:        '../include/bar.h'
+-Type:            Class
+-Seen:            1
+-Used:            1
+-...
+----
+-Name:            bar
+-Contexts:
+-  - ContextType:     Namespace
+-    ContextName:     a
+-FilePath:        '../include/barbar.h'
+-Type:            Class
+-Seen:            1
+-Used:            0
+-...
+----
+-Name:            foo
+-Contexts:
+-  - ContextType:     Namespace
+-    ContextName:     a
+-FilePath:        foo.h
+-Type:            Class
+-Seen:            2
+-Used:            2
+-...

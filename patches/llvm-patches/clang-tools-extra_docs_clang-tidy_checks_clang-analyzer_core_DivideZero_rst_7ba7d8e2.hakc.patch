@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/core.DivideZero.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/core.DivideZero.rst
+deleted file mode 100644
+index b88a761850f6..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/core.DivideZero.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-core.DivideZero
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#core-dividezero
+-
+-clang-analyzer-core.DivideZero
+-==============================
+-
+-Check for division by zero.
+-
+-The `clang-analyzer-core.DivideZero` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#core-dividezero>`_
+-for more information.

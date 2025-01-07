@@ -1,0 +1,10 @@
+diff --git a/bolt/utils/dot2html/__main__.py b/bolt/utils/dot2html/__main__.py
+deleted file mode 100644
+index 95f6a532225d..000000000000
+--- a/bolt/utils/dot2html/__main__.py
++++ /dev/null
+@@ -1,4 +0,0 @@
+-import dot2html
+-
+-if __name__ == "__main__":
+-    dot2html.main()

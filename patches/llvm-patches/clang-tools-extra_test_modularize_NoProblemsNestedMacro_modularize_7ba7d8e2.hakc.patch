@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/test/modularize/NoProblemsNestedMacro.modularize b/clang-tools-extra/test/modularize/NoProblemsNestedMacro.modularize
+deleted file mode 100644
+index a1c627d2e728..000000000000
+--- a/clang-tools-extra/test/modularize/NoProblemsNestedMacro.modularize
++++ /dev/null
+@@ -1,3 +0,0 @@
+-# RUN: modularize %s -x c++
+-
+-Inputs/NestedMacro.h

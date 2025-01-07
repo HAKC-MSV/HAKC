@@ -1,0 +1,7 @@
+diff --git a/clang/docs/CodeOwners.rst b/clang/docs/CodeOwners.rst
+deleted file mode 100644
+index 48128fbc5d90..000000000000
+--- a/clang/docs/CodeOwners.rst
++++ /dev/null
+@@ -1 +0,0 @@
+-.. include:: ../CodeOwners.rst

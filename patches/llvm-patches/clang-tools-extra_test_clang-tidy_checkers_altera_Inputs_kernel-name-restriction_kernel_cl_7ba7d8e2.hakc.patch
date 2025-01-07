@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/kernel.cl b/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/kernel.cl
+deleted file mode 100644
+index cb6da8c213f8..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/kernel.cl
++++ /dev/null
+@@ -1 +0,0 @@
+-const int KERNELINT = 1;

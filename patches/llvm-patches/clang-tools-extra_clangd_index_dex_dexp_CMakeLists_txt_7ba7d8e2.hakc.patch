@@ -1,0 +1,24 @@
+diff --git a/clang-tools-extra/clangd/index/dex/dexp/CMakeLists.txt b/clang-tools-extra/clangd/index/dex/dexp/CMakeLists.txt
+deleted file mode 100644
+index 4fe42cb8786f..000000000000
+--- a/clang-tools-extra/clangd/index/dex/dexp/CMakeLists.txt
++++ /dev/null
+@@ -1,18 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  LineEditor
+-  Support
+-  )
+-
+-add_clang_executable(dexp
+-  Dexp.cpp
+-  )
+-
+-clang_target_link_libraries(dexp
+-  PRIVATE
+-  clangBasic
+-  )
+-target_link_libraries(dexp
+-  PRIVATE
+-  clangDaemon
+-  clangdRemoteIndex
+-  )

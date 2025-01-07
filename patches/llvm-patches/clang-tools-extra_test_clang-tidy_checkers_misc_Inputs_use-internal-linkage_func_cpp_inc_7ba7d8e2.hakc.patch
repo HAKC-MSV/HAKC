@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_cpp.inc b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_cpp.inc
+deleted file mode 100644
+index 97e026f0116e..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_cpp.inc
++++ /dev/null
+@@ -1 +0,0 @@
+-void func_cpp_inc();

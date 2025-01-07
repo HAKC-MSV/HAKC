@@ -1,0 +1,14 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/APINotes/SomeOtherKit.apinotes b/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/APINotes/SomeOtherKit.apinotes
+deleted file mode 100644
+index 2ad546b8f8bc..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/APINotes/SomeOtherKit.apinotes
++++ /dev/null
+@@ -1,8 +0,0 @@
+-Name: SomeOtherKit
+-Classes:
+-  - Name: A
+-    Methods:
+-      - Selector:        "methodA"
+-        MethodKind:      Instance
+-        Availability:    none
+-        AvailabilityMsg: "anything but this"

@@ -1,0 +1,34 @@
+diff --git a/clang/lib/Tooling/DependencyScanning/CMakeLists.txt b/clang/lib/Tooling/DependencyScanning/CMakeLists.txt
+deleted file mode 100644
+index bc807e162c91..000000000000
+--- a/clang/lib/Tooling/DependencyScanning/CMakeLists.txt
++++ /dev/null
+@@ -1,28 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  ${LLVM_TARGETS_TO_BUILD}
+-  Core
+-  Option
+-  Support
+-  TargetParser
+-  )
+-
+-add_clang_library(clangDependencyScanning
+-  DependencyScanningFilesystem.cpp
+-  DependencyScanningService.cpp
+-  DependencyScanningWorker.cpp
+-  DependencyScanningTool.cpp
+-  ModuleDepCollector.cpp
+-
+-  DEPENDS
+-  ClangDriverOptions
+-
+-  LINK_LIBS
+-  clangAST
+-  clangBasic
+-  clangCodeGen
+-  clangDriver
+-  clangFrontend
+-  clangLex
+-  clangSerialization
+-  clangTooling
+-  )

@@ -1,0 +1,4 @@
+diff --git a/clang-tools-extra/clangd/test/index-serialization/Inputs/sample.idx b/clang-tools-extra/clangd/test/index-serialization/Inputs/sample.idx
+deleted file mode 100644
+index 0c04df86ae1c..000000000000
+Binary files a/clang-tools-extra/clangd/test/index-serialization/Inputs/sample.idx and /dev/null differ

@@ -1,0 +1,20 @@
+diff --git a/clang/lib/CrossTU/CMakeLists.txt b/clang/lib/CrossTU/CMakeLists.txt
+deleted file mode 100644
+index 3349fc283925..000000000000
+--- a/clang/lib/CrossTU/CMakeLists.txt
++++ /dev/null
+@@ -1,14 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  TargetParser
+-  )
+-
+-add_clang_library(clangCrossTU
+-  CrossTranslationUnit.cpp
+-
+-  LINK_LIBS
+-  clangAST
+-  clangBasic
+-  clangFrontend
+-  clangIndex
+-  )

@@ -1,0 +1,21 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Headers/SomeKit_private.apinotes b/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Headers/SomeKit_private.apinotes
+deleted file mode 100644
+index aee8c3684dc4..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Headers/SomeKit_private.apinotes
++++ /dev/null
+@@ -1,15 +0,0 @@
+-Name: SomeKit
+-Classes:
+-  - Name: A
+-    Methods:
+-      - Selector: "privateTransform:input:"
+-        MethodKind:      Instance
+-        NullabilityOfRet: N
+-        Nullability:      [ N, S ]
+-    Properties:
+-      - Name: internalProperty
+-        Nullability: N
+-Protocols:
+-  - Name: InternalProtocol
+-    Availability: none
+-    AvailabilityMsg: "not for you"

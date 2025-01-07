@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.PureVirtualCall.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.PureVirtualCall.rst
+deleted file mode 100644
+index 9fab628b80d4..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.PureVirtualCall.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-cplusplus.PureVirtualCall
+-
+-clang-analyzer-cplusplus.PureVirtualCall
+-========================================
+-
+-Check pure virtual function calls during construction/destruction.
+-
+-The clang-analyzer-cplusplus.PureVirtualCall check is an alias of
+-Clang Static Analyzer cplusplus.PureVirtualCall.

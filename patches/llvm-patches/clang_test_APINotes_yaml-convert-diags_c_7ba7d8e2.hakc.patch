@@ -1,0 +1,12 @@
+diff --git a/clang/test/APINotes/yaml-convert-diags.c b/clang/test/APINotes/yaml-convert-diags.c
+deleted file mode 100644
+index 1d352dc2c523..000000000000
+--- a/clang/test/APINotes/yaml-convert-diags.c
++++ /dev/null
+@@ -1,6 +0,0 @@
+-// RUN: rm -rf %t
+-// RUN: not %clang_cc1 -fsyntax-only -fapinotes %s -I %S/Inputs/BrokenHeaders2 2>&1 | FileCheck %s
+-
+-#include "SomeBrokenLib.h"
+-
+-// CHECK: error: multiple definitions of global function 'do_something_with_pointers'

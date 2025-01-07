@@ -1,0 +1,16 @@
+diff --git a/bolt/test/runtime/X86/Inputs/unclaimed-jt-entries.c b/bolt/test/runtime/X86/Inputs/unclaimed-jt-entries.c
+deleted file mode 100644
+index ef986264df3c..000000000000
+--- a/bolt/test/runtime/X86/Inputs/unclaimed-jt-entries.c
++++ /dev/null
+@@ -1,10 +0,0 @@
+-#include <stdio.h>
+-#include <stdlib.h>
+-
+-int func(long long Input);
+-
+-int main(int argc, char *argv[]) {
+-  int arg = atoi(argv[1]);
+-  printf("%d\n", func(arg));
+-  return 0;
+-}

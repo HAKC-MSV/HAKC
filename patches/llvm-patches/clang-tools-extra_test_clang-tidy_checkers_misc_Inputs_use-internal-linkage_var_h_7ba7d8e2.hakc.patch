@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/var.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/var.h
+deleted file mode 100644
+index 37e4cfbafff1..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/var.h
++++ /dev/null
+@@ -1,3 +0,0 @@
+-#pragma once
+-
+-extern int gloabl_header;

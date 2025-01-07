@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/crlf/file1.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/crlf/file1.yaml
+deleted file mode 100644
+index 2c3d56e89eed..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/crlf/file1.yaml
++++ /dev/null
+@@ -1,14 +0,0 @@
+----
+-MainSourceFile:      source1.cpp
+-Diagnostics:
+-  - DiagnosticName:  test-crlf
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/crlf.cpp
+-      FileOffset: 79
+-      Replacements:
+-        - FilePath:        $(path)/crlf.cpp
+-          Offset:          79
+-          Length:          1
+-          ReplacementText: nullptr
+-...

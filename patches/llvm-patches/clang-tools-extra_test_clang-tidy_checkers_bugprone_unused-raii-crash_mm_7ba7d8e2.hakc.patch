@@ -1,0 +1,21 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/bugprone/unused-raii-crash.mm b/clang-tools-extra/test/clang-tidy/checkers/bugprone/unused-raii-crash.mm
+deleted file mode 100644
+index 432fd5329c56..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/bugprone/unused-raii-crash.mm
++++ /dev/null
+@@ -1,15 +0,0 @@
+-// RUN: clang-tidy %s -checks=-*,bugprone-unused-raii -- | count 0
+-
+-struct CxxClass {
+-  ~CxxClass() {}
+-};
+-
+-@interface ObjcClass {
+-}
+-- (CxxClass)set:(int)p;
+-@end
+-
+-void test(ObjcClass *s) {
+-  [s set:1]; // ok, no crash, no diagnostic emitted.
+-  return;
+-}

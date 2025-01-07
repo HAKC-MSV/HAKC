@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/enable-alpha-checks.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/enable-alpha-checks.cpp
+deleted file mode 100644
+index 74bdfdb5dd0c..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/enable-alpha-checks.cpp
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// REQUIRES: static-analyzer
+-
+-// Check if '-allow-enabling-analyzer-alpha-checkers' is visible for users.
+-// RUN: clang-tidy -help | not grep 'allow-enabling-analyzer-alpha-checkers'
+-
+-// Check if '-allow-enabling-analyzer-alpha-checkers' enables alpha checks.
+-// RUN: clang-tidy -checks=* -list-checks | not grep 'clang-analyzer-alpha'
+-// RUN: clang-tidy -checks=* -list-checks -allow-enabling-analyzer-alpha-checkers | grep 'clang-analyzer-alpha'

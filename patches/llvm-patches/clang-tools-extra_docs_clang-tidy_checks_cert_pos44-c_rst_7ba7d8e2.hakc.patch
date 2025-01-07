@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cert/pos44-c.rst b/clang-tools-extra/docs/clang-tidy/checks/cert/pos44-c.rst
+deleted file mode 100644
+index 2fd6c5c4b99a..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cert/pos44-c.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - cert-pos44-c
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../bugprone/bad-signal-to-kill-thread.html
+-
+-cert-pos44-c
+-============
+-
+-The `cert-pos44-c` check is an alias, please see
+-:doc:`bugprone-bad-signal-to-kill-thread <../bugprone/bad-signal-to-kill-thread>` for more information.

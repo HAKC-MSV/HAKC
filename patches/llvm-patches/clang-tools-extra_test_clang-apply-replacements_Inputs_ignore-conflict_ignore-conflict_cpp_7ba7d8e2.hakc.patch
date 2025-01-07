@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/ignore-conflict.cpp b/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/ignore-conflict.cpp
+deleted file mode 100644
+index 8a483049c8cd..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/ignore-conflict/ignore-conflict.cpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-class MyType {};
+-// CHECK: #include <a.h>
+-// CHECK-NEXT: #include <b.h>
+-// CHECK-NEXT: class MyType {};

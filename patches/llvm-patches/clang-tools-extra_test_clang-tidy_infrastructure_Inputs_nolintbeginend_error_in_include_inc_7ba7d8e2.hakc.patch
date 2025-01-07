@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolintbeginend/error_in_include.inc b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolintbeginend/error_in_include.inc
+deleted file mode 100644
+index 950b48d2815a..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/nolintbeginend/error_in_include.inc
++++ /dev/null
+@@ -1 +0,0 @@
+-class G { G(int i); };

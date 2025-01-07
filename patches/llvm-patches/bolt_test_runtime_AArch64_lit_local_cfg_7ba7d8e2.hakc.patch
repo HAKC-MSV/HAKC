@@ -1,0 +1,8 @@
+diff --git a/bolt/test/runtime/AArch64/lit.local.cfg b/bolt/test/runtime/AArch64/lit.local.cfg
+deleted file mode 100644
+index 682f390bf38e..000000000000
+--- a/bolt/test/runtime/AArch64/lit.local.cfg
++++ /dev/null
+@@ -1,2 +0,0 @@
+-if config.host_arch not in ["aarch64"]:
+-    config.unsupported = True

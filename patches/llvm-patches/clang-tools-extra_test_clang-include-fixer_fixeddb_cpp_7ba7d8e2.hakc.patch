@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/test/clang-include-fixer/fixeddb.cpp b/clang-tools-extra/test/clang-include-fixer/fixeddb.cpp
+deleted file mode 100644
+index 90068dbfde1e..000000000000
+--- a/clang-tools-extra/test/clang-include-fixer/fixeddb.cpp
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// RUN: sed -e 's#//.*$##' %s > %t.cpp
+-// RUN: clang-include-fixer -db=fixed -input='foo= "foo.h","bar.h"' %t.cpp --
+-// RUN: FileCheck %s -input-file=%t.cpp
+-
+-// CHECK: #include "foo.h"
+-// CHECK: foo f;
+-
+-foo f;

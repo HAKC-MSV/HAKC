@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/test/clang-move/Inputs/enum.h b/clang-tools-extra/test/clang-move/Inputs/enum.h
+deleted file mode 100644
+index 9ec39266bd20..000000000000
+--- a/clang-tools-extra/test/clang-move/Inputs/enum.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-namespace a {
+-enum E1 { Green, Red };
+-
+-enum class E2 { Yellow };
+-
+-class C {
+-  enum E3 { Blue };
+-};
+-} // namespace a

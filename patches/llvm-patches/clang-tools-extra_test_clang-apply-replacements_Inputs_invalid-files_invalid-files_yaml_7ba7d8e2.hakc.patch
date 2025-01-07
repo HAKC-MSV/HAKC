@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/invalid-files/invalid-files.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/invalid-files/invalid-files.yaml
+deleted file mode 100644
+index f84964d96647..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/invalid-files/invalid-files.yaml
++++ /dev/null
+@@ -1,12 +0,0 @@
+----
+-MainSourceFile:  ''
+-Replacements:
+-  - FilePath:        idontexist.h
+-    Offset:          2669
+-    Length:          0
+-    ReplacementText: ' override'
+-  - FilePath:        idontexist.h
+-    Offset:          2669
+-    Length:          0
+-    ReplacementText: ' override'
+-...

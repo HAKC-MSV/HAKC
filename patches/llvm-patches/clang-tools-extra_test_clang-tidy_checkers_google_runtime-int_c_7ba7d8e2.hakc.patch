@@ -1,0 +1,33 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/google/runtime-int.c b/clang-tools-extra/test/clang-tidy/checkers/google/runtime-int.c
+deleted file mode 100644
+index feb9d9aef25a..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/google/runtime-int.c
++++ /dev/null
+@@ -1,27 +0,0 @@
+-// RUN: clang-tidy -checks=-*,google-runtime-int %s -- -x c 2>&1 | not grep 'warning:\|error:'
+-
+-long a(void);
+-
+-long b(long x);
+-
+-short bar(const short q, unsigned short w) {
+-  long double foo;
+-  unsigned short port;
+-
+-  const unsigned short bar;
+-  long long *baar;
+-  const unsigned short bara;
+-  long const long moo;
+-  long volatile long wat;
+-  unsigned long y;
+-  unsigned long long **const *tmp;
+-  unsigned short porthole;
+-
+-  unsigned cast;
+-  cast = (short)42;
+-  return q;
+-}
+-
+-void qux(void) {
+-  short port;
+-}

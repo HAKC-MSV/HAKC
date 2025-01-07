@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/fuchsia/header-anon-namespaces.rst b/clang-tools-extra/docs/clang-tidy/checks/fuchsia/header-anon-namespaces.rst
+deleted file mode 100644
+index a92f3f411c03..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/fuchsia/header-anon-namespaces.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - fuchsia-header-anon-namespaces
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../google/build-namespaces.html
+-
+-fuchsia-header-anon-namespaces
+-==============================
+-
+-The fuchsia-header-anon-namespaces check is an alias, please see
+-:doc:`google-build-namespace <../google/build-namespaces>`
+-for more information.

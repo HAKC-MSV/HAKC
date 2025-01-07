@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/module.modulemap b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/module.modulemap
+deleted file mode 100644
+index d04240aff35d..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/expand-modular-headers-ppcallbacks/module.modulemap
++++ /dev/null
+@@ -1,3 +0,0 @@
+-module a { header "a.h" export * }
+-module b { header "b.h" export * use a }
+-module c { header "c.h" export * use b }

@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/clangd/unittests/decision_forest_model/features.json b/clang-tools-extra/clangd/unittests/decision_forest_model/features.json
+deleted file mode 100644
+index 7f159f192e19..000000000000
+--- a/clang-tools-extra/clangd/unittests/decision_forest_model/features.json
++++ /dev/null
+@@ -1,16 +0,0 @@
+-[
+-    {
+-        "name": "ANumber",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "AFloat",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "ACategorical",
+-        "kind": "ENUM",
+-        "type": "ns1::ns2::TestEnum",
+-        "header": "decision_forest_model/CategoricalFeature.h"
+-    }
+-]
+\ No newline at end of file

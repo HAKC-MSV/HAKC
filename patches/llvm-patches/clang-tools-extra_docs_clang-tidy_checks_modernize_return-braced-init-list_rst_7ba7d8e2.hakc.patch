@@ -1,0 +1,28 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/modernize/return-braced-init-list.rst b/clang-tools-extra/docs/clang-tidy/checks/modernize/return-braced-init-list.rst
+deleted file mode 100644
+index 2631d9056e85..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/modernize/return-braced-init-list.rst
++++ /dev/null
+@@ -1,22 +0,0 @@
+-.. title:: clang-tidy - modernize-return-braced-init-list
+-
+-modernize-return-braced-init-list
+-=================================
+-
+-Replaces explicit calls to the constructor in a return with a braced
+-initializer list. This way the return type is not needlessly duplicated in the
+-function definition and the return statement.
+-
+-.. code:: c++
+-
+-  Foo bar() {
+-    Baz baz;
+-    return Foo(baz);
+-  }
+-
+-  // transforms to:
+-
+-  Foo bar() {
+-    Baz baz;
+-    return {baz};
+-  }

@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/non-const-parameter.c b/clang-tools-extra/test/clang-tidy/checkers/readability/non-const-parameter.c
+deleted file mode 100644
+index db50467f3dd9..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/non-const-parameter.c
++++ /dev/null
+@@ -1,11 +0,0 @@
+-// RUN: %check_clang_tidy %s readability-non-const-parameter %t
+-
+-static int f();
+-
+-int f(p)
+-  int *p;
+-// CHECK-MESSAGES: :[[@LINE-1]]:8: warning: pointer parameter 'p' can be pointer to const [readability-non-const-parameter]
+-// CHECK-FIXES: {{^}}  const int *p;{{$}}
+-{
+-    return *p;
+-}

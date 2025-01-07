@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Circle.cpp b/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Circle.cpp
+deleted file mode 100644
+index 823384a4d97e..000000000000
+--- a/clang-tools-extra/test/clang-doc/Inputs/basic-project/src/Circle.cpp
++++ /dev/null
+@@ -1,11 +0,0 @@
+-#include "Circle.h"
+-
+-Circle::Circle(double radius) : radius_(radius) {}
+-
+-double Circle::area() const {
+-    return 3.141 * radius_ * radius_;
+-}
+-
+-double Circle::perimeter() const {
+-    return 3.141 * radius_;
+-}
+\ No newline at end of file

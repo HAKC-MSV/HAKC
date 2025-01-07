@@ -1,0 +1,13 @@
+diff --git a/clang-tools-extra/clangd/benchmarks/CompletionModel/CMakeLists.txt b/clang-tools-extra/clangd/benchmarks/CompletionModel/CMakeLists.txt
+deleted file mode 100644
+index 4c7cd779eb3e..000000000000
+--- a/clang-tools-extra/clangd/benchmarks/CompletionModel/CMakeLists.txt
++++ /dev/null
+@@ -1,7 +0,0 @@
+-add_benchmark(DecisionForestBenchmark DecisionForestBenchmark.cpp)
+-
+-target_link_libraries(DecisionForestBenchmark
+-  PRIVATE
+-  clangDaemon
+-  LLVMSupport
+-  )

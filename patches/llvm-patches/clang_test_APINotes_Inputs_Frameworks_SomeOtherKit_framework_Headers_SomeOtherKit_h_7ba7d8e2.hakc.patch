@@ -1,0 +1,15 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/Headers/SomeOtherKit.h b/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/Headers/SomeOtherKit.h
+deleted file mode 100644
+index 3911d765230c..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SomeOtherKit.framework/Headers/SomeOtherKit.h
++++ /dev/null
+@@ -1,9 +0,0 @@
+-#ifndef SOME_OTHER_KIT_H
+-
+-__attribute__((objc_root_class))
+-@interface A
+--(void)methodA;
+--(void)methodB;
+-@end
+-
+-#endif

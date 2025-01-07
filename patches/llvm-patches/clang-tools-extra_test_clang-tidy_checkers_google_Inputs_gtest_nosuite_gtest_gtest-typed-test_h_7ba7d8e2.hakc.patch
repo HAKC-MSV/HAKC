@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/gtest/nosuite/gtest/gtest-typed-test.h b/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/gtest/nosuite/gtest/gtest-typed-test.h
+deleted file mode 100644
+index 3f0a89b05e0d..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/google/Inputs/gtest/nosuite/gtest/gtest-typed-test.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-#ifndef THIRD_PARTY_LLVM_LLVM_TOOLS_CLANG_TOOLS_EXTRA_TEST_CLANG_TIDY_INPUTS_GTEST_GTEST_TYPED_TEST_H_
+-#define THIRD_PARTY_LLVM_LLVM_TOOLS_CLANG_TOOLS_EXTRA_TEST_CLANG_TIDY_INPUTS_GTEST_GTEST_TYPED_TEST_H_
+-
+-#define TYPED_TEST_CASE(CaseName, Types, ...)
+-
+-#define TYPED_TEST_CASE_P(SuiteName)
+-
+-#define REGISTER_TYPED_TEST_CASE_P(SuiteName, ...)
+-
+-#define INSTANTIATE_TYPED_TEST_CASE_P(Prefix, SuiteName, Types, ...)
+-
+-#endif  // THIRD_PARTY_LLVM_LLVM_TOOLS_CLANG_TOOLS_EXTRA_TEST_CLANG_TIDY_INPUTS_GTEST_GTEST_TYPED_TEST_H_

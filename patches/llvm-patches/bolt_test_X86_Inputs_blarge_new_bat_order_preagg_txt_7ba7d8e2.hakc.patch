@@ -1,0 +1,8 @@
+diff --git a/bolt/test/X86/Inputs/blarge_new_bat_order.preagg.txt b/bolt/test/X86/Inputs/blarge_new_bat_order.preagg.txt
+deleted file mode 100644
+index e4e1f170343c..000000000000
+--- a/bolt/test/X86/Inputs/blarge_new_bat_order.preagg.txt
++++ /dev/null
+@@ -1,2 +0,0 @@
+-B 800154 401050 20 0
+-F 800159 800193 7

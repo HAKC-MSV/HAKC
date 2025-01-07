@@ -1,0 +1,16 @@
+diff --git a/bolt/test/X86/sctc-bug.test b/bolt/test/X86/sctc-bug.test
+deleted file mode 100644
+index fb3aff8529f8..000000000000
+--- a/bolt/test/X86/sctc-bug.test
++++ /dev/null
+@@ -1,10 +0,0 @@
+-## Check that we don't accidentally optimize out a tail call.
+-
+-RUN: %clang %cflags %S/Inputs/sctc_bug.s -o %t
+-RUN: llvm-bolt %t -o %t.null --funcs=main --print-after-lowering \
+-RUN:   2>&1 | FileCheck %s
+-
+-CHECK:   jp      .L{{.*}}
+-CHECK:   je      foo # TAILCALL
+-CHECK:   xorl    %eax, %eax
+-CHECK:   retq

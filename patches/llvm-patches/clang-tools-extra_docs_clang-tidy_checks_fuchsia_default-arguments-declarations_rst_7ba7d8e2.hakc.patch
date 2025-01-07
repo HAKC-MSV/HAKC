@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/fuchsia/default-arguments-declarations.rst b/clang-tools-extra/docs/clang-tidy/checks/fuchsia/default-arguments-declarations.rst
+deleted file mode 100644
+index 85e5de2b14bd..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/fuchsia/default-arguments-declarations.rst
++++ /dev/null
+@@ -1,16 +0,0 @@
+-.. title:: clang-tidy - fuchsia-default-arguments-declarations
+-
+-fuchsia-default-arguments-declarations
+-======================================
+-
+-Warns if a function or method is declared with default parameters.
+-
+-For example, the declaration:
+-
+-.. code-block:: c++
+-
+-  int foo(int value = 5) { return value; }
+-
+-will cause a warning.
+-
+-See the features disallowed in Fuchsia at https://fuchsia.dev/fuchsia-src/development/languages/c-cpp/cxx?hl=en

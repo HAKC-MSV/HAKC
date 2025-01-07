@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Headers/FrameworkWithWrongCasePrivate.h b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Headers/FrameworkWithWrongCasePrivate.h
+deleted file mode 100644
+index d3d61483191c..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Headers/FrameworkWithWrongCasePrivate.h
++++ /dev/null
+@@ -1 +0,0 @@
+-extern int FrameworkWithWrongCasePrivate;

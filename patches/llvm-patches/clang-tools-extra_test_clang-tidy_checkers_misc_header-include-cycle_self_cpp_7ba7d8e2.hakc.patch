@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/header-include-cycle.self.cpp b/clang-tools-extra/test/clang-tidy/checkers/misc/header-include-cycle.self.cpp
+deleted file mode 100644
+index 245dd0a65a8b..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/header-include-cycle.self.cpp
++++ /dev/null
+@@ -1,3 +0,0 @@
+-// RUN: not clang-tidy %s -checks='-*,misc-header-include-cycle'
+-
+-#include "header-include-cycle.self.cpp"

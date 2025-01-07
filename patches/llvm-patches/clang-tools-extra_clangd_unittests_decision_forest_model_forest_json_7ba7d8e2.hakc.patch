@@ -1,0 +1,59 @@
+diff --git a/clang-tools-extra/clangd/unittests/decision_forest_model/forest.json b/clang-tools-extra/clangd/unittests/decision_forest_model/forest.json
+deleted file mode 100644
+index 26f071da485d..000000000000
+--- a/clang-tools-extra/clangd/unittests/decision_forest_model/forest.json
++++ /dev/null
+@@ -1,52 +0,0 @@
+-[
+-    {
+-        "operation": "if_greater",
+-        "feature": "ANumber",
+-        "threshold": 200.0,
+-        "then": {
+-            "operation": "if_greater",
+-            "feature": "AFloat",
+-            "threshold": -1,
+-            "then": {
+-                "operation": "boost",
+-                "score": 10.0
+-            },
+-            "else": {
+-                "operation": "boost",
+-                "score": -20.0
+-            }
+-        },
+-        "else": {
+-            "operation": "if_member",
+-            "feature": "ACategorical",
+-            "set": [
+-                "A",
+-                "C"
+-            ],
+-            "then": {
+-                "operation": "boost",
+-                "score": 3.0
+-            },
+-            "else": {
+-                "operation": "boost",
+-                "score": -4.0
+-            }
+-        }
+-    },
+-    {
+-        "operation": "if_member",
+-        "feature": "ACategorical",
+-        "set": [
+-            "A",
+-            "B"
+-        ],
+-        "then": {
+-            "operation": "boost",
+-            "score": 5.0
+-        },
+-        "else": {
+-            "operation": "boost",
+-            "score": -6.0
+-        }
+-    }
+-]
+\ No newline at end of file

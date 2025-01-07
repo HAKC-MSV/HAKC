@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-anonymous-namespace.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-anonymous-namespace.h
+deleted file mode 100644
+index 59fdef193112..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-anonymous-namespace.h
++++ /dev/null
+@@ -1,3 +0,0 @@
+-// Should not warn here, do not require anonymous namespaces in headers
+-static int gv{123};
+-static void gf(){}

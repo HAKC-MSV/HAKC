@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/clangd/index/remote/marshalling/CMakeLists.txt b/clang-tools-extra/clangd/index/remote/marshalling/CMakeLists.txt
+deleted file mode 100644
+index 071802a96264..000000000000
+--- a/clang-tools-extra/clangd/index/remote/marshalling/CMakeLists.txt
++++ /dev/null
+@@ -1,11 +0,0 @@
+-add_clang_library(clangdRemoteMarshalling
+-  Marshalling.cpp
+-
+-  LINK_LIBS
+-  clangdRemoteIndexProto
+-  clangDaemon
+-  clangdSupport
+-
+-  DEPENDS
+-  clangdRemoteIndexProto
+-  )

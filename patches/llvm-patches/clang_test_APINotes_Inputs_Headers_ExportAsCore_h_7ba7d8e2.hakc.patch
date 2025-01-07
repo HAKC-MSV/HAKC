@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/ExportAsCore.h b/clang/test/APINotes/Inputs/Headers/ExportAsCore.h
+deleted file mode 100644
+index f7674c19935d..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/ExportAsCore.h
++++ /dev/null
+@@ -1 +0,0 @@
+-static int globalInt = 123;

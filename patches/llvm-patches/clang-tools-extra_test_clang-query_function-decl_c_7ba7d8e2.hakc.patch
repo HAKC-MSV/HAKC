@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-query/function-decl.c b/clang-tools-extra/test/clang-query/function-decl.c
+deleted file mode 100644
+index f35cba03781a..000000000000
+--- a/clang-tools-extra/test/clang-query/function-decl.c
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// RUN: clang-query -c "match functionDecl()" %s -- | FileCheck %s
+-
+-// CHECK: function-decl.c:4:1: note: "root" binds here
+-void foo(void) {}

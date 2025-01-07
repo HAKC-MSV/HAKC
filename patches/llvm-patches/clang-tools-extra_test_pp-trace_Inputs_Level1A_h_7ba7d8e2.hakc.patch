@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/pp-trace/Inputs/Level1A.h b/clang-tools-extra/test/pp-trace/Inputs/Level1A.h
+deleted file mode 100644
+index 165efc738ea2..000000000000
+--- a/clang-tools-extra/test/pp-trace/Inputs/Level1A.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#include "Level2A.h"
+-#define MACRO_1A 1

@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/pseudo/fuzzer/CMakeLists.txt b/clang-tools-extra/pseudo/fuzzer/CMakeLists.txt
+deleted file mode 100644
+index e1d79873471f..000000000000
+--- a/clang-tools-extra/pseudo/fuzzer/CMakeLists.txt
++++ /dev/null
+@@ -1,16 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FuzzerCLI
+-  Support
+-  )
+-
+-add_llvm_fuzzer(clang-pseudo-fuzzer
+-  Fuzzer.cpp
+-  DUMMY_MAIN Main.cpp
+-  )
+-
+-target_link_libraries(clang-pseudo-fuzzer
+-  PRIVATE
+-  clangPseudo
+-  clangPseudoCLI
+-  clangPseudoGrammar
+-  )

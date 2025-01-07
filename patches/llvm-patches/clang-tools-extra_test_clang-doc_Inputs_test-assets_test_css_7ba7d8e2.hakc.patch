@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.css b/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.css
+deleted file mode 100644
+index 5c5532659be5..000000000000
+--- a/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.css
++++ /dev/null
+@@ -1,3 +0,0 @@
+-body {
+-    padding: 0;
+-}
+\ No newline at end of file

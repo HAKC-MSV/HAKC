@@ -1,0 +1,16 @@
+diff --git a/bolt/test/X86/Inputs/jt-pic-linkerscript.ld b/bolt/test/X86/Inputs/jt-pic-linkerscript.ld
+deleted file mode 100644
+index c32ffd695682..000000000000
+--- a/bolt/test/X86/Inputs/jt-pic-linkerscript.ld
++++ /dev/null
+@@ -1,10 +0,0 @@
+-# Linker script used by jump-table-pic-conflict.s test.
+-# .rodata needs to appear before .text
+-
+-SECTIONS
+-{
+-  . = 0x201120;
+-  .rodata : { *(.rodata) }
+-  .eh_frame : { *(.eh_frame) }
+-  .text : { *(.text) }
+-}

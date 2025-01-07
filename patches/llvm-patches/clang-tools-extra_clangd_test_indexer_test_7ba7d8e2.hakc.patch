@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/clangd/test/indexer.test b/clang-tools-extra/clangd/test/indexer.test
+deleted file mode 100644
+index 2f01f6c557a7..000000000000
+--- a/clang-tools-extra/clangd/test/indexer.test
++++ /dev/null
+@@ -1,9 +0,0 @@
+-# RUN: rm -rf %t.cpp
+-# RUN: touch %t.cpp
+-#
+-# Make sure compile flags are adjusted for clangd. `--save-temps` creates a
+-# `.ii` file and `-verify` triggers extra diagnostics generation. Clangd should
+-# strip those.
+-# RUN: clangd-indexer %t.cpp -- -Xclang -verify --save-temps -- 2>&1 | FileCheck %s
+-# CHECK-NOT: error: no expected directives found: consider use of 'expected-no-diagnostics'
+-# RUN: not ls %t.ii

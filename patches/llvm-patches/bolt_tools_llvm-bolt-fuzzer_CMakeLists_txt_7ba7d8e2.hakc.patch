@@ -1,0 +1,19 @@
+diff --git a/bolt/tools/llvm-bolt-fuzzer/CMakeLists.txt b/bolt/tools/llvm-bolt-fuzzer/CMakeLists.txt
+deleted file mode 100644
+index f21285f634ba..000000000000
+--- a/bolt/tools/llvm-bolt-fuzzer/CMakeLists.txt
++++ /dev/null
+@@ -1,13 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  ${LLVM_TARGETS_TO_BUILD}
+-  )
+-
+-add_llvm_fuzzer(llvm-bolt-fuzzer
+-  llvm-bolt-fuzzer.cpp
+-
+-  DISABLE_LLVM_LINK_LLVM_DYLIB
+-  )
+-
+-if (TARGET llvm-bolt-fuzzer)
+-    target_link_libraries(llvm-bolt-fuzzer PRIVATE LLVMBOLTRewrite)
+-endif()

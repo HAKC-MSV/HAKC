@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/hicpp/special-member-functions.rst b/clang-tools-extra/docs/clang-tidy/checks/hicpp/special-member-functions.rst
+deleted file mode 100644
+index e0be23c8bffa..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/hicpp/special-member-functions.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - hicpp-special-member-functions
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../cppcoreguidelines/special-member-functions.html
+-
+-hicpp-special-member-functions
+-==============================
+-
+-This check is an alias for :doc:`cppcoreguidelines-special-member-functions <../cppcoreguidelines/special-member-functions>`.
+-Checks that special member functions have the correct signature, according to `rule 12.5.7 <https://www.perforce.com/resources/qac/high-integrity-cpp-coding-standard/special-member-functions>`_.

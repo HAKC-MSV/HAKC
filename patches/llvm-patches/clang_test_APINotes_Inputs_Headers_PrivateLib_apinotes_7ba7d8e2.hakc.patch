@@ -1,0 +1,10 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/PrivateLib.apinotes b/clang/test/APINotes/Inputs/Headers/PrivateLib.apinotes
+deleted file mode 100644
+index 5f62284aadca..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/PrivateLib.apinotes
++++ /dev/null
+@@ -1,4 +0,0 @@
+-Name: HeaderLib
+-Globals:
+-- Name: PrivateLib
+-  Type: float

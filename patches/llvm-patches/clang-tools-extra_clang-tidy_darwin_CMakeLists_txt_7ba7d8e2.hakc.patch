@@ -1,0 +1,33 @@
+diff --git a/clang-tools-extra/clang-tidy/darwin/CMakeLists.txt b/clang-tools-extra/clang-tidy/darwin/CMakeLists.txt
+deleted file mode 100644
+index 6f6b3607b3ec..000000000000
+--- a/clang-tools-extra/clang-tidy/darwin/CMakeLists.txt
++++ /dev/null
+@@ -1,27 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FrontendOpenMP
+-  Support
+-  )
+-
+-add_clang_library(clangTidyDarwinModule
+-  AvoidSpinlockCheck.cpp
+-  DarwinTidyModule.cpp
+-  DispatchOnceNonstaticCheck.cpp
+-
+-  LINK_LIBS
+-  clangTidy
+-  clangTidyUtils
+-
+-  DEPENDS
+-  omp_gen
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(clangTidyDarwinModule
+-  PRIVATE
+-  clangAnalysis
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangLex
+-  )

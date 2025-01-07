@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-equals-default-delayed.cpp b/clang-tools-extra/test/clang-tidy/checkers/modernize/use-equals-default-delayed.cpp
+deleted file mode 100644
+index f39efd8452f7..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-equals-default-delayed.cpp
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// RUN: clang-tidy %s -checks=-*,modernize-use-equals-default -- -std=c++11 -fdelayed-template-parsing -fexceptions | count 0
+-// Note: this test expects no diagnostics, but FileCheck cannot handle that,
+-// hence the use of | count 0.
+-// FIXME: Make the test work in all language modes.
+-
+-template <typename Ty>
+-struct S {
+-  S<Ty>& operator=(const S<Ty>&) { return *this; }
+-};

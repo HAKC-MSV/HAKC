@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/explain-config/.clang-tidy b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/explain-config/.clang-tidy
+deleted file mode 100644
+index 4fbd09c3ef7b..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/explain-config/.clang-tidy
++++ /dev/null
+@@ -1 +0,0 @@
+-Checks: '-*,modernize-use-nullptr'

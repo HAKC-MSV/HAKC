@@ -1,0 +1,17 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/ExternCtx.h b/clang/test/APINotes/Inputs/Headers/ExternCtx.h
+deleted file mode 100644
+index 669d443f60ec..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/ExternCtx.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-extern "C" {
+-  static int globalInExternC = 1;
+-
+-  static void globalFuncInExternC() {}
+-}
+-
+-extern "C++" {
+-  static int globalInExternCXX = 2;
+-
+-  static void globalFuncInExternCXX() {}
+-}

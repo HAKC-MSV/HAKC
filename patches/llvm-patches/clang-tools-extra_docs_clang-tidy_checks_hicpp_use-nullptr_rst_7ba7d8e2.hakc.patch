@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/hicpp/use-nullptr.rst b/clang-tools-extra/docs/clang-tidy/checks/hicpp/use-nullptr.rst
+deleted file mode 100644
+index 4bcc71898c1c..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/hicpp/use-nullptr.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - hicpp-use-nullptr
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../modernize/use-nullptr.html
+-
+-hicpp-use-nullptr
+-=================
+-
+-The `hicpp-use-nullptr` check is an alias, please see
+-:doc:`modernize-use-nullptr <../modernize/use-nullptr>` for more information.
+-It enforces the `rule 2.5.3 <https://www.perforce.com/resources/qac/high-integrity-cpp-coding-standard/lexical-conventions>`_.

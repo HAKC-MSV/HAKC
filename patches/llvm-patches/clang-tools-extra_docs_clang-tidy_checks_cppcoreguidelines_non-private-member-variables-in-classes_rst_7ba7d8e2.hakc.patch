@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/non-private-member-variables-in-classes.rst b/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/non-private-member-variables-in-classes.rst
+deleted file mode 100644
+index 7f18c17498d3..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cppcoreguidelines/non-private-member-variables-in-classes.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-.. title:: clang-tidy - cppcoreguidelines-non-private-member-variables-in-classes
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../misc/non-private-member-variables-in-classes.html
+-
+-cppcoreguidelines-non-private-member-variables-in-classes
+-=========================================================
+-
+-The cppcoreguidelines-non-private-member-variables-in-classes check is an alias,
+-please see
+-:doc:`misc-non-private-member-variables-in-classes <../misc/non-private-member-variables-in-classes>`
+-for more information.

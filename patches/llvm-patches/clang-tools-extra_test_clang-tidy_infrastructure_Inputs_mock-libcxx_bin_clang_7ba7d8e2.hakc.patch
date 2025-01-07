@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/bin/clang b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/bin/clang
+deleted file mode 100644
+index ed34c1f81868..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/bin/clang
++++ /dev/null
+@@ -1 +0,0 @@
+-This file is a placeholder to keep its parent directory in git.

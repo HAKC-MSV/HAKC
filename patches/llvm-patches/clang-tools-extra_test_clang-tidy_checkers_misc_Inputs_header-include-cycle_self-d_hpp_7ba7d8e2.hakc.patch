@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.self-d.hpp b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.self-d.hpp
+deleted file mode 100644
+index 16a2bebe96e6..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.self-d.hpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef SELF
+-#define SELF
+-#include "header-include-cycle.self-d.hpp"
+-#endif

@@ -1,0 +1,14 @@
+diff --git a/bolt/test/verify-cfg.test b/bolt/test/verify-cfg.test
+deleted file mode 100644
+index 4a7de85cd427..000000000000
+--- a/bolt/test/verify-cfg.test
++++ /dev/null
+@@ -1,8 +0,0 @@
+-# Verify if the `--verify-cfg` option might produce incorrect alerts.
+-
+-REQUIRES: system-linux
+-
+-RUN: %clang %cflags %p/Inputs/hello.c -o %t -Wl,-q
+-RUN: llvm-bolt %t -o %t.bolt --verify-cfg 2>&1 | FileCheck %s
+-
+-CHECK-NOT: BOLT-ERROR: Invalid CFG detected after pass {{.*}}

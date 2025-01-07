@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/CompileError/module.modulemap b/clang-tools-extra/test/modularize/Inputs/CompileError/module.modulemap
+deleted file mode 100644
+index f71b66f148ed..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/CompileError/module.modulemap
++++ /dev/null
+@@ -1,10 +0,0 @@
+-// module.modulemap
+-
+-module Level1A {
+-  header "Level1A.h"
+-  export *
+-}
+-module HasError {
+-  header "HasError.h"
+-  export *
+-}

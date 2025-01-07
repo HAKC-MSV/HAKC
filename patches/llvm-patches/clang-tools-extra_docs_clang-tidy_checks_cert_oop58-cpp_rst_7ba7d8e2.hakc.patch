@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cert/oop58-cpp.rst b/clang-tools-extra/docs/clang-tidy/checks/cert/oop58-cpp.rst
+deleted file mode 100644
+index 399fb1b7e927..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cert/oop58-cpp.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-.. title:: clang-tidy - cert-mutating-copy
+-
+-cert-oop58-cpp
+-==============
+-
+-Finds assignments to the copied object and its direct or indirect members
+-in copy constructors and copy assignment operators.
+-
+-This check corresponds to the CERT C Coding Standard rule
+-`OOP58-CPP. Copy operations must not mutate the source object
+-<https://wiki.sei.cmu.edu/confluence/display/cplusplus/OOP58-CPP.+Copy+operations+must+not+mutate+the+source+object>`_.

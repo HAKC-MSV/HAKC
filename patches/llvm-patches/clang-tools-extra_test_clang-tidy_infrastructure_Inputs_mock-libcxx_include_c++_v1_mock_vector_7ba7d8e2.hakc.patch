@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/include/c++/v1/mock_vector b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/include/c++/v1/mock_vector
+deleted file mode 100644
+index 35395267226f..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/mock-libcxx/include/c++/v1/mock_vector
++++ /dev/null
+@@ -1,2 +0,0 @@
+-class vector {};
+-typedef vector* vector_ptr;

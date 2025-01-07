@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/modularize/NoProblemsList.modularize b/clang-tools-extra/test/modularize/NoProblemsList.modularize
+deleted file mode 100644
+index 39261ceded85..000000000000
+--- a/clang-tools-extra/test/modularize/NoProblemsList.modularize
++++ /dev/null
+@@ -1,2 +0,0 @@
+-# RUN: modularize %S/NoProblems.modularize,%S/NoProblemsAnonymous.modularize -x c++
+-# RUN: modularize -prefix=%p %S/NoProblems.modularize,%S/NoProblemsAnonymous.modularize -x c++

@@ -1,0 +1,7 @@
+diff --git a/bolt/runtime/config.h.in b/bolt/runtime/config.h.in
+deleted file mode 100644
+index e52919dea83b..000000000000
+--- a/bolt/runtime/config.h.in
++++ /dev/null
+@@ -1 +0,0 @@
+-#cmakedefine HAVE_ELF_H

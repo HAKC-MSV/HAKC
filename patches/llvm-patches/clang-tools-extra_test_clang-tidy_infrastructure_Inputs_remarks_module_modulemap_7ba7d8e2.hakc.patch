@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/module.modulemap b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/module.modulemap
+deleted file mode 100644
+index 37a855090ec8..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/module.modulemap
++++ /dev/null
+@@ -1 +0,0 @@
+-module A { header "A.h" }

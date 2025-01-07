@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/modularize/NoProblemsGuard.modularize b/clang-tools-extra/test/modularize/NoProblemsGuard.modularize
+deleted file mode 100644
+index a5a80f03cded..000000000000
+--- a/clang-tools-extra/test/modularize/NoProblemsGuard.modularize
++++ /dev/null
+@@ -1,5 +0,0 @@
+-# RUN: modularize %s -x c++
+-
+-Inputs/HeaderGuardSub1.h
+-Inputs/HeaderGuardSub2.h
+-Inputs/HeaderGuard.h

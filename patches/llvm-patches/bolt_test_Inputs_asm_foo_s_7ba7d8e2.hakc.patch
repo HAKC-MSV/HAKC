@@ -1,0 +1,21 @@
+diff --git a/bolt/test/Inputs/asm_foo.s b/bolt/test/Inputs/asm_foo.s
+deleted file mode 100644
+index e42dc7e565fb..000000000000
+--- a/bolt/test/Inputs/asm_foo.s
++++ /dev/null
+@@ -1,15 +0,0 @@
+-  .text
+-  .globl foo
+-  .type foo, @function
+-foo:
+-   nop
+-   nop
+-   nop
+-   nop
+-   nop
+-   nop
+-   nop
+-   nop
+-   ret
+-   .size foo, .-foo
+-

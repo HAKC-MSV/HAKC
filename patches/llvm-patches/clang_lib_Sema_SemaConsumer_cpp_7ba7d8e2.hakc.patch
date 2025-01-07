@@ -1,0 +1,19 @@
+diff --git a/clang/lib/Sema/SemaConsumer.cpp b/clang/lib/Sema/SemaConsumer.cpp
+deleted file mode 100644
+index 02623be00c9c..000000000000
+--- a/clang/lib/Sema/SemaConsumer.cpp
++++ /dev/null
+@@ -1,13 +0,0 @@
+-//===-- SemaConsumer.cpp - Abstract interface for AST semantics -*- C++ -*-===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#include "clang/Sema/SemaConsumer.h"
+-
+-using namespace clang;
+-
+-void SemaConsumer::anchor() { }

@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/modernize/use-default.rst b/clang-tools-extra/docs/clang-tidy/checks/modernize/use-default.rst
+deleted file mode 100644
+index 9cd4f9d1522e..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/modernize/use-default.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-:orphan:
+-
+-.. title:: clang-tidy - modernize-use-default
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../modernize/use-equals-default.html
+-
+-modernize-use-default
+-=====================
+-
+-This check has been renamed to
+-:doc:`modernize-use-equals-default <../modernize/use-equals-default>`.

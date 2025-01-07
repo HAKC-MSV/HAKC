@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/pp-trace/Inputs/ModularizeList.txt b/clang-tools-extra/test/pp-trace/Inputs/ModularizeList.txt
+deleted file mode 100644
+index 8193db6a6262..000000000000
+--- a/clang-tools-extra/test/pp-trace/Inputs/ModularizeList.txt
++++ /dev/null
+@@ -1,4 +0,0 @@
+-Level1A.h
+-Level1B.h
+-Level2A.h
+-Level2B.h

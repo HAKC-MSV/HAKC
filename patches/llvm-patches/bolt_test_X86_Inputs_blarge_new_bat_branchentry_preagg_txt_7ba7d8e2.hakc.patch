@@ -1,0 +1,7 @@
+diff --git a/bolt/test/X86/Inputs/blarge_new_bat_branchentry.preagg.txt b/bolt/test/X86/Inputs/blarge_new_bat_branchentry.preagg.txt
+deleted file mode 100644
+index 546da92f94db..000000000000
+--- a/bolt/test/X86/Inputs/blarge_new_bat_branchentry.preagg.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-B 80010c 800194 1 0

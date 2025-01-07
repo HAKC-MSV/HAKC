@@ -1,0 +1,11 @@
+diff --git a/SECURITY.md b/SECURITY.md
+deleted file mode 100644
+index f6a5e6c01629..000000000000
+--- a/SECURITY.md
++++ /dev/null
+@@ -1,5 +0,0 @@
+-# Reporting LLVM Security Issues
+-
+-To report security issues in LLVM, please follow the steps outlined on the
+-[LLVM Security Group](https://llvm.org/docs/Security.html#how-to-report-a-security-issue)
+-page.

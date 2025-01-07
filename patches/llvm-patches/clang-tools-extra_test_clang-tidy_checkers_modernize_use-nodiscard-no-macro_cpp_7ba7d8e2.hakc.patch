@@ -1,0 +1,28 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-nodiscard-no-macro.cpp b/clang-tools-extra/test/clang-tidy/checkers/modernize/use-nodiscard-no-macro.cpp
+deleted file mode 100644
+index 578df3665f89..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-nodiscard-no-macro.cpp
++++ /dev/null
+@@ -1,22 +0,0 @@
+-// RUN: %check_clang_tidy -std=c++17-or-later %s modernize-use-nodiscard %t
+-
+-class Foo
+-{
+-public:
+-    bool f1() const;
+-    // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: function 'f1' should be marked {{\[\[nodiscard\]\]}} [modernize-use-nodiscard]
+-    // CHECK-FIXES: {{\[\[nodiscard\]\]}} bool f1() const;
+-
+-    bool f2(int) const;
+-    // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: function 'f2' should be marked {{\[\[nodiscard\]\]}} [modernize-use-nodiscard]
+-    // CHECK-FIXES: {{\[\[nodiscard\]\]}} bool f2(int) const;
+-
+-    bool f3(const int &) const;
+-    // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: function 'f3' should be marked {{\[\[nodiscard\]\]}} [modernize-use-nodiscard]
+-    // CHECK-FIXES: {{\[\[nodiscard\]\]}} bool f3(const int &) const;
+-
+-    bool f4(void) const;
+-    // CHECK-MESSAGES: :[[@LINE-1]]:5: warning: function 'f4' should be marked {{\[\[nodiscard\]\]}} [modernize-use-nodiscard]
+-    // CHECK-FIXES: {{\[\[nodiscard\]\]}} bool f4(void) const;
+-
+-};

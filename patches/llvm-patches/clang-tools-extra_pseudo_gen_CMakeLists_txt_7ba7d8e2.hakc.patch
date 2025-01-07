@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/pseudo/gen/CMakeLists.txt b/clang-tools-extra/pseudo/gen/CMakeLists.txt
+deleted file mode 100644
+index 3dd615a55875..000000000000
+--- a/clang-tools-extra/pseudo/gen/CMakeLists.txt
++++ /dev/null
+@@ -1,11 +0,0 @@
+-set(LLVM_LINK_COMPONENTS Support)
+-list(REMOVE_ITEM LLVM_COMMON_DEPENDS clang-tablegen-targets)
+-
+-add_clang_executable(clang-pseudo-gen
+-  Main.cpp
+-  )
+-
+-target_link_libraries(clang-pseudo-gen
+-  PRIVATE
+-  clangPseudoGrammar
+-  )

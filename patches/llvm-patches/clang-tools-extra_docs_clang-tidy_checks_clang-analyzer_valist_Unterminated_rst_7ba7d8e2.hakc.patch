@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/valist.Unterminated.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/valist.Unterminated.rst
+deleted file mode 100644
+index 85e21c572106..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/valist.Unterminated.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-valist.Unterminated
+-
+-clang-analyzer-valist.Unterminated
+-==================================
+-
+-Check for va_lists which are not released by a va_end call.
+-
+-The clang-analyzer-valist.Unterminated check is an alias of
+-Clang Static Analyzer valist.Unterminated.

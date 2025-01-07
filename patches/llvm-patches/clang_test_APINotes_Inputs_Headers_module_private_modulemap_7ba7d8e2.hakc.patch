@@ -1,0 +1,11 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/module.private.modulemap b/clang/test/APINotes/Inputs/Headers/module.private.modulemap
+deleted file mode 100644
+index 2ecf322ed18d..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/module.private.modulemap
++++ /dev/null
+@@ -1,5 +0,0 @@
+-module PrivateLib {
+-  header "PrivateLib.h"
+-}
+-
+-module ModuleWithWrongCasePrivate.Inner {}

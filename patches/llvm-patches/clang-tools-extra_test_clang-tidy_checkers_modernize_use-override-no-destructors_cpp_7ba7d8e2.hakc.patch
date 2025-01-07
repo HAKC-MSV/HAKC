@@ -1,0 +1,21 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-override-no-destructors.cpp b/clang-tools-extra/test/clang-tidy/checkers/modernize/use-override-no-destructors.cpp
+deleted file mode 100644
+index 2012d71c269a..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/use-override-no-destructors.cpp
++++ /dev/null
+@@ -1,15 +0,0 @@
+-// RUN: %check_clang_tidy %s modernize-use-override %t -- \
+-// RUN:   -config="{CheckOptions: {modernize-use-override.IgnoreDestructors: true}}"
+-
+-struct Base {
+-  virtual ~Base();
+-  virtual void f();
+-};
+-
+-struct Simple : public Base {
+-  virtual ~Simple();
+-  // CHECK-MESSAGES-NOT: warning:
+-  virtual void f();
+-  // CHECK-MESSAGES: :[[@LINE-1]]:16: warning: prefer using
+-  // CHECK-FIXES: {{^}}  void f() override;
+-};

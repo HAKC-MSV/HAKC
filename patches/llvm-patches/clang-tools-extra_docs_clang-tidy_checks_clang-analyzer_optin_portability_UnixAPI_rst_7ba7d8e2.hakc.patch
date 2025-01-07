@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.portability.UnixAPI.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.portability.UnixAPI.rst
+deleted file mode 100644
+index f133494718a8..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.portability.UnixAPI.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-optin.portability.UnixAPI
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#optin-portability-unixapi
+-
+-clang-analyzer-optin.portability.UnixAPI
+-========================================
+-
+-Finds implementation-defined behavior in UNIX/Posix functions.
+-
+-The `clang-analyzer-optin.portability.UnixAPI` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#optin-portability-unixapi>`_
+-for more information.

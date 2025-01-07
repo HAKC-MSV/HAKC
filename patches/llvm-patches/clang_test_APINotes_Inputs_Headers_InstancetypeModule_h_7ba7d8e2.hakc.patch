@@ -1,0 +1,16 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/InstancetypeModule.h b/clang/test/APINotes/Inputs/Headers/InstancetypeModule.h
+deleted file mode 100644
+index 767f201d9faf..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/InstancetypeModule.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-@interface Object
+-@end
+-
+-@interface SomeBaseClass : Object
+-+ (nullable instancetype)instancetypeFactoryMethod;
+-+ (nullable SomeBaseClass *)staticFactoryMethod;
+-@end
+-
+-@interface SomeSubclass : SomeBaseClass
+-@end

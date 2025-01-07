@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/clang-query/Inputs/foo.script b/clang-tools-extra/test/clang-query/Inputs/foo.script
+deleted file mode 100644
+index 3bd1f0e29744..000000000000
+--- a/clang-tools-extra/test/clang-query/Inputs/foo.script
++++ /dev/null
+@@ -1,2 +0,0 @@
+-foo
+-bar

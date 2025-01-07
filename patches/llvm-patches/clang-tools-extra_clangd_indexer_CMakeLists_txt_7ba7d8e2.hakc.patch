@@ -1,0 +1,28 @@
+diff --git a/clang-tools-extra/clangd/indexer/CMakeLists.txt b/clang-tools-extra/clangd/indexer/CMakeLists.txt
+deleted file mode 100644
+index a9438008ea03..000000000000
+--- a/clang-tools-extra/clangd/indexer/CMakeLists.txt
++++ /dev/null
+@@ -1,22 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-    Support
+-    )
+-
+-add_clang_executable(clangd-indexer
+-  IndexerMain.cpp
+-  )
+-
+-clang_target_link_libraries(clangd-indexer
+-  PRIVATE
+-  clangAST
+-  clangBasic
+-  clangFrontend
+-  clangIndex
+-  clangLex
+-  clangTooling
+-)
+-target_link_libraries(clangd-indexer
+-  PRIVATE
+-  clangDaemon
+-  clangdSupport
+-)

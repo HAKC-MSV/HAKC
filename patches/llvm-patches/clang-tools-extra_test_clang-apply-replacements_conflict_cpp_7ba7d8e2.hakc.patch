@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/conflict.cpp b/clang-tools-extra/test/clang-apply-replacements/conflict.cpp
+deleted file mode 100644
+index c1f234211219..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/conflict.cpp
++++ /dev/null
+@@ -1,17 +0,0 @@
+-// RUN: mkdir -p %T/Inputs/conflict
+-// RUN: sed "s#\$(path)#%/S/Inputs/conflict#" %S/Inputs/conflict/file1.yaml > %T/Inputs/conflict/file1.yaml
+-// RUN: sed "s#\$(path)#%/S/Inputs/conflict#" %S/Inputs/conflict/file2.yaml > %T/Inputs/conflict/file2.yaml
+-// RUN: sed "s#\$(path)#%/S/Inputs/conflict#" %S/Inputs/conflict/file3.yaml > %T/Inputs/conflict/file3.yaml
+-// RUN: sed "s#\$(path)#%/S/Inputs/conflict#" %S/Inputs/conflict/expected.txt > %T/Inputs/conflict/expected.txt
+-// RUN: not clang-apply-replacements %T/Inputs/conflict > %T/Inputs/conflict/output.txt 2>&1
+-// RUN: diff -b %T/Inputs/conflict/output.txt %T/Inputs/conflict/expected.txt
+-//
+-// Check that the yaml files are *not* deleted after running clang-apply-replacements without remove-change-desc-files even when there is a failure.
+-// RUN: ls -1 %T/Inputs/conflict | FileCheck %s --check-prefix=YAML
+-//
+-// Check that the yaml files *are* deleted after running clang-apply-replacements with remove-change-desc-files even when there is a failure.
+-// RUN: not clang-apply-replacements %T/Inputs/conflict -remove-change-desc-files > %T/Inputs/conflict/output.txt 2>&1
+-// RUN: ls -1 %T/Inputs/conflict | FileCheck %s --check-prefix=NO_YAML
+-//
+-// YAML: {{^file.\.yaml$}}
+-// NO_YAML-NOT: {{^file.\.yaml$}}

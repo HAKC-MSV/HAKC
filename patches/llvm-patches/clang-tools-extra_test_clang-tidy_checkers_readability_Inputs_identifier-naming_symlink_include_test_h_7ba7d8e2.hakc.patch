@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/symlink/include/test.h b/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/symlink/include/test.h
+deleted file mode 100644
+index f3560e4e50b9..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/symlink/include/test.h
++++ /dev/null
+@@ -1 +0,0 @@
+-const int global_const = 5;

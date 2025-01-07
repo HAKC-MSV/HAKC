@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.bcmp.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.bcmp.rst
+deleted file mode 100644
+index e0c66a7083f3..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.bcmp.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-security.insecureAPI.bcmp
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#security-insecureapi-bcmp
+-
+-clang-analyzer-security.insecureAPI.bcmp
+-========================================
+-
+-Warn on uses of the 'bcmp' function.
+-
+-The `clang-analyzer-security.insecureAPI.bcmp` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#security-insecureapi-bcmp>`_
+-for more information.

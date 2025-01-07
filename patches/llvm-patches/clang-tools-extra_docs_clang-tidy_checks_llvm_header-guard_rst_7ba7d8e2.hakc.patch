@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/llvm/header-guard.rst b/clang-tools-extra/docs/clang-tidy/checks/llvm/header-guard.rst
+deleted file mode 100644
+index 74eb10ba6fcf..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/llvm/header-guard.rst
++++ /dev/null
+@@ -1,6 +0,0 @@
+-.. title:: clang-tidy - llvm-header-guard
+-
+-llvm-header-guard
+-=================
+-
+-Finds and fixes header guards that do not adhere to LLVM style.

@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/unused-using-decls.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/unused-using-decls.h
+deleted file mode 100644
+index 8245cb19feb0..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/unused-using-decls.h
++++ /dev/null
+@@ -1,11 +0,0 @@
+-class MyClass {
+-public:
+-  template <template <typename> class S, typename T>
+-  S<T> *func1(T *a) {
+-    return new S<T>();
+-  }
+-  template <typename T, T (*S)()>
+-  void func2(T a) {
+-    S();
+-  }
+-};

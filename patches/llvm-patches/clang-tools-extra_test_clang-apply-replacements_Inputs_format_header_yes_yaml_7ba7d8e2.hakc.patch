@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/format_header/yes.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/format_header/yes.yaml
+deleted file mode 100644
+index 723c4c5d5ceb..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/format_header/yes.yaml
++++ /dev/null
+@@ -1,14 +0,0 @@
+----
+-MainSourceFile:  yes.cpp
+-Diagnostics:
+-  - DiagnosticName:  test-header-format
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/yes.cpp
+-      FileOffset: 36
+-      Replacements:
+-        - FilePath:        $(path)/yes.cpp
+-          Offset:          36
+-          Length:          17
+-          ReplacementText: ""
+-...

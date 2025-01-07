@@ -1,0 +1,15 @@
+diff --git a/clang/docs/analyzer/checkers/dividezero_example.c b/clang/docs/analyzer/checkers/dividezero_example.c
+deleted file mode 100644
+index 00ffaac491e5..000000000000
+--- a/clang/docs/analyzer/checkers/dividezero_example.c
++++ /dev/null
+@@ -1,9 +0,0 @@
+-void test(int z) {
+-  if (z == 0)
+-    int x = 1 / z; // warn
+-}
+-
+-void test() {
+-  int x = 1;
+-  int y = x % 0; // warn
+-}

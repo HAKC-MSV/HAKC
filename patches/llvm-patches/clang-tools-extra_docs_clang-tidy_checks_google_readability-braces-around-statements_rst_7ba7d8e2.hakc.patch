@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/google/readability-braces-around-statements.rst b/clang-tools-extra/docs/clang-tidy/checks/google/readability-braces-around-statements.rst
+deleted file mode 100644
+index 6130609fb11b..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/google/readability-braces-around-statements.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - google-readability-braces-around-statements
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../readability/braces-around-statements.html
+-
+-google-readability-braces-around-statements
+-===========================================
+-
+-The `google-readability-braces-around-statements` check is an alias, please see
+-:doc:`readability-braces-around-statements <../readability/braces-around-statements>`
+-for more information.

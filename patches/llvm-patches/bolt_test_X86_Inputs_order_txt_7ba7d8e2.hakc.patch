@@ -1,0 +1,11 @@
+diff --git a/bolt/test/X86/Inputs/order.txt b/bolt/test/X86/Inputs/order.txt
+deleted file mode 100644
+index 672c3f557e87..000000000000
+--- a/bolt/test/X86/Inputs/order.txt
++++ /dev/null
+@@ -1,5 +0,0 @@
+-_start
+-main
+-_a
+-_b
+-_f

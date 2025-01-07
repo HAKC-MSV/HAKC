@@ -1,0 +1,32 @@
+diff --git a/clang-tools-extra/clangd/fuzzer/CMakeLists.txt b/clang-tools-extra/clangd/fuzzer/CMakeLists.txt
+deleted file mode 100644
+index 9cfaeca18977..000000000000
+--- a/clang-tools-extra/clangd/fuzzer/CMakeLists.txt
++++ /dev/null
+@@ -1,26 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FuzzerCLI
+-  Support
+-  )
+-
+-# This fuzzer runs on oss-fuzz, so keep it around even if it looks unreferenced.
+-add_llvm_fuzzer(clangd-fuzzer
+-  clangd-fuzzer.cpp
+-  DUMMY_MAIN FuzzerClangdMain.cpp
+-  )
+-
+-clang_target_link_libraries(clangd-fuzzer
+-  PRIVATE
+-  clangBasic
+-  clangFormat
+-  clangFrontend
+-  clangSema
+-  clangTooling
+-  clangToolingCore
+-  )
+-target_link_libraries(clangd-fuzzer
+-  PRIVATE
+-  clangDaemon
+-  clangIncludeCleaner
+-  clangdSupport
+-  )

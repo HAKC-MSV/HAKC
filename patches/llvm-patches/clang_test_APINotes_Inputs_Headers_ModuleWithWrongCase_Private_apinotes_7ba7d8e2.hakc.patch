@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase_Private.apinotes b/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase_Private.apinotes
+deleted file mode 100644
+index dc6dc50bab6e..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase_Private.apinotes
++++ /dev/null
+@@ -1 +0,0 @@
+-Name: ModuleWithWrongCasePrivate

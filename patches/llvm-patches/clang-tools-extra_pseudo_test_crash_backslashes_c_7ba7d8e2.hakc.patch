@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/pseudo/test/crash/backslashes.c b/clang-tools-extra/pseudo/test/crash/backslashes.c
+deleted file mode 100644
+index 4ca70c609a0e..000000000000
+--- a/clang-tools-extra/pseudo/test/crash/backslashes.c
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// We used to try to interpret these backslashes as UCNs.
+-// RUN: clang-pseudo -source=%s -print-tokens
+-\
+-\ x

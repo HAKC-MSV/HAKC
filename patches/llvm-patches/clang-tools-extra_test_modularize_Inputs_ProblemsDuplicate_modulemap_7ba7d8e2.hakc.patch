@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/ProblemsDuplicate.modulemap b/clang-tools-extra/test/modularize/Inputs/ProblemsDuplicate.modulemap
+deleted file mode 100644
+index ff1d2f52c69d..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/ProblemsDuplicate.modulemap
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// ProblemsDuplicate.modulemap
+-module DuplicateHeader1 {
+-  header "DuplicateHeader1.h"
+-  export *
+-}
+-module DuplicateHeader2 {
+-  header "DuplicateHeader2.h"
+-  export *
+-}

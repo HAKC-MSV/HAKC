@@ -1,0 +1,11 @@
+diff --git a/clang/test/APINotes/Inputs/BrokenHeaders/APINotes.apinotes b/clang/test/APINotes/Inputs/BrokenHeaders/APINotes.apinotes
+deleted file mode 100644
+index cd5475b13423..000000000000
+--- a/clang/test/APINotes/Inputs/BrokenHeaders/APINotes.apinotes
++++ /dev/null
+@@ -1,5 +0,0 @@
+-Name: SomeBrokenLib
+-Functions:
+-  - Name: do_something_with_pointers
+-    Nu llabilityOfRet: O
+-    # the space is intentional, to make sure we don't crash on malformed API Notes

@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase.h b/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase.h
+deleted file mode 100644
+index 867a15cae9a6..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/ModuleWithWrongCase.h
++++ /dev/null
+@@ -1 +0,0 @@
+-extern int ModuleWithWrongCase;

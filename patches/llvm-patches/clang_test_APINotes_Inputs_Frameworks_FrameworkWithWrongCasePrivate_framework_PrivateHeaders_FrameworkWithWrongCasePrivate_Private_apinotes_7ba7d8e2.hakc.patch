@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/PrivateHeaders/FrameworkWithWrongCasePrivate_Private.apinotes b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/PrivateHeaders/FrameworkWithWrongCasePrivate_Private.apinotes
+deleted file mode 100644
+index d7af293e8125..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/PrivateHeaders/FrameworkWithWrongCasePrivate_Private.apinotes
++++ /dev/null
+@@ -1 +0,0 @@
+-Name: FrameworkWithWrongCasePrivate

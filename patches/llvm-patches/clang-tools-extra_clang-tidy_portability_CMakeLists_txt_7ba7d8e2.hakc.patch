@@ -1,0 +1,35 @@
+diff --git a/clang-tools-extra/clang-tidy/portability/CMakeLists.txt b/clang-tools-extra/clang-tidy/portability/CMakeLists.txt
+deleted file mode 100644
+index 01a86d686daa..000000000000
+--- a/clang-tools-extra/clang-tidy/portability/CMakeLists.txt
++++ /dev/null
+@@ -1,29 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FrontendOpenMP
+-  Support
+-  TargetParser
+-  )
+-
+-add_clang_library(clangTidyPortabilityModule
+-  PortabilityTidyModule.cpp
+-  RestrictSystemIncludesCheck.cpp
+-  SIMDIntrinsicsCheck.cpp
+-  StdAllocatorConstCheck.cpp
+-
+-  LINK_LIBS
+-  clangTidy
+-  clangTidyUtils
+-
+-  DEPENDS
+-  omp_gen
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(clangTidyPortabilityModule
+-  PRIVATE
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangLex
+-  clangTooling
+-  )

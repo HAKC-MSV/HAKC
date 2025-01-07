@@ -1,0 +1,8 @@
+diff --git a/clang/lib/Analysis/plugins/SampleAnalyzer/SampleAnalyzerPlugin.exports b/clang/lib/Analysis/plugins/SampleAnalyzer/SampleAnalyzerPlugin.exports
+deleted file mode 100644
+index 8d9ff882cfb1..000000000000
+--- a/clang/lib/Analysis/plugins/SampleAnalyzer/SampleAnalyzerPlugin.exports
++++ /dev/null
+@@ -1,2 +0,0 @@
+-clang_registerCheckers
+-clang_analyzerAPIVersionString

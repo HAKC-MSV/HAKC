@@ -1,0 +1,12 @@
+diff --git a/clang/bindings/python/tests/cindex/INPUTS/hello.cpp b/clang/bindings/python/tests/cindex/INPUTS/hello.cpp
+deleted file mode 100644
+index 7ef086e56b2c..000000000000
+--- a/clang/bindings/python/tests/cindex/INPUTS/hello.cpp
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#include "stdio.h"
+-
+-int main(int argc, char* argv[]) {
+-    printf("hello world\n");
+-    return 0;
+-}

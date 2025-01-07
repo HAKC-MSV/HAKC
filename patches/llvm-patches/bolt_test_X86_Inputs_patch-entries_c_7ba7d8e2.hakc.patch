@@ -1,0 +1,14 @@
+diff --git a/bolt/test/X86/Inputs/patch-entries.c b/bolt/test/X86/Inputs/patch-entries.c
+deleted file mode 100644
+index 46a3b41b048e..000000000000
+--- a/bolt/test/X86/Inputs/patch-entries.c
++++ /dev/null
+@@ -1,8 +0,0 @@
+-#include "stub.h"
+-
+-static void foo() { printf("foo\n"); }
+-
+-int main() {
+-  foo();
+-  return 0;
+-}

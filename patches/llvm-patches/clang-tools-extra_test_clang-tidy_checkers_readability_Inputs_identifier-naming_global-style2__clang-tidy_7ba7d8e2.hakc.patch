@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/.clang-tidy b/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/.clang-tidy
+deleted file mode 100644
+index e3d816c1687d..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/.clang-tidy
++++ /dev/null
+@@ -1,5 +0,0 @@
+-Checks: readability-identifier-naming
+-CheckOptions:
+-  readability-identifier-naming.GlobalFunctionCase: UPPER_CASE
+-  readability-identifier-naming.IgnoreMainLikeFunctions: false
+-

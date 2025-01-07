@@ -1,0 +1,34 @@
+diff --git a/clang-tools-extra/clang-tidy/concurrency/CMakeLists.txt b/clang-tools-extra/clang-tidy/concurrency/CMakeLists.txt
+deleted file mode 100644
+index 3dab6aaf8aea..000000000000
+--- a/clang-tools-extra/clang-tidy/concurrency/CMakeLists.txt
++++ /dev/null
+@@ -1,28 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  FrontendOpenMP
+-  Support
+-  )
+-
+-add_clang_library(clangTidyConcurrencyModule
+-  ConcurrencyTidyModule.cpp
+-  MtUnsafeCheck.cpp
+-  ThreadCanceltypeAsynchronousCheck.cpp
+-
+-  LINK_LIBS
+-  clangTidy
+-  clangTidyUtils
+-
+-  DEPENDS
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(clangTidyConcurrencyModule
+-  PRIVATE
+-  clangAnalysis
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangLex
+-  clangSerialization
+-  clangTooling
+-  )

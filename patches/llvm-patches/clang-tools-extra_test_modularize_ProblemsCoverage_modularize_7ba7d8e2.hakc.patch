@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/modularize/ProblemsCoverage.modularize b/clang-tools-extra/test/modularize/ProblemsCoverage.modularize
+deleted file mode 100644
+index 5a1c3489beb7..000000000000
+--- a/clang-tools-extra/test/modularize/ProblemsCoverage.modularize
++++ /dev/null
+@@ -1,5 +0,0 @@
+-# RUN: not modularize %S/Inputs/CoverageProblems/module.modulemap 2>&1 | FileCheck %s
+-
+-# CHECK: warning: {{.*}}{{[/\\]}}Inputs/CoverageProblems/module.modulemap does not account for file: {{.*}}{{[/\\]}}Inputs/CoverageProblems/Level3A.h
+-# CHECK-NEXT: warning: {{.*}}{{[/\\]}}Inputs/CoverageProblems/module.modulemap does not account for file: {{.*}}{{[/\\]}}Inputs/CoverageProblems/Level3B
+-# CHECK-NEXT: warning: {{.*}}{{[/\\]}}Inputs/CoverageProblems/module.modulemap does not account for file: {{.*}}{{[/\\]}}Inputs/CoverageProblems/Sub/Level3B.h

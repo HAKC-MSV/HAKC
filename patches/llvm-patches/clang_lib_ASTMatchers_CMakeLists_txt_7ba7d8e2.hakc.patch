@@ -1,0 +1,27 @@
+diff --git a/clang/lib/ASTMatchers/CMakeLists.txt b/clang/lib/ASTMatchers/CMakeLists.txt
+deleted file mode 100644
+index 30303c1e39a0..000000000000
+--- a/clang/lib/ASTMatchers/CMakeLists.txt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-add_subdirectory(Dynamic)
+-
+-set(LLVM_LINK_COMPONENTS
+-  FrontendOpenMP
+-  Support
+-)
+-
+-add_clang_library(clangASTMatchers
+-  ASTMatchFinder.cpp
+-  ASTMatchersInternal.cpp
+-  GtestMatchers.cpp
+-
+-  LINK_LIBS
+-  clangAST
+-  clangBasic
+-  clangLex
+-
+-  DEPENDS
+-  omp_gen
+-  ClangDriverOptions
+-  )

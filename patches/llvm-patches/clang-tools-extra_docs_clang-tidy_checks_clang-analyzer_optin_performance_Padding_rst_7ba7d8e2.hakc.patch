@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.performance.Padding.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.performance.Padding.rst
+deleted file mode 100644
+index 77acf0a6ed11..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.performance.Padding.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-optin.performance.Padding
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#optin-performance-padding
+-
+-clang-analyzer-optin.performance.Padding
+-========================================
+-
+-Check for excessively padded structs.
+-
+-The `clang-analyzer-optin.performance.Padding` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#optin-performance-padding>`_
+-for more information.

@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/portability/restrict-system-includes-disallow.cpp b/clang-tools-extra/test/clang-tidy/checkers/portability/restrict-system-includes-disallow.cpp
+deleted file mode 100644
+index 21b685ef4345..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/portability/restrict-system-includes-disallow.cpp
++++ /dev/null
+@@ -1,11 +0,0 @@
+-// RUN: %check_clang_tidy %s portability-restrict-system-includes %t \
+-// RUN:     -- -config="{CheckOptions: {portability-restrict-system-includes.Includes: '-*,stddef.h'}}" \
+-// RUN:     -- -isystem %S/Inputs/restrict-system-includes/system
+-
+-// Test allow-list functionality: disallow all but stddef.h.
+-
+-#include <stddef.h>
+-#include <stdint.h>
+-// CHECK-MESSAGES: :[[@LINE-1]]:1: warning: system include stdint.h not allowed
+-#include <float.h>
+-// CHECK-MESSAGES: :[[@LINE-1]]:1: warning: system include float.h not allowed

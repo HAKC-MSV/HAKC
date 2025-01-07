@@ -1,0 +1,13 @@
+diff --git a/clang-tools-extra/clangd/test/too_large.test b/clang-tools-extra/clangd/test/too_large.test
+deleted file mode 100644
+index 7df981e79420..000000000000
+--- a/clang-tools-extra/clangd/test/too_large.test
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# RUN: not clangd -sync < %s 2>&1 | FileCheck -check-prefix=STDERR %s
+-# vim: fileformat=dos
+-# It is absolutely vital that this file has CRLF line endings.
+-#
+-Content-Length: 2147483648
+-
+-# STDERR: Refusing to read message

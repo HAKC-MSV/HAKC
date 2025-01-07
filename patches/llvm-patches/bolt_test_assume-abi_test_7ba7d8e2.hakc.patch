@@ -1,0 +1,13 @@
+diff --git a/bolt/test/assume-abi.test b/bolt/test/assume-abi.test
+deleted file mode 100644
+index 688ab011441d..000000000000
+--- a/bolt/test/assume-abi.test
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# Validate the usage of the `--assume-abi` option in conjunction with
+-# options related to the RegAnalysis Pass.
+-
+-REQUIRES: system-linux
+-
+-RUN: %clang %cflags %p/Inputs/hello.c -o %t -Wl,-q
+-RUN: llvm-bolt %t -o %t.bolt --assume-abi --indirect-call-promotion=all

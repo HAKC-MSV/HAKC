@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/docs/clangd/README.txt b/clang-tools-extra/docs/clangd/README.txt
+deleted file mode 100644
+index 7d1ca932b60d..000000000000
+--- a/clang-tools-extra/docs/clangd/README.txt
++++ /dev/null
+@@ -1,4 +0,0 @@
+-The clangd documentation lives in a separate repository.
+-
+-Source repo: https://github.com/llvm/clangd-www
+-Public URL: https://clangd.llvm.org/

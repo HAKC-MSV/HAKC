@@ -1,0 +1,47 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/cross-file-c.h b/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/cross-file-c.h
+deleted file mode 100644
+index 342dd340099c..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/cross-file-c.h
++++ /dev/null
+@@ -1,41 +0,0 @@
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-
+-// The line number of the following include should match the location of the
+-// corresponding comment in llvm-include-order.cpp
+-#include "cross-file-b.h"

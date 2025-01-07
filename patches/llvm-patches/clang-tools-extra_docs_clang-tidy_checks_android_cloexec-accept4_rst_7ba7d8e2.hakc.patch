@@ -1,0 +1,24 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-accept4.rst b/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-accept4.rst
+deleted file mode 100644
+index 1633395d8f6a..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/android/cloexec-accept4.rst
++++ /dev/null
+@@ -1,18 +0,0 @@
+-.. title:: clang-tidy - android-cloexec-accept4
+-
+-android-cloexec-accept4
+-=======================
+-
+-``accept4()`` should include ``SOCK_CLOEXEC`` in its type argument to avoid the
+-file descriptor leakage. Without this flag, an opened sensitive file would
+-remain open across a fork+exec to a lower-privileged SELinux domain.
+-
+-Examples:
+-
+-.. code-block:: c++
+-
+-  accept4(sockfd, addr, addrlen, SOCK_NONBLOCK);
+-
+-  // becomes
+-
+-  accept4(sockfd, addr, addrlen, SOCK_NONBLOCK | SOCK_CLOEXEC);

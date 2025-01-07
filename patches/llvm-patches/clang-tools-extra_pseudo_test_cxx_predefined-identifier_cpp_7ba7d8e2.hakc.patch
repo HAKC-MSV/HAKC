@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/pseudo/test/cxx/predefined-identifier.cpp b/clang-tools-extra/pseudo/test/cxx/predefined-identifier.cpp
+deleted file mode 100644
+index 5d48a3a43d02..000000000000
+--- a/clang-tools-extra/pseudo/test/cxx/predefined-identifier.cpp
++++ /dev/null
+@@ -1,5 +0,0 @@
+-// RUN: clang-pseudo -grammar=cxx -source=%s --print-forest | FileCheck %s
+-void s() {
+-  __func__;
+-  // CHECK: expression~__FUNC__ := tok[5]
+-}

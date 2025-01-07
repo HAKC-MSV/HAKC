@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/google/build-explicit-make-pair.rst b/clang-tools-extra/docs/clang-tidy/checks/google/build-explicit-make-pair.rst
+deleted file mode 100644
+index e3e9eeb0e973..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/google/build-explicit-make-pair.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-.. title:: clang-tidy - google-build-explicit-make-pair
+-
+-google-build-explicit-make-pair
+-===============================
+-
+-Check that ``make_pair``'s template arguments are deduced.
+-
+-G++ 4.6 in C++11 mode fails badly if ``make_pair``'s template arguments are
+-specified explicitly, and such use isn't intended in any case.
+-
+-Corresponding cpplint.py check name: `build/explicit_make_pair`.

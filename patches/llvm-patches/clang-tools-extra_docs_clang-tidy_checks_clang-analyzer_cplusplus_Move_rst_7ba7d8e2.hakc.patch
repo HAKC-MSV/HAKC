@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.Move.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.Move.rst
+deleted file mode 100644
+index f478598bb4e6..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/cplusplus.Move.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-cplusplus.Move
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#cplusplus-move
+-
+-clang-analyzer-cplusplus.Move
+-=============================
+-
+-Find use-after-move bugs in C++.
+-
+-The `clang-analyzer-cplusplus.Move` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#cplusplus-move>`_
+-for more information.

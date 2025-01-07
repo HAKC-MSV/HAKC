@@ -1,0 +1,15 @@
+diff --git a/bolt/test/runtime/AArch64/Inputs/basic-instrumentation.s b/bolt/test/runtime/AArch64/Inputs/basic-instrumentation.s
+deleted file mode 100644
+index fa1ac353f7c6..000000000000
+--- a/bolt/test/runtime/AArch64/Inputs/basic-instrumentation.s
++++ /dev/null
+@@ -1,9 +0,0 @@
+-  .globl main
+-  .type main, %function
+-main:
+-	sub		sp, sp, #16
+-	mov		w0, wzr
+-	str		wzr, [sp, #12]
+-	add		sp, sp, #16
+-	ret
+-.size main, .-main

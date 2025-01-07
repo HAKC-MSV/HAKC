@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/stdlib.h b/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/stdlib.h
+deleted file mode 100644
+index 6c9ddad82dce..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/Inputs/Headers/stdlib.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-//===--- stdlib.h - Stub header for tests------ -----------------*- C++ -*-===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
+-
+-#ifndef _STDLIB_H_
+-#define _STDLIB_H_
+-
+-void abort(void);
+-void _Exit(int);
+-void quick_exit(int);
+-
+-#endif // _STDLIB_H_

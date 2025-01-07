@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/allow-no-checks.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/allow-no-checks.cpp
+deleted file mode 100644
+index a1f059b92384..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/allow-no-checks.cpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// RUN: not clang-tidy %s -checks='-*'
+-// RUN: clang-tidy %s -checks='-*' --allow-no-checks | FileCheck --match-full-lines %s
+-
+-// CHECK: No checks enabled.

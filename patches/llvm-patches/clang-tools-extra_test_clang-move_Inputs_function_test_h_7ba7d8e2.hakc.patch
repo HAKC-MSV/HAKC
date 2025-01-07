@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/test/clang-move/Inputs/function_test.h b/clang-tools-extra/test/clang-move/Inputs/function_test.h
+deleted file mode 100644
+index 810f803b6e86..000000000000
+--- a/clang-tools-extra/test/clang-move/Inputs/function_test.h
++++ /dev/null
+@@ -1,14 +0,0 @@
+-void f();
+-
+-inline int g() { return 0; }
+-
+-template<typename T>
+-void h(T t) {}
+-
+-template<>
+-void h(int t) {}
+-
+-class A {
+- public:
+-  void f();
+-};

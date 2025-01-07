@@ -1,0 +1,35 @@
+diff --git a/clang-tools-extra/clang-move/CMakeLists.txt b/clang-tools-extra/clang-move/CMakeLists.txt
+deleted file mode 100644
+index e8aeaedd61d4..000000000000
+--- a/clang-tools-extra/clang-move/CMakeLists.txt
++++ /dev/null
+@@ -1,29 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  support
+-  FrontendOpenMP
+-  )
+-
+-add_clang_library(clangMove
+-  Move.cpp
+-  HelperDeclRefGraph.cpp
+-
+-  DEPENDS
+-  omp_gen
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(clangMove
+-  PRIVATE
+-  clangAnalysis
+-  clangAST
+-  clangASTMatchers
+-  clangBasic
+-  clangFormat
+-  clangFrontend
+-  clangLex
+-  clangSerialization
+-  clangTooling
+-  clangToolingCore
+-  )
+-
+-add_subdirectory(tool)

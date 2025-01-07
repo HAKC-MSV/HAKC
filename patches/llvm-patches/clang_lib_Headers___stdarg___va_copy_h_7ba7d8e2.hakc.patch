@@ -1,0 +1,18 @@
+diff --git a/clang/lib/Headers/__stdarg___va_copy.h b/clang/lib/Headers/__stdarg___va_copy.h
+deleted file mode 100644
+index e433e18a7082..000000000000
+--- a/clang/lib/Headers/__stdarg___va_copy.h
++++ /dev/null
+@@ -1,12 +0,0 @@
+-/*===---- __stdarg___va_copy.h - Definition of __va_copy -------------------===
+- *
+- * Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+- * See https://llvm.org/LICENSE.txt for license information.
+- * SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+- *
+- *===-----------------------------------------------------------------------===
+- */
+-
+-#ifndef __va_copy
+-#define __va_copy(d, s) __builtin_va_copy(d, s)
+-#endif

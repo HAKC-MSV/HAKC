@@ -1,0 +1,14 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Modules/module_private.modulemap b/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Modules/module_private.modulemap
+deleted file mode 100644
+index e31034317cb8..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/Modules/module_private.modulemap
++++ /dev/null
+@@ -1,8 +0,0 @@
+-explicit framework module SomeKit.Private {
+-  header "SomeKit_Private.h"
+-  explicit NullAnnotation { header "SomeKit_PrivateForNullAnnotation.h" }
+-  export *
+-  module * { export * }
+-syntax error
+-
+-}

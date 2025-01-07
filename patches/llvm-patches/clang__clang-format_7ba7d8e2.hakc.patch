@@ -1,0 +1,7 @@
+diff --git a/clang/.clang-format b/clang/.clang-format
+deleted file mode 100644
+index 9b3aa8b7213b..000000000000
+--- a/clang/.clang-format
++++ /dev/null
+@@ -1 +0,0 @@
+-BasedOnStyle: LLVM

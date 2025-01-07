@@ -1,0 +1,10 @@
+diff --git a/clang/runtime/compiler-rt/clang_linux_test_input.c b/clang/runtime/compiler-rt/clang_linux_test_input.c
+deleted file mode 100644
+index e65ce9860af4..000000000000
+--- a/clang/runtime/compiler-rt/clang_linux_test_input.c
++++ /dev/null
+@@ -1,4 +0,0 @@
+-// This file is used to check if we can produce working executables
+-// for i386 and x86_64 archs on Linux.
+-#include <stdlib.h>
+-int main(){}

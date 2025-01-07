@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/include-cleaner/test/Inputs/foo.h b/clang-tools-extra/include-cleaner/test/Inputs/foo.h
+deleted file mode 100644
+index 4ec598ad513e..000000000000
+--- a/clang-tools-extra/include-cleaner/test/Inputs/foo.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-#ifndef FOO_H
+-#define FOO_H
+-
+-int foo();
+-
+-#endif

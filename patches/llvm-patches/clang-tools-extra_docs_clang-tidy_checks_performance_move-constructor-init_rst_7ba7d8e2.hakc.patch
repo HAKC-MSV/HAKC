@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/performance/move-constructor-init.rst b/clang-tools-extra/docs/clang-tidy/checks/performance/move-constructor-init.rst
+deleted file mode 100644
+index 9dc0761d2c34..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/performance/move-constructor-init.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - performance-move-constructor-init
+-
+-performance-move-constructor-init
+-=================================
+-
+-"cert-oop11-cpp" redirects here as an alias for this check.
+-
+-The check flags user-defined move constructors that have a ctor-initializer
+-initializing a member or base class through a copy constructor instead of a
+-move constructor.

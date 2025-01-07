@@ -1,0 +1,42 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/avoid-capturing-lambda-coroutines.cpp b/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/avoid-capturing-lambda-coroutines.cpp
+deleted file mode 100644
+index 6670f4a5420b..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/avoid-capturing-lambda-coroutines.cpp
++++ /dev/null
+@@ -1,36 +0,0 @@
+-// RUN: %check_clang_tidy -std=c++20-or-later %s cppcoreguidelines-avoid-capturing-lambda-coroutines %t -- -- -isystem %S/Inputs/system
+-
+-#include <coroutines.h>
+-
+-void Caught() {
+-    int v;
+-
+-    [&] () -> task { int y = v; co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    [=] () -> task { int y = v; co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    [v] () -> task { co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    [&v] () -> task { co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    [y=v] () -> task { co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    [y{v}] () -> task { co_return; };
+-    // CHECK-MESSAGES: [[@LINE-1]]:5: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-}
+-
+-struct S {
+-    void m() {
+-        [this] () -> task { co_return; };
+-        // CHECK-MESSAGES: [[@LINE-1]]:9: warning: coroutine lambda may cause use-after-free, avoid captures or ensure lambda closure object has guaranteed lifetime [cppcoreguidelines-avoid-capturing-lambda-coroutines]
+-    }
+-};
+-
+-void Safe() {
+-    int v;
+-    [] () -> task { co_return; };
+-    [&] () -> task { co_return; };
+-    [=] () -> task { co_return; };
+-
+-    [&v]{++v;}();
+-}

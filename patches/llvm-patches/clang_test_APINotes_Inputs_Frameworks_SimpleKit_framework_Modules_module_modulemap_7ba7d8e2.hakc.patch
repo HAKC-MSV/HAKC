@@ -1,0 +1,11 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SimpleKit.framework/Modules/module.modulemap b/clang/test/APINotes/Inputs/Frameworks/SimpleKit.framework/Modules/module.modulemap
+deleted file mode 100644
+index 2d07e76c0a14..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SimpleKit.framework/Modules/module.modulemap
++++ /dev/null
+@@ -1,5 +0,0 @@
+-framework module SimpleKit {
+-  umbrella header "SimpleKit.h"
+-  export *
+-  module * { export * }
+-}

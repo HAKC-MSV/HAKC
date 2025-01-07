@@ -1,0 +1,24 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/loop-convert-assert-failure.cpp b/clang-tools-extra/test/clang-tidy/checkers/modernize/loop-convert-assert-failure.cpp
+deleted file mode 100644
+index fab51dafd2eb..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/loop-convert-assert-failure.cpp
++++ /dev/null
+@@ -1,18 +0,0 @@
+-// RUN: not clang-tidy %s -checks=-*,modernize-loop-convert --
+-
+-// Note: this test expects no assert failure happened in clang-tidy.
+-
+-class LinguisticItem {
+-  LinguisticItem *x0;
+-  class x1 {
+-    bool operator!= ( const x1 &;
+-    operator* ( ;
+-    LinguisticItem * &operator-> ( ;
+-    operator++ (
+-  } begin() const;
+-  x1 end() const {
+-    LinguisticStream x2;
+-    for (x1 x3 = x2.begin x3 != x2.end; ++x3)
+-      x3->x0
+-  }
+-};

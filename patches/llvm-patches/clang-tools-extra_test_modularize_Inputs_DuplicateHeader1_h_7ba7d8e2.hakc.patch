@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/DuplicateHeader1.h b/clang-tools-extra/test/modularize/Inputs/DuplicateHeader1.h
+deleted file mode 100644
+index 2936b084dd49..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/DuplicateHeader1.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-// Same decl as in DuplicateHeader2.h.
+-typedef int TypeInt;

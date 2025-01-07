@@ -1,0 +1,12 @@
+diff --git a/bolt/test/heatmap.test b/bolt/test/heatmap.test
+deleted file mode 100644
+index fa69691a590d..000000000000
+--- a/bolt/test/heatmap.test
++++ /dev/null
+@@ -1,6 +0,0 @@
+-## Verifies basic functioning of heatmap mode
+-
+-REQUIRES: system-linux
+-
+-RUN: llvm-bolt-heatmap --help | FileCheck %s
+-CHECK: USAGE: llvm-bolt-heatmap [options] <executable>

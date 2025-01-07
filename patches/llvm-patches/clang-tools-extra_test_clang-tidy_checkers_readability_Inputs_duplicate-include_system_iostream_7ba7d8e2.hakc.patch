@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/duplicate-include/system/iostream b/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/duplicate-include/system/iostream
+deleted file mode 100644
+index fcbabe12fc37..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/duplicate-include/system/iostream
++++ /dev/null
+@@ -1 +0,0 @@
+-// This file is intentionally empty.

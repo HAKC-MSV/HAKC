@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/pseudo/CMakeLists.txt b/clang-tools-extra/pseudo/CMakeLists.txt
+deleted file mode 100644
+index 24bc1530bb7d..000000000000
+--- a/clang-tools-extra/pseudo/CMakeLists.txt
++++ /dev/null
+@@ -1,12 +0,0 @@
+-include_directories(include)
+-include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
+-add_subdirectory(include)
+-add_subdirectory(gen)
+-add_subdirectory(lib)
+-add_subdirectory(tool)
+-add_subdirectory(fuzzer)
+-add_subdirectory(benchmarks)
+-if(CLANG_INCLUDE_TESTS)
+-  add_subdirectory(unittests)
+-  add_subdirectory(test)
+-endif()

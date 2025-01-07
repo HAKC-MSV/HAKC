@@ -1,0 +1,27 @@
+diff --git a/clang-tools-extra/pp-trace/CMakeLists.txt b/clang-tools-extra/pp-trace/CMakeLists.txt
+deleted file mode 100644
+index 1323adbc3526..000000000000
+--- a/clang-tools-extra/pp-trace/CMakeLists.txt
++++ /dev/null
+@@ -1,21 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  )
+-
+-add_clang_tool(pp-trace
+-  PPTrace.cpp
+-  PPCallbacksTracker.cpp
+-
+-  DEPENDS
+-  ClangDriverOptions
+-  )
+-
+-clang_target_link_libraries(pp-trace
+-  PRIVATE
+-  clangAST
+-  clangBasic
+-  clangFrontend
+-  clangLex
+-  clangSerialization
+-  clangTooling
+-  )

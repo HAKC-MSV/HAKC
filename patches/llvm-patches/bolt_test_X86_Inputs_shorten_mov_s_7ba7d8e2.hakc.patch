@@ -1,0 +1,18 @@
+diff --git a/bolt/test/X86/Inputs/shorten_mov.s b/bolt/test/X86/Inputs/shorten_mov.s
+deleted file mode 100644
+index 6c40bb8a09aa..000000000000
+--- a/bolt/test/X86/Inputs/shorten_mov.s
++++ /dev/null
+@@ -1,12 +0,0 @@
+-  .text
+-  .globl foo
+-  .type foo, @function
+-foo:
+-   movabs     $0x1111,%rax
+-   movabs     $0x1111,%rax
+-   movabs     $0x11112222,%rax
+-   movabs     $0x111112222,%rax
+-   movabs     $0xffffffffffffffff,%rax
+-   movabs     $0x7fffffffffffffff,%rax
+-   ret
+-   .size foo, .-foo

@@ -1,0 +1,26 @@
+diff --git a/clang/docs/ClangStaticAnalyzer.rst b/clang/docs/ClangStaticAnalyzer.rst
+deleted file mode 100644
+index 7a309dc4acd9..000000000000
+--- a/clang/docs/ClangStaticAnalyzer.rst
++++ /dev/null
+@@ -1,20 +0,0 @@
+-=====================
+-Clang Static Analyzer
+-=====================
+-
+-The Clang Static Analyzer is a source code analysis tool that finds bugs in C, C++, and Objective-C programs.
+-It implements *path-sensitive*, *inter-procedural analysis* based on *symbolic execution* technique.
+-
+-This is the Static Analyzer documentation page.
+-
+-See the `Official Tool Page <https://clang-analyzer.llvm.org/>`_.
+-
+-.. toctree::
+-   :caption: Table of Contents
+-   :numbered:
+-   :maxdepth: 2
+-
+-   analyzer/checkers
+-   analyzer/user-docs
+-   analyzer/developer-docs
+-

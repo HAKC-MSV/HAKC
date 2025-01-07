@@ -1,0 +1,19 @@
+diff --git a/clang/lib/Analysis/plugins/CheckerOptionHandling/CMakeLists.txt b/clang/lib/Analysis/plugins/CheckerOptionHandling/CMakeLists.txt
+deleted file mode 100644
+index e8315a051306..000000000000
+--- a/clang/lib/Analysis/plugins/CheckerOptionHandling/CMakeLists.txt
++++ /dev/null
+@@ -1,13 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  Support
+-  )
+-
+-set(LLVM_EXPORTED_SYMBOL_FILE ${CMAKE_CURRENT_SOURCE_DIR}/CheckerOptionHandlingAnalyzerPlugin.exports)
+-add_llvm_library(CheckerOptionHandlingAnalyzerPlugin MODULE BUILDTREE_ONLY CheckerOptionHandling.cpp)
+-
+-clang_target_link_libraries(CheckerOptionHandlingAnalyzerPlugin PRIVATE
+-  clangAnalysis
+-  clangAST
+-  clangStaticAnalyzerCore
+-  clangStaticAnalyzerFrontend
+-  )

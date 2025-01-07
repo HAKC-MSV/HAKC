@@ -1,0 +1,4 @@
+diff --git a/bolt/test/X86/Inputs/dwarf5-gdb-index-types-v8.generted-gdb9.gdb-index b/bolt/test/X86/Inputs/dwarf5-gdb-index-types-v8.generted-gdb9.gdb-index
+deleted file mode 100644
+index 39bd1606962c..000000000000
+Binary files a/bolt/test/X86/Inputs/dwarf5-gdb-index-types-v8.generted-gdb9.gdb-index and /dev/null differ

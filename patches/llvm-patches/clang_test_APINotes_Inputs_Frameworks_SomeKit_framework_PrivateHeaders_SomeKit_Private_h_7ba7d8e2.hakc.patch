@@ -1,0 +1,22 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/PrivateHeaders/SomeKit_Private.h b/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/PrivateHeaders/SomeKit_Private.h
+deleted file mode 100644
+index c7611123e4ad..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/SomeKit.framework/PrivateHeaders/SomeKit_Private.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-#ifndef SOMEKIT_PRIVATE_H
+-#define SOMEKIT_PRIVATE_H
+-
+-#import <SomeKit/SomeKit.h>
+-
+-@interface A(Private)
+--(A*)privateTransform:(A*)input;
+-
+-@property (nonatomic) A* internalProperty;
+-@end
+-
+-@protocol InternalProtocol
+-@end
+-
+-#endif
+-

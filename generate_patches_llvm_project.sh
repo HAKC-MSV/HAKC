@@ -11,12 +11,14 @@ short_hash=${HAKC_LLVM_COMMIT:0:8}
 rm -rf $HAKC_LLVM_PATCH_PATH/*.hakc.patch
 
 cd $HAKC_LLVM_SOURCE_PATH
-git add -A
 for fname in $(git diff --name-only $HAKC_LLVM_COMMIT); do
    patch_name=${fname//"./"/""} # strip ./
    patch_name=${patch_name//"/"/"_"} # replace / with _
    patch_name=${patch_name//"."/"_"} # replace . with _
    exec_cmd_and_check_status git diff $HAKC_LLVM_COMMIT $fname > $HAKC_LLVM_PATCH_PATH/"$patch_name""_""$short_hash".hakc.patch
 done
+
+cd $HAKC_ROOT
+exec_cmd_and_check_status git add $HAKC_LLVM_PATCH_PATH/*.hakc.patch
 
 exit 0

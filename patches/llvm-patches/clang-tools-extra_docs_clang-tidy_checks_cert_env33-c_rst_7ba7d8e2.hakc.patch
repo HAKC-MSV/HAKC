@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/cert/env33-c.rst b/clang-tools-extra/docs/clang-tidy/checks/cert/env33-c.rst
+deleted file mode 100644
+index 9271c9ecccc0..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/cert/env33-c.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - cert-env33-c
+-
+-cert-env33-c
+-============
+-
+-This check flags calls to ``system()``, ``popen()``, and ``_popen()``, which
+-execute a command processor. It does not flag calls to ``system()`` with a null
+-pointer argument, as such a call checks for the presence of a command processor
+-but does not actually attempt to execute a command.
+-
+-This check corresponds to the CERT C Coding Standard rule
+-`ENV33-C. Do not call system()
+-<https://www.securecoding.cert.org/confluence/display/c/ENV33-C.+Do+not+call+system()>`_.

@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/clangd/test/Inputs/BenchmarkSource.cpp b/clang-tools-extra/clangd/test/Inputs/BenchmarkSource.cpp
+deleted file mode 100644
+index 1924df9a7ba6..000000000000
+--- a/clang-tools-extra/clangd/test/Inputs/BenchmarkSource.cpp
++++ /dev/null
+@@ -1 +0,0 @@
+-#include "BenchmarkHeader.h"

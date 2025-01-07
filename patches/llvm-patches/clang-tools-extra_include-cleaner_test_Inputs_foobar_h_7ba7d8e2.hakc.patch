@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/include-cleaner/test/Inputs/foobar.h b/clang-tools-extra/include-cleaner/test/Inputs/foobar.h
+deleted file mode 100644
+index da3706c67dbe..000000000000
+--- a/clang-tools-extra/include-cleaner/test/Inputs/foobar.h
++++ /dev/null
+@@ -1,3 +0,0 @@
+-#pragma once
+-#include "bar.h"
+-#include "foo.h"

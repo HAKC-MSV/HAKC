@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/vfsoverlay/actual_header.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/vfsoverlay/actual_header.h
+deleted file mode 100644
+index 8e1b9aef6339..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/vfsoverlay/actual_header.h
++++ /dev/null
+@@ -1 +0,0 @@
+-struct X {};

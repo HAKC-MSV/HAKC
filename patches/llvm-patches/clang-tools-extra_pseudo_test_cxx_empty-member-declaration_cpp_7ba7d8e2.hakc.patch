@@ -1,0 +1,13 @@
+diff --git a/clang-tools-extra/pseudo/test/cxx/empty-member-declaration.cpp b/clang-tools-extra/pseudo/test/cxx/empty-member-declaration.cpp
+deleted file mode 100644
+index 2540dd010fce..000000000000
+--- a/clang-tools-extra/pseudo/test/cxx/empty-member-declaration.cpp
++++ /dev/null
+@@ -1,7 +0,0 @@
+-// RUN: clang-pseudo -grammar=cxx -source=%s --print-forest --forest-abbrev=false | FileCheck %s
+-class A {
+-    ;
+-// CHECK-NOT: member-declaration := ;
+-// CHECK: member-declaration := empty-declaration
+-// CHECK-NOT: member-declaration := ;
+-};

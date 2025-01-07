@@ -1,0 +1,11 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/clang-tidy-__clang_analyzer__macro.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/clang-tidy-__clang_analyzer__macro.cpp
+deleted file mode 100644
+index 0fda1a393b2a..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/clang-tidy-__clang_analyzer__macro.cpp
++++ /dev/null
+@@ -1,5 +0,0 @@
+-// RUN: clang-tidy %s -checks=-*,modernize-use-nullptr -- | count 0
+-
+-#if !defined(__clang_analyzer__)
+-#error __clang_analyzer__ is not defined
+-#endif

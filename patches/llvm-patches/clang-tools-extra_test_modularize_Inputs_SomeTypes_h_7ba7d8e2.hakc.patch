@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/SomeTypes.h b/clang-tools-extra/test/modularize/Inputs/SomeTypes.h
+deleted file mode 100644
+index 46c4316fc93a..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/SomeTypes.h
++++ /dev/null
+@@ -1,16 +0,0 @@
+-// Define a few different kinds of types - no modules problems.
+-
+-typedef int TypeInt;
+-
+-typedef TypeInt NestedTypeInt;
+-
+-struct TypeStruct {
+-  int Member;
+-};
+-
+-class TypeClass {
+-public:
+-  TypeClass() : Member(0) {}
+-private:
+-  int Member;
+-};

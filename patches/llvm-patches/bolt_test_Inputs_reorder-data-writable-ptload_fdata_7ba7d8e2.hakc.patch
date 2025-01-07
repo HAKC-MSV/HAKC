@@ -1,0 +1,7 @@
+diff --git a/bolt/test/Inputs/reorder-data-writable-ptload.fdata b/bolt/test/Inputs/reorder-data-writable-ptload.fdata
+deleted file mode 100644
+index f5dab9d1daca..000000000000
+--- a/bolt/test/Inputs/reorder-data-writable-ptload.fdata
++++ /dev/null
+@@ -1 +0,0 @@
+-4 _start 0 4 hot1 0 100

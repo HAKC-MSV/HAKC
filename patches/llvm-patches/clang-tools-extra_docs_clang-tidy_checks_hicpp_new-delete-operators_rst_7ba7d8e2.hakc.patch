@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/hicpp/new-delete-operators.rst b/clang-tools-extra/docs/clang-tidy/checks/hicpp/new-delete-operators.rst
+deleted file mode 100644
+index a7891f943e2c..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/hicpp/new-delete-operators.rst
++++ /dev/null
+@@ -1,10 +0,0 @@
+-.. title:: clang-tidy - hicpp-new-delete-operators
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../misc/new-delete-overloads.html
+-
+-hicpp-new-delete-operators
+-==========================
+-
+-This check is an alias for :doc:`misc-new-delete-overloads <../misc/new-delete-overloads>`.
+-Implements `rule 12.3.1 <https://www.perforce.com/resources/qac/high-integrity-cpp-coding-standard/special-member-functions>`_ to ensure
+-the `new` and `delete` operators have the correct signature.

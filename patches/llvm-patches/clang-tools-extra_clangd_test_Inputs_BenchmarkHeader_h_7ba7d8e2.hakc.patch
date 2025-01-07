@@ -1,0 +1,21 @@
+diff --git a/clang-tools-extra/clangd/test/Inputs/BenchmarkHeader.h b/clang-tools-extra/clangd/test/Inputs/BenchmarkHeader.h
+deleted file mode 100644
+index bf760e367ff7..000000000000
+--- a/clang-tools-extra/clangd/test/Inputs/BenchmarkHeader.h
++++ /dev/null
+@@ -1,15 +0,0 @@
+-namespace clang {
+-namespace clangd {
+-namespace dex {
+-class Dex;
+-} // namespace dex
+-} // namespace clangd
+-} // namespace clang
+-
+-namespace llvm {
+-int get_physical_cores();
+-} // namespace llvm
+-
+-namespace {
+-int Variable;
+-} // namespace

@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/4/44/.clang-tidy b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/4/44/.clang-tidy
+deleted file mode 100644
+index eb92c1146d6a..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/4/44/.clang-tidy
++++ /dev/null
+@@ -1,6 +0,0 @@
+-InheritParentConfig: true
+-Checks: 'llvm-qualified-auto'
+-CheckOptions:
+-  modernize-loop-convert.MaxCopySize: '20'
+-  llvm-qualified-auto.AddConstToQualified: 'true'
+-  IgnoreMacros: 'false'

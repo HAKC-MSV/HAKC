@@ -1,0 +1,25 @@
+diff --git a/clang/include/clang/CIR/Dialect/IR/CIROps.td b/clang/include/clang/CIR/Dialect/IR/CIROps.td
+deleted file mode 100644
+index 7311c8db783e..000000000000
+--- a/clang/include/clang/CIR/Dialect/IR/CIROps.td
++++ /dev/null
+@@ -1,19 +0,0 @@
+-//===-- CIROps.td - CIR dialect definition -----------------*- tablegen -*-===//
+-//
+-// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+-// See https://llvm.org/LICENSE.txt for license information.
+-// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+-//
+-//===----------------------------------------------------------------------===//
+-///
+-/// \file
+-/// Definition of the CIR dialect
+-///
+-//===----------------------------------------------------------------------===//
+-
+-#ifndef LLVM_CLANG_CIR_DIALECT_IR_CIROPS
+-#define LLVM_CLANG_CIR_DIALECT_IR_CIROPS
+-
+-include "clang/CIR/Dialect/IR/CIRDialect.td"
+-
+-#endif // LLVM_CLANG_CIR_DIALECT_IR_CIROPS

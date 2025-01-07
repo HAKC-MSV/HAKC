@@ -1,0 +1,11 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.modulemap b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.modulemap
+deleted file mode 100644
+index 04b96adbbfeb..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.modulemap
++++ /dev/null
+@@ -1,5 +0,0 @@
+-framework module FrameworkWithWrongCasePrivate {
+-  umbrella header "FrameworkWithWrongCasePrivate.h"
+-  export *
+-  module * { export * }
+-}

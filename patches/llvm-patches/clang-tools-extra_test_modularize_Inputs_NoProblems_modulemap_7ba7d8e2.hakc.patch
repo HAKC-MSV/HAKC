@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/NoProblems.modulemap b/clang-tools-extra/test/modularize/Inputs/NoProblems.modulemap
+deleted file mode 100644
+index 82029c1e41ad..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/NoProblems.modulemap
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// NoProblems.modulemap
+-module SomeTypes {
+-  header "SomeTypes.h"
+-  export *
+-}
+-module SomeDecls {
+-  header "SomeDecls.h"
+-  export *
+-}

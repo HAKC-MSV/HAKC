@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/clangd/test/Inputs/include-cleaner/bar.h b/clang-tools-extra/clangd/test/Inputs/include-cleaner/bar.h
+deleted file mode 100644
+index f70dd9565fd4..000000000000
+--- a/clang-tools-extra/clangd/test/Inputs/include-cleaner/bar.h
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#pragma once
+-class Bar {};

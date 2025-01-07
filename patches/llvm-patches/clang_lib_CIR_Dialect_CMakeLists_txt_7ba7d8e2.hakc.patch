@@ -1,0 +1,7 @@
+diff --git a/clang/lib/CIR/Dialect/CMakeLists.txt b/clang/lib/CIR/Dialect/CMakeLists.txt
+deleted file mode 100644
+index f33061b2d87c..000000000000
+--- a/clang/lib/CIR/Dialect/CMakeLists.txt
++++ /dev/null
+@@ -1 +0,0 @@
+-add_subdirectory(IR)

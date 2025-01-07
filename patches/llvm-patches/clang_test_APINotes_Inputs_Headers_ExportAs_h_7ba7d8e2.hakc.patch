@@ -1,0 +1,7 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/ExportAs.h b/clang/test/APINotes/Inputs/Headers/ExportAs.h
+deleted file mode 100644
+index ff490e096417..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/ExportAs.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include "ExportAsCore.h"

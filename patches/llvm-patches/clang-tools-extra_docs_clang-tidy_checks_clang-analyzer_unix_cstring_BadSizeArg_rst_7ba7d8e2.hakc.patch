@@ -1,0 +1,20 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/unix.cstring.BadSizeArg.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/unix.cstring.BadSizeArg.rst
+deleted file mode 100644
+index 3aa1ec9cc0a6..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/unix.cstring.BadSizeArg.rst
++++ /dev/null
+@@ -1,14 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-unix.cstring.BadSizeArg
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#unix-cstring-badsizearg
+-
+-clang-analyzer-unix.cstring.BadSizeArg
+-======================================
+-
+-Check the size argument passed into C string functions for common erroneous
+-patterns.
+-
+-The `clang-analyzer-unix.cstring.BadSizeArg` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#unix-cstring-badsizearg>`_
+-for more information.

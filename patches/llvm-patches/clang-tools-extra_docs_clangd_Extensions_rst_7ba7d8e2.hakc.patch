@@ -1,0 +1,9 @@
+diff --git a/clang-tools-extra/docs/clangd/Extensions.rst b/clang-tools-extra/docs/clangd/Extensions.rst
+deleted file mode 100644
+index 53f874ca466f..000000000000
+--- a/clang-tools-extra/docs/clangd/Extensions.rst
++++ /dev/null
+@@ -1,3 +0,0 @@
+-:orphan:
+-:template: clangd_redirect.html
+-:redirect_target: https://clangd.llvm.org/extensions.html

@@ -1,0 +1,38 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/readability/redundant-inline-specifier.rst b/clang-tools-extra/docs/clang-tidy/checks/readability/redundant-inline-specifier.rst
+deleted file mode 100644
+index eee324cddab4..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/readability/redundant-inline-specifier.rst
++++ /dev/null
+@@ -1,32 +0,0 @@
+-.. title:: clang-tidy - readability-redundant-inline-specifier
+-
+-readability-redundant-inline-specifier
+-======================================
+-
+-Detects redundant ``inline`` specifiers on function and variable declarations.
+-
+-Examples:
+-
+-.. code-block:: c++
+-
+-   constexpr inline void f() {}
+-
+-In the example above the keyword ``inline`` is redundant since constexpr
+-functions are implicitly inlined
+-
+-.. code-block:: c++
+-   
+-   class MyClass {
+-       inline void myMethod() {}
+-   };
+-
+-In the example above the keyword ``inline`` is redundant since member functions
+-defined entirely inside a class/struct/union definition are implicitly inlined.
+-
+-Options
+--------
+-
+-.. option:: StrictMode
+-
+-   If set to `true`, the check will also flag functions and variables that
+-   already have internal linkage as redundant.

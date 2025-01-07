@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/google/objc-global-variable-declaration.mm b/clang-tools-extra/test/clang-tidy/checkers/google/objc-global-variable-declaration.mm
+deleted file mode 100644
+index 345edec1f979..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/google/objc-global-variable-declaration.mm
++++ /dev/null
+@@ -1,10 +0,0 @@
+-// RUN: %check_clang_tidy %s google-objc-global-variable-declaration %t
+-
+-@class NSString;
+-static NSString* const myConstString = @"hello";
+-// CHECK-MESSAGES: :[[@LINE-1]]:24: warning: const global variable 'myConstString' must have a name which starts with an appropriate prefix [google-objc-global-variable-declaration]
+-// CHECK-FIXES: static NSString* const kMyConstString = @"hello";
+-
+-class MyTest {
+-  static int not_objc_style;
+-};

@@ -1,0 +1,13 @@
+diff --git a/clang/test/APINotes/Inputs/Frameworks/LayeredKitImpl.framework/Headers/LayeredKitImpl.h b/clang/test/APINotes/Inputs/Frameworks/LayeredKitImpl.framework/Headers/LayeredKitImpl.h
+deleted file mode 100644
+index 99591d35803a..000000000000
+--- a/clang/test/APINotes/Inputs/Frameworks/LayeredKitImpl.framework/Headers/LayeredKitImpl.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-@protocol UpwardProto;
+-@class UpwardClass;
+-
+-@interface PerfectlyNormalClass
+-@end
+-
+-void doImplementationThings(UpwardClass *first, id <UpwardProto> second) __attribute((unavailable));

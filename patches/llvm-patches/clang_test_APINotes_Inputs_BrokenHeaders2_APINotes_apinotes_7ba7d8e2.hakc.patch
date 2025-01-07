@@ -1,0 +1,13 @@
+diff --git a/clang/test/APINotes/Inputs/BrokenHeaders2/APINotes.apinotes b/clang/test/APINotes/Inputs/BrokenHeaders2/APINotes.apinotes
+deleted file mode 100644
+index 33eeaaada999..000000000000
+--- a/clang/test/APINotes/Inputs/BrokenHeaders2/APINotes.apinotes
++++ /dev/null
+@@ -1,7 +0,0 @@
+-Name: SomeBrokenLib
+-Functions:
+-  - Name: do_something_with_pointers
+-    NullabilityOfRet: O
+-  - Name: do_something_with_pointers
+-    NullabilityOfRet: O
+-    

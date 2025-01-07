@@ -1,0 +1,34 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/macro-usage-custom.cpp b/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/macro-usage-custom.cpp
+deleted file mode 100644
+index 4efc89dd0fd8..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/cppcoreguidelines/macro-usage-custom.cpp
++++ /dev/null
+@@ -1,28 +0,0 @@
+-// RUN: %check_clang_tidy %s cppcoreguidelines-macro-usage %t \
+-// RUN: -config="{CheckOptions: \
+-// RUN:  {cppcoreguidelines-macro-usage.AllowedRegexp: 'DEBUG_*|TEST_*'}}" --
+-
+-#ifndef INCLUDE_GUARD
+-#define INCLUDE_GUARD
+-
+-#define PROBLEMATIC_CONSTANT 0
+-// CHECK-MESSAGES: [[@LINE-1]]:9: warning: macro 'PROBLEMATIC_CONSTANT' used to declare a constant; consider using a 'constexpr' constant
+-
+-#define PROBLEMATIC_FUNCTION(x, y) ((a) > (b) ? (a) : (b))
+-// CHECK-MESSAGES: [[@LINE-1]]:9: warning: function-like macro 'PROBLEMATIC_FUNCTION' used; consider a 'constexpr' template function
+-
+-#define PROBLEMATIC_VARIADIC(...) (__VA_ARGS__)
+-// CHECK-MESSAGES: [[@LINE-1]]:9: warning: variadic macro 'PROBLEMATIC_VARIADIC' used; consider using a 'constexpr' variadic template function
+-
+-#define PROBLEMATIC_VARIADIC2(x, ...) (__VA_ARGS__)
+-// CHECK-MESSAGES: [[@LINE-1]]:9: warning: variadic macro 'PROBLEMATIC_VARIADIC2' used; consider using a 'constexpr' variadic template function
+-
+-#define DEBUG_CONSTANT 0
+-#define DEBUG_FUNCTION(x, y) ((a) > (b) ? (a) : (b))
+-#define DEBUG_VARIADIC(...) (__VA_ARGS__)
+-#define TEST_CONSTANT 0
+-#define TEST_FUNCTION(x, y) ((a) > (b) ? (a) : (b))
+-#define TEST_VARIADIC(...) (__VA_ARGS__)
+-#define TEST_VARIADIC2(x, ...) (__VA_ARGS__)
+-
+-#endif

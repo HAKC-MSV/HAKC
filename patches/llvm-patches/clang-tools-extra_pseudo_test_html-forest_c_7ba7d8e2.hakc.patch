@@ -1,0 +1,14 @@
+diff --git a/clang-tools-extra/pseudo/test/html-forest.c b/clang-tools-extra/pseudo/test/html-forest.c
+deleted file mode 100644
+index 0be08da49f4a..000000000000
+--- a/clang-tools-extra/pseudo/test/html-forest.c
++++ /dev/null
+@@ -1,8 +0,0 @@
+-// RUN: clang-pseudo -source %s -html-forest=%t.html
+-// RUN: FileCheck %s < %t.html
+-int main() {
+-}
+-// Sanity check for some obvious strings.
+-// CHECK-DAG: <body>
+-// CHECK-DAG: "compound-statement"
+-// CHECK-DAG: main

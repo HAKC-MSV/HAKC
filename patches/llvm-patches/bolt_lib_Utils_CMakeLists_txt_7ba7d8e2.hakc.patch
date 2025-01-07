@@ -1,0 +1,21 @@
+diff --git a/bolt/lib/Utils/CMakeLists.txt b/bolt/lib/Utils/CMakeLists.txt
+deleted file mode 100644
+index d1403314274b..000000000000
+--- a/bolt/lib/Utils/CMakeLists.txt
++++ /dev/null
+@@ -1,15 +0,0 @@
+-add_llvm_library(LLVMBOLTUtils
+-  CommandLineOpts.cpp
+-  Utils.cpp
+-
+-  DISABLE_LLVM_LINK_LLVM_DYLIB
+-
+-  LINK_LIBS
+-  ${LLVM_PTHREAD_LIB}
+-
+-  DEPENDS
+-  llvm_vcsrevision_h
+-
+-  LINK_COMPONENTS
+-  Support
+-  )

@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/5/.clang-tidy b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/5/.clang-tidy
+deleted file mode 100644
+index e33f0f8bb332..000000000000
+--- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/5/.clang-tidy
++++ /dev/null
+@@ -1,4 +0,0 @@
+-InheritParentConfig: true
+-Checks: 'misc-throw-by-value-catch-by-reference'
+-CheckOptions:
+-  misc-throw-by-value-catch-by-reference.MaxSize: '1152921504606846976'

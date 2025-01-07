@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/altera/struct-pack-align-invalid-decl-no-crash.cpp b/clang-tools-extra/test/clang-tidy/checkers/altera/struct-pack-align-invalid-decl-no-crash.cpp
+deleted file mode 100644
+index 5688c03ca0e1..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/altera/struct-pack-align-invalid-decl-no-crash.cpp
++++ /dev/null
+@@ -1,6 +0,0 @@
+-// RUN: %check_clang_tidy -expect-clang-tidy-error %s altera-struct-pack-align %t -- -header-filter=.*
+-
+-struct Foo {
+-  member; // no-crash
+-};
+-// CHECK-MESSAGES: :[[@LINE-2]]:3: error: a type specifier is required for all declarations [clang-diagnostic-error]

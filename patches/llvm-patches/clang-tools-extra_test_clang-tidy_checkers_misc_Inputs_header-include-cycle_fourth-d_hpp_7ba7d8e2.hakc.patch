@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.fourth-d.hpp b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.fourth-d.hpp
+deleted file mode 100644
+index 68e3774a6a22..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/header-include-cycle.fourth-d.hpp
++++ /dev/null
+@@ -1,4 +0,0 @@
+-#ifndef FOURTH
+-#define FOURTH
+-#include "header-include-cycle.first-d.hpp"
+-#endif

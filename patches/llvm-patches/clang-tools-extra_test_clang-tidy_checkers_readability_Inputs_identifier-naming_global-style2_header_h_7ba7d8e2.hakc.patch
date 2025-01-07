@@ -1,0 +1,13 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/header.h b/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/header.h
+deleted file mode 100644
+index 9d3e846a080b..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/readability/Inputs/identifier-naming/global-style2/header.h
++++ /dev/null
+@@ -1,7 +0,0 @@
+-
+-
+-void STYLE_SECOND_GOOD();
+-
+-void styleSecondBad();
+-
+-int thisIsMainLikeNotIgnored(int argc, const char *argv[]) {}

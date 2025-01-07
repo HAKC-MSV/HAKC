@@ -1,0 +1,8 @@
+diff --git a/clang-tools-extra/clangd/test/Inputs/background-index/foo.cpp b/clang-tools-extra/clangd/test/Inputs/background-index/foo.cpp
+deleted file mode 100644
+index 21fc589166a4..000000000000
+--- a/clang-tools-extra/clangd/test/Inputs/background-index/foo.cpp
++++ /dev/null
+@@ -1,2 +0,0 @@
+-#include "sub_dir/foo.h"
+-int foo() { return 42; }

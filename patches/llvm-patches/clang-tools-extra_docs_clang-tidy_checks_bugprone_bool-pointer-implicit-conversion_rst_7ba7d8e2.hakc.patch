@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/bugprone/bool-pointer-implicit-conversion.rst b/clang-tools-extra/docs/clang-tidy/checks/bugprone/bool-pointer-implicit-conversion.rst
+deleted file mode 100644
+index e42ee5f60954..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/bugprone/bool-pointer-implicit-conversion.rst
++++ /dev/null
+@@ -1,16 +0,0 @@
+-.. title:: clang-tidy - bugprone-bool-pointer-implicit-conversion
+-
+-bugprone-bool-pointer-implicit-conversion
+-=========================================
+-
+-Checks for conditions based on implicit conversion from a ``bool`` pointer to
+-``bool``.
+-
+-Example:
+-
+-.. code-block:: c++
+-
+-  bool *p;
+-  if (p) {
+-    // Never used in a pointer-specific way.
+-  }

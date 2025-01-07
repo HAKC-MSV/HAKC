@@ -1,0 +1,23 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/common.h b/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/common.h
+deleted file mode 100644
+index 630a39ae5254..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/common.h
++++ /dev/null
+@@ -1,17 +0,0 @@
+-#ifndef COMMON_H
+-#define COMMON_H
+-
+-extern void ext(int (&)[5]);
+-
+-void func(int t) {
+-  int ints[5];
+-  for (unsigned i = 0; i < 5; ++i) {
+-    ints[i] = t;
+-  }
+-
+-  int *i = 0;
+-
+-  ext(ints);
+-}
+-
+-#endif // COMMON_H

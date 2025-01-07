@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/expected.txt b/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/expected.txt
+deleted file mode 100644
+index b66f577a78c5..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/conflict/expected.txt
++++ /dev/null
+@@ -1,12 +0,0 @@
+-The new replacement overlaps with an existing replacement.
+-New replacement: $(path)/common.h: 106:+26:"int & elem : ints"
+-Existing replacement: $(path)/common.h: 106:+26:"auto & i : ints"
+-The new replacement overlaps with an existing replacement.
+-New replacement: $(path)/common.h: 140:+7:"i"
+-Existing replacement: $(path)/common.h: 140:+7:"elem"
+-The new replacement overlaps with an existing replacement.
+-New replacement: $(path)/common.h: 169:+0:"(int*)"
+-Existing replacement: $(path)/common.h: 160:+12:""
+-The new replacement overlaps with an existing replacement.
+-New replacement: $(path)/common.h: 169:+1:"nullptr"
+-Existing replacement: $(path)/common.h: 160:+12:""

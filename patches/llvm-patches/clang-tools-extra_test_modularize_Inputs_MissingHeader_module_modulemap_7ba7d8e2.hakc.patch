@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/test/modularize/Inputs/MissingHeader/module.modulemap b/clang-tools-extra/test/modularize/Inputs/MissingHeader/module.modulemap
+deleted file mode 100644
+index 330e13f5ee15..000000000000
+--- a/clang-tools-extra/test/modularize/Inputs/MissingHeader/module.modulemap
++++ /dev/null
+@@ -1,10 +0,0 @@
+-// module.modulemap
+-
+-module Level1A {
+-  header "Level1A.h"
+-  export *
+-}
+-module Missing {
+-  header "Missing.h"
+-  export *
+-}

@@ -14,7 +14,7 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -fdiagnostics-color=always")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # need to make some changes here, since the HAKC pass will now be built alongside llvm 
-if(LLVM_ENABLE_HAKC)
+if (LLVM_ENABLE_HAKC)
     # Force these values since our pass needs them
     set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;lld;compiler-rt" CACHE STRING "HAKC Projects")
     set(LLVM_TARGETS_TO_BUILD "X86;AArch64;ARM" CACHE STRING "HAKC Archs")
@@ -26,6 +26,6 @@ if(LLVM_ENABLE_HAKC)
 
     cmake_host_system_information(RESULT Ncpu QUERY NUMBER_OF_PHYSICAL_CORES)
 
-    set(BUILD_PYTHON True CACHE BOOL "Build Kuzu Python bindings")
-    add_subdirectory(kuzu)
-endif()
+    #    set(BUILD_PYTHON True CACHE BOOL "Build Kuzu Python bindings")
+    #    add_subdirectory(kuzu)
+endif ()

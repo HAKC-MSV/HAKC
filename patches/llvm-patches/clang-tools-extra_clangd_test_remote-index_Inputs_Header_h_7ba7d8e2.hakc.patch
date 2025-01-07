@@ -1,0 +1,16 @@
+diff --git a/clang-tools-extra/clangd/test/remote-index/Inputs/Header.h b/clang-tools-extra/clangd/test/remote-index/Inputs/Header.h
+deleted file mode 100644
+index 75fb6c8f1a40..000000000000
+--- a/clang-tools-extra/clangd/test/remote-index/Inputs/Header.h
++++ /dev/null
+@@ -1,10 +0,0 @@
+-namespace clang {
+-namespace clangd {
+-namespace remote {
+-int getFoo(bool Argument);
+-char Character;
+-} // namespace remote
+-} // namespace clangd
+-} // namespace clang
+-
+-namespace llvm {} // namespace llvm

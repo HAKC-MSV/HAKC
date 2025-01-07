@@ -1,0 +1,16 @@
+diff --git a/bolt/test/no-relocs.test b/bolt/test/no-relocs.test
+deleted file mode 100644
+index 3dd4251f7078..000000000000
+--- a/bolt/test/no-relocs.test
++++ /dev/null
+@@ -1,10 +0,0 @@
+-## Verifies that input without relocations is rejected in relocs mode.
+-
+-## This test uses the clang driver without target flags and will only succeed
+-## on Linux systems where the host triple matches the target.
+-REQUIRES: system-linux
+-
+-RUN: %clang %cflags %S/Inputs/icf-jump-tables.c -o %t
+-RUN: not llvm-bolt %t -o %t.null --relocs 2>&1 | FileCheck %s
+-
+-CHECK: BOLT-ERROR: relocations against code are missing from the input file.

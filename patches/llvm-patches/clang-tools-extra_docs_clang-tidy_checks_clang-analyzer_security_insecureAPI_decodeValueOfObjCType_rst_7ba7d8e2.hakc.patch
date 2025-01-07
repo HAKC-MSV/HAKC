@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.decodeValueOfObjCType.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.decodeValueOfObjCType.rst
+deleted file mode 100644
+index 4405f721a66d..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.insecureAPI.decodeValueOfObjCType.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-security.insecureAPI.decodeValueOfObjCType
+-
+-clang-analyzer-security.insecureAPI.decodeValueOfObjCType
+-=========================================================
+-
+-Warn on uses of the '-decodeValueOfObjCType:at:' method.
+-
+-The clang-analyzer-security.insecureAPI.decodeValueOfObjCType check is an alias of
+-Clang Static Analyzer security.insecureAPI.decodeValueOfObjCType.

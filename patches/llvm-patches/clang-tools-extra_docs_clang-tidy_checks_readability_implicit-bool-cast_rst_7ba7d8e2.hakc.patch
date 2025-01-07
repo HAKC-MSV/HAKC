@@ -1,0 +1,17 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/readability/implicit-bool-cast.rst b/clang-tools-extra/docs/clang-tidy/checks/readability/implicit-bool-cast.rst
+deleted file mode 100644
+index 9ad5fbbeff0e..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/readability/implicit-bool-cast.rst
++++ /dev/null
+@@ -1,11 +0,0 @@
+-:orphan:
+-
+-.. title:: clang-tidy - readability-implicit-bool-cast
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../readability/implicit-bool-conversion.html
+-
+-readability-implicit-bool-cast
+-==============================
+-
+-This check has been renamed to :doc:`readability-implicit-bool-conversion
+-<../readability/implicit-bool-conversion>`.

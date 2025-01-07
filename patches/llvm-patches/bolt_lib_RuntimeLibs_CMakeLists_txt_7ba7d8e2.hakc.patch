@@ -1,0 +1,28 @@
+diff --git a/bolt/lib/RuntimeLibs/CMakeLists.txt b/bolt/lib/RuntimeLibs/CMakeLists.txt
+deleted file mode 100644
+index d3ac71d3e797..000000000000
+--- a/bolt/lib/RuntimeLibs/CMakeLists.txt
++++ /dev/null
+@@ -1,22 +0,0 @@
+-set(LLVM_LINK_COMPONENTS
+-  BinaryFormat
+-  JITLink
+-  MC
+-  Object
+-  Support
+-  )
+-
+-add_llvm_library(LLVMBOLTRuntimeLibs
+-  RuntimeLibrary.cpp
+-  HugifyRuntimeLibrary.cpp
+-  InstrumentationRuntimeLibrary.cpp
+-
+-  DISABLE_LLVM_LINK_LLVM_DYLIB
+-  )
+-
+-target_link_libraries(LLVMBOLTRuntimeLibs
+-  PRIVATE
+-  LLVMBOLTCore
+-  LLVMBOLTPasses
+-  LLVMBOLTUtils
+-  )

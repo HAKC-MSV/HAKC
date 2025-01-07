@@ -1,0 +1,90 @@
+diff --git a/clang-tools-extra/clangd/quality/model/features.json b/clang-tools-extra/clangd/quality/model/features.json
+deleted file mode 100644
+index 2f68848ce807..000000000000
+--- a/clang-tools-extra/clangd/quality/model/features.json
++++ /dev/null
+@@ -1,84 +0,0 @@
+-[
+-    {
+-        "name": "IsDeprecated",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "IsReservedName",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "IsImplementationDetail",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "NumReferences",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "NumNameInContext",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "FractionNameInContext",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "IsNameInContext",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "IsInBaseClass",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "FileProximityDistanceCost",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "SemaFileProximityScore",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "SymbolScopeDistanceCost",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "SemaSaysInScope",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "IsInstanceMember",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "HadContextType",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "HadSymbolType",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "TypeMatchesPreferred",
+-        "kind": "NUMBER"
+-    },
+-    {
+-        "name": "SymbolCategory",
+-        "kind": "ENUM",
+-        "type": "clang::clangd::SymbolQualitySignals::SymbolCategory",
+-        "header": "Quality.h"
+-    },
+-    {
+-        "name": "ContextKind",
+-        "kind": "ENUM",
+-        "type": "clang::CodeCompletionContext::Kind",
+-        "header": "clang/Sema/CodeCompleteConsumer.h"
+-    },
+-    {
+-        "name": "Scope",
+-        "kind": "ENUM",
+-        "type": "clang::clangd::SymbolRelevanceSignals::AccessibleScope",
+-        "header": "Quality.h"
+-    }
+-]

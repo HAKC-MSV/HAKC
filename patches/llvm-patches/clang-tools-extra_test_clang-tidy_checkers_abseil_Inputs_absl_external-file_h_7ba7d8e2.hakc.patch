@@ -1,0 +1,12 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/external-file.h b/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/external-file.h
+deleted file mode 100644
+index 4a57c461f7fa..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/external-file.h
++++ /dev/null
+@@ -1,6 +0,0 @@
+-namespace absl {
+-namespace base_internal {
+-void InternalFunction() {}
+-} // namespace base_internal 
+-} // namespace absl
+-void DirectAccess2() { absl::base_internal::InternalFunction(); }

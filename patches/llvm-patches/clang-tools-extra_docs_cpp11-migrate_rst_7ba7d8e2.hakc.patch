@@ -1,0 +1,10 @@
+diff --git a/clang-tools-extra/docs/cpp11-migrate.rst b/clang-tools-extra/docs/cpp11-migrate.rst
+deleted file mode 100644
+index 0a4296118926..000000000000
+--- a/clang-tools-extra/docs/cpp11-migrate.rst
++++ /dev/null
+@@ -1,4 +0,0 @@
+-:orphan:
+-
+-All :program:`clang-modernize` transforms have moved to :doc:`clang-tidy/index`
+-(see the ``modernize`` module).

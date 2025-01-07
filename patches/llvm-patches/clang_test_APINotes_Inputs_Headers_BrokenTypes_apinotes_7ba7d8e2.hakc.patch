@@ -1,0 +1,16 @@
+diff --git a/clang/test/APINotes/Inputs/Headers/BrokenTypes.apinotes b/clang/test/APINotes/Inputs/Headers/BrokenTypes.apinotes
+deleted file mode 100644
+index 00f7b5074e98..000000000000
+--- a/clang/test/APINotes/Inputs/Headers/BrokenTypes.apinotes
++++ /dev/null
+@@ -1,10 +0,0 @@
+-Name: BrokenTypes
+-Functions:
+-  - Name: break_me_function
+-    ResultType: 'int * with extra junk'
+-    Parameters:
+-      - Position: 0
+-        Type: 'not_a_type'
+-Globals:
+-  - Name: break_me_variable
+-    Type: 'double'

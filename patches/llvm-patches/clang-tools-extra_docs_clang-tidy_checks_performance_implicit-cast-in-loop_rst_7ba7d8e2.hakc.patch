@@ -1,0 +1,18 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/performance/implicit-cast-in-loop.rst b/clang-tools-extra/docs/clang-tidy/checks/performance/implicit-cast-in-loop.rst
+deleted file mode 100644
+index fc8bf5d85171..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/performance/implicit-cast-in-loop.rst
++++ /dev/null
+@@ -1,12 +0,0 @@
+-:orphan:
+-
+-.. title:: clang-tidy - performance-implicit-cast-in-loop
+-.. meta::
+-   :http-equiv=refresh: 5;URL=../performance/implicit-conversion-in-loop.html
+-
+-performance-implicit-cast-in-loop
+-=================================
+-
+-This check has been renamed to :doc:`performance-implicit-conversion-in-loop
+-<../performance/implicit-conversion-in-loop>`.
+-

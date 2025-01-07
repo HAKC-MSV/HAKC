@@ -1,0 +1,22 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/llvm/twine-local.rst b/clang-tools-extra/docs/clang-tidy/checks/llvm/twine-local.rst
+deleted file mode 100644
+index ec9ef1c60913..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/llvm/twine-local.rst
++++ /dev/null
+@@ -1,16 +0,0 @@
+-.. title:: clang-tidy - llvm-twine-local
+-
+-llvm-twine-local
+-================
+-
+-
+-Looks for local ``Twine`` variables which are prone to use after frees and
+-should be generally avoided.
+-
+-.. code-block:: c++
+-
+-  static Twine Moo = Twine("bark") + "bah";
+-
+-  // becomes
+-
+-  static std::string Moo = (Twine("bark") + "bah").str();

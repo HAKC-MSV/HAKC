@@ -1,0 +1,19 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.cert.env.InvalidPtr.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.cert.env.InvalidPtr.rst
+deleted file mode 100644
+index 8986fa0e684f..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/security.cert.env.InvalidPtr.rst
++++ /dev/null
+@@ -1,13 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-security.cert.env.InvalidPtr
+-.. meta::
+-   :http-equiv=refresh: 5;URL=https://clang.llvm.org/docs/analyzer/checkers.html#security-cert-env-invalidptr
+-
+-clang-analyzer-security.cert.env.InvalidPtr
+-===========================================
+-
+-Finds usages of possibly invalidated pointers.
+-
+-The `clang-analyzer-security.cert.env.InvalidPtr` check is an alias, please see
+-`Clang Static Analyzer Available Checkers
+-<https://clang.llvm.org/docs/analyzer/checkers.html#security-cert-env-invalidptr>`_
+-for more information.

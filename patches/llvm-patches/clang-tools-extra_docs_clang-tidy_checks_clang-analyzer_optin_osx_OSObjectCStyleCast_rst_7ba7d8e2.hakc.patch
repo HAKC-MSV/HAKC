@@ -1,0 +1,15 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.osx.OSObjectCStyleCast.rst b/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.osx.OSObjectCStyleCast.rst
+deleted file mode 100644
+index c2fef59f5689..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/clang-analyzer/optin.osx.OSObjectCStyleCast.rst
++++ /dev/null
+@@ -1,9 +0,0 @@
+-.. title:: clang-tidy - clang-analyzer-optin.osx.OSObjectCStyleCast
+-
+-clang-analyzer-optin.osx.OSObjectCStyleCast
+-===========================================
+-
+-Checker for C-style casts of OSObjects.
+-
+-The clang-analyzer-optin.osx.OSObjectCStyleCast check is an alias of
+-Clang Static Analyzer optin.osx.OSObjectCStyleCast.

@@ -1,0 +1,25 @@
+diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/file2.yaml b/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/file2.yaml
+deleted file mode 100644
+index 5297e974dec4..000000000000
+--- a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/file2.yaml
++++ /dev/null
+@@ -1,19 +0,0 @@
+----
+-MainSourceFile:     identical-in-TU.cpp
+-Diagnostics:
+-  - DiagnosticName: test-identical-insertion
+-    DiagnosticMessage:
+-      Message: Fix
+-      FilePath: $(path)/identical-in-TU.cpp
+-      FileOffset: 12
+-      Replacements:
+-        - FilePath:        $(path)/identical-in-TU.cpp
+-          Offset:          12
+-          Length:          0
+-          ReplacementText: '0'
+-        - FilePath:        $(path)/identical-in-TU.cpp
+-          Offset:          12
+-          Length:          0
+-          ReplacementText: '0'
+-...
+-

@@ -1,0 +1,12 @@
+diff --git a/clang/cmake/caches/Apple-stage2-ThinLTO.cmake b/clang/cmake/caches/Apple-stage2-ThinLTO.cmake
+deleted file mode 100644
+index 54e54e306e7a..000000000000
+--- a/clang/cmake/caches/Apple-stage2-ThinLTO.cmake
++++ /dev/null
+@@ -1,6 +0,0 @@
+-# This file sets up a CMakeCache for Apple-style stage2 ThinLTO bootstrap. It is
+-# specified by the stage1 build.
+-
+-
+-set(LLVM_ENABLE_LTO THIN CACHE BOOL "")
+-include(${CMAKE_CURRENT_LIST_DIR}/Apple-stage2.cmake)

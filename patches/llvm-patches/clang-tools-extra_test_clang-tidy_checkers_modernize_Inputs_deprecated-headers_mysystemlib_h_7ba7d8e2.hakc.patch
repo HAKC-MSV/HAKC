@@ -1,0 +1,7 @@
+diff --git a/clang-tools-extra/test/clang-tidy/checkers/modernize/Inputs/deprecated-headers/mysystemlib.h b/clang-tools-extra/test/clang-tidy/checkers/modernize/Inputs/deprecated-headers/mysystemlib.h
+deleted file mode 100644
+index f5711e7692e7..000000000000
+--- a/clang-tools-extra/test/clang-tidy/checkers/modernize/Inputs/deprecated-headers/mysystemlib.h
++++ /dev/null
+@@ -1 +0,0 @@
+-#include <assert.h>

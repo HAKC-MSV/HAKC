@@ -1,0 +1,29 @@
+diff --git a/clang-tools-extra/docs/clang-tidy/checks/misc/misleading-identifier.rst b/clang-tools-extra/docs/clang-tidy/checks/misc/misleading-identifier.rst
+deleted file mode 100644
+index 1e2b61ac6734..000000000000
+--- a/clang-tools-extra/docs/clang-tidy/checks/misc/misleading-identifier.rst
++++ /dev/null
+@@ -1,23 +0,0 @@
+-.. title:: clang-tidy - misc-misleading-identifier
+-
+-misc-misleading-identifier
+-==========================
+-
+-Finds identifiers that contain Unicode characters with right-to-left direction,
+-which can be confusing as they may change the understanding of a whole statement
+-line, as described in `Trojan Source <https://trojansource.codes>`_.
+-
+-An example of such misleading code follows:
+-
+-.. code-block:: text
+-
+-  #include <stdio.h>
+-
+-  short int א = (short int)0;
+-  short int ג = (short int)12345;
+-
+-  int main() {
+-    int א = ג; // a local variable, set to zero?
+-    printf("ג is %d\n", ג);
+-    printf("א is %d\n", א);
+-  }

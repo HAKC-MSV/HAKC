@@ -1,0 +1,15 @@
+diff --git a/bolt/test/RISCV/plt-gnu-ld.test b/bolt/test/RISCV/plt-gnu-ld.test
+deleted file mode 100644
+index f87f51dda895..000000000000
+--- a/bolt/test/RISCV/plt-gnu-ld.test
++++ /dev/null
+@@ -1,9 +0,0 @@
+-// This test checks that the PLT symbols are properly recognized
+-// by the BOLT tool.
+-
+-// RUN: yaml2obj %p/Inputs/plt-gnu-ld.yaml &> %t.exe
+-// RUN: llvm-bolt %t.exe -o %t.bolt.exe --print-cfg --print-only=main \
+-// RUN:   | FileCheck %s
+-
+-// CHECK: Binary Function "main" after building cfg {
+-// CHECK: auipc ra, puts@PLT
