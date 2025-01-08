@@ -8,3 +8,6 @@
 [submodule "kuzu"]
 	path = kuzu
 	url = https://github.com/kuzudb/kuzu.git
+[submodule "cpp-httplib"]
+	path = cpp-httplib
+	url = https://github.com/yhirose/cpp-httplib.git
