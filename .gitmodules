@@ -1,13 +1,10 @@
 [submodule "llvm-project"]
 	path = llvm-project
-	url = https://github.com/llvm/llvm-project.git
-	branch = tags/llvmorg-19.1.2
+	url = https://g53gitlab.llan.ll.mit.edu/inherently-secure/llvm-project.git
+	branch = hakc
 [submodule "linux"]
 	path = linux
 	url = https://github.com/torvalds/linux.git
 [submodule "kuzu"]
 	path = kuzu
 	url = https://github.com/kuzudb/kuzu.git
-[submodule "cpp-httplib"]
-	path = cpp-httplib
-	url = https://github.com/yhirose/cpp-httplib.git

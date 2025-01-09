@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-file/config-file b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-file/config-file
-deleted file mode 100644
-index 23bb65e0155b..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-file/config-file
-+++ /dev/null
-@@ -1 +0,0 @@
--Checks: "-*,hicpp-uppercase-literal-suffix"

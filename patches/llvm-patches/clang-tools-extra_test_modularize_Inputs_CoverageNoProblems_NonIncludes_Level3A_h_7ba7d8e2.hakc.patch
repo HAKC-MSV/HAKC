@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/NonIncludes/Level3A.h b/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/NonIncludes/Level3A.h
-deleted file mode 100644
-index 594e284cbf96..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/CoverageNoProblems/NonIncludes/Level3A.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#define MACRO_3A 1

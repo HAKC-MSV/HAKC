@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.js b/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.js
-deleted file mode 100644
-index 06f320c59b9b..000000000000
---- a/clang-tools-extra/test/clang-doc/Inputs/test-assets/test.js
-+++ /dev/null
-@@ -1 +0,0 @@
--console.log("Hello, world!");
-\ No newline at end of file

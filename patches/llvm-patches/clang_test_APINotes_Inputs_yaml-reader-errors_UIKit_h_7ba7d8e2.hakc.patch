@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/yaml-reader-errors/UIKit.h b/clang/test/APINotes/Inputs/yaml-reader-errors/UIKit.h
-deleted file mode 100644
-index 55313ae260ae..000000000000
---- a/clang/test/APINotes/Inputs/yaml-reader-errors/UIKit.h
-+++ /dev/null
-@@ -1 +0,0 @@
--extern int yesOfCourseThisIsWhatUIKitLooksLike;

@@ -1,0 +1,9 @@
+diff --git a/llvm/lib/Transforms/Compartmentalization/CMakeLists.txt b/llvm/lib/Transforms/Compartmentalization/CMakeLists.txt
+new file mode 100644
+index 000000000000..898d50d7f2d0
+--- /dev/null
++++ b/llvm/lib/Transforms/Compartmentalization/CMakeLists.txt
+@@ -0,0 +1,3 @@
++if (LLVM_ENABLE_HAKC)
++    add_subdirectory(hakc)
++endif ()

@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/InconsistentHeader2.h b/clang-tools-extra/test/modularize/Inputs/InconsistentHeader2.h
-deleted file mode 100644
-index a2bcae19c78b..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/InconsistentHeader2.h
-+++ /dev/null
-@@ -1,3 +0,0 @@
--// Set up so the declaration in InconsistentSubHeader.h is not defined.
--#define SYMBOL2 1
--#include "InconsistentSubHeader.h"

@@ -1,7 +1,0 @@
-diff --git a/.github/workflows/README.md b/.github/workflows/README.md
-deleted file mode 100644
-index ce34d2337e9c..000000000000
---- a/.github/workflows/README.md
-+++ /dev/null
-@@ -1 +0,0 @@
--Github action workflows should be stored in this directory.

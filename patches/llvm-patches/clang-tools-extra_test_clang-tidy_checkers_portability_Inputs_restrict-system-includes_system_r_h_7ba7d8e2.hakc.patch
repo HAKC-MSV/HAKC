@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/portability/Inputs/restrict-system-includes/system/r.h b/clang-tools-extra/test/clang-tidy/checkers/portability/Inputs/restrict-system-includes/system/r.h
-deleted file mode 100644
-index 56757a701bf5..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/portability/Inputs/restrict-system-includes/system/r.h
-+++ /dev/null
-@@ -1 +0,0 @@
--void f() {}

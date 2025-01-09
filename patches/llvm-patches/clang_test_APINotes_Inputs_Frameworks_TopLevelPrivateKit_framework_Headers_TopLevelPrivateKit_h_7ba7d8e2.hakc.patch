@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/Headers/TopLevelPrivateKit.h b/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/Headers/TopLevelPrivateKit.h
-deleted file mode 100644
-index d3376f1dac5d..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/Headers/TopLevelPrivateKit.h
-+++ /dev/null
-@@ -1 +0,0 @@
--extern int TopLevelPrivateKit_Public;

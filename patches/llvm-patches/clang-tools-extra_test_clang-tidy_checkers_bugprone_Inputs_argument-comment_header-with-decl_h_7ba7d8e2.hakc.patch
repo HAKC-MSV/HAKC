@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/bugprone/Inputs/argument-comment/header-with-decl.h b/clang-tools-extra/test/clang-tidy/checkers/bugprone/Inputs/argument-comment/header-with-decl.h
-deleted file mode 100644
-index 1e065b1edeb6..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/bugprone/Inputs/argument-comment/header-with-decl.h
-+++ /dev/null
-@@ -1 +0,0 @@
--void my_header_function(int arg);

@@ -15,13 +15,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 # need to make some changes here, since the HAKC pass will now be built alongside llvm 
 if (LLVM_ENABLE_HAKC)
-    add_subdirectory(cpp-httplib)
     # Force these values since our pass needs them
     set(LLVM_ENABLE_PROJECTS "clang;clang-tools-extra;lld;compiler-rt" CACHE STRING "HAKC Projects")
     set(LLVM_TARGETS_TO_BUILD "X86;AArch64;ARM" CACHE STRING "HAKC Archs")
     set(LLVM_ENABLE_IDE ON)
     set(LLVM_ENABLE_RTTI ON)
     set(LLVM_ENABLE_EH ON)
-    set(LLVM_ENABLE_HTTPLIB ON)
     add_subdirectory(llvm-project/llvm)
 endif ()

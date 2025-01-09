@@ -1,8 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.h b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.h
-deleted file mode 100644
-index c07a3e95d740..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--#include <FrameworkWithActualPrivateModule/FrameworkWithActualPrivateModule.h>
--extern int FrameworkWithActualPrivateModule_Private;

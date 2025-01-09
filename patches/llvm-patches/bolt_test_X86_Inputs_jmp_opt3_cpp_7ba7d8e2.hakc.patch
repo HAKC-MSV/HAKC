@@ -1,9 +1,0 @@
-diff --git a/bolt/test/X86/Inputs/jmp_opt3.cpp b/bolt/test/X86/Inputs/jmp_opt3.cpp
-deleted file mode 100644
-index 7fb55116369a..000000000000
---- a/bolt/test/X86/Inputs/jmp_opt3.cpp
-+++ /dev/null
-@@ -1,3 +0,0 @@
--int f();
--
--int g() { return f(); }

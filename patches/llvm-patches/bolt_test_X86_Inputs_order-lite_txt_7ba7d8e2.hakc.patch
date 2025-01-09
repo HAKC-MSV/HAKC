@@ -1,8 +1,0 @@
-diff --git a/bolt/test/X86/Inputs/order-lite.txt b/bolt/test/X86/Inputs/order-lite.txt
-deleted file mode 100644
-index 60eb1e387620..000000000000
---- a/bolt/test/X86/Inputs/order-lite.txt
-+++ /dev/null
-@@ -1,2 +0,0 @@
--main
--foo.__uniq.321

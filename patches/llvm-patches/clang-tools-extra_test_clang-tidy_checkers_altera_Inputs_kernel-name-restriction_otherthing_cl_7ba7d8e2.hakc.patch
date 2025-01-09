@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/otherthing.cl b/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/otherthing.cl
-deleted file mode 100644
-index 1e26850d5c7d..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/otherthing.cl
-+++ /dev/null
-@@ -1 +0,0 @@
--const int OTHERTHINGINT = 1;

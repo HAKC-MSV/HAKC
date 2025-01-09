@@ -1,7 +1,0 @@
-diff --git a/clang/docs/README.txt b/clang/docs/README.txt
-deleted file mode 100644
-index c4e565f9e267..000000000000
---- a/clang/docs/README.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--See llvm/docs/README.txt

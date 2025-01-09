@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/NoProblemsTemplateClasses.modularize b/clang-tools-extra/test/modularize/NoProblemsTemplateClasses.modularize
-deleted file mode 100644
-index d41c43cbf2ab..000000000000
---- a/clang-tools-extra/test/modularize/NoProblemsTemplateClasses.modularize
-+++ /dev/null
-@@ -1,3 +0,0 @@
--# RUN: modularize %s -x c++
--
--Inputs/TemplateClasses.h

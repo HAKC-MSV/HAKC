@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/identical-in-TU.cpp b/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/identical-in-TU.cpp
-deleted file mode 100644
-index bdaab4fc823a..000000000000
---- a/clang-tools-extra/test/clang-apply-replacements/Inputs/identical-in-TU/identical-in-TU.cpp
-+++ /dev/null
-@@ -1,2 +0,0 @@
--class MyType {};
--// CHECK: class MyType00 {};

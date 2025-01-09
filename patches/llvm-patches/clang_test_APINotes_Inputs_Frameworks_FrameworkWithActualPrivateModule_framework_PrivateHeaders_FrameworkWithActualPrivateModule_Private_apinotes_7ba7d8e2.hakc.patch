@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.apinotes b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.apinotes
-deleted file mode 100644
-index 831cf1e93d35..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithActualPrivateModule.framework/PrivateHeaders/FrameworkWithActualPrivateModule_Private.apinotes
-+++ /dev/null
-@@ -1 +0,0 @@
--Name: FrameworkWithActualPrivateModule_Private

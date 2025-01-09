@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-move/Inputs/macro_helper_test.h b/clang-tools-extra/test/clang-move/Inputs/macro_helper_test.h
-deleted file mode 100644
-index 0ddfaae3c2f9..000000000000
---- a/clang-tools-extra/test/clang-move/Inputs/macro_helper_test.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--class A {};
--void f1();

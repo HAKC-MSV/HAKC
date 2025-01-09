@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Headers/PrivateLib.h b/clang/test/APINotes/Inputs/Headers/PrivateLib.h
-deleted file mode 100644
-index 59aeef09bdd3..000000000000
---- a/clang/test/APINotes/Inputs/Headers/PrivateLib.h
-+++ /dev/null
-@@ -1 +0,0 @@
--extern int PrivateLib;

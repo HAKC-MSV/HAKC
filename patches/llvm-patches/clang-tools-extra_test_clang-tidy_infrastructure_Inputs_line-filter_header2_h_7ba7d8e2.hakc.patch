@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/line-filter/header2.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/line-filter/header2.h
-deleted file mode 100644
-index bb12598959c9..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/line-filter/header2.h
-+++ /dev/null
-@@ -1,3 +0,0 @@
--class A2 { A2(int); };
--class B2 { B2(int); };
--class C2 { C2(int); };

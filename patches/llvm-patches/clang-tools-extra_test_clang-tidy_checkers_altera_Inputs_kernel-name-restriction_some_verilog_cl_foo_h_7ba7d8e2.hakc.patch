@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/some/verilog.cl/foo.h b/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/some/verilog.cl/foo.h
-deleted file mode 100644
-index edcfb8b43e9c..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/altera/Inputs/kernel-name-restriction/some/verilog.cl/foo.h
-+++ /dev/null
-@@ -1 +0,0 @@
--int SOME_VERILOG_FOO_INT = 0;

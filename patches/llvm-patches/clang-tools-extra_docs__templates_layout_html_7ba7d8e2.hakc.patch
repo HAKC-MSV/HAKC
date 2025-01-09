@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/docs/_templates/layout.html b/clang-tools-extra/docs/_templates/layout.html
-deleted file mode 100644
-index dd20b6f74fdc..000000000000
---- a/clang-tools-extra/docs/_templates/layout.html
-+++ /dev/null
-@@ -1,3 +0,0 @@
--{% extends (meta|default({})).template|default("!layout.html") %}
--
--{% set css_files = css_files + ['_static/clang-tools-extra-styles.css'] %}

@@ -1,9 +1,0 @@
-diff --git a/bolt/lib/Target/CMakeLists.txt b/bolt/lib/Target/CMakeLists.txt
-deleted file mode 100644
-index eae8ebdddbf3..000000000000
---- a/bolt/lib/Target/CMakeLists.txt
-+++ /dev/null
-@@ -1,3 +0,0 @@
--foreach (tgt ${BOLT_TARGETS_TO_BUILD})
--  add_subdirectory(${tgt})
--endforeach()

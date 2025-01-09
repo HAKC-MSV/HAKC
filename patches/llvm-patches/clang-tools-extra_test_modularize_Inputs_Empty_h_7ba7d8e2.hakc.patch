@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/Empty.h b/clang-tools-extra/test/modularize/Inputs/Empty.h
-deleted file mode 100644
-index d74d27d937fe..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/Empty.h
-+++ /dev/null
-@@ -1 +0,0 @@
--// Empty header for testing #include directives in blocks.

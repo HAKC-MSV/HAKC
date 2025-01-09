@@ -1,0 +1,31 @@
+diff --git a/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartment.h b/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartment.h
+new file mode 100644
+index 000000000000..7258d2b0f967
+--- /dev/null
++++ b/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartment.h
+@@ -0,0 +1,25 @@
++//
++// Created by de29664 on 7/29/24.
++//
++
++#ifndef HAKC_HAKCYAMLCOMPARTMENT_H
++#define HAKC_HAKCYAMLCOMPARTMENT_H
++
++#include "HAKC-defs.h"
++#include "HAKCYamlClique.h"
++
++namespace llvm::hakc {
++
++    class HAKCYamlCompartment {
++    public:
++        HAKCYamlCompartment();
++
++        std::vector<HAKCYamlClique> Cliques;
++        hakc_access_token_t EntryToken;
++        hakc_compartment_id_t CompartmentID;
++        std::vector<hakc_compartment_id_t> Targets;
++    };
++
++} // hakc
++
++#endif //HAKC_HAKCYAMLCOMPARTMENT_H

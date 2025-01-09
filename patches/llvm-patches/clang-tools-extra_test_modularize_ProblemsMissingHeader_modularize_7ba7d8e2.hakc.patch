@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/ProblemsMissingHeader.modularize b/clang-tools-extra/test/modularize/ProblemsMissingHeader.modularize
-deleted file mode 100644
-index bc731fb0fdf6..000000000000
---- a/clang-tools-extra/test/modularize/ProblemsMissingHeader.modularize
-+++ /dev/null
-@@ -1,3 +0,0 @@
--# RUN: not modularize %S/Inputs/MissingHeader/module.modulemap 2>&1 | FileCheck %s
--
--# CHECK: {{.*}}{{[/\\]}}Inputs/MissingHeader/module.modulemap:8:10: error : Header not found: Missing.h

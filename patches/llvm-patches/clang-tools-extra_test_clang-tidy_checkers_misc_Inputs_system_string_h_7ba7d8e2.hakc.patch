@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/string.h b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/string.h
-deleted file mode 100644
-index 9b23b425350e..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/string.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--#pragma once
--namespace std { class string {}; }

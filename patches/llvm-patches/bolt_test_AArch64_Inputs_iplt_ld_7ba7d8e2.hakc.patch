@@ -1,9 +1,0 @@
-diff --git a/bolt/test/AArch64/Inputs/iplt.ld b/bolt/test/AArch64/Inputs/iplt.ld
-deleted file mode 100644
-index 1e54a249b218..000000000000
---- a/bolt/test/AArch64/Inputs/iplt.ld
-+++ /dev/null
-@@ -1,3 +0,0 @@
--SECTIONS {
--  .plt : ALIGN(16) { *(.plt) *(.iplt) }
--}

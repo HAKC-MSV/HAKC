@@ -1,8 +1,0 @@
-diff --git a/bolt/test/runtime/X86/Inputs/user_func_order.txt b/bolt/test/runtime/X86/Inputs/user_func_order.txt
-deleted file mode 100644
-index 48b76cd35f44..000000000000
---- a/bolt/test/runtime/X86/Inputs/user_func_order.txt
-+++ /dev/null
-@@ -1,2 +0,0 @@
--main
--fib

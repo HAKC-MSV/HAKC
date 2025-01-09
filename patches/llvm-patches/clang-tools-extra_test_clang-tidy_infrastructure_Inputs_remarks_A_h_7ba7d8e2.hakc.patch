@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/A.h b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/A.h
-deleted file mode 100644
-index b7c2ac02d8d2..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/remarks/A.h
-+++ /dev/null
-@@ -1 +0,0 @@
--// A

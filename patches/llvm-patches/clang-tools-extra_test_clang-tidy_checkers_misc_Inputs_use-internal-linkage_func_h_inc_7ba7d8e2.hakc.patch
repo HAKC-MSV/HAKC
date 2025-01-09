@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_h.inc b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_h.inc
-deleted file mode 100644
-index 1130f710edd7..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/use-internal-linkage/func_h.inc
-+++ /dev/null
-@@ -1 +0,0 @@
--void func_h_inc();

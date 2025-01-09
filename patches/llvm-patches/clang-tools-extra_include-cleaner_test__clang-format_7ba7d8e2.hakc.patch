@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/include-cleaner/test/.clang-format b/clang-tools-extra/include-cleaner/test/.clang-format
-deleted file mode 100644
-index e3845288a2ae..000000000000
---- a/clang-tools-extra/include-cleaner/test/.clang-format
-+++ /dev/null
-@@ -1 +0,0 @@
--DisableFormat: true

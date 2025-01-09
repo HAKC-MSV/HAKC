@@ -1,9 +1,0 @@
-diff --git a/clang/bindings/python/tests/cindex/INPUTS/header3.h b/clang/bindings/python/tests/cindex/INPUTS/header3.h
-deleted file mode 100644
-index 6dca764860e1..000000000000
---- a/clang/bindings/python/tests/cindex/INPUTS/header3.h
-+++ /dev/null
-@@ -1,3 +0,0 @@
--// Not a guarded header!
--
--void f();

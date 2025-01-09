@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/CoverageProblems/UmbrellaInclude1.h b/clang-tools-extra/test/modularize/Inputs/CoverageProblems/UmbrellaInclude1.h
-deleted file mode 100644
-index adf82cb507e1..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/CoverageProblems/UmbrellaInclude1.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#define UMBRELLA_INCLUDE_1 1

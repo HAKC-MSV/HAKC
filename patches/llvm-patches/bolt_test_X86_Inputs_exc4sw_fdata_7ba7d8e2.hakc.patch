@@ -1,8 +1,0 @@
-diff --git a/bolt/test/X86/Inputs/exc4sw.fdata b/bolt/test/X86/Inputs/exc4sw.fdata
-deleted file mode 100644
-index a12b7dea14f4..000000000000
---- a/bolt/test/X86/Inputs/exc4sw.fdata
-+++ /dev/null
-@@ -1,2 +0,0 @@
--0 xxx 0 1 main 0 0 100
--1 main 14 1 main f9 0 100

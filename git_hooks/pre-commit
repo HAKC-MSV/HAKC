@@ -1,5 +1,0 @@
-#!/bin/sh
-
-bash $(git rev-parse --show-toplevel)/generate_patches_llvm_project.sh
-
-git add $(git rev-parse --show-toplevel)/patches/llvm-patches/*.hakc.patch

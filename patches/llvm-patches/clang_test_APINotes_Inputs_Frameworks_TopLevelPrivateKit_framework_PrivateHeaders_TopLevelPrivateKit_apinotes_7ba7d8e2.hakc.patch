@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/PrivateHeaders/TopLevelPrivateKit.apinotes b/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/PrivateHeaders/TopLevelPrivateKit.apinotes
-deleted file mode 100644
-index 908dae0e3b0b..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/TopLevelPrivateKit.framework/PrivateHeaders/TopLevelPrivateKit.apinotes
-+++ /dev/null
-@@ -1 +0,0 @@
--garbage here because this file shouldn't get read

@@ -1,0 +1,30 @@
+diff --git a/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h b/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h
+new file mode 100644
+index 000000000000..83aa94930a91
+--- /dev/null
++++ b/llvm/include/llvm/Transforms/Compartmentalization/hakc/HAKCCompartmentalizationPolicy/yaml/HAKCYamlCompartmentalizationPolicy.h
+@@ -0,0 +1,24 @@
++//
++// Created by de29664 on 7/29/24.
++//
++
++#ifndef HAKC_HAKCYAMLCOMPARTMENTALIZATIONPOLICY_H
++#define HAKC_HAKCYAMLCOMPARTMENTALIZATIONPOLICY_H
++
++#include <vector>
++#include "HAKCYamlCompartment.h"
++#include "HAKCYamlSymbol.h"
++
++namespace llvm::hakc {
++
++    class HAKCYamlCompartmentalizationPolicy {
++    public:
++        HAKCYamlCompartmentalizationPolicy() = default;
++
++        std::vector<HAKCYamlCompartment> Compartments;
++        std::vector<HAKCYamlSymbol> Symbols;
++    };
++
++} // hakc
++
++#endif //HAKC_HAKCYAMLCOMPARTMENTALIZATIONPOLICY_H

@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/2/empty.txt b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/2/empty.txt
-deleted file mode 100644
-index 5905395eff1c..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/2/empty.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--File create just to keep this folder in git.

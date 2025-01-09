@@ -1,7 +1,0 @@
-diff --git a/clang/include/CMakeLists.txt b/clang/include/CMakeLists.txt
-deleted file mode 100644
-index 253a09b1012f..000000000000
---- a/clang/include/CMakeLists.txt
-+++ /dev/null
-@@ -1 +0,0 @@
--add_subdirectory(clang)

@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/header-include-cycle.self-s.hpp b/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/header-include-cycle.self-s.hpp
-deleted file mode 100644
-index dbaf65065d24..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/misc/Inputs/system/header-include-cycle.self-s.hpp
-+++ /dev/null
-@@ -1,2 +0,0 @@
--#pragma once
--#include "header-include-cycle.self-s.hpp"

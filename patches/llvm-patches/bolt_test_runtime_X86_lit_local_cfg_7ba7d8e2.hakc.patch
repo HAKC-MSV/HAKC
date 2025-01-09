@@ -1,8 +1,0 @@
-diff --git a/bolt/test/runtime/X86/lit.local.cfg b/bolt/test/runtime/X86/lit.local.cfg
-deleted file mode 100644
-index b5dffc135ce6..000000000000
---- a/bolt/test/runtime/X86/lit.local.cfg
-+++ /dev/null
-@@ -1,2 +0,0 @@
--if config.host_arch not in ["x86", "X86", "x86_64"]:
--    config.unsupported = True

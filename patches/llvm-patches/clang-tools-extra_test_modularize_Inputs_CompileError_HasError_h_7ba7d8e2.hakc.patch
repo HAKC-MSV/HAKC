@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/CompileError/HasError.h b/clang-tools-extra/test/modularize/Inputs/CompileError/HasError.h
-deleted file mode 100644
-index 4395cb166dea..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/CompileError/HasError.h
-+++ /dev/null
-@@ -1,2 +0,0 @@
--typedef WithoutDep BadType;
--

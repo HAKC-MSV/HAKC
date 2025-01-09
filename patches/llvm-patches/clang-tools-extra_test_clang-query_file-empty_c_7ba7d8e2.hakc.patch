@@ -1,8 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-query/file-empty.c b/clang-tools-extra/test/clang-query/file-empty.c
-deleted file mode 100644
-index 15137c57e915..000000000000
---- a/clang-tools-extra/test/clang-query/file-empty.c
-+++ /dev/null
-@@ -1,2 +0,0 @@
--// RUN: clang-query -c 'file %S/Inputs/empty.script' %s --
--// COM: no output expected; nothing to CHECK

@@ -3,7 +3,6 @@ test.bc
 build-linux-*/
 build-kuzu/
 
-
 **/__pycache__/
 .idea/
 cmake-build-*/

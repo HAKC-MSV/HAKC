@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/flags/internal-file.h b/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/flags/internal-file.h
-deleted file mode 100644
-index c81cf9eee62e..000000000000
---- a/clang-tools-extra/test/clang-tidy/checkers/abseil/Inputs/absl/flags/internal-file.h
-+++ /dev/null
-@@ -1 +0,0 @@
--#define USE_INTERNAL(x) absl::strings_internal::Internal##x()

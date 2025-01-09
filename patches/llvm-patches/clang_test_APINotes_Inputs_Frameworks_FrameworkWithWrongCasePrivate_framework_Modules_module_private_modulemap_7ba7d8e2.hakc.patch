@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.private.modulemap b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.private.modulemap
-deleted file mode 100644
-index d6ad53cdc717..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCasePrivate.framework/Modules/module.private.modulemap
-+++ /dev/null
-@@ -1 +0,0 @@
--module FrameworkWithWrongCasePrivate.Inner {}

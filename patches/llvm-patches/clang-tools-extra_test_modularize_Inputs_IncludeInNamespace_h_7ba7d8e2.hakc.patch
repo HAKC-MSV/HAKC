@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/IncludeInNamespace.h b/clang-tools-extra/test/modularize/Inputs/IncludeInNamespace.h
-deleted file mode 100644
-index 212252882a12..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/IncludeInNamespace.h
-+++ /dev/null
-@@ -1,3 +0,0 @@
--namespace MyNamespace {
--  #include "Empty.h"
--}

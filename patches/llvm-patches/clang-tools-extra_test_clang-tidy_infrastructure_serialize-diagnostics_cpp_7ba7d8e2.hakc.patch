@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/serialize-diagnostics.cpp b/clang-tools-extra/test/clang-tidy/infrastructure/serialize-diagnostics.cpp
-deleted file mode 100644
-index 8b0895af795a..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/serialize-diagnostics.cpp
-+++ /dev/null
-@@ -1,3 +0,0 @@
--// RUN: not clang-tidy -checks=-*,llvm-namespace-comment %s -- -serialize-diagnostics %t | FileCheck %s
--// CHECK: :[[@LINE+1]]:12: error: expected ';' after struct [clang-diagnostic-error]
--struct A {}

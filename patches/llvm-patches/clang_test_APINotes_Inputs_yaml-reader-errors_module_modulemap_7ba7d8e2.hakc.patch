@@ -1,9 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/yaml-reader-errors/module.modulemap b/clang/test/APINotes/Inputs/yaml-reader-errors/module.modulemap
-deleted file mode 100644
-index 3d683d705cac..000000000000
---- a/clang/test/APINotes/Inputs/yaml-reader-errors/module.modulemap
-+++ /dev/null
-@@ -1,3 +0,0 @@
--module UIKit {
--  header "UIKit.h"
--}

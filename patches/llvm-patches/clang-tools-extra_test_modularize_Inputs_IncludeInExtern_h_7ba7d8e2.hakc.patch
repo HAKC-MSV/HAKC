@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/IncludeInExtern.h b/clang-tools-extra/test/modularize/Inputs/IncludeInExtern.h
-deleted file mode 100644
-index da7de8faf2a5..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/IncludeInExtern.h
-+++ /dev/null
-@@ -1,3 +0,0 @@
--extern "C" {
--  #include "Empty.h"
--}

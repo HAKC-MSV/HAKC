@@ -1,9 +1,0 @@
-diff --git a/clang/lib/CIR/Dialect/IR/CMakeLists.txt b/clang/lib/CIR/Dialect/IR/CMakeLists.txt
-deleted file mode 100644
-index 0d7476b55570..000000000000
---- a/clang/lib/CIR/Dialect/IR/CMakeLists.txt
-+++ /dev/null
-@@ -1,3 +0,0 @@
--add_clang_library(MLIRCIR
--  CIRDialect.cpp
--  )

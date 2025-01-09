@@ -1,7 +1,0 @@
-diff --git a/clang/lib/Format/.clang-format b/clang/lib/Format/.clang-format
-deleted file mode 100644
-index d7331b3c8cf0..000000000000
---- a/clang/lib/Format/.clang-format
-+++ /dev/null
-@@ -1 +0,0 @@
--BasedOnStyle: clang-format

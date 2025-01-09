@@ -1,7 +1,0 @@
-diff --git a/clang-tools-extra/test/modularize/Inputs/SubModule2/Header3.h b/clang-tools-extra/test/modularize/Inputs/SubModule2/Header3.h
-deleted file mode 100644
-index bb56afa00cba..000000000000
---- a/clang-tools-extra/test/modularize/Inputs/SubModule2/Header3.h
-+++ /dev/null
-@@ -1 +0,0 @@
--// Header3.h - Empty.

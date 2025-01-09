@@ -1,7 +1,0 @@
-diff --git a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCase.framework/Headers/FrameworkWithWrongCase.h b/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCase.framework/Headers/FrameworkWithWrongCase.h
-deleted file mode 100644
-index 4f3b631c27e3..000000000000
---- a/clang/test/APINotes/Inputs/Frameworks/FrameworkWithWrongCase.framework/Headers/FrameworkWithWrongCase.h
-+++ /dev/null
-@@ -1 +0,0 @@
--extern int FrameworkWithWrongCase;

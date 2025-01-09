@@ -1,0 +1,18 @@
+deploy_llvm-job:
+  stage: deploy
+  needs:
+    - build_linux-armv8_rosdemo_compartmentalized_kernel-job
+  #    - build_linux-armv9_rosdemo_compartmentalized_kernel-job
+  #    - build_linux-x86_rosdemo_compartmentalized_kernel-job
+  rules:
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH # TODO - We may need to do this on a pull request?
+      changes:
+        paths:
+          - llvm-patches/*.patches
+        compare_to: 'main'
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Installing $CLANG_BUILD_PATH to $CLANG_DEPLOY_PATH"
+    - mv $CLANG_DEPLOY_PATH $CLANG_DEPLOY_PATH.old
+    - mv $CLANG_BUILD_PATH $CLANG_DEPLOY_PATH

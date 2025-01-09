@@ -1,4 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/checkers/misc/misleading-bidirectional.cpp b/clang-tools-extra/test/clang-tidy/checkers/misc/misleading-bidirectional.cpp
-deleted file mode 100644
-index 5028bab29717..000000000000
-Binary files a/clang-tools-extra/test/clang-tidy/checkers/misc/misleading-bidirectional.cpp and /dev/null differ

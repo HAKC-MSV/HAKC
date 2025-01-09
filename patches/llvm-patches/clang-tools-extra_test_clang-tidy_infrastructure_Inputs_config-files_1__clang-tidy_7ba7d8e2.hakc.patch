@@ -1,9 +1,0 @@
-diff --git a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/1/.clang-tidy b/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/1/.clang-tidy
-deleted file mode 100644
-index c37f16bc2d7d..000000000000
---- a/clang-tools-extra/test/clang-tidy/infrastructure/Inputs/config-files/1/.clang-tidy
-+++ /dev/null
-@@ -1,3 +0,0 @@
--Checks: 'from-child1'
--HeaderFilterRegex: 'child1'
--ExcludeHeaderFilterRegex: 'exc-child1'
