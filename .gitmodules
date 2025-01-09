@@ -4,7 +4,8 @@
 	branch = hakc
 [submodule "linux"]
 	path = linux
-	url = https://github.com/torvalds/linux.git
+	url = https://g53gitlab.llan.ll.mit.edu/inherently-secure/linux.git
+	branch = hakc
 [submodule "kuzu"]
 	path = kuzu
 	url = https://github.com/kuzudb/kuzu.git

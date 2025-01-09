@@ -1,13 +1,14 @@
 hakc-jg.log
 test.bc
-build-linux-*/
+build-linux-armv8-rosdemo/source/
 build-kuzu/
+python/venv/
+python/analysis/kuzu-test/
 
 **/__pycache__/
 .idea/
 cmake-build-*/
 install/
-llvm-project/
 
 # Prerequisites
 *.d
