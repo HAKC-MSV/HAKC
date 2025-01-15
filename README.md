@@ -9,30 +9,11 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Set up
 
-1. `./init.sh`
+1. `bash scripts/support/init.sh`
 
 ## Build LLVM
-1. `cd llvm-project`
-2. `git apply ../llvm-patches/*.patch`
-3. `cd ..`
-4. `mkdir cmake-build-hakc-llvm`
-5. `cd cmake-build-hakc-llvm`
-6. ```
-   cmake -G Ninja \
-   -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld' \
-   -DLLVM_ENABLE_RUNTIMES='compiler-rt' \
-   -DCMAKE_INSTALL_PREFIX=$(realpath ..)/install \
-   -DCMAKE_BUILD_TYPE=Release \
-   -DCMAKE_C_COMPILER=clang \
-   -DCMAKE_CXX_COMPILER=clang++ \
-   -DLLVM_TARGETS_TO_BUILD='X86;AArch64;ARM' \
-   -DLLVM_USE_LINKER=lld \
-   -DLLVM_ENABLE_IDE=True \
-   -DLLVM_ENABLE_RTTI=True \
-   -DLLVM_ENABLE_EH=True \
-   -DHAKC_LLVM=True ..
-   ```
-7. `cmake --build . --target install -j$(nproc)`
+
+1. `bash scripts/support/build-llvm.sh`
 
 ## Build the Kernel
 
@@ -111,8 +92,8 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
    --output-yaml \ 
    --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml
    ``` 
-   * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is 
-     the compartmentalization policy that will be used to build a protected kernel.
+    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is
+      the compartmentalization policy that will be used to build a protected kernel.
 
 ## Compile kernel with compartments enforced
 
