@@ -13,7 +13,7 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Build LLVM
 
-1. `bash scripts/support/build-llvm.sh`
+1. `bash scripts/support/build_llvm.sh`
 
 ## Build the Kernel
 
