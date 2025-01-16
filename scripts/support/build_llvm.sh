@@ -20,4 +20,4 @@ cmake --fresh -G Ninja \
 -DLLVM_ENABLE_HAKC=On \
 $HAKC_ROOT
 
-cmake --build . -j$(nproc)
+cmake --build . -j$(nproc) --target install
