@@ -7,17 +7,17 @@ echo "Building LLVM in $PWD"
 
 # strange, but note that enable_runtimes is set to '' (don't put compiler-rt here)
 cmake --fresh -G Ninja \
--DLLVM_ENABLE_PROJECTS='compiler-rt;clang;clang-tools-extra;lld' \
--DLLVM_ENABLE_RUNTIMES='' \
+-DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld' \
+-DLLVM_ENABLE_RUNTIMES='compiler-rt' \
 -DCMAKE_INSTALL_PREFIX=$HAKC_INSTALL_PATH \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 -DCMAKE_C_COMPILER=clang \
 -DCMAKE_CXX_COMPILER=clang++ \
 -DLLVM_TARGETS_TO_BUILD='X86;AArch64;ARM' \
 -DLLVM_USE_LINKER=lld \
--DLLVM_ENABLE_IDE=True \
--DCOMPILER_RT_INCLUDE_TESTS=ON \
--DLLVM_ENABLE_HAKC=ON \
+-DLLVM_ENABLE_IDE=On \
+-DCOMPILER_RT_INCLUDE_TESTS=On \
+-DLLVM_ENABLE_HAKC=On \
 $HAKC_ROOT
 
-cmake --build . -j$(nproc) --target install
+cmake --build . -j$(nproc)
