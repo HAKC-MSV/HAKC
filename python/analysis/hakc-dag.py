@@ -9,7 +9,6 @@ import os
 import pstats
 import shutil
 import time
-from enum import Enum
 from typing import Type
 
 import tqdm
@@ -17,6 +16,7 @@ import yaml
 
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
+from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
     HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
 
@@ -25,14 +25,6 @@ logger = logging.getLogger('hakc-dag')
 
 def quoted_presenter(dumper, data):
     return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
-
-
-class LoggingLevelEnum(Enum):
-    CRITICAL = logging.CRITICAL
-    ERROR = logging.ERROR
-    WARNING = logging.WARNING
-    INFO = logging.INFO
-    DEBUG = logging.DEBUG
 
 
 def batched(iterable, n):
@@ -320,25 +312,6 @@ def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_
     return compartmentalization
 
 
-def parse_log_level(level_string: str):
-    for level in LoggingLevelEnum:
-        if level.name == level_string.upper():
-            return level
-    raise RuntimeError(f'Invalid log level {level_string}')
-
-
-def setup_logging(log_file: str, log_level: LoggingLevelEnum, log_mode: str):
-    log_formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
-    logger.setLevel(log_level.value)
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(log_formatter)
-    logger.addHandler(console_handler)
-    if log_file is not None:
-        file_handler = logging.FileHandler(log_file, mode=log_mode)
-        file_handler.setFormatter(log_formatter)
-        logger.addHandler(file_handler)
-
-
 def output_profile_stats(profile):
     s = io.StringIO()
     ps = pstats.Stats(profile, stream=s).sort_stats('tottime')
@@ -369,11 +342,10 @@ def main():
                         default=True)
     parser.add_argument('--dump-dag', dest='dump_dag', help='dump DAG to json')
 
-
     args = parser.parse_args()
 
     profile = None
-    setup_logging(log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
+    setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
 
     # dump dag to json file 
     # https://networkx.org/documentation/stable/reference/readwrite/json_graph.html

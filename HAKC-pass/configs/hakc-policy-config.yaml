@@ -1,0 +1,7 @@
+{
+  "backing_store": {
+    "type": "null"
+  },
+  "reuse_path": true,
+  "socket_path": "hakc-socket"
+}
