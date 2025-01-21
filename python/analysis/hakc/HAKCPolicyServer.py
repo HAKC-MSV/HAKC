@@ -1,6 +1,7 @@
 import json
 import logging
 import socketserver
+import struct
 from pathlib import Path
 from typing import Optional
 
@@ -63,12 +64,15 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self._get_default_compartment()
 
 
-class HAKCRequestHandler(socketserver.DatagramRequestHandler):
+class HAKCRequestHandler(socketserver.StreamRequestHandler):
+    size_fmt = "!Q"
 
     def handle(self):
         logger.debug(f'Handling request')
         try:
-            json_request = json.load(self.rfile)
+            msg_size = struct.unpack(HAKCRequestHandler.size_fmt,
+                                     self.rfile.read(struct.calcsize(HAKCRequestHandler.size_fmt)))[0]
+            json_request = json.loads(self.rfile.read(msg_size))
             hakc_request = HAKCDataRequest(**json_request)
             data = self.server.backing_store.handle_request(hakc_request)
             response_data = json.dumps(data.to_yaml_dict())
@@ -76,14 +80,15 @@ class HAKCRequestHandler(socketserver.DatagramRequestHandler):
             logger.error(f"Error handling request: {e}")
             response_data = json.dumps({'error': str(e)})
         finally:
-            bytes_to_write = bytes(response_data.encode('utf-8'))
-            self.wfile.write(bytes_to_write)
+            encoded_data = response_data.encode('utf-8')
+            self.wfile.write(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
+            self.wfile.write(encoded_data)
 
 
-class HAKCPolicyServer(socketserver.ThreadingUnixDatagramServer):
+class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, socket_path: Path, backing_store: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,
                  log_file: str = "", log_mode: str = 'w', **kwargs):
         self.backing_store = backing_store
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
         logger.info(f'Starting Socket Server at {socket_path}')
-        socketserver.ThreadingUnixDatagramServer.__init__(self, str(socket_path), HAKCRequestHandler)
+        socketserver.ThreadingUnixStreamServer.__init__(self, str(socket_path), RequestHandlerClass=HAKCRequestHandler)
