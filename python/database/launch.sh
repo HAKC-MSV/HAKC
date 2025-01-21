@@ -9,6 +9,8 @@ tmux bind-key -T root MouseDown1Pane select-pane -t =
 # tmux send-keys -t testSession Enter "bash run.sh" Enter "1" Enter "3" Enter "1" Enter
 tmux send-keys -t testSession Enter "python3 server.py test" Enter
 
+sleep 1
+
 tmux split-window -v -t testSession
 tmux send-keys -t testSession Enter "python3 client.py" Enter
 tmux split-window -v -t testSession

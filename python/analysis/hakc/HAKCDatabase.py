@@ -26,7 +26,10 @@ class HAKCDatabase:
 
     def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
-        self.conn = kuzu.Connection(self.database)
+        self.conn = kuzu.Connection(self.database) # main connection 
+
+    def new_conn(self, read_only: bool = False):
+        self.conn = kuzu.Connection(self.database) # thread i connection 
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()

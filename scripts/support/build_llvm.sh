@@ -7,8 +7,8 @@ echo "Building LLVM in $PWD"
 
 # strange, but note that enable_runtimes is set to '' (don't put compiler-rt here)
 cmake --fresh -G Ninja \
--DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld' \
--DLLVM_ENABLE_RUNTIMES='compiler-rt' \
+-DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld;compiler-rt' \
+-DLLVM_ENABLE_RUNTIMES='' \
 -DCMAKE_INSTALL_PREFIX=$HAKC_INSTALL_PATH \
 -DCMAKE_BUILD_TYPE=RelWithDebInfo \
 -DCMAKE_C_COMPILER=clang \
