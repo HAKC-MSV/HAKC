@@ -67,22 +67,40 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
     size_fmt = "!Q"
 
+    def read_raw_bytes(self, size: int) -> bytes:
+        raw_bytes = self.rfile.read(size)
+        if len(raw_bytes) != size:
+            raise ConnectionAbortedError
+        return raw_bytes
+
+    def write_raw_bytes(self, raw_bytes: bytes):
+        try:
+            self.wfile.write(raw_bytes)
+        except OSError:
+            raise ConnectionAbortedError
+
     def handle(self):
         logger.debug(f'Handling request')
+        size_in_bytes = struct.calcsize(HAKCRequestHandler.size_fmt)
         try:
-            msg_size = struct.unpack(HAKCRequestHandler.size_fmt,
-                                     self.rfile.read(struct.calcsize(HAKCRequestHandler.size_fmt)))[0]
-            json_request = json.loads(self.rfile.read(msg_size))
-            hakc_request = HAKCDataRequest(**json_request)
-            data = self.server.backing_store.handle_request(hakc_request)
-            response_data = json.dumps(data.to_yaml_dict())
+            while True:
+                raw_size_bytes = self.read_raw_bytes(size_in_bytes)
+                msg_size = struct.unpack(HAKCRequestHandler.size_fmt, raw_size_bytes)[0]
+                raw_msg_bytes = self.read_raw_bytes(msg_size)
+
+                json_request = json.loads(raw_msg_bytes)
+                hakc_request = HAKCDataRequest(**json_request)
+                data = self.server.backing_store.handle_request(hakc_request)
+                response_data = json.dumps(data.to_yaml_dict())
+                encoded_data = response_data.encode('utf-8')
+
+                self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
+                self.write_raw_bytes(encoded_data)
+        except ConnectionAbortedError or ConnectionResetError:
+            logger.debug(f'Client Disconnected')
+            return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
-            response_data = json.dumps({'error': str(e)})
-        finally:
-            encoded_data = response_data.encode('utf-8')
-            self.wfile.write(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
-            self.wfile.write(encoded_data)
 
 
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
