@@ -477,6 +477,8 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
             HAKCDBRelation(HAKCFunction.DirectCallTable, HAKCFunction, HAKCSymbol)
         ]
 
+    def get_info_tokens(self) -> dict[str, object]:
+        return hakcsymbol.get_info_tokens(self)
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
     yaml_tag = "!HAKCGlobalVariable"
@@ -484,6 +486,9 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCSymbol.__init__(self, **kwargs)
+    
+    def get_info_tokens(self) -> dict[str, object]:
+        return hakcsymbol.get_info_tokens(self)
 
 
 class HAKCAdjustment(yaml.YAMLObject):
