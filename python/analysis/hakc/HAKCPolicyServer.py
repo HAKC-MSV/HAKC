@@ -65,9 +65,10 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
-    size_fmt = "!Q"
+    size_fmt = "@L"
 
     def read_raw_bytes(self, size: int) -> bytes:
+        logger.debug(f'Trying to read {size} bytes')
         raw_bytes = self.rfile.read(size)
         if len(raw_bytes) != size:
             raise ConnectionAbortedError
@@ -86,7 +87,9 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
             while True:
                 raw_size_bytes = self.read_raw_bytes(size_in_bytes)
                 msg_size = struct.unpack(HAKCRequestHandler.size_fmt, raw_size_bytes)[0]
+                logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
+                logger.debug(f'Received {len(raw_msg_bytes)} bytes')
 
                 json_request = json.loads(raw_msg_bytes)
                 hakc_request = HAKCDataRequest(**json_request)
