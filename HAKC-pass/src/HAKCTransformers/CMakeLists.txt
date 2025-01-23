@@ -1,5 +1,0 @@
-set(HAKC_SOURCES ${HAKC_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/HAKCTransformer.cpp
-
-        PARENT_SCOPE
-)
