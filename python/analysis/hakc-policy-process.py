@@ -5,13 +5,15 @@ from enum import Enum
 from pathlib import Path
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
-from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource
+from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
+    JSONHAKCPolicyDataStore
 
 logger = logging.getLogger('hakc-policy-process')
 
 
 class SupportedBackingStore(Enum):
     NULL = "null"
+    JSON = "json"
 
 
 class HAKCPolicyProcessConfig:
@@ -28,6 +30,9 @@ def InitDataSource(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
     if config.backing_store['type'] == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
         return NullHAKCPolicyDataStore()
+    elif config.backing_store['type'] == SupportedBackingStore.JSON.value:
+        logger.debug(f'Creating JSONPolicyDataStore')
+        return JSONHAKCPolicyDataStore()
 
     raise RuntimeError(f'Unsupported data store type: {config.backing_store['type']}')
 

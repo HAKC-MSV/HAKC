@@ -64,6 +64,10 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self._get_default_compartment()
 
 
+class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
+    pass
+
+
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
     size_fmt = "@L"
 
