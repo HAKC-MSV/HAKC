@@ -478,7 +478,8 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
         ]
 
     def get_info_tokens(self) -> dict[str, object]:
-        return hakcsymbol.get_info_tokens(self)
+        return HAKCSymbol.get_info_tokens(self)
+
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
     yaml_tag = "!HAKCGlobalVariable"
@@ -486,9 +487,9 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCSymbol.__init__(self, **kwargs)
-    
+
     def get_info_tokens(self) -> dict[str, object]:
-        return hakcsymbol.get_info_tokens(self)
+        return HAKCSymbol.get_info_tokens(self)
 
 
 class HAKCAdjustment(yaml.YAMLObject):
@@ -509,10 +510,10 @@ class HAKCCompartmentalizationAdjustment(yaml.YAMLObject):
         yaml.YAMLObject.__init__(self)
         self.adjustment_regexes = dict()
         self.add_kernel_division = kwargs.get(HAKCCompartmentalizationAdjustment.add_kernel_compartment_entry, False)
-        for adjustment in sorted(kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set()), key=lambda e: e.path):
+        for adjustment in sorted(kwargs.get(HAKCCompartmentalizationAdjustment.compartmentalize_entry, set()),
+                                 key=lambda e: e.path):
             escaped_path = re.escape(adjustment.path)
             self.adjustment_regexes[re.compile(escaped_path)] = adjustment
-
 
     def get_adjusted_compartment(self, defining_path: str) -> HAKCDivision | None:
         if defining_path is None:
