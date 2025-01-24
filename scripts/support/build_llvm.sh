@@ -2,6 +2,7 @@
 # build llvm and hakc with it 
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
+mkdir $HAKC_LLVM_BUILD_PATH
 cd $HAKC_LLVM_BUILD_PATH
 echo "Building LLVM in $PWD"
 

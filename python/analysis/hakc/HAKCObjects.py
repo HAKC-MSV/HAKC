@@ -21,6 +21,11 @@ class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
     def __hash__(self):
         return HAKCDBNode.__hash__(self)
 
+    def get_info_tokens(self) -> dict[str, object]:
+        result = dict()
+        result['filename'] = self.filename
+        return result
+
     def get_hash_inputs(self) -> list[object]:
         return [self.filename]
 
@@ -53,7 +58,10 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         self.division_id = division_id
         self.compartment_id = compartment_id
         self.division_count = division_count
-        self.access_token = self.compute_access_token([])
+        if 'AccessToken' in kwargs:
+            self.access_token = kwargs["AccessToken"]
+        else:
+            self.access_token = self.compute_access_token([])
 
     def __eq__(self, other):
         if isinstance(other, HAKCDivision):
@@ -127,7 +135,10 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
         HAKCDBNode.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.division_count = division_count
-        self.divisions = set()
+        if "Divisions" in kwargs:
+            self.divisions = kwargs["Divisions"]
+        else:
+            self.divisions = set()
         self.entry_token = self.compute_entry_token()
 
     def __eq__(self, other):
@@ -478,7 +489,10 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
         ]
 
     def get_info_tokens(self) -> dict[str, object]:
-        return HAKCSymbol.get_info_tokens(self)
+        tokens = HAKCSymbol.get_info_tokens(self)
+        tokens["directCall"] = self.direct_calls
+        tokens["indirectCall"] = self.indirect_calls
+        return tokens
 
 
 class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
@@ -489,6 +503,8 @@ class HAKCGlobalVariable(yaml.YAMLObject, HAKCSymbol):
         HAKCSymbol.__init__(self, **kwargs)
 
     def get_info_tokens(self) -> dict[str, object]:
+        tokens = HAKCSymbol.get_info_tokens(self)
+        tokens["is_global"] = True
         return HAKCSymbol.get_info_tokens(self)
 
 

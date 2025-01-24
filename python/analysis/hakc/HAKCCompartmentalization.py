@@ -25,6 +25,16 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     def __init__(self, division_count=16):
         super().__init__(self)
         self.division_count = division_count
+    
+    def __init__(self, nxgraph, division_count=16):
+        super().__init__(nxgraph)
+        self.division_count = division_count
+
+    def get_default_division(self):
+        return self.default_division
+
+    def get_default_compartment(self):
+        return self.kernel_compartment_id
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:

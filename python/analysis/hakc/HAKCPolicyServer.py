@@ -7,7 +7,11 @@ from typing import Optional
 
 from .HAKCBase import HAKCPrintableObj
 from .HAKCLogger import setup_logging, LoggingLevelEnum
-from .HAKCObjects import HAKCCompartment, HAKCDivision
+from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
+    HAKCScope, HAKCGlobalVariable
+from .HAKCCompartmentalization import HAKCCompartmentalization
+import networkx as nx
+from networkx.readwrite import json_graph
 
 logger = logging.getLogger('hakc-policy-server')
 
@@ -65,7 +69,162 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 
 
 class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
-    pass
+    def __init__(self, **kwargs):
+        HAKCPolicyDataSource.__init__(self, **kwargs)
+        self.compartmentalization = None 
+        self.deserialize_compartmentalization_init(**kwargs)
+        self.default_compartment = HAKCCompartment(0, **kwargs)
+        self.default_division = self.compartmentalization.get_default_division()
+        
+    def _get_default_compartment(self) -> HAKCCompartment:
+        return self.default_compartment
+
+    def _get_default_division(self) -> HAKCDivision:
+        return self.default_division
+
+    def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
+        return self.compartmentalization.get_compartment_node(compartment_id)
+
+    def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
+        return self._get_compartment_from_backing_store(compartment_id)
+
+    def deserialize_compartmentalization_init(self, **kwargs):
+        jsonin = kwargs['jsonin']
+        # print(jsonin)
+        if(jsonin == None):
+            raise RuntimeError(f'jsonin is NULL: {jsonin}')
+        with open(jsonin, 'r') as file:
+            data = json.load(file)
+        if(data == None):
+            raise RuntimeError(f'jsonin is empty: {jsonin}')
+        abc = self.deserialize_compartmentalization(data)
+        # print(abc)
+        deser = json_graph.node_link_graph(abc, directed=True, multigraph=True)
+        # print(deser)
+        self.compartmentalization = HAKCCompartmentalization(deser)
+        print(self.compartmentalization)
+
+    def deserialize_compartmentalization(self, data):
+        # turn the json back into HAKCCompartmentalization object 
+        # need to recurse and instantiate objects for each HAKC*
+        # print(data)
+        if isinstance(data, bool):
+            return data
+        elif isinstance(data, str):
+            return data 
+        elif isinstance(data, int):
+            return data 
+        elif isinstance(data, list):
+            for i in range(len(data)):
+                data[i] = self.deserialize_compartmentalization(data[i])
+        elif isinstance(data, dict):
+            # need to distinguish what object to create based on dictionary keys
+            # print()
+            # print("dict keys: " , data.keys())
+            # print()
+            keys = data.keys()
+            # Root NetworkX 
+            if ("directed" in keys and 
+                "multigraph" in keys and 
+                "graph" in keys and 
+                "links" in keys and 
+                "nodes" in keys):
+                # print("At root!")
+                data["directed"] = self.deserialize_compartmentalization(data["directed"])
+                data["multigraph"] = self.deserialize_compartmentalization(data["multigraph"])
+                data["graph"] = self.deserialize_compartmentalization(data["graph"])
+                data["links"] = self.deserialize_compartmentalization(data["links"])
+                data["nodes"] = self.deserialize_compartmentalization(data["nodes"])
+            # NetworkX Links data structutre
+            elif ("key" in keys and 
+                  "persisted" in keys and 
+                  "source" in keys and 
+                  "target" in keys):
+                # print()
+                # print(data)
+                # print("Found nx Link ds")
+                # print()
+                data["key"] = self.deserialize_compartmentalization(data["key"])
+                data["persisted"] = self.deserialize_compartmentalization(data["persisted"])
+                data["source"] = self.deserialize_compartmentalization(data["source"])
+                data["target"] = self.deserialize_compartmentalization(data["target"])
+            # NetworkX Nodes data structutre 
+            elif ("id" in keys and 
+                  "persisted" in keys):
+                # print()
+                # print(data)
+                # print("Found nx Node ds")
+                # print()
+                data["id"] = self.deserialize_compartmentalization(data["id"])
+                data["persisted"] = self.deserialize_compartmentalization(data["persisted"])
+            # HAKCFunction
+            elif ("name" in keys and 
+                  "type" in keys and 
+                  "scope" in keys and 
+                  "definition" in keys and 
+                  "indirectCall" in keys and
+                  "directCall" in keys):
+                data["Name"] = self.deserialize_compartmentalization(data["name"])
+                data["Type"] = HAKCType(data["type"]["debug_type"], data["type"]["llvm_type"])
+                data["Scope"] = self.deserialize_compartmentalization(data["scope"])
+                data["DefiningFile"] = self.deserialize_compartmentalization(data["definition"])
+                data["DirectCalls"] = self.deserialize_compartmentalization(data["directCall"])
+                data["IndirectCalls"] = self.deserialize_compartmentalization(data["indirectCall"])
+                return HAKCFunction(**data)
+            # HAKCGlobalVariable is HAKCSymbol, with is_global 
+            elif ("definition" in keys and 
+                  "name" in keys and 
+                  "scope" in keys and 
+                  "type" in keys and 
+                  "is_global" in keys):
+                data["Name"] = self.deserialize_compartmentalization(data["name"])
+                data["Type"] = HAKCType(data["type"]["debug_type"], data["type"]["llvm_type"])
+                data["Scope"] = self.deserialize_compartmentalization(data["scope"])
+                data["DefiningFile"] = self.deserialize_compartmentalization(data["definition"])
+                return HAKCGlobalVariable(**data)
+            # HAKCSymbol
+            elif ("definition" in keys and 
+                  "name" in keys and 
+                  "scope" in keys and 
+                  "type" in keys):
+                data["Name"] = self.deserialize_compartmentalization(data["name"])
+                data["Type"] = HAKCType(data["type"]["debug_type"], data["type"]["llvm_type"])
+                data["Scope"] = self.deserialize_compartmentalization(data["scope"])
+                data["DefiningFile"] = self.deserialize_compartmentalization(data["definition"])
+                return HAKCSymbol(**data)
+            # HAKCCompartment
+            elif ("compartment_id" in keys and 
+                  "divisions" in keys):
+                data["compartment_id"] = self.deserialize_compartmentalization(data["compartment_id"])
+                data["divisions"] = self.deserialize_compartmentalization(data["divisions"])
+                return HAKCCompartment(data["compartment_id"], Divisions=data["divisions"])
+            # HAKCDivision
+            elif ("access_token" in keys and 
+                  "compartment_id" in keys and
+                  "division_id" in keys):
+                return HAKCDivision(data["division_id"], data["compartment_id"], AccessToken=data["access_token"])
+            # HAKCCompilationUnit
+            elif ("filename" in keys):
+                return HAKCCompilationUnit(data["filename"])
+            # HAKCScope
+            elif ("scope" in keys):
+                if ("local_scope_name" in keys):
+                    # TODO: change this to accept multiple local scope names? 
+                    return HAKCScope(Name=data["scope"], LocalScopeName=data["local_scope_name"])
+                else:
+                    return HAKCScope(Name=data["scope"])
+            # HAKCType 
+            elif ("debug_type" in keys and 
+                  "llvm_type" in keys):
+                return HAKCType(data["debug_type"], data["llvm_type"])
+            elif data == dict():
+                return data
+            else:
+                print("____ UNKNOWN DICT KEYS TYPE ____ : " , type(data), " " ,data)
+                return data 
+        else:
+            logger.info(f"Invalid key type: {type(data)}")
+        return data
 
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):

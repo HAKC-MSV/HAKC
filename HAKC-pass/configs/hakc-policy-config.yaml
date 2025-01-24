@@ -1,6 +1,7 @@
 {
   "backing_store": {
-    "type": "null"
+    "type": "json",
+    "path": "/home/al32163/hakc/HAKC_CURR/python/analysis/backing.json"
   },
   "reuse_path": true,
   "socket_path": "hakc-socket"

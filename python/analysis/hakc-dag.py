@@ -13,12 +13,17 @@ from typing import Type
 
 import tqdm
 import yaml
+import json 
+import networkx as nx
+from networkx.readwrite import json_graph
 
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
-from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
+from hakc.HAKCObjects import HAKCObject_constructors, HAKCType, HAKCScope, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
     HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
+
+
 
 logger = logging.getLogger('hakc-dag')
 
@@ -318,8 +323,56 @@ def output_profile_stats(profile):
     ps.print_stats()
     logger.info(s.getvalue())
 
+def serialize_compartmentalization(in_data, first):
+    if(in_data == None):
+        return None
+    data = None
+    if first:
+        data = json_graph.node_link_data(in_data)
+        logger.info(f"original: {data}")
+    else:
+        data = in_data
+    logger.info(f"{data}")
+    # recursively traverse structures and convert to serializable data structure 
+    if isinstance(data, bool):
+        return data
+    elif isinstance(data, str):
+        return data 
+    elif isinstance(data, int):
+        return data 
+    elif isinstance(data, dict):
+        dct = dict()
+        for key, val in data.items():
+            dct[key] = serialize_compartmentalization(val, False)
+        data = dct
+    elif isinstance(data, list):
+        lst = list()
+        for item in data:
+            lst.append(serialize_compartmentalization(item, False))
+        data = lst 
+    elif(
+        # isinstance(data, HAKCScope) or 
+        # isinstance(data, HAKCSymbol) or 
+        isinstance(data, HAKCCompartment) or 
+        isinstance(data, HAKCDivision) or 
+        isinstance(data, HAKCCompilationUnit) or 
+        isinstance(data, HAKCFunction)):
+        # logger.info(f"ser type{type(data)}")
+        return serialize_compartmentalization(data.get_info_tokens(), False) 
+    # HAKCType is the base case 
+    elif(
+        isinstance(data, HAKCType) or
+        isinstance(data, HAKCScope) or 
+        isinstance(data, HAKCSymbol)):
+        return data.get_info_tokens()
+    else:
+        logger.info(f"Invalid key type: {type(data)}")
+    return data
 
+
+compartmentalization = None
 def main():
+    global compartmentalization
     parser = argparse.ArgumentParser(description='Kernel Data Access Analysis')
     parser.add_argument('--dag-files-root', help='Root of DAG Yaml files', dest='dag_files_root')
     parser.add_argument('--log-level', required=False, dest='log_level', default=LoggingLevelEnum.INFO,
@@ -346,15 +399,6 @@ def main():
 
     profile = None
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
-
-    # dump dag to json file 
-    # https://networkx.org/documentation/stable/reference/readwrite/json_graph.html
-    # python3 python/analysis/hakc-dag.py --create-dag --dag-files-root $HAKC_DAG_ROOT
-    if args.dump_dag:
-        # todo ask derrick to test this 
-        logger.info(f'dump dag mode for file: {args.dump_dag}')
-        # data = tree_data(G, root[, ident, children])
-        # logger.info(f'data: {data}')
 
     if args.db_dir is None or len(args.db_dir) == 0:
         raise RuntimeError(f'Must specify a database directory')
@@ -384,6 +428,18 @@ def main():
         adjust_compartmentalization(args.db_dir, adjustments)
         logger.info("Done")
 
+    # dump dag to json file 
+    # https://networkx.org/documentation/stable/reference/readwrite/json_graph.html
+    # python3 ~/hakc/HAKC_CURR/python/analysis/hakc-dag.py --dump-dag /home/al32163/hakc/HAKC_CURR/llvm-project/compiler-rt/test/hakc/TestCases/Posix/hakc_test0/hakc-db/backing.json --create-dag --dag-files-root /home/al32163/hakc/HAKC_CURR/llvm-project/compiler-rt/test/hakc/TestCases/Posix/hakc_test0/dag_analysis/_HAKC_SOURCE_PATH_ --db-dir /home/al32163/hakc/HAKC_CURR/llvm-project/compiler-rt/test/hakc/TestCases/Posix/hakc_test0/hakc-db
+    if args.dump_dag:
+        logger.info(f'dump dag mode for file: {args.dump_dag}')
+        # dump the compartmentalization object 
+        serialized = serialize_compartmentalization(compartmentalization, True)
+        logger.info(f"serialized: {serialized}")
+        json_object = json.dumps(serialized)
+        print(json_object)
+        with open(args.dump_dag, "w") as outfile:
+            outfile.write(json_object)
 
 if __name__ == "__main__":
     main()
