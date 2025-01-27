@@ -32,7 +32,7 @@ def InitDataSource(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
         return NullHAKCPolicyDataStore()
     elif config.backing_store['type'] == SupportedBackingStore.JSON.value:
         logger.debug(f'Creating JSONPolicyDataStore')
-        return JSONHAKCPolicyDataStore(jsonin=config.backing_store['path'])
+        return JSONHAKCPolicyDataStore(jsonin=config.backing_store['path'],default_comparment=config.backing_store['default_comparment'],default_division=config.backing_store['default_division'])
     raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
 
 
