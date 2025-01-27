@@ -1,10 +1,10 @@
 {
   "backing_store": {
     "type": "json",
-    "path": "/home/al32163/hakc/HAKC_CURR/python/analysis/backing.json",
+    "path": "/home/al32163/hakc/HAKC_CURR/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test0/backing.json",
     "default_comparment" : 0,
     "default_division" : 0
   },
   "reuse_path": true,
-  "socket_path": "hakc-socket"
+  "socket_path": "/home/al32163/hakc/HAKC_CURR/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test0/hakc-socket"
 }
