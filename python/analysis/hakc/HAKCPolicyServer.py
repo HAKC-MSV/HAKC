@@ -36,6 +36,7 @@ class HAKCPolicyDataSource:
         raise NotImplementedError
 
     def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
+        logger.info(f"base class get compartment by id: {compartment_id}")
         compartment = self._get_compartment_from_backing_store(compartment_id)
         if compartment is None:
             compartment = self._get_default_compartment()
@@ -46,7 +47,11 @@ class HAKCPolicyDataSource:
         pass
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
-        if request.endpoint == self.get_compartment_endpoint:
+        logger.info(f"Request endpoint: {request.endpoint}")
+        logger.info(f"compartment endpoints: {self.get_compartment_endpoint}")
+        # todo check this 
+        if request.endpoint in self.get_compartment_endpoint:
+            logger.info(f"getting compartment by id, parameters: {request.parameters['compartment-id']}; res {self.get_compartment_by_id(int(request.parameters['compartment-id']))}")
             return self.get_compartment_by_id(int(request.parameters['compartment-id']))
 
         raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
@@ -73,8 +78,10 @@ class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
         HAKCPolicyDataSource.__init__(self, **kwargs)
         self.compartmentalization = None 
         self.deserialize_compartmentalization_init(**kwargs)
-        self.default_compartment = kwargs['default_comparment']
-        self.default_division = kwargs['default_division']
+        self.default_compartment_id = kwargs['default_comparment']
+        self.default_division_id = kwargs['default_division']
+        self.default_compartment = HAKCCompartment(self.default_compartment_id)
+        self.default_division = HAKCDivision(self.default_division_id, self.default_compartment_id)
         
     def _get_default_compartment(self) -> HAKCCompartment:
         return self.default_compartment
@@ -86,7 +93,12 @@ class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_compartment_node(compartment_id)
 
     def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
-        return self._get_compartment_from_backing_store(compartment_id)
+        logger.info(f"json get compartment id: {compartment_id}; {self._get_compartment_from_backing_store(compartment_id)}")
+        compartment = self._get_compartment_from_backing_store(compartment_id)
+        if compartment is None:
+            compartment = self._get_default_compartment()
+        logger.debug(f"Returning Compartment {compartment} from input compartment {compartment_id}")
+        return compartment
 
     def deserialize_compartmentalization_init(self, **kwargs):
         jsonin = kwargs['jsonin']
@@ -97,12 +109,14 @@ class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
             data = json.load(file)
         if(data == None):
             raise RuntimeError(f'jsonin is empty: {jsonin}')
-        abc = self.deserialize_compartmentalization(data)
-        # print(abc)
-        deser = json_graph.node_link_graph(abc, directed=True, multigraph=True)
+        deserialized = self.deserialize_compartmentalization(data)
+        # print(deserialized)
+        # deser = json_graph.node_link_graph(deserialized, directed=True, multigraph=True)
+        deser = json_graph.node_link_graph(deserialized, directed=True, multigraph=True)
         # print(deser)
         self.compartmentalization = HAKCCompartmentalization(deser)
-        print(self.compartmentalization)
+        # print(self.compartmentalization)
+        logger.info('Successfully deserialized compartmentalization info!')
 
     def deserialize_compartmentalization(self, data):
         # turn the json back into HAKCCompartmentalization object 
@@ -223,7 +237,8 @@ class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
                 print("____ UNKNOWN DICT KEYS TYPE ____ : " , type(data), " " ,data)
                 return data 
         else:
-            logger.info(f"Invalid key type: {type(data)}")
+            raise RuntimeError(f"Invalid key type: {type(data)}")
+            # logger.info(f"Invalid key type: {type(data)}")
         return data
 
 
@@ -253,11 +268,26 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
+                
+                logger.debug(f'got: {raw_msg_bytes}')
 
                 json_request = json.loads(raw_msg_bytes)
+                
+                logger.debug(f'json got: {json_request}')
+
                 hakc_request = HAKCDataRequest(**json_request)
+                
+                logger.debug(f'hakc got: {json_request}')
+
                 data = self.server.backing_store.handle_request(hakc_request)
-                response_data = json.dumps(data.to_yaml_dict())
+                
+                logger.debug(f'data got: {data}')
+
+                response_data = None 
+                if(isinstance(data, int)):
+                    response_data = json.dumps(data)
+                else:
+                    response_data = json.dumps(data.to_yaml_dict())
                 encoded_data = response_data.encode('utf-8')
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
