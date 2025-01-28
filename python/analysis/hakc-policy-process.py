@@ -4,6 +4,8 @@ import logging
 import signal
 from enum import Enum
 from pathlib import Path
+import subprocess
+import os 
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
@@ -34,7 +36,7 @@ def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
         return NullHAKCPolicyDataStore()
     elif config.backing_store['type'] == SupportedBackingStore.JSON.value:
         logger.debug(f'Creating JSONPolicyDataStore')
-        return JSONHAKCPolicyDataStore(jsonin=config.backing_store['path'],default_comparment=config.backing_store['default_comparment'],default_division=config.backing_store['default_division'])
+        return JSONHAKCPolicyDataStore(jsonin=config.backing_store['path'],default_compartment=config.backing_store['default_compartment'],default_division=config.backing_store['default_division'])
     raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
 
 
@@ -56,6 +58,19 @@ def main():
     with open(args.config, 'r') as f:
         parsed_config = json.load(f)
         config = HAKCPolicyProcessConfig(**parsed_config)
+
+    # create subprocess to allow server to run in the background, while allowing parent to die (workaround for llvm lit requiring all programs terminate before finishing tests)
+    print(f"Parent PID: {os.getpid()}")
+    try: 
+        pid = os.fork() 
+    except OSError: 
+        exit("Could not create a child process") 
+    
+    if(pid > 0):
+        print(f"Parent PID: {os.getpid()}, killing self")
+        os.kill(os.getpid(), signal.SIGTERM)
+    else:
+        print(f"Child PID: {os.getpid()}")
 
     data_source = init_data_source(config)
     with HAKCPolicyServer(backing_store=data_source, socket_path=config.socket_path, log_level=args.log_level,

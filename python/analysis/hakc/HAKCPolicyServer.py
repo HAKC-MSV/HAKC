@@ -82,7 +82,7 @@ class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
         HAKCPolicyDataSource.__init__(self, **kwargs)
         self.compartmentalization = None 
         self.deserialize_compartmentalization_init(**kwargs)
-        self.default_compartment_id = kwargs['default_comparment']
+        self.default_compartment_id = kwargs['default_compartment']
         self.default_division_id = kwargs['default_division']
         self.default_compartment = HAKCCompartment(self.default_compartment_id)
         self.default_division = HAKCDivision(self.default_division_id, self.default_compartment_id)
