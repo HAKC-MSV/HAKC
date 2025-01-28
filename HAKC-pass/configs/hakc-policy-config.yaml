@@ -3,5 +3,6 @@
     "type": "null"
   },
   "reuse_path": true,
-  "socket_path": "hakc-socket"
+  "socket_path": "hakc-socket",
+  "server_timeout": -1
 }

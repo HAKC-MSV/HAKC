@@ -12,6 +12,10 @@ from .HAKCObjects import HAKCCompartment, HAKCDivision
 logger = logging.getLogger('hakc-policy-server')
 
 
+class TimeoutException(Exception):
+    pass
+
+
 class HAKCDataRequest:
     def __init__(self, Endpoint: str, **kwargs):
         self.endpoint = Endpoint
@@ -105,6 +109,9 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 self.write_raw_bytes(encoded_data)
         except ConnectionAbortedError or ConnectionResetError:
             logger.debug(f'Client Disconnected')
+            return
+        except TimeoutException:
+            logger.debug(f'Timeout received')
             return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
