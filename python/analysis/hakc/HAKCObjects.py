@@ -20,9 +20,6 @@ class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
 
     def __hash__(self):
         return HAKCDBNode.__hash__(self)
-    
-    # def __lt__(self, other):
-    #     return True
 
     def get_info_tokens(self) -> dict[str, object]:
         result = dict()
@@ -206,57 +203,15 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
             schema[1]: self.entry_token
         }
 
-# def employee_representer(dumper: yaml.SafeDumper, emp: Employee) -> yaml.nodes.MappingNode:
-#   """Represent an employee instance as a YAML mapping node."""
-#   return dumper.represent_mapping("!Employee", {
-#     "name": emp._name,
-#     "id": emp._id,
-#   })
-
-# def get_dumper():
-#   """Add representers to a YAML seriailizer."""
-#   safe_dumper = yaml.SafeDumper
-#   safe_dumper.add_representer(Employee, employee_representer)
-#   return safe_dumper
-
-# with open("output.yml", "w") as stream:
-#   stream.write(yaml.dump(list_of_employees, Dumper=get_dumper()))
-
-
 class HAKCType(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCType"
     unknown_type = "@UNKNOWN@"
 
-    # def employee_representer(dumper: yaml.SafeDumper, emp: Employee) -> yaml.nodes.MappingNode:
-    #     """Represent an employee instance as a YAML mapping node."""
-    #     return dumper.represent_mapping("!Employee", {
-    #         "name": emp._name,
-    #         "id": emp._id,
-    #     })
-
-    # def __repr__(self, dumper, data):
-    #     serializedData = "abcd"
-    #     return dumper.represent_mapping("ABCD",{"DEF":"XYZ"})
-        # return dumper.represent_scalar('!MyClass', serializedData )
-
     def __init__(self, DebugType: str, LLVMType: str, **kwargs):
-    # def __init__(self, debug_type: str, llvm_type: str, **kwargs):
-    # def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
-        # DebugType = kwargs.get("debug_type", None)
-        # LLVMType = kwargs.get("llvm_type", None)
-        # DebugType = debug_type
-        # LLVMType = llvm_type
-        
-        # print(f"debug type: {DebugType}")
         if 'Name' not in kwargs:
             kwargs['Name'] = DebugType if DebugType is not None and DebugType != HAKCType.unknown_type else LLVMType
         HAKCDBNode.__init__(self, **kwargs)
-        # self.debug_type = DebugType
-        # self.llvm_type = LLVMType
-        # self._debug_type_transformed = HAKCType.transform_type_str(self.debug_type)
-        # self._debug_type_is_known = self.debug_type != HAKCType.unknown_type
-        # self._llvm_type_is_known = self.llvm_type != HAKCType.unknown_type
         self.DebugType = DebugType
         self.LLVMType = LLVMType
         self._debug_type_transformed = HAKCType.transform_type_str(self.DebugType)
@@ -314,11 +269,6 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
         schema = HAKCType.get_db_table_columns()
-        # return {
-        #     schema[0]: hash(self),
-        #     schema[1]: self.debug_type,
-        #     schema[2]: self.llvm_type
-        # }
         return {
             schema[0]: hash(self),
             schema[1]: self.DebugType,
@@ -411,19 +361,9 @@ class HAKCSymbol(HAKCDBNode):
 
     def __init__(self, Name: str, Type: HAKCType, Scope: HAKCScope, **kwargs):
         HAKCDBNode.__init__(self, **kwargs)
-        # self.name = Name
-        # self.type = Type
-        # self.scope = Scope
         self.Name = Name
         self.Type = Type
         self.Scope = Scope
-        # self.defining_file = None
-        # self.defining_line = None
-
-        # self.defining_file = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
-        # self.defining_line = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
-
-        # self.used_symbols = kwargs['UsedSymbols'] if 'UsedSymbols' in kwargs else list()
         self.DefiningFile = kwargs['DefiningFile'] if 'DefiningFile' in kwargs else None
         self.DefiningLine = kwargs['DefiningLine'] if 'DefiningLine' in kwargs else None
 
@@ -438,16 +378,9 @@ class HAKCSymbol(HAKCDBNode):
         return HAKCDBNode.__hash__(self)
 
     def get_hash_inputs(self) -> list[object]:
-        # return [self.name, self.type, self.scope]
         return [self.Name, self.Type, self.Scope]
 
     def get_info_tokens(self) -> dict[str, object]:
-        # return {
-        #     'name': self.name,
-        #     'type': self.type,
-        #     'scope': self.scope,
-        #     'definition': f'{self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"}'
-        # }
         return {
             'name': self.Name,
             'type': self.Type,
@@ -503,12 +436,6 @@ class HAKCIndirectSourceLink(HAKCPrintableObj, yaml.YAMLObject):
     def __init__(self, LinkType: str, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCPrintableObj.__init__(self, **kwargs)
-        # self.link_type = LinkType
-        # self.type = kwargs['Type'] if 'Type' in kwargs else None
-        # self.global_name = kwargs['GlobalName'] if 'GlobalName' in kwargs else None
-        # self.offset = kwargs['Offset'] if 'Offset' in kwargs else None
-        # self.arg_num = kwargs['ArgNumber'] if 'ArgNumber' in kwargs else None
-        # self.function_name = kwargs['Function'] if 'Function' in kwargs else None
         self.LinkType = LinkType
         self.Type = kwargs['Type'] if 'Type' in kwargs else None
         self.GlobalName = kwargs['GlobalName'] if 'GlobalName' in kwargs else None
@@ -517,18 +444,6 @@ class HAKCIndirectSourceLink(HAKCPrintableObj, yaml.YAMLObject):
         self.FunctionName = kwargs['Function'] if 'Function' in kwargs else None
 
     def get_hash_inputs(self) -> list[object]:
-        # result = [self.link_type]
-        # if self.type:
-        #     result.append(self.type)
-        # if self.global_name:
-        #     result.append(self.global_name)
-        # if self.offset:
-        #     result.append(self.offset)
-        # if self.arg_num:
-        #     result.append(self.arg_num)
-        # if self.function_name:
-        #     result.append(self.function_name)
-        # return result
         result = [self.LinkType]
         if self.Type:
             result.append(self.Type)
@@ -549,16 +464,10 @@ class HAKCIndirectCallSource(HAKCPrintableObj, yaml.YAMLObject):
     def __init__(self, Type: HAKCType, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCPrintableObj.__init__(self, **kwargs)
-        # self.source = kwargs['Source'] if 'Source' in kwargs else list()
-        # self.type = Type
         self.Source = kwargs['Source'] if 'Source' in kwargs else list()
         self.Type = Type
 
     def get_hash_inputs(self) -> list[object]:
-        # result = [self.type]
-        # for link in self.source:
-        #     result.append(link)
-        # return result
         result = [self.Type]
         for link in self.Source:
             result.append(link)
@@ -669,17 +578,6 @@ def construct_indirect_call_source_link(loader: yaml.SafeLoader,
 
 
 def construct_type(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCType:
-    # return HAKCType(**loader.construct_mapping(node, deep=True))
-    # print(f"nodes: {node}")
-    # mapping = {}
-    # for key_node, value_node in node.value:
-    #     key = key_node.value
-    #     print(f"Key: {key_node}, Value: {value_node}, value_node.value: {key_node.value}")
-        # if isinstance(key, list):
-        #     key = tuple(key)  # Convert list keys to tuples
-        # mapping[key] = self.construct_object(value_node, deep=deep)
-    # print(f"blah blah: {node[""]}")
-    # print(f"constr mapping: {loader.construct_mapping(node, deep=True)}")
     return HAKCType(**loader.construct_mapping(node, deep=True))
 
 

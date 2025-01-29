@@ -9,7 +9,6 @@ import os
 import multiprocessing
 import time 
 
-
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
     YAMLHAKCPolicyDataStore, TimeoutException
@@ -46,26 +45,6 @@ def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
 def timeout_handler(signum, frame):
     raise TimeoutException
 
-def abc(): 
-    print("child here")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
-    time.sleep(5)
-    print("child here again")
 
 def main():
     parser = argparse.ArgumentParser(description='HAKC Policy Process')
@@ -82,29 +61,6 @@ def main():
         parsed_config = json.load(f)
         config = HAKCPolicyProcessConfig(**parsed_config)
 
-    # create subprocess to allow server to run in the background, while allowing parent to die (workaround for llvm lit requiring all programs terminate before finishing tests)
-    # print(f"Parent PID: {os.getpid()}")
-    # try: 
-    #     pid = os.fork() 
-    # except OSError: 
-    #     exit("Could not create a child process") 
-    
-    # if(pid == 0):
-    #     print(f"Child PID: {os.getpid()}")
-    # else:
-    #     print(f"Parent PID: {os.getpid()}, killing self")
-    #     # os.kill(os.getpid(), signal.SIGINT)
-    #     os.kill(os.getpid(), signal.SIGTTIN)
-    # multiprocessing.set_start_method("spawn")
-    # process = multiprocessing.Process(target=abc)
-    # process.start() 
-    # print("Parent process PID:", os.getpid())
-    # time.sleep(2)
-    # return 
-
-    # Kill the parent process
-    # os.kill(os.getpid(), signal.SIGTERM)
-
     data_source = init_data_source(config)
     with HAKCPolicyServer(backing_store=data_source, socket_path=config.socket_path, log_level=args.log_level,
                           log_file=config.log_path, log_mode=args.log_mode) as server:
@@ -112,19 +68,15 @@ def main():
             if config.server_timeout > 0:
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(config.server_timeout)
-
             server.serve_forever()
         except KeyboardInterrupt:
             logger.info('User requested to stop server')
         except TimeoutException:
-            logger.info(f'Timeout received00')
-            os.kill(os.getppid(), signal.SIGKILL)
-            logger.info(f'Timeout received01')
+            logger.info(f'Timeout received')
         except Exception as e:
             logger.error(f'Error: {e}')
         finally:
             server.server_close()
-
 
 if __name__ == "__main__":
     main()

@@ -21,7 +21,6 @@ logger = logging.getLogger('hakc-policy-server')
 class TimeoutException(Exception):
     pass
 
-
 class HAKCDataRequest:
     def __init__(self, Endpoint: str, **kwargs):
         self.endpoint = Endpoint
@@ -159,15 +158,19 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
                 self.write_raw_bytes(encoded_data)
-        except ConnectionAbortedError or ConnectionResetError:
-            logger.debug(f'Client Disconnected')
-            return
+        # the 'raise' will call 'handle_error' in HAKCPolicyServer 
+        except ConnectionAbortedError:
+            logger.debug(f'Client Aborted Connection')
+            raise
+        except ConnectionResetError:
+            logger.debug(f'Client Reset Connection')
+            raise 
         except TimeoutException:
             logger.debug(f'Timeout received')
             return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
-
+    
 
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, socket_path: Path, backing_store: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,
@@ -176,3 +179,8 @@ class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
         logger.debug(f'Starting Socket Server at {socket_path}')
         socketserver.ThreadingUnixStreamServer.__init__(self, str(socket_path), RequestHandlerClass=HAKCRequestHandler)
+
+    def handle_error(self, _a, _b):
+        logger.error(f"Shutting down server")
+        # do a server shutdown, rather than a server_close()
+        self.shutdown()

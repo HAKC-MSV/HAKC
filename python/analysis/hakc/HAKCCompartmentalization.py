@@ -12,7 +12,6 @@ from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
 from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
     HAKCScope, HAKCGlobalVariable
-# from hakc.HAKCObjects import HAKCObject_constructors
 
 logger = logging.getLogger('hakc-dag')
 
@@ -57,9 +56,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             self.add_edge(u_for_edge, v_for_edge, key, **attr)
 
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: HAKCCompilationUnit):
-        # self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
         self.add_persistent_edge(symbol, symbol.Type, key=HAKCSymbol.IsTypeTable)
-        # self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
         self.add_persistent_edge(symbol, symbol.Scope, key=HAKCSymbol.HasScopeTable)
         self.add_persistent_edge(symbol, compilation_unit, key=HAKCSymbol.SymbolCompilationUnitTable)
         if symbol.DefiningFile is not None:
@@ -301,30 +298,3 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             HAKCCompilationUnit,
             HAKCFunction
         ]
-    
-    # def MyClass_representer(dumper, data):
-    #     serializedData = "abcd"
-    #     ab = HAKCType("x","y")
-    #     # return dumper.represent_scalar('!MyClass', serializedData )
-    #     return dumper.represent_mapping("tag:yaml.org,2002:map",
-    #                 {"Requests": ab, "Name": "data._name"})
-
-    # @classmethod
-    # def to_yaml(self, dumper, data):
-    #     # rSeq = []
-    #     # for value in data._requests.values():
-    #     #     for t in value:
-    #     #       rSeq.extend([
-    #     #         {"name": t._name},
-    #     #         {"requestID": t._request_id},
-    #     #         {"priority": t._priority},
-    #     #         {"order": t._order},
-    #     #         {"deadline": t._deadline}
-    #     #       ])
-    #     return dumper.represent_mapping("tag:yaml.org,2002:map",
-    #             {"Requests": "rSeq", "Name": "data._name"})
-
-# def construct_compartmentalization(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCCompartmentalization:
-#     return HAKCCompartmentalization(**loader.construct_mapping(node, deep=True))
-
-# HAKCObject_constructors[HAKCCompartmentalization.yaml_tag] = construct_compartmentalization
