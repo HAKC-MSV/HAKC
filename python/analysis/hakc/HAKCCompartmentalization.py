@@ -27,9 +27,8 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         nxgraph = kwargs.get("nxgraph")
         super().__init__(self, nxgraph)
         self.division_count = division_count
-        # these are initialized in json, but not null 
-        # self.default_compartment = HAKCCompartment(self.default_compartment_id)
-        # self.default_division = HAKCDivision(self.default_division_id, self.default_compartment_id)
+        self.default_compartment = None
+        self.default_division = None
 
     def get_default_division(self) -> HAKCDivision: 
         return self.default_division
