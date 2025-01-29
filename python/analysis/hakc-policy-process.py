@@ -6,17 +6,20 @@ from enum import Enum
 from pathlib import Path
 import subprocess
 import os 
+import multiprocessing
+import time 
+
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
-    JSONHAKCPolicyDataStore, TimeoutException
+    YAMLHAKCPolicyDataStore, TimeoutException
 
 logger = logging.getLogger('hakc-policy-process')
 
 
 class SupportedBackingStore(Enum):
     NULL = "null",
-    JSON = "json"
+    YAML = "yaml"
 
 
 class HAKCPolicyProcessConfig:
@@ -34,15 +37,35 @@ def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
     if config.backing_store['type'] == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
         return NullHAKCPolicyDataStore()
-    elif config.backing_store['type'] == SupportedBackingStore.JSON.value:
-        logger.debug(f'Creating JSONPolicyDataStore')
-        return JSONHAKCPolicyDataStore(jsonin=config.backing_store['path'],default_compartment=config.backing_store['default_compartment'],default_division=config.backing_store['default_division'])
+    elif config.backing_store['type'] == SupportedBackingStore.YAML.value:
+        logger.debug(f'Creating YAMLPolicyDataStore')
+        return YAMLHAKCPolicyDataStore(yamlin=config.backing_store['path'],default_compartment_id=config.backing_store['default_compartment'],default_division_id=config.backing_store['default_division'])
     raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
 
 
 def timeout_handler(signum, frame):
     raise TimeoutException
 
+def abc(): 
+    print("child here")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
+    time.sleep(5)
+    print("child here again")
 
 def main():
     parser = argparse.ArgumentParser(description='HAKC Policy Process')
@@ -60,17 +83,27 @@ def main():
         config = HAKCPolicyProcessConfig(**parsed_config)
 
     # create subprocess to allow server to run in the background, while allowing parent to die (workaround for llvm lit requiring all programs terminate before finishing tests)
-    print(f"Parent PID: {os.getpid()}")
-    try: 
-        pid = os.fork() 
-    except OSError: 
-        exit("Could not create a child process") 
+    # print(f"Parent PID: {os.getpid()}")
+    # try: 
+    #     pid = os.fork() 
+    # except OSError: 
+    #     exit("Could not create a child process") 
     
-    if(pid > 0):
-        print(f"Parent PID: {os.getpid()}, killing self")
-        os.kill(os.getpid(), signal.SIGTERM)
-    else:
-        print(f"Child PID: {os.getpid()}")
+    # if(pid == 0):
+    #     print(f"Child PID: {os.getpid()}")
+    # else:
+    #     print(f"Parent PID: {os.getpid()}, killing self")
+    #     # os.kill(os.getpid(), signal.SIGINT)
+    #     os.kill(os.getpid(), signal.SIGTTIN)
+    # multiprocessing.set_start_method("spawn")
+    # process = multiprocessing.Process(target=abc)
+    # process.start() 
+    # print("Parent process PID:", os.getpid())
+    # time.sleep(2)
+    # return 
+
+    # Kill the parent process
+    # os.kill(os.getpid(), signal.SIGTERM)
 
     data_source = init_data_source(config)
     with HAKCPolicyServer(backing_store=data_source, socket_path=config.socket_path, log_level=args.log_level,
@@ -84,7 +117,9 @@ def main():
         except KeyboardInterrupt:
             logger.info('User requested to stop server')
         except TimeoutException:
-            logger.info(f'Timeout received')
+            logger.info(f'Timeout received00')
+            os.kill(os.getppid(), signal.SIGKILL)
+            logger.info(f'Timeout received01')
         except Exception as e:
             logger.error(f'Error: {e}')
         finally:

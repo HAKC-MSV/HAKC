@@ -28,8 +28,8 @@ from hakc.HAKCObjects import HAKCObject_constructors, HAKCType, HAKCScope, HAKCS
 logger = logging.getLogger('hakc-dag')
 
 
-def quoted_presenter(dumper, data):
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
+# def quoted_presenter(dumper, data):
+#     return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
 
 
 def batched(iterable, n):
@@ -329,10 +329,10 @@ def serialize_compartmentalization(in_data, first):
     data = None
     if first:
         data = json_graph.node_link_data(in_data)
-        logger.info(f"original: {data}")
+        logger.debug(f"original: {data}")
     else:
         data = in_data
-    logger.info(f"{data}")
+    logger.debug(f"{data}")
     # recursively traverse structures and convert to serializable data structure 
     if isinstance(data, bool):
         return data
@@ -369,6 +369,37 @@ def serialize_compartmentalization(in_data, first):
         logger.info(f"Invalid key type: {type(data)}")
     return data
 
+# def MyClass_representer(dumper, data):
+#     serializedData = "abcd"
+#     ab = HAKCType("x","y")
+#     # return dumper.represent_scalar('!MyClass', serializedData )
+#     return dumper.represent_mapping("tag:yaml.org,2002:map",
+#                 {"Requests": data.get_info_tokens(), "Name": "data._name"})
+
+# class MyLoader(yaml.SafeLoader):
+#        def construct_python_object(self, node):
+#            # Implement logic to construct your Python object
+#            pass
+
+#    MyLoader.add_constructor('tag:yaml.org,2002:python/object', MyLoader.construct_python_object)
+
+#    with open('your_yaml_file.yaml', 'r') as file:
+#        data = yaml.load(file, Loader=MyLoader)
+
+
+# yaml.add_constructor('tag:yaml.org,2002:python/tuple', construct_python_tuple)
+def construct_compartmentalization(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCCompartmentalization:
+    # return HAKCCompartmentalization(**loader.construct_mapping(node, deep=True))
+    # grh = json_graph.node_link_graph(ml, directed=True, multigraph=True)
+    data = loader.construct_mapping(node)
+    # node = nx.Node(**data)
+    # nx.MultiDiGraph
+    
+    print(f"final const: {node}")
+
+    return HAKCCompartmentalization()
+
+# yaml.add_constructor("tag:yaml.org,2002:python/object:hakc.HAKCCompartmentalization.HAKCCompartmentalization", construct_compartmentalization)
 
 compartmentalization = None
 def main():
@@ -434,12 +465,56 @@ def main():
     if args.dump_dag:
         logger.info(f'dump dag mode for file: {args.dump_dag}')
         # dump the compartmentalization object 
-        serialized = serialize_compartmentalization(compartmentalization, True)
-        logger.info(f"serialized: {serialized}")
-        json_object = json.dumps(serialized)
-        print(json_object)
-        with open(args.dump_dag, "w") as outfile:
-            outfile.write(json_object)
+        # serialized = serialize_compartmentalization(compartmentalization, True)
+        
+        # logger.info(f"serialized: {json_graph.node_link_data(compartmentalization)}")
+        print() 
+        # logger.info(f"o.__class__.__name__: {HAKCType.__class__.__name__}")
+        print()
+        # yaml.add_representer(HAKCCompartmentalization, MyClass_representer)
+
+        # logger.info(f'ser: {json.dumps(HAKCType("a","a"), default=MyClass_representer)}')
+        # logger.debug(f"serialized: {serialized}")
+        # json_object = json.dumps(serialized)
+        # print(json_object)
+        # with open(args.dump_dag, "w") as outfile:
+        #     outfile.write(json_object)
+        # https://networkx.org/documentation/stable/release/migration_guide_from_2.x_to_3.0.html
+
+        # import yaml
+        # G = nx.path_graph(4)
+        # with open('test.yaml', 'w') as f:
+        #     yaml.dump(G, f)
+
+        # with open('test.yaml', 'r') as f:
+        #     G = yaml.load(f, Loader=yaml.Loader)
+
+        # # yml_obj = yaml.dump(compartmentalization)
+        # yml_obj = json_graph.node_link_data(compartmentalization)
+        # logger.info(f'ser: {yml_obj}')
+        # # note: json_graph.node_link_data(compartmentalization) 
+        # abc = yaml.dump(yml_obj)
+        # # print(yml_obj == abc)
+        with open(args.dump_dag, "w") as f:
+            # outfile.write(abc)
+            yaml.dump(compartmentalization, f)
+        G = None
+        print(f"dumped dag")
+        # I guess networkx constructor stuff is not in safeloader, but is in loader?
+        # loader = yaml.SafeLoader
+        loader = yaml.Loader
+        for yaml_tag, ctor in HAKCObject_constructors.items():
+            loader.add_constructor(yaml_tag, ctor)
+        # loader.add_constructor("tag:yaml.org,2002:python/object:hakc.HAKCCompartmentalization.HAKCCompartmentalization", construct_compartmentalization)
+        # loader.add_constructor("python/object:hakc.HAKCCompartmentalization.HAKCCompartmentalization", construct_compartmentalization)
+        print(f"Trying to load dag")
+        with open(args.dump_dag, "r") as f:
+            # G = yaml.load(f, Loader=yaml.Loader)
+            G = yaml.load(f, Loader=loader)
+        print(G)
+        print(type(G))
+        # print(HAKCCompartmentalization(G))
+
 
 if __name__ == "__main__":
     main()

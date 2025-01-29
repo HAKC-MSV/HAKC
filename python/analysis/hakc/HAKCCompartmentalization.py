@@ -6,11 +6,13 @@ import networkx as nx
 # import polars as pl
 import pandas as pd
 import tqdm
+import yaml 
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
 from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
     HAKCScope, HAKCGlobalVariable
+# from hakc.HAKCObjects import HAKCObject_constructors
 
 logger = logging.getLogger('hakc-dag')
 
@@ -22,18 +24,19 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     DefaultDivisionCount = max(1, len(HAKCDivisionEnum) - 1)
     persisted_attr = 'persisted'
     
-    def __init__(self, nxgraph=None, division_count=16):
-        if(nxgraph == None):
-            super().__init__(self)
-        else:
-            super().__init__(self, nxgraph)
+    def __init__(self, division_count=16, **kwargs):
+        nxgraph = kwargs.get("nxgraph")
+        super().__init__(self, nxgraph)
         self.division_count = division_count
+        # these are initialized in json, but not null 
+        # self.default_compartment = HAKCCompartment(self.default_compartment_id)
+        # self.default_division = HAKCDivision(self.default_division_id, self.default_compartment_id)
 
-    def get_default_division(self):
+    def get_default_division(self) -> HAKCDivision: 
         return self.default_division
 
-    def get_default_compartment(self):
-        return self.kernel_compartment_id
+    def get_default_compartment(self) -> HAKCCompartment:
+        return self.default_compartment
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:
@@ -54,14 +57,16 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             self.add_edge(u_for_edge, v_for_edge, key, **attr)
 
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: HAKCCompilationUnit):
-        self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
-        self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
+        # self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
+        self.add_persistent_edge(symbol, symbol.Type, key=HAKCSymbol.IsTypeTable)
+        # self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
+        self.add_persistent_edge(symbol, symbol.Scope, key=HAKCSymbol.HasScopeTable)
         self.add_persistent_edge(symbol, compilation_unit, key=HAKCSymbol.SymbolCompilationUnitTable)
-        if symbol.defining_file is not None:
-            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.defining_file),
-                                     key=HAKCSymbol.DefinedInTable, line=symbol.defining_line)
+        if symbol.DefiningFile is not None:
+            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.DefiningFile),
+                                     key=HAKCSymbol.DefinedInTable, line=symbol.DefiningLine)
 
-        for used_symbol in symbol.used_symbols:
+        for used_symbol in symbol.UsedSymbols:
             self.add_persistent_edge(symbol, used_symbol, key=HAKCSymbol.UsesSymbolTable)
 
         if isinstance(symbol, HAKCFunction):
@@ -296,3 +301,30 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             HAKCCompilationUnit,
             HAKCFunction
         ]
+    
+    # def MyClass_representer(dumper, data):
+    #     serializedData = "abcd"
+    #     ab = HAKCType("x","y")
+    #     # return dumper.represent_scalar('!MyClass', serializedData )
+    #     return dumper.represent_mapping("tag:yaml.org,2002:map",
+    #                 {"Requests": ab, "Name": "data._name"})
+
+    # @classmethod
+    # def to_yaml(self, dumper, data):
+    #     # rSeq = []
+    #     # for value in data._requests.values():
+    #     #     for t in value:
+    #     #       rSeq.extend([
+    #     #         {"name": t._name},
+    #     #         {"requestID": t._request_id},
+    #     #         {"priority": t._priority},
+    #     #         {"order": t._order},
+    #     #         {"deadline": t._deadline}
+    #     #       ])
+    #     return dumper.represent_mapping("tag:yaml.org,2002:map",
+    #             {"Requests": "rSeq", "Name": "data._name"})
+
+# def construct_compartmentalization(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCCompartmentalization:
+#     return HAKCCompartmentalization(**loader.construct_mapping(node, deep=True))
+
+# HAKCObject_constructors[HAKCCompartmentalization.yaml_tag] = construct_compartmentalization
