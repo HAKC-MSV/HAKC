@@ -1,9 +1,11 @@
 import re
 
 import yaml
+import logging
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBColumn, HAKCDBRelation, HAKCDBNode, HAKCPrintableObj
-
+from .HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
+logger = logging.getLogger('hakc-dag')
 
 class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCCompilationUnit"
@@ -130,9 +132,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
 
     def __init__(self, compartment_id: int, division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
-        # should this be converted to kwargs.get?
-        if 'Name' not in kwargs:
-            kwargs['Name'] = str(compartment_id)
+        kwargs["Name"] = kwargs.get("Name",str(compartment_id))
         HAKCDBNode.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.division_count = division_count
@@ -284,9 +284,7 @@ class HAKCScope(HAKCDBNode, yaml.YAMLObject):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         self.scope = kwargs['Scope'] if 'Scope' in kwargs else None
-        if 'Name' not in kwargs:
-            name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else self.scope
-            kwargs['Name'] = name
+        kwargs["Name"] = kwargs.get("LocalScopeName",self.scope)
         HAKCDBNode.__init__(self, **kwargs)
         self.local_scope_name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else HAKCScope.global_scope
         self.is_global_scope = self.scope == HAKCScope.global_scope
@@ -312,7 +310,7 @@ class HAKCScope(HAKCDBNode, yaml.YAMLObject):
         elif isinstance(other, HAKCType):
             return True
         # I guess at some point a HAKCType is being compared to HAKCScope
-        print(f"{other} is of type: {type(other)}")
+        logger.error(f"{other} is of type: {type(other)}")
         raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
 
     def get_hash_inputs(self) -> list[object]:
@@ -425,7 +423,6 @@ class HAKCSymbol(HAKCDBNode):
             schema[1]: self.DefiningFile,
             schema[2]: self.DefiningLine,
             schema[3]: isinstance(self, HAKCFunction),
-            # schema[4]: self.name
             schema[4]: self.Name
         }
 
@@ -494,8 +491,8 @@ class HAKCFunction(yaml.YAMLObject, HAKCSymbol):
 
     def get_info_tokens(self) -> dict[str, object]:
         tokens = HAKCSymbol.get_info_tokens(self)
-        tokens["directCall"] = self.direct_calls
-        tokens["indirectCall"] = self.indirect_calls
+        tokens["direct_call"] = self.direct_calls
+        tokens["indirect_call"] = self.indirect_calls
         return tokens
 
 

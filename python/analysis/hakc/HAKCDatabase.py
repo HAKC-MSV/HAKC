@@ -174,12 +174,9 @@ class HAKCDatabase:
         return symbols
 
     def _create_type_from_response(self, type_prefix: str = "ty.", **kwargs) -> HAKCType:
-        # TODO: figure out why this is sometimes returning nan? 
-        print(f"type data orig: {kwargs}")
         type_data = {key.removeprefix(type_prefix): val for key, val in kwargs.items()}
         if len(type_data) == 0:
             raise RuntimeError('No type data provided')
-        print(f"type data: {type_data}")
         ty = HAKCType(**type_data)
         return ty
 

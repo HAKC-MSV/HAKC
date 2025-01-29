@@ -24,8 +24,12 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     persisted_attr = 'persisted'
     
     def __init__(self, division_count=16, **kwargs):
-        nxgraph = kwargs.get("nxgraph")
-        super().__init__(self, nxgraph)
+        nxgraph = kwargs.get("nxgraph", None)
+        if(nxgraph == None):
+            super().__init__(self)
+        else:
+            super().__init__(self, nxgraph)
+
         self.division_count = division_count
         self.default_compartment = None
         self.default_division = None
