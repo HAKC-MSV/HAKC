@@ -36,6 +36,9 @@ class HAKCPrintableObj:
         inside_strings = [f'{key}={str(value)}' for key, value in self.get_info_tokens().items()]
         return f'{cls}({", ".join(sorted(inside_strings))})'
 
+    def __repr__(self):
+        return str(self)
+
     def get_info_tokens(self) -> dict[str, object]:
         raise NotImplementedError
 
