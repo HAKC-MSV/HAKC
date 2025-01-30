@@ -228,9 +228,6 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
                 return False
         return False
 
-    # def __lt__(self, other):
-    #     return True
-
     def get_hash_inputs(self) -> list[object]:
         if self._debug_type_is_known:
             return [self._debug_type_transformed]
