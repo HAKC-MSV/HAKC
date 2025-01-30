@@ -71,7 +71,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
         if isinstance(symbol, HAKCFunction):
             for indirect_call in symbol.indirect_calls:
-                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
+                self.add_persistent_edge(symbol, indirect_call.Type, key=HAKCFunction.IndirectCallTable)
             for direct_call in symbol.direct_calls:
                 self.add_persistent_edge(symbol, direct_call, key=HAKCFunction.DirectCallTable)
 
