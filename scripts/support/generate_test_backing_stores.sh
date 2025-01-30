@@ -5,7 +5,12 @@ cd $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test
 
 if [[ -n "$1" ]]; then
     # 1. Emit LLVM
-    $HAKC_CLANG -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
+    if [ "$1" == "5" ]; then
+        echo "Adding include: -I$HAKC_ROOT/linux/tools/include for Test 5"
+        $HAKC_CLANG -I$HAKC_ROOT/linux/tools/include -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
+    else
+        $HAKC_CLANG -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
+    fi
     # 2. Generate DAG db using pass 
     # 2.a use sed to get correct paths 
     # need to replace pwd and pass mode (same as the test runner is doing) to generate valild yaml config file 
@@ -13,8 +18,6 @@ if [[ -n "$1" ]]; then
     $HAKC_OPT -passes=hakc --HAKC_CONFIG=$HAKC_TEST_ROOT/hakc_test$1/hakc_dag_config.yml $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.tmp.ll
     # 3. Generate yaml backing store using hakc-dag.py
     python3 $HAKC_ROOT/python/analysis/hakc-dag.py --dump-dag $HAKC_TEST_ROOT/configs/backing_stores/backing_$1.yml --create-dag --dag-files-root $HAKC_TEST_ROOT/hakc_test$1/dag_analysis/_HAKC_SOURCE_PATH_ --db-dir $HAKC_TEST_ROOT/hakc_test$1/hakc-db 
-# else
-    # $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a --timeout 60 .
 fi
 
 
