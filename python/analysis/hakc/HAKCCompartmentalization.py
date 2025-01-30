@@ -22,9 +22,8 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     default_division = HAKCDivisionEnum.TEAL_DIVISION.value
     DefaultDivisionCount = max(1, len(HAKCDivisionEnum) - 1)
     persisted_attr = 'persisted'
-    
-    def __init__(self, division_count=16, **kwargs):
-        nxgraph = kwargs.get("nxgraph", None)
+
+    def __init__(self, division_count=16, nxgraph=None, **kwargs):
         if(nxgraph == None):
             super().__init__(self)
         else:
