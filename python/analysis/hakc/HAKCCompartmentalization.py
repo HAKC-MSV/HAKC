@@ -6,6 +6,7 @@ import networkx as nx
 # import polars as pl
 import pandas as pd
 import tqdm
+import yaml 
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
@@ -22,8 +23,12 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     DefaultDivisionCount = max(1, len(HAKCDivisionEnum) - 1)
     persisted_attr = 'persisted'
 
-    def __init__(self, division_count=16):
-        super().__init__(self)
+    def __init__(self, division_count=16, nxgraph=None, **kwargs):
+        if(nxgraph == None):
+            super().__init__(self)
+        else:
+            super().__init__(self, nxgraph)
+
         self.division_count = division_count
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
@@ -45,19 +50,19 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             self.add_edge(u_for_edge, v_for_edge, key, **attr)
 
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: HAKCCompilationUnit):
-        self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
-        self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
+        self.add_persistent_edge(symbol, symbol.Type, key=HAKCSymbol.IsTypeTable)
+        self.add_persistent_edge(symbol, symbol.Scope, key=HAKCSymbol.HasScopeTable)
         self.add_persistent_edge(symbol, compilation_unit, key=HAKCSymbol.SymbolCompilationUnitTable)
-        if symbol.defining_file is not None:
-            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.defining_file),
-                                     key=HAKCSymbol.DefinedInTable, line=symbol.defining_line)
+        if symbol.DefiningFile is not None:
+            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.DefiningFile),
+                                     key=HAKCSymbol.DefinedInTable, line=symbol.DefiningLine)
 
-        for used_symbol in symbol.used_symbols:
+        for used_symbol in symbol.UsedSymbols:
             self.add_persistent_edge(symbol, used_symbol, key=HAKCSymbol.UsesSymbolTable)
 
         if isinstance(symbol, HAKCFunction):
             for indirect_call in symbol.indirect_calls:
-                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
+                self.add_persistent_edge(symbol, indirect_call.Type, key=HAKCFunction.IndirectCallTable)
             for direct_call in symbol.direct_calls:
                 self.add_persistent_edge(symbol, direct_call, key=HAKCFunction.DirectCallTable)
 

@@ -4,17 +4,22 @@ import socketserver
 import struct
 from pathlib import Path
 from typing import Optional
+import yaml
 
 from .HAKCBase import HAKCPrintableObj
 from .HAKCLogger import setup_logging, LoggingLevelEnum
-from .HAKCObjects import HAKCCompartment, HAKCDivision
+from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
+    HAKCScope, HAKCGlobalVariable, HAKCObject_constructors
+from .HAKCCompartmentalization import HAKCCompartmentalization
+import networkx as nx
+from networkx.readwrite import json_graph
+
 
 logger = logging.getLogger('hakc-policy-server')
 
 
 class TimeoutException(Exception):
     pass
-
 
 class HAKCDataRequest:
     def __init__(self, Endpoint: str, **kwargs):
@@ -48,7 +53,6 @@ class HAKCPolicyDataSource:
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         if request.endpoint == self.get_compartment_endpoint:
             return self.get_compartment_by_id(int(request.parameters['compartment-id']))
-
         raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
 
 
@@ -68,8 +72,41 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self._get_default_compartment()
 
 
-class JSONHAKCPolicyDataStore(HAKCPolicyDataSource):
-    pass
+class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
+    def __init__(self, yamlin: str, default_compartment_id: str, default_division_id: str, **kwargs):
+        HAKCPolicyDataSource.__init__(self, **kwargs)
+        self.compartmentalization = None 
+        self.deserialize_compartmentalization(yamlin)
+        self.default_compartment = HAKCCompartment(default_compartment_id)
+        self.default_division = HAKCDivision(default_division_id, default_compartment_id)
+        
+    def _get_default_compartment(self) -> HAKCCompartment:
+        return self.default_compartment
+
+    def _get_default_division(self) -> HAKCDivision:
+        return self.default_division
+
+    def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
+        return self.compartmentalization.get_compartment_node(compartment_id)
+
+    def deserialize_compartmentalization(self, yamlin):
+        G = None
+        # add custom constructors to yaml loader 
+        # I guess networkx constructor stuff is not in safeloader, but is in loader?
+        loader = yaml.Loader
+        for yaml_tag, ctor in HAKCObject_constructors.items():
+            loader.add_constructor(yaml_tag, ctor)
+
+        if(yamlin == None):
+            raise RuntimeError(f'yamlin is None')
+        with open(yamlin, 'r') as file:
+            G = yaml.load(file, Loader=loader)
+        if(G == None):
+            raise RuntimeError(f'Graph from yamlin is empty')
+        
+        # print(G)
+        self.compartmentalization = G
+        logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
@@ -98,29 +135,49 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
+                
+                logger.debug(f'got: {raw_msg_bytes}')
 
                 json_request = json.loads(raw_msg_bytes)
+                
+                logger.debug(f'json got: {json_request}')
+
                 hakc_request = HAKCDataRequest(**json_request)
+                
+                logger.debug(f'hakc got: {json_request}')
+
                 data = self.server.backing_store.handle_request(hakc_request)
+                
+                logger.debug(f'data got: {data}')
+
                 response_data = json.dumps(data.to_yaml_dict())
                 encoded_data = response_data.encode('utf-8')
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
                 self.write_raw_bytes(encoded_data)
-        except ConnectionAbortedError or ConnectionResetError:
-            logger.debug(f'Client Disconnected')
-            return
+        # the 'raise' will call 'handle_error' in HAKCPolicyServer 
+        except ConnectionAbortedError:
+            logger.debug(f'Client Aborted Connection')
+            raise
+        except ConnectionResetError:
+            logger.debug(f'Client Reset Connection')
+            raise
         except TimeoutException:
             logger.debug(f'Timeout received')
             return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
-
+    
 
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, socket_path: Path, backing_store: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,
                  log_file: str = "", log_mode: str = 'w', **kwargs):
         self.backing_store = backing_store
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
-        logger.info(f'Starting Socket Server at {socket_path}')
+        logger.debug(f'Starting Socket Server at {socket_path}')
         socketserver.ThreadingUnixStreamServer.__init__(self, str(socket_path), RequestHandlerClass=HAKCRequestHandler)
+
+    def handle_error(self, _a, _b):
+        logger.error(f"Shutting down server")
+        # do a server shutdown, rather than a server_close()
+        self.shutdown()

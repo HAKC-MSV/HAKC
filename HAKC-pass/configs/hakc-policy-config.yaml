@@ -1,8 +1,12 @@
 {
   "backing_store": {
-    "type": "null"
+    "type": "null",
+    # "type": "yaml", 
+    # "path": "@HAKC_BACKING_STORE@",
+    # "default_compartment": 0,
+    # "default_division": 0
   },
   "reuse_path": true,
-  "socket_path": "hakc-socket",
-  "server_timeout": -1
+  "socket_path": "@PWD@/hakc-socket",
+  "server_timeout": 10
 }

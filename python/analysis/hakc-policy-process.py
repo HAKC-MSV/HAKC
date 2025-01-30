@@ -4,17 +4,21 @@ import logging
 import signal
 from enum import Enum
 from pathlib import Path
+import subprocess
+import os 
+import multiprocessing
+import time 
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
-    JSONHAKCPolicyDataStore, TimeoutException
+    YAMLHAKCPolicyDataStore, TimeoutException
 
 logger = logging.getLogger('hakc-policy-process')
 
 
 class SupportedBackingStore(Enum):
-    NULL = "null"
-    JSON = "json"
+    NULL = "null",
+    YAML = "yaml"
 
 
 class HAKCPolicyProcessConfig:
@@ -32,11 +36,10 @@ def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
     if config.backing_store['type'] == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
         return NullHAKCPolicyDataStore()
-    elif config.backing_store['type'] == SupportedBackingStore.JSON.value:
-        logger.debug(f'Creating JSONPolicyDataStore')
-        return JSONHAKCPolicyDataStore()
-
-    raise RuntimeError(f'Unsupported data store type: {config.backing_store['type']}')
+    elif config.backing_store['type'] == SupportedBackingStore.YAML.value:
+        logger.debug(f'Creating YAMLPolicyDataStore')
+        return YAMLHAKCPolicyDataStore(yamlin=config.backing_store['path'],default_compartment_id=config.backing_store['default_compartment'],default_division_id=config.backing_store['default_division'])
+    raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
 
 
 def timeout_handler(signum, frame):
@@ -65,7 +68,6 @@ def main():
             if config.server_timeout > 0:
                 signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(config.server_timeout)
-
             server.serve_forever()
         except KeyboardInterrupt:
             logger.info('User requested to stop server')
@@ -75,7 +77,6 @@ def main():
             logger.error(f'Error: {e}')
         finally:
             server.server_close()
-
 
 if __name__ == "__main__":
     main()

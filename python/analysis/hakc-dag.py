@@ -13,19 +13,17 @@ from typing import Type
 
 import tqdm
 import yaml
+import json 
+import networkx as nx
+from networkx.readwrite import json_graph
 
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
-from hakc.HAKCObjects import HAKCObject_constructors, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
+from hakc.HAKCObjects import HAKCObject_constructors, HAKCType, HAKCScope, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
     HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
 
 logger = logging.getLogger('hakc-dag')
-
-
-def quoted_presenter(dumper, data):
-    return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='"')
-
 
 def batched(iterable, n):
     if n < 1:
@@ -318,6 +316,17 @@ def output_profile_stats(profile):
     ps.print_stats()
     logger.info(s.getvalue())
 
+def load_yaml_test(yamlin):
+    G = None
+    # I guess networkx constructor stuff is not in safeloader, but is in loader?
+    loader = yaml.Loader
+    for yaml_tag, ctor in HAKCObject_constructors.items():
+        loader.add_constructor(yaml_tag, ctor)
+    print(f"Trying to load dag")
+    with open(yamlin, "r") as f:
+        G = yaml.load(f, Loader=loader)
+    print(G)
+    print(type(G))
 
 def main():
     parser = argparse.ArgumentParser(description='Kernel Data Access Analysis')
@@ -347,15 +356,6 @@ def main():
     profile = None
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
 
-    # dump dag to json file 
-    # https://networkx.org/documentation/stable/reference/readwrite/json_graph.html
-    # python3 python/analysis/hakc-dag.py --create-dag --dag-files-root $HAKC_DAG_ROOT
-    if args.dump_dag:
-        # todo ask derrick to test this 
-        logger.info(f'dump dag mode for file: {args.dump_dag}')
-        # data = tree_data(G, root[, ident, children])
-        # logger.info(f'data: {data}')
-
     if args.db_dir is None or len(args.db_dir) == 0:
         raise RuntimeError(f'Must specify a database directory')
 
@@ -384,6 +384,24 @@ def main():
         adjust_compartmentalization(args.db_dir, adjustments)
         logger.info("Done")
 
+    if args.dump_dag:
+        logger.info(f'dump dag mode for file: {args.dump_dag}')
+        # https://networkx.org/documentation/stable/release/migration_guide_from_2.x_to_3.0.html
+
+        # dump the compartmentalization object 
+        with open(args.dump_dag, "w") as f:
+            yaml.dump(compartmentalization, f)
+        logger.debug(f"dumped dag")
+        # G = None
+        # I guess networkx constructor stuff is not in safeloader, but is in loader?
+        # loader = yaml.Loader
+        # for yaml_tag, ctor in HAKCObject_constructors.items():
+        #     loader.add_constructor(yaml_tag, ctor)
+        # print(f"Trying to load dag")
+        # with open(args.dump_dag, "r") as f:
+        #     G = yaml.load(f, Loader=loader)
+        # print(G)
+        # print(type(G))
 
 if __name__ == "__main__":
     main()
