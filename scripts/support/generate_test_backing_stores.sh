@@ -5,12 +5,7 @@ cd $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test
 
 if [[ -n "$1" ]]; then
     # 1. Emit LLVM
-    if [ "$1" == "5" ]; then
-        echo "Adding include: -I$HAKC_ROOT/linux/tools/include for Test 5"
-        $HAKC_CLANG -I$HAKC_ROOT/linux/tools/include -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
-    else
-        $HAKC_CLANG -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
-    fi
+    $HAKC_CLANG -g -S -emit-llvm -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.orig.ll -c $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.c
     # 2. Generate DAG db using pass 
     # 2.a use sed to get correct paths 
     # need to replace pwd and pass mode (same as the test runner is doing) to generate valild yaml config file 

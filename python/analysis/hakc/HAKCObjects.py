@@ -228,8 +228,8 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
                 return False
         return False
 
-    def __lt__(self, other):
-        return True
+    # def __lt__(self, other):
+    #     return True
 
     def get_hash_inputs(self) -> list[object]:
         if self._debug_type_is_known:
@@ -241,7 +241,7 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
         return HAKCDBNode.__hash__(self)
 
     def get_info_tokens(self) -> dict[str, object]:
-        return {'debug_type': f'{self.debug_type}', 'llvm_type': f'{self.llvm_type}'}
+        return {'debug_type': f'{self.DebugType}', 'llvm_type': f'{self.LLVMType}'}
 
     @staticmethod
     def transform_type_str(type_str: str) -> str:
@@ -308,7 +308,7 @@ class HAKCScope(HAKCDBNode, yaml.YAMLObject):
             else:
                 return self.scope < other.scope
         elif isinstance(other, HAKCType):
-            return True
+            return str(self) < str(other)
         # I guess at some point a HAKCType is being compared to HAKCScope
         logger.error(f"{other} is of type: {type(other)}")
         raise RuntimeError(f'{other} is not a {self.__class__.__name__}')
@@ -383,7 +383,7 @@ class HAKCSymbol(HAKCDBNode):
             'name': self.Name,
             'type': self.Type,
             'scope': self.Scope,
-            'definition': f'{self.defining_file + ":" + str(self.defining_line) if self.is_definition else "None"}'
+            'definition': f'{self.DefiningFile + ":" + str(self.DefiningLine) if self.is_definition else "None"}'
         }
 
     @property

@@ -92,6 +92,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def deserialize_compartmentalization(self, yamlin):
         G = None
         # add custom constructors to yaml loader 
+        # I guess networkx constructor stuff is not in safeloader, but is in loader?
         loader = yaml.Loader
         for yaml_tag, ctor in HAKCObject_constructors.items():
             loader.add_constructor(yaml_tag, ctor)
@@ -149,11 +150,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 
                 logger.debug(f'data got: {data}')
 
-                response_data = None 
-                if(isinstance(data, int)):
-                    response_data = json.dumps(data)
-                else:
-                    response_data = json.dumps(data.to_yaml_dict())
+                response_data = json.dumps(data.to_yaml_dict())
                 encoded_data = response_data.encode('utf-8')
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
@@ -164,7 +161,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
             raise
         except ConnectionResetError:
             logger.debug(f'Client Reset Connection')
-            raise 
+            raise
         except TimeoutException:
             logger.debug(f'Timeout received')
             return

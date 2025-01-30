@@ -1,3 +1,0 @@
-head
-"{_ID: 2:0, _LABEL: HAKCSymbol, symbol_hash: 6588985453060915670, DefiningFile: _HAKC_SOURCE_PATH_/hakc_test0.c, DefiningLine: 16, is_function: True, Name: bar}"
-"{_ID: 2:1, _LABEL: HAKCSymbol, symbol_hash: 5954552900367763080, DefiningFile: _HAKC_SOURCE_PATH_/hakc_test0.c, DefiningLine: 18, is_function: True, Name: foo}"

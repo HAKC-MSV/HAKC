@@ -316,9 +316,19 @@ def output_profile_stats(profile):
     ps.print_stats()
     logger.info(s.getvalue())
 
-compartmentalization = None
+def load_yaml_test(yamlin):
+    G = None
+    # I guess networkx constructor stuff is not in safeloader, but is in loader?
+    loader = yaml.Loader
+    for yaml_tag, ctor in HAKCObject_constructors.items():
+        loader.add_constructor(yaml_tag, ctor)
+    print(f"Trying to load dag")
+    with open(yamlin, "r") as f:
+        G = yaml.load(f, Loader=loader)
+    print(G)
+    print(type(G))
+
 def main():
-    global compartmentalization
     parser = argparse.ArgumentParser(description='Kernel Data Access Analysis')
     parser.add_argument('--dag-files-root', help='Root of DAG Yaml files', dest='dag_files_root')
     parser.add_argument('--log-level', required=False, dest='log_level', default=LoggingLevelEnum.INFO,
@@ -381,8 +391,8 @@ def main():
         # dump the compartmentalization object 
         with open(args.dump_dag, "w") as f:
             yaml.dump(compartmentalization, f)
-        G = None
-        print(f"dumped dag")
+        logger.debug(f"dumped dag")
+        # G = None
         # I guess networkx constructor stuff is not in safeloader, but is in loader?
         # loader = yaml.Loader
         # for yaml_tag, ctor in HAKCObject_constructors.items():
