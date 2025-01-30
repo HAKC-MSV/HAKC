@@ -103,7 +103,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         if(G == None):
             raise RuntimeError(f'Graph from yamlin is empty')
         
-        print(G)
+        # print(G)
         self.compartmentalization = G
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
