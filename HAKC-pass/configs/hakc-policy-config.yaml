@@ -1,10 +1,12 @@
 {
   "backing_store": {
-    "type": "json",
-    "path": "/home/al32163/hakc/HAKC_CURR/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test0/backing.json",
-    "default_compartment" : 0,
-    "default_division" : 0
+    "type": "null",
+    # "type": "yaml", 
+    # "path": "@HAKC_BACKING_STORE@",
+    # "default_compartment": 0,
+    # "default_division": 0
   },
   "reuse_path": true,
-  "socket_path": "/home/al32163/hakc/HAKC_CURR/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test0/hakc-socket"
+  "socket_path": "@PWD@/hakc-socket",
+  "server_timeout": 10
 }
