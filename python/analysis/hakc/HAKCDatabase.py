@@ -30,7 +30,7 @@ class HAKCDatabase:
     def new_conn(self, read_only: bool = False):
         self.conn = kuzu.Connection(self.database) # thread i connection
 
-    def get_compartment_node(self, compartment_id):
+    def get_compartment_node(self, compartment_id: int) -> int:
         cmd = f"""
         MATCH (comp:{HAKCCompartment.get_table_name()})
         WITH comp.CompartmentID as CompartmentID, comp.EntryToken as EntryToken
@@ -47,7 +47,7 @@ class HAKCDatabase:
             logger.debug(f"Found EntryToken: {entry_token} for CompartmentID: {compartment_id}")
             return entry_token
 
-    def get_division_node(self, division_id):
+    def get_division_node(self, division_id: int, compartment_id: int) -> int:
         cmd = f"""
         MATCH (div:{HAKCDivision.get_table_name()})
         WITH div.DivisionID as DivisionID, div.AccessToken as AccessToken

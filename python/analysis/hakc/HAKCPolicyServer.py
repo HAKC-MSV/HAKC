@@ -40,13 +40,13 @@ class HAKCPolicyDataSource:
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         raise NotImplementedError
 
-    def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         raise NotImplementedError
 
     def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
         # TODO: Q: is there any need to get the compartment too?
         # compartment_entry_token = self.get_compartment_by_id(compartment_id)
-        division = self._get_division_from_backing_store(division_id)
+        division = self._get_division_from_backing_store(division_id, compartment_id)
         if division is None:
             return self.default_division
         logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
@@ -85,7 +85,7 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self._get_default_compartment()
 
-    def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         return self._get_default_division()
 
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
@@ -105,8 +105,8 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self.compartmentalization.get_compartment_node(compartment_id)
 
-    def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
-        return self.compartmentalization.get_division_node(division_id)
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
+        return self.compartmentalization.get_division_node(division_id, compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):
         G = None
@@ -148,10 +148,9 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.database.get_compartment_node(compartment_id)
 
 
-    def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         logger.debug(f"Trying to get division_id: {division_id} from backing store")
-        return self.database.get_division_node(division_id)
-
+        return self.database.get_division_node(division_id, compartment_id)
 
     def connect(self, kuzuin):
         self.database = HAKCDatabase(kuzuin)
