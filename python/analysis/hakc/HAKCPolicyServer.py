@@ -4,22 +4,19 @@ import socketserver
 import struct
 from pathlib import Path
 from typing import Optional
+
 import yaml
 
 from .HAKCBase import HAKCPrintableObj
 from .HAKCLogger import setup_logging, LoggingLevelEnum
-from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
-    HAKCScope, HAKCGlobalVariable, HAKCObject_constructors
-from .HAKCCompartmentalization import HAKCCompartmentalization
-import networkx as nx
-from networkx.readwrite import json_graph
-
+from .HAKCObjects import HAKCCompartment, HAKCDivision, HAKCSymbol, HAKCObject_constructors
 
 logger = logging.getLogger('hakc-policy-server')
 
 
 class TimeoutException(Exception):
     pass
+
 
 class HAKCDataRequest:
     def __init__(self, Endpoint: str, **kwargs):
@@ -40,12 +37,22 @@ class HAKCPolicyDataSource:
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         raise NotImplementedError
 
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        raise NotImplementedError
+
     def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
         compartment = self._get_compartment_from_backing_store(compartment_id)
         if compartment is None:
             compartment = self._get_default_compartment()
         logger.debug(f"Returning Compartment {compartment} from input compartment {compartment_id}")
         return compartment
+
+    def get_symbol_division(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        division = self._get_symbol_division_from_backing_store(symbol)
+        if division is None:
+            division = self._get_default_division()
+        logger.debug(f"Returning Division {division} for symbol {symbol}")
+        return division
 
     def close(self) -> None:
         pass
@@ -71,15 +78,18 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self._get_default_compartment()
 
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        return self._get_default_division()
+
 
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, yamlin: str, default_compartment_id: str, default_division_id: str, **kwargs):
         HAKCPolicyDataSource.__init__(self, **kwargs)
-        self.compartmentalization = None 
+        self.compartmentalization = None
         self.deserialize_compartmentalization(yamlin)
         self.default_compartment = HAKCCompartment(default_compartment_id)
         self.default_division = HAKCDivision(default_division_id, default_compartment_id)
-        
+
     def _get_default_compartment(self) -> HAKCCompartment:
         return self.default_compartment
 
@@ -89,6 +99,9 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self.compartmentalization.get_compartment_node(compartment_id)
 
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        return self.compartmentalization.get_division(symbol)
+
     def deserialize_compartmentalization(self, yamlin):
         G = None
         # add custom constructors to yaml loader 
@@ -97,13 +110,13 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         for yaml_tag, ctor in HAKCObject_constructors.items():
             loader.add_constructor(yaml_tag, ctor)
 
-        if(yamlin == None):
+        if (yamlin == None):
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
             G = yaml.load(file, Loader=loader)
-        if(G == None):
+        if (G == None):
             raise RuntimeError(f'Graph from yamlin is empty')
-        
+
         # print(G)
         self.compartmentalization = G
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
@@ -135,19 +148,19 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
-                
+
                 logger.debug(f'got: {raw_msg_bytes}')
 
                 json_request = json.loads(raw_msg_bytes)
-                
+
                 logger.debug(f'json got: {json_request}')
 
                 hakc_request = HAKCDataRequest(**json_request)
-                
+
                 logger.debug(f'hakc got: {json_request}')
 
                 data = self.server.backing_store.handle_request(hakc_request)
-                
+
                 logger.debug(f'data got: {data}')
 
                 response_data = json.dumps(data.to_yaml_dict())
@@ -158,7 +171,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
         # the 'raise' will call 'handle_error' in HAKCPolicyServer 
         except ConnectionAbortedError:
             logger.debug(f'Client Aborted Connection')
-            raise
+            return
         except ConnectionResetError:
             logger.debug(f'Client Reset Connection')
             raise
@@ -167,7 +180,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
             return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
-    
+
 
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, socket_path: Path, backing_store: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,

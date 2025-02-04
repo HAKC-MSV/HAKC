@@ -4,8 +4,11 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## Prerequisites
 
-* Binutils 2.33.1+,
-* aarch64-linux-gnu
+* `Binutils 2.33.1+`
+* `aarch64-linux-gnu`
+* `python3-psutil`
+* `python-kuzu`
+* `python-pyyaml`
 
 ## Set up
 
