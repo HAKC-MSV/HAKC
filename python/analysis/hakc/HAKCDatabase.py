@@ -1,7 +1,6 @@
 import logging
 import multiprocessing as mp
-from typing import Type
-from typing import Optional
+from typing import Type, Optional, Tuple
 
 import kuzu
 import pandas as pd
@@ -31,7 +30,7 @@ class HAKCDatabase:
     def new_conn(self, read_only: bool = False):
         self.conn = kuzu.Connection(self.database) # thread i connection
 
-    def get_compartment_node(self, compartment_id: int) -> Optional[int]:
+    def get_compartment_entry_token_from_id(self, compartment_id: int) -> Optional[int]:
         cmd = f"""
         MATCH (comp:{HAKCCompartment.get_table_name()})
         WITH comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
@@ -48,7 +47,7 @@ class HAKCDatabase:
             logger.debug(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
             return entry_token
 
-    def get_division_node(self, division_id: int, compartment_id: int) -> Optional[int]:
+    def get_division_access_token_from_id(self, division_id: int, compartment_id: int) -> Optional[int]:
         cmd = f"""
         MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
         WITH div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID AS compartment_id, comp.EntryToken AS entry_token
@@ -64,6 +63,26 @@ class HAKCDatabase:
             access_token = ret["access_token"][0]
             logger.debug(f"Found access_token: {access_token} for division_id: {division_id}")
             return access_token
+
+    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int,int]]:
+        cmd = f"""
+        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})
+        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
+        WITH sym.symbol_hash as symbol_hash, div.DivisionID as division_id, comp.CompartmentID as compartment_id
+        WHERE symbol_hash = $symbol_hash 
+        RETURN division_id, compartment_id;
+        """
+        response = self.execute_prepared_stmt(cmd, symbol_hash=symbol.computed_hash)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.debug(f'Command: {cmd} returned None')
+            return None
+        else:
+            # TODO: check that this is correct when this is eventually called
+            division_id = ret["division_id"][0]
+            compartment_id = ret["compartment_id"][0]
+            logger.debug(f"Found division_id, compartment_id: ({division_id}, {compartment_id}) for symbol: {symbol}")
+            return division_id, compartment_id
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()

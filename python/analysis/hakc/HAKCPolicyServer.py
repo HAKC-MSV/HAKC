@@ -116,10 +116,10 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.default_division
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
-        return self.compartmentalization.get_compartment_node(compartment_id)
+        return self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
 
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
-        return self.compartmentalization.get_division_node(division_id, compartment_id)
+        return self.compartmentalization.get_division_access_token_from_id(division_id, compartment_id)
 
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         return self.compartmentalization.get_division(symbol)
@@ -159,12 +159,32 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
-        return self.database.get_compartment_node(compartment_id)
-
+        # TODO: maybe rename the database.get_compartment_node function to something like get_compartment_entry_access_from_id
+        entry_token = self.database.get_compartment_entry_token_from_id(compartment_id)
+        if entry_token is None:
+            return self._get_default_compartment()
+        return HAKCCompartment(compartment_id, EntryToken=entry_token)
 
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         logger.debug(f"Trying to get division_id: {division_id} from backing store")
-        return self.database.get_division_node(division_id, compartment_id)
+        access_token = self.database.get_division_access_token_from_id(division_id, compartment_id)
+        if access_token is None:
+            return self._get_default_division()
+        return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
+
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        # construct division from hakc symbol; HAKCSymbol -> division_id, compartment_id -> access_token -> HAKCDivision(division_id, compartment_id, access_token)
+        compartment_id_division_id_tuple = self.database.get_division_id_from_symbol(symbol)
+        if compartment_id_division_id_tuple is None:
+            logger.error(f"get_division_id_from_symbol returned None for symbol: {symbol}")
+            return self._get_default_division()
+        division_id = compartment_id_division_id_tuple[0]
+        compartment_id = compartment_id_division_id_tuple[0]
+        access_token = self.database.get_division_access_token_from_id(division_id, compartment_id)
+        if access_token is None:
+            logger.error(f"get_division_access_token_from_id returned None for symbol {symbol}")
+            return self._get_default_division()
+        return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
     def connect(self, kuzuin):
         self.database = HAKCDatabase(kuzuin, True) # open kuzu database connection in read only mode (multithreading)

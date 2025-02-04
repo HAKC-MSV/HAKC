@@ -134,7 +134,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
         self.compartment_id = compartment_id
         self.division_count = division_count
         self.divisions = kwargs.get("Divisions", set())
-        self.entry_token = self.compute_entry_token()
+        self.entry_token = kwargs.get("EntryToken", self.compute_entry_token())
 
     def __eq__(self, other):
         if isinstance(other, HAKCCompartment):
