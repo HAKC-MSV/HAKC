@@ -109,22 +109,21 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_division_node(division_id, compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):
-        G = None
+        graphin = None
         # add custom constructors to yaml loader 
         # I guess networkx constructor stuff is not in safeloader, but is in loader?
         loader = yaml.Loader
         for yaml_tag, ctor in HAKCObject_constructors.items():
             loader.add_constructor(yaml_tag, ctor)
 
-        if(yamlin == None):
+        if yamlin is None:
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
-            G = yaml.load(file, Loader=loader)
-        if(G == None):
+            graphin = yaml.load(file, Loader=loader)
+        if graphin is None:
             raise RuntimeError(f'Graph from yamlin is empty')
-        
-        # print(G)
-        self.compartmentalization = G
+
+        self.compartmentalization = graphin
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
 
@@ -132,7 +131,6 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, kuzuin: str, default_compartment_id: int, default_division_id: int, **kwargs):
         HAKCPolicyDataSource.__init__(self, **kwargs)
         self.database = None
-        self.compartmentalization = None
         self.connect(kuzuin)
         self.default_compartment = HAKCCompartment(default_compartment_id)
         self.default_division = HAKCDivision(default_division_id, default_compartment_id)
@@ -153,7 +151,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.database.get_division_node(division_id, compartment_id)
 
     def connect(self, kuzuin):
-        self.database = HAKCDatabase(kuzuin)
+        self.database = HAKCDatabase(kuzuin, True) # open kuzu database connection in read only mode (multithreading)
         self.database.open(True)
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):

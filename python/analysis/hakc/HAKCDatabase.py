@@ -1,6 +1,7 @@
 import logging
 import multiprocessing as mp
 from typing import Type
+from typing import Optional
 
 import kuzu
 import pandas as pd
@@ -30,41 +31,38 @@ class HAKCDatabase:
     def new_conn(self, read_only: bool = False):
         self.conn = kuzu.Connection(self.database) # thread i connection
 
-    def get_compartment_node(self, compartment_id: int) -> int:
+    def get_compartment_node(self, compartment_id: int) -> Optional[int]:
         cmd = f"""
         MATCH (comp:{HAKCCompartment.get_table_name()})
-        WITH comp.CompartmentID as CompartmentID, comp.EntryToken as EntryToken
-        WHERE CompartmentID = {compartment_id}
-        RETURN EntryToken;
+        WITH comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
+        WHERE compartment_id = $compartment_id
+        RETURN entry_token;
         """
-        response = self.execute_prepared_stmt(cmd)
+        response = self.execute_prepared_stmt(cmd, compartment_id=compartment_id)
         ret = response.get_as_df()
         if ret.empty:
             logger.debug(f'Command: {cmd} returned None')
             return None
         else:
-            entry_token = ret["EntryToken"][0]
-            logger.debug(f"Found EntryToken: {entry_token} for CompartmentID: {compartment_id}")
+            entry_token = ret["entry_token"][0]
+            logger.debug(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
             return entry_token
 
-    def get_division_node(self, division_id: int, compartment_id: int) -> int:
+    def get_division_node(self, division_id: int, compartment_id: int) -> Optional[int]:
         cmd = f"""
-        MATCH (div:{HAKCDivision.get_table_name()})
-        WITH div.DivisionID as DivisionID, div.AccessToken as AccessToken
-        WHERE DivisionID = {division_id}
-        RETURN AccessToken;
+        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
+        WITH div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID AS compartment_id, comp.EntryToken AS entry_token
+        WHERE division_id = $division_id AND compartment_id = $compartment_id 
+        RETURN access_token, entry_token;
         """
-        response = self.execute_prepared_stmt(cmd)
-        # pd.set_option('display.max_columns', 1000)
-        # pd.set_option('display.max_colwidth', 250)
-        # pd.set_option('display.width', 1000)
+        response = self.execute_prepared_stmt(cmd, division_id=division_id, compartment_id=compartment_id)
         ret = response.get_as_df()
         if ret.empty:
             logger.debug(f'Command: {cmd} returned None')
             return None
         else:
-            access_token = ret["AccessToken"][0]
-            logger.debug(f"Found AccessToken: {access_token} for DivisionID: {division_id}")
+            access_token = ret["access_token"][0]
+            logger.debug(f"Found access_token: {access_token} for division_id: {division_id}")
             return access_token
 
     def persist_dag_edges(self, dag_edge_data):
