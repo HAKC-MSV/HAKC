@@ -26,10 +26,47 @@ class HAKCDatabase:
 
     def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
-        self.conn = kuzu.Connection(self.database) # main connection 
+        self.conn = kuzu.Connection(self.database) # main connection
 
     def new_conn(self, read_only: bool = False):
-        self.conn = kuzu.Connection(self.database) # thread i connection 
+        self.conn = kuzu.Connection(self.database) # thread i connection
+
+    def get_compartment_node(self, compartment_id):
+        cmd = f"""
+        MATCH (comp:{HAKCCompartment.get_table_name()})
+        WITH comp.CompartmentID as CompartmentID, comp.EntryToken as EntryToken
+        WHERE CompartmentID = {compartment_id}
+        RETURN EntryToken;
+        """
+        response = self.execute_prepared_stmt(cmd)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.error(f'Command: {cmd} returned Nothing')
+            return -1
+        else:
+            entry_token = ret["EntryToken"][0]
+            logger.debug(f"Found EntryToken: {entry_token} for CompartmentID: {compartment_id}")
+            return entry_token
+
+    def get_division_node(self, division_id):
+        cmd = f"""
+        MATCH (div:{HAKCDivision.get_table_name()})
+        WITH div.DivisionID as DivisionID, div.AccessToken as AccessToken
+        WHERE DivisionID = {division_id}
+        RETURN AccessToken;
+        """
+        response = self.execute_prepared_stmt(cmd)
+        # pd.set_option('display.max_columns', 1000)
+        # pd.set_option('display.max_colwidth', 250)
+        # pd.set_option('display.width', 1000)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.error(f'Command: {cmd} returned Nothing')
+            return -1
+        else:
+            access_token = ret["AccessToken"][0]
+            logger.debug(f"Found AccessToken: {access_token} for DivisionID: {division_id}")
+            return access_token
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
@@ -55,7 +92,6 @@ class HAKCDatabase:
         RETURN sym.{HAKCSymbol.get_primary_key().column_name} AS symbol_hash;
         """
         response = self.execute_prepared_stmt(cmd)
-        # return response.get_as_pd()['symbol_hash'].to_list()
         ret = response.get_as_df()['symbol_hash'].to_list()
         logger.info(f'response0 df: {ret}')
         return ret
@@ -98,7 +134,6 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
         if response.has_next():
-            # resp_dict = response.get_as_pd().to_dict(as_series=False)
             resp_dict = response.get_as_df().to_dict(orient='records')
             logger.info(f'resp_dict df: {resp_dict}')
             return HAKCCompilationUnit(filename=resp_dict['filename'][0]), resp_dict['line'][0]

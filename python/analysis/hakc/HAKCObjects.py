@@ -60,10 +60,7 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
         self.division_id = division_id
         self.compartment_id = compartment_id
         self.division_count = division_count
-        if 'AccessToken' in kwargs:
-            self.access_token = kwargs["AccessToken"]
-        else:
-            self.access_token = self.compute_access_token([])
+        self.access_token = kwargs.get("AccessToken", self.compute_access_token([]))
 
     def __eq__(self, other):
         if isinstance(other, HAKCDivision):
