@@ -1,7 +1,7 @@
 #!/bin/bash
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
-cd $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test
+cd $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test && clear
 
 if [[ -n "$1" ]]; then
     if [[ -n "$2" ]]; then

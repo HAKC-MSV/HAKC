@@ -47,7 +47,6 @@ class HAKCDatabase:
             entry_token = ret["entry_token"][0]
             logger.error(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
             return int(entry_token)
-            # return entry_token
 
     def get_division_access_token_from_id(self, division_id: int, compartment_id: int) -> Optional[int]:
         cmd = f"""
@@ -66,20 +65,17 @@ class HAKCDatabase:
             access_token = ret["access_token"][0]
             logger.error(f"Found access_token: {access_token} for division_id: {division_id}")
             return int(access_token)
-            # return access_token
 
     def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int,int]]:
-        cmd = f"""
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.HasScopeTable}]->(scope:{HAKCScope.get_table_name()})
-        MATCH (sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})
-        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
+        cmd = f"""        
+        MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
         WITH sym.symbol_hash as symbol_hash, sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
         WHERE Name = $Name AND Scope = $Scope
         RETURN division_id, compartment_id;
         """
+
         response = self.execute_prepared_stmt(cmd, Name=symbol.Name, Scope=symbol.Scope.scope)
         ret = response.get_as_df()
-        logger.error(f'Ret: {ret} \n')
         if ret.empty:
             logger.error(f'Command: {cmd} returned None\n')
             logger.error(f'Searched with Name: {symbol.Name}, Scope: {str(symbol.Scope)}')
@@ -91,7 +87,6 @@ class HAKCDatabase:
             logger.error(f"Found division_id, compartment_id: ({division_id}, {compartment_id}) for symbol: {symbol}")
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(compartment_id)
-            # return division_id, compartment_id
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()

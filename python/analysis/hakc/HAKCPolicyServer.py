@@ -4,7 +4,6 @@ import socketserver
 import struct
 from pathlib import Path
 from typing import Optional
-
 import yaml
 
 from .HAKCBase import HAKCPrintableObj
@@ -197,8 +196,9 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         if compartment_id_division_id_tuple is None:
             logger.error(f"get_division_id_compartment_id_from_symbol returned None for symbol: {symbol}")
             return self._get_default_division()
+        logger.error(f"compartment_id_division_id_tuple: {compartment_id_division_id_tuple}")
         division_id = compartment_id_division_id_tuple[0]
-        compartment_id = compartment_id_division_id_tuple[0]
+        compartment_id = compartment_id_division_id_tuple[1]
         access_token = self.database.get_division_access_token_from_id(division_id, compartment_id)
         if access_token is None:
             logger.error(f"get_division_access_token_from_id returned None for symbol {symbol}")
@@ -245,7 +245,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                     logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
-                response_data = json.dumps(data.to_yaml_dict())
+                response_data = json.dumps(data.to_yaml_dict(), default=str)
                 logger.debug(f"dumped json")
                 encoded_data = response_data.encode('utf-8')
 
