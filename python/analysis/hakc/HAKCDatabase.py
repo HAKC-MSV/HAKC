@@ -10,7 +10,6 @@ from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlob
 
 logger = logging.getLogger('hakc-dag')
 
-
 class HAKCDatabase:
     def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.db_dir = db_dir
@@ -41,8 +40,8 @@ class HAKCDatabase:
         response = self.execute_prepared_stmt(cmd)
         ret = response.get_as_df()
         if ret.empty:
-            logger.error(f'Command: {cmd} returned Nothing')
-            return -1
+            logger.debug(f'Command: {cmd} returned None')
+            return None
         else:
             entry_token = ret["EntryToken"][0]
             logger.debug(f"Found EntryToken: {entry_token} for CompartmentID: {compartment_id}")
@@ -61,8 +60,8 @@ class HAKCDatabase:
         # pd.set_option('display.width', 1000)
         ret = response.get_as_df()
         if ret.empty:
-            logger.error(f'Command: {cmd} returned Nothing')
-            return -1
+            logger.debug(f'Command: {cmd} returned None')
+            return None
         else:
             access_token = ret["AccessToken"][0]
             logger.debug(f"Found AccessToken: {access_token} for DivisionID: {division_id}")

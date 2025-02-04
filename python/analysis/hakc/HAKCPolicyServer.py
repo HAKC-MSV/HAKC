@@ -14,8 +14,6 @@ from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 import networkx as nx
 
-
-
 logger = logging.getLogger('hakc-policy-server')
 
 
@@ -46,15 +44,11 @@ class HAKCPolicyDataSource:
         raise NotImplementedError
 
     def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
-        compartment_entry_token = self.get_compartment_by_id(compartment_id)
-        division_access_token = self._get_division_from_backing_store(division_id)
-        logger.debug(f"Compartment token {compartment_entry_token}, Division token {division_access_token}")
-        if(compartment_entry_token is None or division_access_token is None):
-            logger.error(f"Returning Default Division")
-            division = self._get_default_division()
-            return division
-        # TODO: check this division creation with derrick
-        division = HAKCDivision(compartment_id, division_id, AccessToken=division_access_token)
+        # TODO: Q: is there any need to get the compartment too?
+        # compartment_entry_token = self.get_compartment_by_id(compartment_id)
+        division = self._get_division_from_backing_store(division_id)
+        if division is None:
+            return self.default_division
         logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
         return division
 
@@ -109,7 +103,6 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.default_division
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
-        logger.debug(f"000000 get compartment backing store")
         return self.compartmentalization.get_compartment_node(compartment_id)
 
     def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
@@ -151,14 +144,14 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.default_division
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
-        logger.error(f"Trying to get compartment_id: {compartment_id} from backing store")
-        ret = self.database.get_compartment_node(compartment_id)
-        return ret
+        logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
+        return self.database.get_compartment_node(compartment_id)
+
 
     def _get_division_from_backing_store(self, division_id: int) -> Optional[HAKCDivision]:
-        logger.error(f"Trying to get division_id: {division_id} from backing store")
-        ret = self.database.get_division_node(division_id)
-        return ret
+        logger.debug(f"Trying to get division_id: {division_id} from backing store")
+        return self.database.get_division_node(division_id)
+
 
     def connect(self, kuzuin):
         self.database = HAKCDatabase(kuzuin)
@@ -190,17 +183,8 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
-                
-                logger.debug(f'got: {raw_msg_bytes}')
-
                 json_request = json.loads(raw_msg_bytes)
-                
-                # logger.debug(f'json got: {json_request}')
-
                 hakc_request = HAKCDataRequest(**json_request)
-                
-                # logger.debug(f'hakc got: {json_request}')
-
                 data = self.server.backing_store.handle_request(hakc_request)
 
                 if not(isinstance(data, HAKCPrintableObj)):
