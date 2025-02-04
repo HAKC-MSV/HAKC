@@ -3,10 +3,8 @@ import re
 from typing import Type
 
 import networkx as nx
-# import polars as pl
 import pandas as pd
 import tqdm
-import yaml 
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
@@ -24,7 +22,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     persisted_attr = 'persisted'
 
     def __init__(self, division_count=16, nxgraph=None, **kwargs):
-        if(nxgraph == None):
+        if nxgraph is None:
             super().__init__(self)
         else:
             super().__init__(self, nxgraph)
@@ -68,6 +66,8 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
     def _get_neighbors(self, symbol: HAKCSymbol, edge_key: str) -> list:
         nbrs = list()
+        if symbol not in self.nodes:
+            raise RuntimeError(f'Symbol {symbol} could not be found')
         for nbr, edges in self.adj[symbol].items():
             if edge_key in edges:
                 nbrs.append(nbr)
@@ -101,7 +101,6 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         compartment.add_division(division)
         self.add_persistent_edge(division, compartment, key=HAKCDivision.InCompartmentTable)
 
-
     def set_symbol_division(self, symbol: HAKCSymbol, division: HAKCDivision, compartment: HAKCCompartment):
         self.add_division(division, compartment)
         self.add_persistent_edge(symbol, division, key=HAKCSymbol.InDivisionTable)
@@ -132,7 +131,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
 
     def get_symbols(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCFunction) or isinstance(n,
-                                                                                                      HAKCGlobalVariable))
+                                                                                                       HAKCGlobalVariable))
 
     def get_scopes(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCScope))
