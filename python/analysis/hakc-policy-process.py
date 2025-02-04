@@ -11,14 +11,15 @@ import time
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
-    YAMLHAKCPolicyDataStore, TimeoutException
+    YAMLHAKCPolicyDataStore, KUZUHAKCPolicyDataStore, TimeoutException
 
 logger = logging.getLogger('hakc-policy-process')
 
 
 class SupportedBackingStore(Enum):
-    NULL = "null",
+    NULL = "null"
     YAML = "yaml"
+    KUZU = "kuzu"
 
 
 class HAKCPolicyProcessConfig:
@@ -39,6 +40,10 @@ def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
     elif config.backing_store['type'] == SupportedBackingStore.YAML.value:
         logger.debug(f'Creating YAMLPolicyDataStore')
         return YAMLHAKCPolicyDataStore(yamlin=config.backing_store['path'],default_compartment_id=config.backing_store['default_compartment'],default_division_id=config.backing_store['default_division'])
+    elif config.backing_store['type'] == SupportedBackingStore.KUZU.value:
+        logger.debug(f'Creating KUZUPolicyDataStore')
+        return KUZUHAKCPolicyDataStore(kuzuin=config.backing_store['path'],default_compartment_id=config.backing_store['default_compartment'],default_division_id=config.backing_store['default_division'])
+
     raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
 
 

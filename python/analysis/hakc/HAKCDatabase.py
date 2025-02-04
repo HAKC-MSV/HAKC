@@ -1,6 +1,7 @@
 import logging
 import multiprocessing as mp
 from typing import Type
+from typing import Optional
 
 import kuzu
 import pandas as pd
@@ -9,7 +10,6 @@ from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlob
     HAKCCompartment, HAKCCompilationUnit
 
 logger = logging.getLogger('hakc-dag')
-
 
 class HAKCDatabase:
     def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
@@ -26,10 +26,44 @@ class HAKCDatabase:
 
     def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
-        self.conn = kuzu.Connection(self.database) # main connection 
+        self.conn = kuzu.Connection(self.database) # main connection
 
     def new_conn(self, read_only: bool = False):
-        self.conn = kuzu.Connection(self.database) # thread i connection 
+        self.conn = kuzu.Connection(self.database) # thread i connection
+
+    def get_compartment_node(self, compartment_id: int) -> Optional[int]:
+        cmd = f"""
+        MATCH (comp:{HAKCCompartment.get_table_name()})
+        WITH comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
+        WHERE compartment_id = $compartment_id
+        RETURN entry_token;
+        """
+        response = self.execute_prepared_stmt(cmd, compartment_id=compartment_id)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.debug(f'Command: {cmd} returned None')
+            return None
+        else:
+            entry_token = ret["entry_token"][0]
+            logger.debug(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
+            return entry_token
+
+    def get_division_node(self, division_id: int, compartment_id: int) -> Optional[int]:
+        cmd = f"""
+        MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
+        WITH div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID AS compartment_id, comp.EntryToken AS entry_token
+        WHERE division_id = $division_id AND compartment_id = $compartment_id 
+        RETURN access_token, entry_token;
+        """
+        response = self.execute_prepared_stmt(cmd, division_id=division_id, compartment_id=compartment_id)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.debug(f'Command: {cmd} returned None')
+            return None
+        else:
+            access_token = ret["access_token"][0]
+            logger.debug(f"Found access_token: {access_token} for division_id: {division_id}")
+            return access_token
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
@@ -55,7 +89,6 @@ class HAKCDatabase:
         RETURN sym.{HAKCSymbol.get_primary_key().column_name} AS symbol_hash;
         """
         response = self.execute_prepared_stmt(cmd)
-        # return response.get_as_pd()['symbol_hash'].to_list()
         ret = response.get_as_df()['symbol_hash'].to_list()
         logger.info(f'response0 df: {ret}')
         return ret
@@ -98,7 +131,6 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd, symbol_hash=hash(symbol))
         if response.has_next():
-            # resp_dict = response.get_as_pd().to_dict(as_series=False)
             resp_dict = response.get_as_df().to_dict(orient='records')
             logger.info(f'resp_dict df: {resp_dict}')
             return HAKCCompilationUnit(filename=resp_dict['filename'][0]), resp_dict['line'][0]

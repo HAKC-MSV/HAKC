@@ -4,12 +4,15 @@ import socketserver
 import struct
 from pathlib import Path
 from typing import Optional
-
 import yaml
 
 from .HAKCBase import HAKCPrintableObj
 from .HAKCLogger import setup_logging, LoggingLevelEnum
-from .HAKCObjects import HAKCCompartment, HAKCDivision, HAKCSymbol, HAKCObject_constructors
+from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType, HAKCCompartment, HAKCDivision, \
+    HAKCScope, HAKCGlobalVariable, HAKCObject_constructors
+from .HAKCCompartmentalization import HAKCCompartmentalization
+from .HAKCDatabase import HAKCDatabase
+import networkx as nx
 
 logger = logging.getLogger('hakc-policy-server')
 
@@ -27,6 +30,7 @@ class HAKCDataRequest:
 class HAKCPolicyDataSource:
     def __init__(self, **kwargs):
         self.get_compartment_endpoint = kwargs.get('get_compartment_endpoint', 'get-compartment')
+        self.get_division_endpoint = kwargs.get('get_division_endpoint', 'get-division')
 
     def _get_default_division(self) -> HAKCDivision:
         raise NotImplementedError
@@ -36,6 +40,16 @@ class HAKCPolicyDataSource:
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         raise NotImplementedError
+
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
+        raise NotImplementedError
+
+    def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
+        division = self._get_division_from_backing_store(division_id, compartment_id)
+        if division is None:
+            return self.default_division
+        logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
+        return division
 
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         raise NotImplementedError
@@ -60,6 +74,8 @@ class HAKCPolicyDataSource:
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         if request.endpoint == self.get_compartment_endpoint:
             return self.get_compartment_by_id(int(request.parameters['compartment-id']))
+        elif request.endpoint == self.get_division_endpoint:
+            return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
         raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
 
 
@@ -78,14 +94,17 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self._get_default_compartment()
 
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
+        return self._get_default_division()
+
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         return self._get_default_division()
 
 
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
-    def __init__(self, yamlin: str, default_compartment_id: str, default_division_id: str, **kwargs):
+    def __init__(self, yamlin: str, default_compartment_id: int, default_division_id: int, **kwargs):
         HAKCPolicyDataSource.__init__(self, **kwargs)
-        self.compartmentalization = None
+        self.compartmentalization = None 
         self.deserialize_compartmentalization(yamlin)
         self.default_compartment = HAKCCompartment(default_compartment_id)
         self.default_division = HAKCDivision(default_division_id, default_compartment_id)
@@ -99,28 +118,57 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self.compartmentalization.get_compartment_node(compartment_id)
 
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
+        return self.compartmentalization.get_division_node(division_id, compartment_id)
+
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         return self.compartmentalization.get_division(symbol)
 
     def deserialize_compartmentalization(self, yamlin):
-        G = None
+        graphin = None
         # add custom constructors to yaml loader 
         # I guess networkx constructor stuff is not in safeloader, but is in loader?
         loader = yaml.Loader
         for yaml_tag, ctor in HAKCObject_constructors.items():
             loader.add_constructor(yaml_tag, ctor)
 
-        if (yamlin == None):
+        if yamlin is None:
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
-            G = yaml.load(file, Loader=loader)
-        if (G == None):
+            graphin = yaml.load(file, Loader=loader)
+        if graphin is None:
             raise RuntimeError(f'Graph from yamlin is empty')
 
-        # print(G)
-        self.compartmentalization = G
+        self.compartmentalization = graphin
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
+
+class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
+    def __init__(self, kuzuin: str, default_compartment_id: int, default_division_id: int, **kwargs):
+        HAKCPolicyDataSource.__init__(self, **kwargs)
+        self.database = None
+        self.connect(kuzuin)
+        self.default_compartment = HAKCCompartment(default_compartment_id)
+        self.default_division = HAKCDivision(default_division_id, default_compartment_id)
+
+    def _get_default_compartment(self) -> HAKCCompartment:
+        return self.default_compartment
+
+    def _get_default_division(self) -> HAKCDivision:
+        return self.default_division
+
+    def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
+        logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
+        return self.database.get_compartment_node(compartment_id)
+
+
+    def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
+        logger.debug(f"Trying to get division_id: {division_id} from backing store")
+        return self.database.get_division_node(division_id, compartment_id)
+
+    def connect(self, kuzuin):
+        self.database = HAKCDatabase(kuzuin, True) # open kuzu database connection in read only mode (multithreading)
+        self.database.open(True)
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
     size_fmt = "@L"
@@ -148,21 +196,13 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
-
-                logger.debug(f'got: {raw_msg_bytes}')
-
                 json_request = json.loads(raw_msg_bytes)
-
-                logger.debug(f'json got: {json_request}')
-
                 hakc_request = HAKCDataRequest(**json_request)
-
-                logger.debug(f'hakc got: {json_request}')
-
                 data = self.server.backing_store.handle_request(hakc_request)
 
-                logger.debug(f'data got: {data}')
-
+                if not(isinstance(data, HAKCPrintableObj)):
+                    logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")
+                    raise Exception
                 response_data = json.dumps(data.to_yaml_dict())
                 encoded_data = response_data.encode('utf-8')
 
@@ -180,7 +220,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
             return
         except Exception as e:
             logger.error(f"Error handling request: {e}")
-
+    
 
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, socket_path: Path, backing_store: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,
