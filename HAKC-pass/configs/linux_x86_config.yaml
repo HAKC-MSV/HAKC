@@ -9,6 +9,8 @@ Database:
   server-url: hakc-dag-analysis/db-socket
   server-timeout: 1000
   get-compartment-endpoint: "get-compartment"
+  get-division-endpoint: "get-division"
+  get-symbol-division-endpoint: "get-symbol-division"
 CustomTransferFunctions:
   - { type: "char *", name: "hakc_transfer_string", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
   - { type: "struct sk_buff*", name: "hakc_transfer_skb", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }

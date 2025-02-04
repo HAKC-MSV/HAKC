@@ -20,6 +20,7 @@ logger = logging.getLogger('hakc-policy-server')
 class TimeoutException(Exception):
     pass
 
+
 class HAKCDataRequest:
     def __init__(self, Endpoint: str, **kwargs):
         self.endpoint = Endpoint
@@ -50,12 +51,22 @@ class HAKCPolicyDataSource:
         logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
         return division
 
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        raise NotImplementedError
+
     def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
         compartment = self._get_compartment_from_backing_store(compartment_id)
         if compartment is None:
             compartment = self._get_default_compartment()
         logger.debug(f"Returning Compartment {compartment} from input compartment {compartment_id}")
         return compartment
+
+    def get_symbol_division(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        division = self._get_symbol_division_from_backing_store(symbol)
+        if division is None:
+            division = self._get_default_division()
+        logger.debug(f"Returning Division {division} for symbol {symbol}")
+        return division
 
     def close(self) -> None:
         pass
@@ -86,6 +97,10 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         return self._get_default_division()
 
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        return self._get_default_division()
+
+
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, yamlin: str, default_compartment_id: int, default_division_id: int, **kwargs):
         HAKCPolicyDataSource.__init__(self, **kwargs)
@@ -93,7 +108,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         self.deserialize_compartmentalization(yamlin)
         self.default_compartment = HAKCCompartment(default_compartment_id)
         self.default_division = HAKCDivision(default_division_id, default_compartment_id)
-        
+
     def _get_default_compartment(self) -> HAKCCompartment:
         return self.default_compartment
 
@@ -105,6 +120,9 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
 
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
         return self.compartmentalization.get_division_node(division_id, compartment_id)
+
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+        return self.compartmentalization.get_division(symbol)
 
     def deserialize_compartmentalization(self, yamlin):
         graphin = None
@@ -193,7 +211,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
         # the 'raise' will call 'handle_error' in HAKCPolicyServer 
         except ConnectionAbortedError:
             logger.debug(f'Client Aborted Connection')
-            raise
+            return
         except ConnectionResetError:
             logger.debug(f'Client Reset Connection')
             raise
