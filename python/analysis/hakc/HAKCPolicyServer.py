@@ -29,8 +29,10 @@ class HAKCDataRequest:
 
 class HAKCPolicyDataSource:
     def __init__(self, **kwargs):
-        self.get_compartment_endpoint = kwargs.get('get_compartment_endpoint', 'get-compartment')
-        self.get_division_endpoint = kwargs.get('get_division_endpoint', 'get-division')
+        # TODO: check that these args are actually being passed in
+        self.get_compartment_endpoint = kwargs.get('get_compartment_endpoint', 'get-compartment-by-id')
+        self.get_division_endpoint = kwargs.get('get_division_endpoint', 'get-division-by-id')
+        self.get_division_from_symbol_endpoint = kwargs.get('get_division_from_symbol_endpoint', 'get-division-from-symbol')
 
     def _get_default_division(self) -> HAKCDivision:
         raise NotImplementedError
@@ -46,8 +48,6 @@ class HAKCPolicyDataSource:
 
     def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
         division = self._get_division_from_backing_store(division_id, compartment_id)
-        if division is None:
-            return self.default_division
         logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
         return division
 
@@ -56,15 +56,11 @@ class HAKCPolicyDataSource:
 
     def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
         compartment = self._get_compartment_from_backing_store(compartment_id)
-        if compartment is None:
-            compartment = self._get_default_compartment()
         logger.debug(f"Returning Compartment {compartment} from input compartment {compartment_id}")
         return compartment
 
     def get_symbol_division(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         division = self._get_symbol_division_from_backing_store(symbol)
-        if division is None:
-            division = self._get_default_division()
         logger.debug(f"Returning Division {division} for symbol {symbol}")
         return division
 
@@ -76,6 +72,10 @@ class HAKCPolicyDataSource:
             return self.get_compartment_by_id(int(request.parameters['compartment-id']))
         elif request.endpoint == self.get_division_endpoint:
             return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
+        elif request.endpoint == self.get_division_from_symbol_endpoint:
+            # TODO: check that this is actually parsed as a hakcsymbol
+            logger.error(f"Got : {request.parameters['object']}")
+            return self.get_symbol_division(request.parameters['object'])
         raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
 
 
@@ -116,13 +116,22 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.default_division
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
-        return self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
+        compartment = self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
+        if compartment is None:
+            compartment = self._get_default_compartment()
+        return compartment
 
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
-        return self.compartmentalization.get_division_access_token_from_id(division_id, compartment_id)
+        division = self.compartmentalization.get_division_access_token_from_id(division_id, compartment_id)
+        if division is None:
+            division = self._get_default_division()
+        return division
 
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
-        return self.compartmentalization.get_division(symbol)
+        division = self.compartmentalization.get_division(symbol)
+        if division is None:
+            division = self._get_default_division()
+        return division
 
     def deserialize_compartmentalization(self, yamlin):
         graphin = None
@@ -174,9 +183,10 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
 
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
         # construct division from hakc symbol; HAKCSymbol -> division_id, compartment_id -> access_token -> HAKCDivision(division_id, compartment_id, access_token)
-        compartment_id_division_id_tuple = self.database.get_division_id_from_symbol(symbol)
+        logger.debug(f"Trying to get HAKCDivision object from backing store with symbol: {symbol}")
+        compartment_id_division_id_tuple = self.database.get_division_id_compartment_id_from_symbol(symbol)
         if compartment_id_division_id_tuple is None:
-            logger.error(f"get_division_id_from_symbol returned None for symbol: {symbol}")
+            logger.error(f"get_division_id_compartment_id_from_symbol returned None for symbol: {symbol}")
             return self._get_default_division()
         division_id = compartment_id_division_id_tuple[0]
         compartment_id = compartment_id_division_id_tuple[0]
@@ -213,17 +223,20 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
             while True:
                 raw_size_bytes = self.read_raw_bytes(size_in_bytes)
                 msg_size = struct.unpack(HAKCRequestHandler.size_fmt, raw_size_bytes)[0]
-                logger.debug(f'Received msg_size {msg_size}')
+                # logger.debug(f'Received msg_size {msg_size}')
                 raw_msg_bytes = self.read_raw_bytes(msg_size)
-                logger.debug(f'Received {len(raw_msg_bytes)} bytes')
+                logger.debug(f'Received message of length {len(raw_msg_bytes)} bytes, contains {raw_msg_bytes}')
                 json_request = json.loads(raw_msg_bytes)
+                logger.debug(f"loaded json")
                 hakc_request = HAKCDataRequest(**json_request)
                 data = self.server.backing_store.handle_request(hakc_request)
 
                 if not(isinstance(data, HAKCPrintableObj)):
                     logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")
                     raise Exception
+                logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict())
+                logger.debug(f"dumped json")
                 encoded_data = response_data.encode('utf-8')
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))

@@ -72,7 +72,7 @@ class HAKCDatabase:
         WHERE symbol_hash = $symbol_hash 
         RETURN division_id, compartment_id;
         """
-        response = self.execute_prepared_stmt(cmd, symbol_hash=symbol.computed_hash)
+        response = self.execute_prepared_stmt(cmd, symbol_hash=symbol.symbol_hash)
         ret = response.get_as_df()
         if ret.empty:
             logger.debug(f'Command: {cmd} returned None')
