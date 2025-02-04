@@ -1,15 +1,16 @@
+import logging
 import re
 
 import yaml
-import logging
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBColumn, HAKCDBRelation, HAKCDBNode, HAKCPrintableObj
-from .HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
+
 logger = logging.getLogger('hakc-dag')
+
 
 class HAKCCompilationUnit(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCCompilationUnit"
-    
+
     def __init__(self, filename: str, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCDBNode.__init__(self, **kwargs)
@@ -129,7 +130,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
 
     def __init__(self, compartment_id: int, division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
-        kwargs["Name"] = kwargs.get("Name",str(compartment_id))
+        kwargs["Name"] = kwargs.get("Name", str(compartment_id))
         HAKCDBNode.__init__(self, **kwargs)
         self.compartment_id = compartment_id
         self.division_count = division_count
@@ -199,6 +200,7 @@ class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
             schema[0]: self.compartment_id,
             schema[1]: self.entry_token
         }
+
 
 class HAKCType(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = "!HAKCType"
@@ -278,7 +280,7 @@ class HAKCScope(HAKCDBNode, yaml.YAMLObject):
     def __init__(self, **kwargs):
         yaml.YAMLObject.__init__(self)
         self.scope = kwargs['Scope'] if 'Scope' in kwargs else None
-        kwargs["Name"] = kwargs.get("LocalScopeName",self.scope)
+        kwargs["Name"] = kwargs.get("LocalScopeName", self.scope)
         HAKCDBNode.__init__(self, **kwargs)
         self.local_scope_name = kwargs['LocalScopeName'] if 'LocalScopeName' in kwargs else HAKCScope.global_scope
         self.is_global_scope = self.scope == HAKCScope.global_scope
@@ -382,7 +384,7 @@ class HAKCSymbol(HAKCDBNode):
 
     @property
     def is_definition(self):
-        return self.defining_file is not None
+        return self.DefiningFile is not None
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
@@ -586,6 +588,7 @@ def construct_compartment(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode)
 
 def construct_symbol(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCSymbol:
     return HAKCSymbol(**loader.construct_mapping(node, deep=True))
+
 
 HAKCObject_constructors = {
     HAKCGlobalVariable.yaml_tag: construct_global_variable,
