@@ -44,8 +44,6 @@ class HAKCPolicyDataSource:
         raise NotImplementedError
 
     def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
-        # TODO: Q: is there any need to get the compartment too?
-        # compartment_entry_token = self.get_compartment_by_id(compartment_id)
         division = self._get_division_from_backing_store(division_id, compartment_id)
         if division is None:
             return self.default_division
