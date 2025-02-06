@@ -88,6 +88,10 @@ class HAKCDatabase:
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(compartment_id)
 
+    # Get valid target compartments given compartment id
+    # comp -> div -> symbol -(Dag2)->div->comp2
+    # return comp2
+    #
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
         tail_hashes = list()
