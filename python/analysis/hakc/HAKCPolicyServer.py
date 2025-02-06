@@ -59,8 +59,15 @@ class HAKCPolicyProcessConfig:
 
 
 class HAKCPolicyDataSource:
-    def __init__(self):
-        pass
+    def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
+        self.get_compartment_endpoint = config.get_compartment_endpoint
+        self.get_division_endpoint = config.get_division_endpoint
+        self.get_division_from_symbol_endpoint = config.get_division_from_symbol_endpoint
+        self.get_valid_targets_from_compartment_id_endpoint = config.get_valid_targets_from_compartment_id_endpoint
+
+        self.yaml_loader = yaml.SafeLoader
+        for yaml_tag, ctor in HAKCObject_constructors.items():
+            self.yaml_loader.add_constructor(yaml_tag, ctor)
 
     def _get_default_division(self) -> HAKCDivision:
         raise NotImplementedError
@@ -109,10 +116,20 @@ class HAKCPolicyDataSource:
             return list()
         return valid_targets
 
+    def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
+        if request.endpoint == self.get_compartment_endpoint:
+            return self.get_compartment_by_id(int(request.parameters['compartment-id']))
+        elif request.endpoint == self.get_division_endpoint:
+            return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
+        elif request.endpoint == self.get_division_from_symbol_endpoint:
+            symbol = yaml.load(request.parameters['object'], Loader=self.yaml_loader)
+            return self.get_symbol_division(symbol)
+        else:
+            raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
 
 class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, **kwargs):
-        HAKCPolicyDataSource.__init__(self)
+        HAKCPolicyDataSource.__init__(self, **kwargs)
         self.default_compartment = HAKCCompartment(0, **kwargs)
         self.default_division = HAKCDivision(0, self.default_compartment.compartment_id, **kwargs)
 
@@ -138,7 +155,7 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
     # yamlin: str, config: int, default_division_id: int,
-        HAKCPolicyDataSource.__init__(self)
+        HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.yamlin = config.data_path
         self.deserialize_compartmentalization(self.yamlin)
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
@@ -186,21 +203,14 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
 class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
     # def __init__(self, kuzuin: str, default_compartment_id: int, default_division_id: int, **kwargs):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
-        HAKCPolicyDataSource.__init__(self)
+        HAKCPolicyDataSource.__init__(self, config, **kwargs)
         # logger.error(f"\n\n in kuzu hakc, got config: {config}")
         self.database = None
         self.connect(config.data_path)
         self.socket_path = config.socket_path
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
-        self.get_compartment_endpoint = config.get_compartment_endpoint
-        self.get_division_endpoint = config.get_division_endpoint
-        self.get_division_from_symbol_endpoint = config.get_division_from_symbol_endpoint
-        self.get_valid_targets_from_compartment_id_endpoint = config.get_valid_targets_from_compartment_id_endpoint
 
-        self.yaml_loader = yaml.SafeLoader
-        for yaml_tag, ctor in HAKCObject_constructors.items():
-            self.yaml_loader.add_constructor(yaml_tag, ctor)
 
     def _get_default_compartment(self) -> HAKCCompartment:
         return self.default_compartment
@@ -246,18 +256,9 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         self.database = HAKCDatabase(kuzuin, True)  # open kuzu database connection in read only mode (multithreading)
         self.database.open(True)
         logger.error(f"About to call _get_valid_targets_from_compartment_id(1)")
-        self._get_valid_targets_from_compartment_id(1)
+        self._get_valid_targets_from_compartment_id(3)
 
-    def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
-        if request.endpoint == self.get_compartment_endpoint:
-            return self.get_compartment_by_id(int(request.parameters['compartment-id']))
-        elif request.endpoint == self.get_division_endpoint:
-            return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
-        elif request.endpoint == self.get_division_from_symbol_endpoint:
-            symbol = yaml.load(request.parameters['object'], Loader=self.yaml_loader)
-            return self.get_symbol_division(symbol)
-        else:
-            raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
+
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
     size_fmt = "@L"
