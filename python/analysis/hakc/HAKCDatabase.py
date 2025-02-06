@@ -110,9 +110,11 @@ class HAKCDatabase:
             # logger.error(f"Found valid_targets: {ret} from source_compartment_id: {compartment_id}")
             source = ret["comp1.CompartmentID"][0]
             targets = ret["comp2.CompartmentID"].values
-            logger.error(f"Found valid_targets from {source} to {targets}")
-            # casting to set to remove duplicates, then sorting
-            return list(set(targets)).sort()
+            # need to cast from numpy.uint64s to int, then remove duplicates, and sort
+            valid_targets = list(set(map(lambda x: int(x), targets)))
+            valid_targets.sort()
+            logger.error(f"Found valid_targets from {source} to {valid_targets}")
+            return valid_targets
 
 
     def persist_dag_edges(self, dag_edge_data):
