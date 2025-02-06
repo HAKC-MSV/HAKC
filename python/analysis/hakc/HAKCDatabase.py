@@ -73,7 +73,6 @@ class HAKCDatabase:
         WHERE Name = $Name AND Scope = $Scope
         RETURN division_id, compartment_id;
         """
-
         response = self.execute_prepared_stmt(cmd, Name=symbol.Name, Scope=symbol.Scope.scope)
         ret = response.get_as_df()
         if ret.empty:
@@ -88,10 +87,31 @@ class HAKCDatabase:
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(compartment_id)
 
-    # Get valid target compartments given compartment id
-    # comp -> div -> symbol -(Dag2)->div->comp2
-    # return comp2
-    #
+    def get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
+        # Get valid target compartments given compartment id
+        # comp <- div <- symbol1 -(Dag2)-> symbol2 -> div->comp2
+        # return comp2
+        #
+        cmd = f"""        
+        MATCH (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp2:{HAKCCompartment.get_table_name()})
+        WITH  comp1.CompartmentID as compartment_id1, comp2.CompartmentID as compartment_id2
+        WHERE compartment_id1 = $compartment_id1
+        RETURN compartment_id2;
+        """
+        response = self.execute_prepared_stmt(cmd, compartment_id1=compartment_id)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.error(f'Command: {cmd} returned None\n')
+            logger.error(f'Searched with CompartmentID: {compartment_id}')
+            return None
+        else:
+            # TODO: check that this is correct when this is eventually called
+            valid_targets = ret["compartment_id2"]
+            logger.error(f"Found valid_targets: {valid_targets} from compartment_id: {compartment_id}")
+            # need to cast to int because json cant parse numpy.uint64s apparently
+            return list(valid_targets)
+
+
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
         tail_hashes = list()

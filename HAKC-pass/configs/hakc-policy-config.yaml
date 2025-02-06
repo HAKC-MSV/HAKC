@@ -9,4 +9,9 @@
   "reuse_path": true,
   "socket_path": "@PWD@/hakc-socket",
   "server_timeout": 10
+    # below only needed if using kuzu-db as backing_store type
+#  "get-compartment-by-id-endpoint": "get-compartment-by-id",
+#  "get-division-by-id-endpoint": "get-division-by-id",
+#  "get-division-from-symbol-endpoint": "get-division-from-symbol",
+#  "get-valid-targets-from-compartment-id-endpoint": "get-valid-targets-from-compartment-id"
 }

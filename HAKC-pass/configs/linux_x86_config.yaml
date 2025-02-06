@@ -11,6 +11,7 @@ Database:
   get-compartment-by-id-endpoint: "get-compartment-id"
   get-division-by-id-endpoint: "get-division-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"
+  get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
 CustomTransferFunctions:
   - { type: "char *", name: "hakc_transfer_string", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
   - { type: "struct sk_buff*", name: "hakc_transfer_skb", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }

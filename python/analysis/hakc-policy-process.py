@@ -4,53 +4,32 @@ import logging
 import signal
 from enum import Enum
 from pathlib import Path
+from typing import Optional
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
 from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAKCPolicyDataSource, \
-    YAMLHAKCPolicyDataStore, KUZUHAKCPolicyDataStore, TimeoutException
+    YAMLHAKCPolicyDataStore, KUZUHAKCPolicyDataStore, TimeoutException, HAKCPolicyProcessConfig, SupportedBackingStore
 
 logger = logging.getLogger('hakc-policy-process')
 
-
-class SupportedBackingStore(Enum):
-    NULL = "null"
-    YAML = "yaml"
-    KUZU = "kuzu"
-
-
-class HAKCPolicyProcessConfig:
-    def __init__(self, socket_path: str, backing_store: dict[str, str], **kwargs):
-        self.backing_store = backing_store
-        self.socket_path = Path(socket_path)
-        self.reuse_path = kwargs.get('reuse_path', False)
-        self.log_path = kwargs.get('log_path', None)
-        self.server_timeout = int(kwargs.get('server_timeout', -1))
-        if self.reuse_path and self.socket_path.exists():
-            self.socket_path.unlink()
-
-
-def init_data_source(config: HAKCPolicyProcessConfig) -> HAKCPolicyDataSource:
-    if config.backing_store['type'] == SupportedBackingStore.NULL.value:
+def init_data_source(config: HAKCPolicyProcessConfig) -> Optional[HAKCPolicyDataSource]:
+    if config.type == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
         return NullHAKCPolicyDataStore()
-    elif config.backing_store['type'] == SupportedBackingStore.YAML.value:
+    elif config.type == SupportedBackingStore.YAML.value:
         logger.debug(f'Creating YAMLPolicyDataStore')
-        return YAMLHAKCPolicyDataStore(yamlin=config.backing_store['path'],
-                                       default_compartment_id=int(config.backing_store['default_compartment']),
-                                       default_division_id=int(config.backing_store['default_division']))
-    elif config.backing_store['type'] == SupportedBackingStore.KUZU.value:
+        return YAMLHAKCPolicyDataStore(config)
+    elif config.type == SupportedBackingStore.KUZU.value:
         logger.debug(f'Creating KUZUPolicyDataStore')
-        return KUZUHAKCPolicyDataStore(kuzuin=config.backing_store['path'],
-                                       default_compartment_id=int(config.backing_store['default_compartment']),
-                                       default_division_id=int(config.backing_store['default_division']))
-
-    raise RuntimeError(f"Unsupported data store type: {config.backing_store['type']}")
+        return KUZUHAKCPolicyDataStore(config)
+    raise RuntimeError(f"Unsupported data store type: {config.type}")
 
 
 def timeout_handler(signum, frame):
     raise TimeoutException
 
 
+# noinspection PyTypeChecker
 def main():
     parser = argparse.ArgumentParser(description='HAKC Policy Process')
     parser.add_argument('--config', help='Path to config file', required=True)
@@ -64,11 +43,11 @@ def main():
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
     with open(args.config, 'r') as f:
         parsed_config = json.load(f)
+        logger.error(f"GOT THIS: {parsed_config}")
         config = HAKCPolicyProcessConfig(**parsed_config)
 
     data_source = init_data_source(config)
-    with HAKCPolicyServer(backing_store=data_source, socket_path=config.socket_path, log_level=args.log_level,
-                          log_file=config.log_path, log_mode=args.log_mode) as server:
+    with HAKCPolicyServer(data_source=data_source, log_level=args.log_level, log_file=config.log_path, log_mode=args.log_mode) as server:
         try:
             if config.server_timeout > 0:
                 signal.signal(signal.SIGALRM, timeout_handler)
