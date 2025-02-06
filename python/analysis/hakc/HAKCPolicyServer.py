@@ -11,7 +11,7 @@ from .HAKCBase import HAKCPrintableObj
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision, \
-    HAKCObject_constructors
+    HAKCObject_constructors, get_hakc_yaml_loader
 
 logger = logging.getLogger('hakc-policy-server')
 
@@ -31,10 +31,7 @@ class HAKCPolicyDataSource:
         self.get_compartment_endpoint = kwargs.get('get_compartment_endpoint', 'get-compartment')
         self.get_division_endpoint = kwargs.get('get_division_endpoint', 'get-division')
         self.get_symbol_division_endpoint = kwargs.get('get_symbol_division_endpoint', 'get-symbol-division')
-        self.yaml_loader = yaml.SafeLoader
-
-        for yaml_tag, ctor in HAKCObject_constructors.items():
-            self.yaml_loader.add_constructor(yaml_tag, ctor)
+        self.yaml_loader = get_hakc_yaml_loader()
 
     def _get_default_division(self) -> HAKCDivision:
         raise NotImplementedError

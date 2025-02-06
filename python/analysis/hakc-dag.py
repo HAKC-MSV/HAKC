@@ -9,21 +9,18 @@ import os
 import pstats
 import shutil
 import time
-from typing import Type
 
 import tqdm
 import yaml
-import json 
-import networkx as nx
-from networkx.readwrite import json_graph
 
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
-from hakc.HAKCObjects import HAKCObject_constructors, HAKCType, HAKCScope, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, HAKCCompartment, \
-    HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
+from hakc.HAKCObjects import get_hakc_yaml_loader, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, \
+    HAKCCompartment, HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
 
 logger = logging.getLogger('hakc-dag')
+
 
 def batched(iterable, n):
     if n < 1:
@@ -33,18 +30,9 @@ def batched(iterable, n):
         yield batch
 
 
-def get_loader() -> Type[yaml.SafeLoader]:
-    loader = yaml.SafeLoader
-
-    for yaml_tag, ctor in HAKCObject_constructors.items():
-        loader.add_constructor(yaml_tag, ctor)
-
-    return loader
-
-
 def parse_yaml(filename: str):
     with open(filename, 'rb') as f:
-        parsed_yaml = yaml.load(f, Loader=get_loader())
+        parsed_yaml = yaml.load(f, Loader=get_hakc_yaml_loader())
         compilation_unit = parsed_yaml["CU"]
         functions = parsed_yaml['functions'] if 'functions' in parsed_yaml else list()
         global_variables = parsed_yaml['globals'] if 'globals' in parsed_yaml else list()
@@ -138,6 +126,8 @@ def create_dag_single_thread(files: set[str], conn: HAKCDatabase) -> HAKCCompart
                 if head_hash not in dag_edges:
                     dag_edges[head_hash] = dict()
                 dag_edges[head_hash][tail_hash] = dag_edge_weight
+                tail_symbol = compartmentalization.get_symbol_by_hash(tail_hash)
+                compartmentalization.add_dag_edge(symbol, tail_symbol, dag_edge_weight=dag_edge_weight, add_nodes=False)
                 dag_edges_added += 1
             pbar.update(1)
     logger.info(f'Adding {dag_edges_added} DAG edges to compartmentalization')
@@ -237,7 +227,7 @@ def create_dag_multithread(files: set[str], core_count: int, conn: HAKCDatabase)
         logger.info(f'Submitting DAG edge computation tasks')
         with tqdm.tqdm(total=int(len(symbol_hashes) / batch_size) + 1) as pbar:
             try:
-                for symbol_hash_batch in batched(symbol_hashes, batch_size):
+                for symbol_hash_batch in batched(symbol_hashes.keys(), batch_size):
                     future = executor.submit(compute_dag_edges_for_symbol, symbol_hash_batch)
                     futures.append(future)
                     pbar.update(1)
@@ -257,6 +247,10 @@ def create_dag_multithread(files: set[str], core_count: int, conn: HAKCDatabase)
                         for (head_hash, tail_hash, dag_edge_weight) in edge_weights:
                             if head_hash not in dag_edges:
                                 dag_edges[head_hash] = dict()
+                            head_symbol = symbol_hashes[head_hash]
+                            tail_symbol = symbol_hashes[tail_hash]
+                            compartmentalization.add_dag_edge(head_symbol, tail_symbol, dag_edge_weight=dag_edge_weight,
+                                                              add_nodes=False)
                             dag_edges[head_hash][tail_hash] = dag_edge_weight
                             dag_edges_added += 1
                     except Exception as e:
@@ -275,9 +269,10 @@ def create_dag_multithread(files: set[str], core_count: int, conn: HAKCDatabase)
     return compartmentalization
 
 
-def create_new_dag(analysis_root: str, single_thread: bool, core_count: int, db_dir: str,
+def create_new_dag(analysis_root: str, core_count: int, db_dir: str,
                    delete_existing_db: bool) -> HAKCCompartmentalization:
     logger.info(f'Finding DAG files starting from {os.path.abspath(analysis_root)}')
+    single_thread = core_count == 1
     filenames = set()
     for root, subdirs, files in os.walk(analysis_root):
         for f in files:
@@ -316,17 +311,6 @@ def output_profile_stats(profile):
     ps.print_stats()
     logger.info(s.getvalue())
 
-def load_yaml_test(yamlin):
-    G = None
-    # I guess networkx constructor stuff is not in safeloader, but is in loader?
-    loader = yaml.Loader
-    for yaml_tag, ctor in HAKCObject_constructors.items():
-        loader.add_constructor(yaml_tag, ctor)
-    print(f"Trying to load dag")
-    with open(yamlin, "r") as f:
-        G = yaml.load(f, Loader=loader)
-    print(G)
-    print(type(G))
 
 def main():
     parser = argparse.ArgumentParser(description='Kernel Data Access Analysis')
@@ -336,8 +320,6 @@ def main():
                         type=parse_log_level)
     parser.add_argument('-l', '--log', default=None, dest='log_path')
     parser.add_argument('--log-mode', default='w', dest='log_mode')
-    parser.add_argument('--single-thread', dest='single_thread', action='store_true',
-                        help='Run analysis without multiprocessing')
     parser.add_argument('--create-dag', dest='create_dag', action='store_true', help='Create new DAG')
     parser.add_argument("--adjust", help='Adjust compartmentalization', action='store_true')
     parser.add_argument('--adjust-path', dest='adjust_path', help='Path to adjustment YAML')
@@ -359,9 +341,6 @@ def main():
     if args.db_dir is None or len(args.db_dir) == 0:
         raise RuntimeError(f'Must specify a database directory')
 
-    if args.single_thread:
-        args.core_count = 1
-
     logger.info(f'Using database at {args.db_dir}')
     compartmentalization = None
 
@@ -371,8 +350,7 @@ def main():
     if args.create_dag:
         if profile:
             profile.enable()
-        compartmentalization = create_new_dag(args.dag_files_root, args.single_thread, args.core_count, args.db_dir,
-                                              args.delete_db)
+        compartmentalization = create_new_dag(args.dag_files_root, args.core_count, args.db_dir, args.delete_db)
         if profile:
             profile.disable()
             output_profile_stats(profile)
@@ -380,28 +358,16 @@ def main():
     if args.adjust:
         logger.info(f'Adjusting compartmentalization based on {args.adjust_path}')
         with open(args.adjust_path, 'r') as f:
-            adjustments = yaml.load(f, Loader=get_loader())
+            adjustments = yaml.load(f, Loader=get_hakc_yaml_loader())
         adjust_compartmentalization(args.db_dir, adjustments)
         logger.info("Done")
 
     if args.dump_dag:
-        logger.info(f'dump dag mode for file: {args.dump_dag}')
-        # https://networkx.org/documentation/stable/release/migration_guide_from_2.x_to_3.0.html
-
-        # dump the compartmentalization object 
+        logger.info(f'Dumping compartmentalization to {args.dump_dag}')
         with open(args.dump_dag, "w") as f:
             yaml.dump(compartmentalization, f)
-        logger.debug(f"dumped dag")
-        # G = None
-        # I guess networkx constructor stuff is not in safeloader, but is in loader?
-        # loader = yaml.Loader
-        # for yaml_tag, ctor in HAKCObject_constructors.items():
-        #     loader.add_constructor(yaml_tag, ctor)
-        # print(f"Trying to load dag")
-        # with open(args.dump_dag, "r") as f:
-        #     G = yaml.load(f, Loader=loader)
-        # print(G)
-        # print(type(G))
+        logger.info("Done")
+
 
 if __name__ == "__main__":
     main()

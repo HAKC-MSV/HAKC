@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Type
 
 import yaml
 
@@ -588,6 +589,13 @@ def construct_compartment(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode)
 
 def construct_symbol(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> HAKCSymbol:
     return HAKCSymbol(**loader.construct_mapping(node, deep=True))
+
+
+def get_hakc_yaml_loader(loader=yaml.SafeLoader) -> Type[yaml.SafeLoader]:
+    for yaml_tag, ctor in HAKCObject_constructors.items():
+        loader.add_constructor(yaml_tag, ctor)
+
+    return loader
 
 
 HAKCObject_constructors = {

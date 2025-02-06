@@ -267,11 +267,11 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
                     self.create_rel_table(conn, db_relation)
                 pbar.update(1)
 
-    def get_symbol_hashes(self) -> list[int]:
-        symbol_hashes = []
+    def get_symbol_hashes(self) -> dict[int, HAKCSymbol]:
+        symbol_hashes = dict()
         for symbol in self.get_symbols():
-            symbol_hashes.append(hash(symbol))
-        return sorted(symbol_hashes)
+            symbol_hashes[hash(symbol)] = symbol
+        return symbol_hashes
 
     def get_symbol_by_hash(self, symbol_hash: int) -> HAKCSymbol | None:
         for symbol in self.get_symbols():
