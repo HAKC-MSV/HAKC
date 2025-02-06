@@ -79,12 +79,10 @@ class HAKCPolicyDataSource:
         elif request.endpoint == self.get_division_endpoint:
             return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
         elif request.endpoint == self.get_division_from_symbol_endpoint:
-            # TODO: check that this is actually parsed as a hakcsymbol
-            logger.error(f"Got : {request.parameters['object']}")
             symbol = yaml.load(request.parameters['object'], Loader=self.yaml_loader)
             return self.get_symbol_division(symbol)
-
-        raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
+        else:
+            raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
 
 
 class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
@@ -176,7 +174,6 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
-        # TODO: maybe rename the database.get_compartment_node function to something like get_compartment_entry_access_from_id
         entry_token = self.database.get_compartment_entry_token_from_id(compartment_id)
         if entry_token is None:
             return self._get_default_compartment()

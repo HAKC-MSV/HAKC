@@ -69,7 +69,7 @@ class HAKCDatabase:
     def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int,int]]:
         cmd = f"""        
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
-        WITH sym.symbol_hash as symbol_hash, sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
+        WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
         WHERE Name = $Name AND Scope = $Scope
         RETURN division_id, compartment_id;
         """
