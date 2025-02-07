@@ -3,7 +3,7 @@ import logging
 import socketserver
 import struct
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Type
 from enum import Enum
 import yaml
 
@@ -31,7 +31,6 @@ class HAKCDataRequest:
 
 class HAKCPolicyProcessConfig:
     def __init__(self, **kwargs):
-        logger.error(f"GOT THIS: {kwargs}")
         self.socket_path = kwargs.get('socket_path', None)
         if self.socket_path is None:
             raise Exception("ERROR: socket_path is missing from policy_config.yml")
@@ -49,25 +48,21 @@ class HAKCPolicyProcessConfig:
             raise Exception("ERROR: path (for data store) is missing from policy_config.yml")
         self.default_compartment_id = kwargs["backing_policy_config"].get("default_compartment", 0)
         self.default_division_id = kwargs["backing_policy_config"].get("default_division", 0)
-        # Endpoints only needed if kuzu-db is the type
         self.get_compartment_endpoint = kwargs.get('get-compartment-by-id-endpoint', None)
         self.get_division_endpoint = kwargs.get('get-division-by-id-endpoint', None)
         self.get_division_from_symbol_endpoint = kwargs.get('get-division-from-symbol-endpoint', None)
         self.get_valid_targets_from_compartment_id_endpoint = kwargs.get('get-valid-targets-from-compartment-id-endpoint', None)
         if self.type == SupportedBackingStore.KUZU.value and ((self.get_compartment_endpoint is None) or (self.get_division_endpoint is None) or (self.get_division_from_symbol_endpoint is None) or (self.get_valid_targets_from_compartment_id_endpoint is None)):
-            raise Exception(f"ERROR: KUZU backing type requires endpoints be specified in policy_config.yml; {self.get_compartment_endpoint}, {self.get_division_endpoint}, {self.get_division_from_symbol_endpoint}, {self.get_valid_targets_from_compartment_id_endpoint}")
+            raise Exception(f"ERROR: Requires endpoints be specified in policy_config.yml; {self.get_compartment_endpoint}, {self.get_division_endpoint}, {self.get_division_from_symbol_endpoint}, {self.get_valid_targets_from_compartment_id_endpoint}")
 
 
 class HAKCPolicyDataSource:
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
-        self.get_compartment_endpoint = config.get_compartment_endpoint
-        self.get_division_endpoint = config.get_division_endpoint
-        self.get_division_from_symbol_endpoint = config.get_division_from_symbol_endpoint
-        self.get_valid_targets_from_compartment_id_endpoint = config.get_valid_targets_from_compartment_id_endpoint
-
-        self.yaml_loader = yaml.SafeLoader
-        for yaml_tag, ctor in HAKCObject_constructors.items():
-            self.yaml_loader.add_constructor(yaml_tag, ctor)
+        self.endpoints = {config.get_compartment_endpoint: self.get_compartment_by_id,
+                          config.get_division_endpoint: self.get_division_by_id,
+                          config.get_division_from_symbol_endpoint: self.get_symbol_division,
+                          config.get_valid_targets_from_compartment_id_endpoint: self.get_valid_targets_from_compartment_id}
+        self.yaml_loader = get_hakc_yaml_loader(yaml.SafeLoader)
 
     def _get_default_division(self) -> HAKCDivision:
         raise NotImplementedError
@@ -87,45 +82,53 @@ class HAKCPolicyDataSource:
     def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
         raise NotImplementedError
 
-    def get_division_by_id(self, compartment_id: int, division_id: int) -> HAKCDivision:
-        division = self._get_division_from_backing_store(division_id, compartment_id)
-        logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
+    def get_division_by_id(self, **kwargs) -> HAKCDivision:
+        compartment_id = kwargs.get("compartment-id", None)
+        division_id = kwargs.get("division-id", None)
+        if compartment_id is None or division_id is None: # TODO: add debug message here
+            raise Exception("ERROR: get_division_by_id did not receive a compartment_id and/or a division_id; request is malformed")
+
+        division = self._get_division_from_backing_store(int(division_id), int(compartment_id))
         if division is None:
             division = self._get_default_division()
-        logger.debug(
-            f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
+        logger.debug(f"Returning Division {division} from (compartment_id, division_id): ({compartment_id}, {division_id})")
         return division
 
-    def get_compartment_by_id(self, compartment_id: int) -> HAKCCompartment:
-        compartment = self._get_compartment_from_backing_store(compartment_id)
+    def get_compartment_by_id(self, **kwargs) -> HAKCCompartment:
+        compartment_id = kwargs.get("compartment-id", None)
+        if compartment_id is None:
+            raise Exception("ERROR: get_compartment_by_id did not receive a compartment_id; request is malformed")
+        compartment = self._get_compartment_from_backing_store(int(compartment_id)) # TODO: are the int casts necessary still?
         if compartment is None:
             compartment = self._get_default_compartment()
-        logger.debug(f"Returning Compartment {compartment} from input compartment {compartment_id}")
+        logger.debug(f"Returning Compartment {compartment} from input compartment {int(compartment_id)}")
         return compartment
 
-    def get_symbol_division(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+    def get_symbol_division(self, **kwargs) -> Optional[HAKCDivision]:
+        symbol = kwargs['object']
+        if symbol is None:
+            raise Exception("ERROR: get_symbol_division did not receive a symbol object; request is malformed")
+        symbol = yaml.load(symbol, Loader=self.yaml_loader)
         division = self._get_symbol_division_from_backing_store(symbol)
         if division is None:
             division = self._get_default_division()
         logger.debug(f"Returning Division {division} for symbol {symbol}")
         return division
 
-    def get_valid_targets_from_compartment_id(self, compartment_id: int) -> list:
-        valid_targets = self._get_valid_targets_from_compartment_id(compartment_id)
+    def get_valid_targets_from_compartment_id(self, **kwargs) -> list:
+        compartment_id = kwargs.get("compartment-id", None)
+        if compartment_id is None:
+            raise Exception("ERROR: get_valid_targets_from_compartment_id did not recieve a compartment_id; request is malformed")
+        valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
         if(valid_targets is None):
             return list()
         return valid_targets
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
-        if request.endpoint == self.get_compartment_endpoint:
-            return self.get_compartment_by_id(int(request.parameters['compartment-id']))
-        elif request.endpoint == self.get_division_endpoint:
-            return self.get_division_by_id(int(request.parameters['compartment-id']), int(request.parameters['division-id']))
-        elif request.endpoint == self.get_division_from_symbol_endpoint:
-            symbol = yaml.load(request.parameters['object'], Loader=self.yaml_loader)
-            return self.get_symbol_division(symbol)
-        else:
-            raise RuntimeError(f'Invalid Endpoint {request.endpoint}')
+        logger.debug(f"handle_request processing endpoint: {request.endpoint}")
+        if request.endpoint in self.endpoints:
+            return self.endpoints[request.endpoint](**request.parameters)
+        raise RuntimeError(f'Invalid Endpoint {request.endpoint}, endpoints available: {self.endpoints.keys()}')
 
 class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, **kwargs):
@@ -154,13 +157,17 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
-    # yamlin: str, config: int, default_division_id: int,
+        # yamlin: str, config: int, default_division_id: int,
+        self.compartmentalization = None
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.yamlin = config.data_path
+        self.socket_path = config.socket_path
         self.deserialize_compartmentalization(self.yamlin)
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
-        self.compartmentalization = None
+        # testing code, keep for now
+        # logger.debug(f"About to call _get_valid_targets_from_compartment_id(3)")
+        # self._get_valid_targets_from_compartment_id(3)
 
     def _get_default_compartment(self) -> HAKCCompartment:
         return self.default_compartment
@@ -178,8 +185,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_division(symbol)
 
     def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
-        # TODO
-        return list()
+        return self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):
         graphin = None
@@ -201,10 +207,8 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
 
 
 class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
-    # def __init__(self, kuzuin: str, default_compartment_id: int, default_division_id: int, **kwargs):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
-        # logger.error(f"\n\n in kuzu hakc, got config: {config}")
         self.database = None
         self.connect(config.data_path)
         self.socket_path = config.socket_path
@@ -239,12 +243,12 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         if compartment_id_division_id_tuple is None:
             logger.error(f"get_division_id_compartment_id_from_symbol returned None for symbol: {symbol}")
             return None
-        logger.error(f"compartment_id_division_id_tuple: {compartment_id_division_id_tuple}")
+        logger.debug(f"compartment_id_division_id_tuple: {compartment_id_division_id_tuple}")
         division_id = compartment_id_division_id_tuple[0]
         compartment_id = compartment_id_division_id_tuple[1]
         access_token = self.database.get_division_access_token_from_id(division_id, compartment_id)
         if access_token is None:
-            logger.error(f"get_division_access_token_from_id returned None for symbol {symbol}")
+            logger.debug(f"get_division_access_token_from_id returned None for symbol {symbol}")
             return None
         return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
@@ -252,13 +256,12 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.database.get_valid_targets_from_compartment_id(compartment_id)
 
     def connect(self, kuzuin):
-        logger.error(f"Kuzu opening connection to {kuzuin}")
+        logger.debug(f"Kuzu opening connection to {kuzuin}")
         self.database = HAKCDatabase(kuzuin, True)  # open kuzu database connection in read only mode (multithreading)
         self.database.open(True)
-        logger.error(f"About to call _get_valid_targets_from_compartment_id(1)")
-        self._get_valid_targets_from_compartment_id(3)
-
-
+        # testing code, keep this for now
+        # logger.debug(f"About to call _get_valid_targets_from_compartment_id(3)")
+        # self._get_valid_targets_from_compartment_id(3)
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
     size_fmt = "@L"
@@ -317,11 +320,9 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
 class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
     def __init__(self, data_source: HAKCPolicyDataSource, log_level=LoggingLevelEnum.INFO,
                  log_file: str = "", log_mode: str = 'w', **kwargs):
-        # self.config = config
-        # self.socket_path = config.socket_path
         self.data_source = data_source
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
-        logger.debug(f'Starting Socket Server at {data_source}')
+        logger.debug(f'Starting Socket Server at {data_source.socket_path}')
         socketserver.ThreadingUnixStreamServer.__init__(self, str(data_source.socket_path), RequestHandlerClass=HAKCRequestHandler)
 
     def handle_error(self, _a, _b):
