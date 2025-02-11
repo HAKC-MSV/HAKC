@@ -4,11 +4,13 @@ from typing import Type, Optional, Tuple
 
 import kuzu
 import pandas as pd
+
 from .HAKCBase import HAKCDBNode, HAKCDBRelation
 from .HAKCObjects import HAKCSymbol, HAKCFunction, HAKCScope, HAKCType, HAKCGlobalVariable, HAKCDivision, \
     HAKCCompartment, HAKCCompilationUnit
 
 logger = logging.getLogger('hakc-dag')
+
 
 class HAKCDatabase:
     def __init__(self, db_dir: str, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
@@ -25,10 +27,10 @@ class HAKCDatabase:
 
     def open(self, read_only: bool = False, max_num_threads=int(mp.cpu_count() / 2)):
         self.database = kuzu.Database(self.db_dir, read_only=read_only, max_num_threads=max_num_threads)
-        self.conn = kuzu.Connection(self.database) # main connection
+        self.conn = kuzu.Connection(self.database)  # main connection
 
     def new_conn(self, read_only: bool = False):
-        self.conn = kuzu.Connection(self.database) # thread i connection
+        self.conn = kuzu.Connection(self.database)  # thread i connection
 
     def get_compartment_entry_token_from_id(self, compartment_id: int) -> Optional[int]:
         cmd = f"""
@@ -66,7 +68,7 @@ class HAKCDatabase:
             logger.error(f"Found access_token: {access_token} for division_id: {division_id}")
             return int(access_token)
 
-    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int,int]]:
+    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int, int]]:
         cmd = f"""        
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
         WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
@@ -87,7 +89,7 @@ class HAKCDatabase:
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(compartment_id)
 
-    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> Optional[list[int]]:
+    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[int]:
         # TODO: double check this
         # NOTE: comp1 is fixed to the caller's compartment
         # from the perspective of the caller, the compartment_id is their own and they are looking for compartment_ids of targets
@@ -104,18 +106,16 @@ class HAKCDatabase:
         if ret.empty:
             logger.error(f'Command: {cmd} returned None\n')
             logger.error(f'Searched with CompartmentID: {source_compartment_id}')
-            return None
+            return []
         else:
             # TODO: check that this is correct when this is eventually called
             # logger.error(f"Found valid_targets: {ret} from source_compartment_id: {compartment_id}")
             source = ret["comp1.CompartmentID"][0]
             targets = ret["comp2.CompartmentID"].values
             # need to cast from numpy.uint64s to int, then remove duplicates, and sort
-            valid_targets = list(set(map(lambda x: int(x), targets)))
-            valid_targets.sort()
+            valid_targets = sorted(list(set(map(lambda x: int(x), targets))))
             logger.error(f"Found valid_targets from {source} to {valid_targets}")
             return valid_targets
-
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
