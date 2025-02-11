@@ -37,22 +37,24 @@ class HAKCPolicyProcessConfig:
     def __init__(self, **kwargs):
         self.socket_path = kwargs.get('socket_path', None)
         if self.socket_path is None:
-            raise Exception("ERROR: socket_path is missing from policy_config.yml")
+            raise RuntimeError("ERROR: socket_path is missing from policy_config.yml")
         self.socket_path = Path(self.socket_path)
         self.reuse_path = kwargs.get('reuse_path', False)
         self.log_path = kwargs.get('log_path', None)
         self.server_timeout = int(kwargs.get('server_timeout', -1))
         if self.reuse_path and self.socket_path.exists():
             self.socket_path.unlink()
-        self.type = kwargs["backing_policy_config"].get("type",
-                                                        None)  # need to index by backing_policy_config due to netsed yaml
+        backing_store_config = kwargs.get('backing_policy_config', dict())
+        if len(backing_store_config) == 0:
+            raise RuntimeError(f'Missing backing store configuration')
+        self.type = backing_store_config.get("type", None)
         if self.type is None:
-            raise Exception("ERROR: type (for data store) is missing")
-        self.data_path = kwargs["backing_policy_config"].get("path", None)
+            raise RuntimeError("ERROR: type (for data store) is missing")
+        self.data_path = backing_store_config.get("path", None)
         if self.data_path is None and self.type != SupportedBackingStore.NULL.value:
-            raise Exception("ERROR: path (for data store) is missing")
-        self.default_compartment_id = kwargs["backing_policy_config"].get("default_compartment", 0)
-        self.default_division_id = kwargs["backing_policy_config"].get("default_division", 0)
+            raise RuntimeError("ERROR: path (for data store) is missing")
+        self.default_compartment_id = backing_store_config.get("default_compartment", 0)
+        self.default_division_id = backing_store_config.get("default_division", 0)
         self.get_compartment_endpoint = kwargs.get('get-compartment-by-id-endpoint', "get-compartment-by-id")
         self.get_division_endpoint = kwargs.get('get-division-by-id-endpoint', "get-division-by-id")
         self.get_division_from_symbol_endpoint = kwargs.get('get-division-from-symbol-endpoint',
