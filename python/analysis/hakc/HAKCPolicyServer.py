@@ -131,7 +131,6 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_division(symbol)
 
     def deserialize_compartmentalization(self, yamlin):
-        graphin = None
         # add custom constructors to yaml loader 
         # I guess networkx constructor stuff is not in safeloader, but is in loader?
         loader = yaml.Loader
@@ -192,6 +191,10 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
         except OSError:
             raise ConnectionAbortedError
 
+    @property
+    def hakc_policy_server(self) -> 'HAKCPolicyServer':
+        return self.server
+
     def handle(self):
         logger.debug(f'Handling request')
         size_in_bytes = struct.calcsize(HAKCRequestHandler.size_fmt)
@@ -204,7 +207,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 logger.debug(f'Received {len(raw_msg_bytes)} bytes')
                 json_request = json.loads(raw_msg_bytes)
                 hakc_request = HAKCDataRequest(**json_request)
-                data = self.server.backing_store.handle_request(hakc_request)
+                data = self.hakc_policy_server.backing_store.handle_request(hakc_request)
 
                 if not (isinstance(data, HAKCPrintableObj)):
                     logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")

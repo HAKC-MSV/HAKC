@@ -223,7 +223,7 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
             if self._debug_type_is_known and other._debug_type_is_known:
                 return self._debug_type_transformed == other._debug_type_transformed
             elif self._llvm_type_is_known and other._llvm_type_is_known:
-                return self.llvm_type == other.llvm_type
+                return self.LLVMType == other.LLVMType
             else:
                 return False
         return False
@@ -232,7 +232,7 @@ class HAKCType(HAKCDBNode, yaml.YAMLObject):
         if self._debug_type_is_known:
             return [self._debug_type_transformed]
         else:
-            return [self.llvm_type]
+            return [self.LLVMType]
 
     def __hash__(self):
         return HAKCDBNode.__hash__(self)
@@ -591,7 +591,7 @@ def construct_symbol(loader: yaml.SafeLoader, node: yaml.nodes.MappingNode) -> H
     return HAKCSymbol(**loader.construct_mapping(node, deep=True))
 
 
-def get_hakc_yaml_loader(loader=yaml.SafeLoader) -> Type[yaml.SafeLoader]:
+def get_hakc_yaml_loader(loader=yaml.SafeLoader) -> Type[yaml.Loader]:
     for yaml_tag, ctor in HAKCObject_constructors.items():
         loader.add_constructor(yaml_tag, ctor)
 
