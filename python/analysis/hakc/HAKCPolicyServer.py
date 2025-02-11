@@ -72,7 +72,7 @@ class HAKCPolicyDataSource:
         self.yaml_loader = get_hakc_yaml_loader(yaml.SafeLoader)
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
-        self.socket_path = str(config.socket_path)
+        self.socket_path = config.socket_path
 
     def _get_default_division(self) -> HAKCDivision:
         return self.default_division
@@ -161,7 +161,6 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.yamlin = config.data_path
-        self.socket_path = config.socket_path
         self.deserialize_compartmentalization(self.yamlin)
         self.compartmentalization = None
 
@@ -200,7 +199,6 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.database = None
         self.connect(config.data_path)
-        self.socket_path = config.socket_path
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
@@ -305,7 +303,7 @@ class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
         self.data_source = data_source
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
         logger.debug(f'Starting Socket Server at {data_source.socket_path}')
-        socketserver.ThreadingUnixStreamServer.__init__(self, data_source.socket_path,
+        socketserver.ThreadingUnixStreamServer.__init__(self, str(data_source.socket_path),
                                                         RequestHandlerClass=HAKCRequestHandler)
 
     def handle_error(self, _a, _b):
