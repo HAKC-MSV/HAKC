@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import Optional
 from typing import Type
 
 import networkx as nx
@@ -132,12 +133,67 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
     def get_symbols(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCFunction) or isinstance(n,
                                                                                                        HAKCGlobalVariable))
-
     def get_scopes(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCScope))
 
     def get_compilation_units(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCCompilationUnit))
+
+    def get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
+        # TODO: talk with derrick about adding filter for symbol
+        # https://networkx.org/documentation/stable/reference/classes/multidigraph.html#networkx.MultiDiGraph
+        # comp1 <- div1 <- symbol1 -(Dag2)-> symbol2 -> div2 -> comp2
+
+        # def filter_node_by_compartment_id(n):
+        #     if isinstance(n, HAKCSymbol):
+        #         # return n.Name == "foo"
+        #         return True
+        #     return False
+        #
+        # def filter_edge_by_type(n1, n2, edge_key):
+        #     if(edge_key == "DagEdge"):
+        #         return self[n1][n2]["DagEdge"]["weight"] > 0
+        #     return False
+
+        # view = nx.subgraph_view(self, filter_node=filter_node_by_compartment_id, filter_edge=filter_edge_by_type)
+
+
+        # edges stored as (n1,n2,edge_key)
+        # for n in view:
+        # logger.error(f" type(view): {type(view.nodes)}, view: {view.nodes}\n")
+        # logger.error(f" view size: {len(view.edges)}, view: {view.edges}\n")
+        # logger.error(f"{self}")
+
+        # valid_targets = list()
+        # for valid_target in view:
+        #     valid_targets.append(self[[valid_target])
+
+        # going to brute force for now
+        valid_targets = set()
+        neighbors = set()
+        # targets = self.get_symbols() # currently HAKCFunction or HAKCGlobalVariable
+
+        # def filter_node_by_compartment_id(n):
+        #     if isinstance(n, HAKCSymbol):
+        #         if n.has_edge()
+        #     return False
+        # view = nx.subgraph_view(self, filter_node=filter_node_by_compartment_id, filter_edge=filter_edge_by_type)
+        all_symbols_by_compartment_id = set()
+        # get all symbols in compartment
+        for n in self:
+            if "InDivision" in n.out_edges:
+                if "InCompartment" in n["InDivision"]:
+                    if n["InDivision"]["InCompartment"].compartment_id == compartment_id:
+                        all_symbols_by_compartment_id.add(n)
+
+        # now search all valid neighbors
+        for caller in all_symbols_by_compartment_id:
+            for callee in self.neighbors(caller):
+                if self.has_edge(caller, callee, "DagEdge"):  # TODO: check if weight > 0?
+                    neighbors.add(callee)
+
+        return list(neighbors)
+
 
     def get_unpersisted_nodes(self) -> dict[str, list[HAKCDBNode]]:
         result = dict()

@@ -1,7 +1,6 @@
 import logging
 import multiprocessing as mp
-from typing import Type
-from typing import Optional
+from typing import Type, Optional, Tuple
 
 import kuzu
 import pandas as pd
@@ -31,7 +30,7 @@ class HAKCDatabase:
     def new_conn(self, read_only: bool = False):
         self.conn = kuzu.Connection(self.database) # thread i connection
 
-    def get_compartment_node(self, compartment_id: int) -> Optional[int]:
+    def get_compartment_entry_token_from_id(self, compartment_id: int) -> Optional[int]:
         cmd = f"""
         MATCH (comp:{HAKCCompartment.get_table_name()})
         WITH comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
@@ -41,14 +40,15 @@ class HAKCDatabase:
         response = self.execute_prepared_stmt(cmd, compartment_id=compartment_id)
         ret = response.get_as_df()
         if ret.empty:
-            logger.debug(f'Command: {cmd} returned None')
+            logger.error(f'Command: {cmd} returned None')
+            logger.error(f'Searched with compartment_id: {compartment_id}')
             return None
         else:
             entry_token = ret["entry_token"][0]
-            logger.debug(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
-            return entry_token
+            logger.error(f"Found entry_token: {entry_token} for compartment_id: {compartment_id}")
+            return int(entry_token)
 
-    def get_division_node(self, division_id: int, compartment_id: int) -> Optional[int]:
+    def get_division_access_token_from_id(self, division_id: int, compartment_id: int) -> Optional[int]:
         cmd = f"""
         MATCH (div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
         WITH div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID AS compartment_id, comp.EntryToken AS entry_token
@@ -58,12 +58,64 @@ class HAKCDatabase:
         response = self.execute_prepared_stmt(cmd, division_id=division_id, compartment_id=compartment_id)
         ret = response.get_as_df()
         if ret.empty:
-            logger.debug(f'Command: {cmd} returned None')
+            logger.error(f'Command: {cmd} returned None')
+            logger.error(f'Searched with division_id: {division_id}, compartment_id: {compartment_id}')
             return None
         else:
             access_token = ret["access_token"][0]
-            logger.debug(f"Found access_token: {access_token} for division_id: {division_id}")
-            return access_token
+            logger.error(f"Found access_token: {access_token} for division_id: {division_id}")
+            return int(access_token)
+
+    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int,int]]:
+        cmd = f"""        
+        MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
+        WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
+        WHERE Name = $Name AND Scope = $Scope
+        RETURN division_id, compartment_id;
+        """
+        response = self.execute_prepared_stmt(cmd, Name=symbol.Name, Scope=symbol.Scope.scope)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.error(f'Command: {cmd} returned None\n')
+            logger.error(f'Searched with Name: {symbol.Name}, Scope: {str(symbol.Scope)}')
+            return None
+        else:
+            # TODO: check that this is correct when this is eventually called
+            division_id = ret["division_id"][0]
+            compartment_id = ret["compartment_id"][0]
+            logger.error(f"Found division_id, compartment_id: ({division_id}, {compartment_id}) for symbol: {symbol}")
+            # need to cast to int because json cant parse numpy.uint64s apparently
+            return int(division_id), int(compartment_id)
+
+    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> Optional[list[int]]:
+        # TODO: double check this
+        # NOTE: comp1 is fixed to the caller's compartment
+        # from the perspective of the caller, the compartment_id is their own and they are looking for compartment_ids of targets
+        # Get valid target compartments given compartment id
+        # comp1 <- div1 <- symbol1 -(Dag2)-> symbol2 -> div2 -> comp2
+        cmd = f"""
+        MATCH (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp2:{HAKCCompartment.get_table_name()})
+        WITH  *
+        WHERE comp1.CompartmentID = $source_compartment_id
+        RETURN comp1.CompartmentID, comp2.CompartmentID;
+        """
+        response = self.execute_prepared_stmt(cmd, source_compartment_id=source_compartment_id)
+        ret = response.get_as_df()
+        if ret.empty:
+            logger.error(f'Command: {cmd} returned None\n')
+            logger.error(f'Searched with CompartmentID: {source_compartment_id}')
+            return None
+        else:
+            # TODO: check that this is correct when this is eventually called
+            # logger.error(f"Found valid_targets: {ret} from source_compartment_id: {compartment_id}")
+            source = ret["comp1.CompartmentID"][0]
+            targets = ret["comp2.CompartmentID"].values
+            # need to cast from numpy.uint64s to int, then remove duplicates, and sort
+            valid_targets = list(set(map(lambda x: int(x), targets)))
+            valid_targets.sort()
+            logger.error(f"Found valid_targets from {source} to {valid_targets}")
+            return valid_targets
+
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
