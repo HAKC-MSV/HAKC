@@ -131,7 +131,7 @@ class HAKCPolicyDataSource:
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return sorted(valid_targets)
+        return {"valid_targets": sorted(valid_targets)}
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
@@ -266,8 +266,8 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 hakc_request = HAKCDataRequest(**json_request)
                 data = self.hakc_policy_server.data_source.handle_request(hakc_request)
 
-                if not (isinstance(data, HAKCPrintableObj)):
-                    logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")
+                if not (isinstance(data, HAKCPrintableObj) or isinstance(data,dict)):
+                    logger.error(f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
