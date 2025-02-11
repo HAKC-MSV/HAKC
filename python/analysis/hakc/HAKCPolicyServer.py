@@ -131,7 +131,7 @@ class HAKCPolicyDataSource:
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return sorted(valid_targets)
+        return {"valid_targets": sorted(valid_targets)}
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
@@ -239,6 +239,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         # open kuzu database connection in read only mode (multithreading)
         self.database = HAKCDatabase(kuzuin, True)
         self.database.open(True)
+        self._get_valid_targets_from_compartment_id(3)
 
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
@@ -275,12 +276,15 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 hakc_request = HAKCDataRequest(**json_request)
                 data = self.hakc_policy_server.data_source.handle_request(hakc_request)
 
-                if not (isinstance(data, HAKCPrintableObj)):
-                    logger.error(f"Data received is not a HAKCPrintableObj, and is invalid: {data}")
+                if not (isinstance(data, HAKCPrintableObj) or isinstance(data,dict)):
+                    logger.error(f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
-                response_data = json.dumps(data.to_yaml_dict(), default=str)
-                logger.debug(f"dumped json")
+                if(isinstance(data, dict)):
+                    response_data = json.dumps(data, default=str)
+                else:
+                    response_data = json.dumps(data.to_yaml_dict(), default=str)
+                logger.debug(f"dumped json: {response_data}")
                 encoded_data = response_data.encode('utf-8')
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
@@ -304,8 +308,8 @@ class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
                  log_file: str = "", log_mode: str = 'w', **kwargs):
         self.data_source = data_source
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
-        logger.debug(f'Starting Socket Server at {data_source.socket_path}')
-        socketserver.ThreadingUnixStreamServer.__init__(self, data_source.socket_path,
+        logger.debug(f'Starting Socket Server at {data_source.socket_path}, type: {type(data_source.socket_path)}')
+        socketserver.ThreadingUnixStreamServer.__init__(self, str(data_source.socket_path),
                                                         RequestHandlerClass=HAKCRequestHandler)
 
     def handle_error(self, _a, _b):

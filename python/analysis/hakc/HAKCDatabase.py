@@ -108,8 +108,6 @@ class HAKCDatabase:
             logger.error(f'Searched with CompartmentID: {source_compartment_id}')
             return []
         else:
-            # TODO: check that this is correct when this is eventually called
-            # logger.error(f"Found valid_targets: {ret} from source_compartment_id: {compartment_id}")
             source = ret["comp1.CompartmentID"][0]
             targets = ret["comp2.CompartmentID"].values
             # need to cast from numpy.uint64s to int, then remove duplicates, and sort

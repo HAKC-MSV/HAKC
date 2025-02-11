@@ -43,7 +43,7 @@ def main():
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
     with open(args.config, 'r') as f:
         parsed_config = json.load(f)
-        logger.error(f"GOT THIS: {parsed_config}")
+        # logger.error(f"GOT THIS: {parsed_config}")
         config = HAKCPolicyProcessConfig(**parsed_config)
 
     data_source = init_data_source(config)
