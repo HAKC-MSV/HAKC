@@ -72,7 +72,7 @@ class HAKCPolicyDataSource:
         self.yaml_loader = get_hakc_yaml_loader(yaml.SafeLoader)
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
-        self.socket_path = str(config.socket_path)
+        self.socket_path = config.socket_path
 
     def _get_default_division(self) -> HAKCDivision:
         return self.default_division
@@ -161,9 +161,8 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.yamlin = config.data_path
-        self.socket_path = config.socket_path
-        self.deserialize_compartmentalization(self.yamlin)
         self.compartmentalization = None
+        self.deserialize_compartmentalization(self.yamlin)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
@@ -180,10 +179,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def deserialize_compartmentalization(self, yamlin):
         # add custom constructors to yaml loader 
         # I guess networkx constructor stuff is not in safeloader, but is in loader?
-        loader = yaml.Loader
-        for yaml_tag, ctor in HAKCObject_constructors.items():
-            loader.add_constructor(yaml_tag, ctor)
-
+        loader = get_hakc_yaml_loader(yaml.Loader)
         if yamlin is None:
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
@@ -200,7 +196,6 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.database = None
         self.connect(config.data_path)
-        self.socket_path = config.socket_path
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         logger.debug(f"Trying to get compartment_id: {compartment_id} from backing store")
@@ -239,7 +234,6 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         # open kuzu database connection in read only mode (multithreading)
         self.database = HAKCDatabase(kuzuin, True)
         self.database.open(True)
-        self._get_valid_targets_from_compartment_id(3)
 
 
 class HAKCRequestHandler(socketserver.StreamRequestHandler):
