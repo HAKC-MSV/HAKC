@@ -104,17 +104,15 @@ class HAKCDatabase:
         response = self.execute_prepared_stmt(cmd, source_compartment_id=source_compartment_id)
         ret = response.get_as_df()
         if ret.empty:
-            logger.error(f'Command: {cmd} returned None\n')
-            logger.error(f'Searched with CompartmentID: {source_compartment_id}')
+            logger.debug(f'Command: {cmd} returned None\n')
+            logger.debug(f'Searched with CompartmentID: {source_compartment_id}')
             return []
         else:
-            # TODO: check that this is correct when this is eventually called
-            # logger.error(f"Found valid_targets: {ret} from source_compartment_id: {compartment_id}")
             source = ret["comp1.CompartmentID"][0]
             targets = ret["comp2.CompartmentID"].values
             # need to cast from numpy.uint64s to int, then remove duplicates, and sort
             valid_targets = sorted(list(set(map(lambda x: int(x), targets))))
-            logger.error(f"Found valid_targets from {source} to {valid_targets}")
+            logger.debug(f"Found valid_targets from {source} to {valid_targets}")
             return valid_targets
 
     def persist_dag_edges(self, dag_edge_data):
