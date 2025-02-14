@@ -2,8 +2,6 @@ import argparse
 import json
 import logging
 import signal
-from enum import Enum
-from pathlib import Path
 from typing import Optional
 
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
@@ -12,10 +10,11 @@ from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAK
 
 logger = logging.getLogger('hakc-policy-process')
 
+
 def init_data_source(config: HAKCPolicyProcessConfig) -> Optional[HAKCPolicyDataSource]:
     if config.type == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
-        return NullHAKCPolicyDataStore()
+        return NullHAKCPolicyDataStore(config)
     elif config.type == SupportedBackingStore.YAML.value:
         logger.debug(f'Creating YAMLPolicyDataStore')
         return YAMLHAKCPolicyDataStore(config)
@@ -43,11 +42,11 @@ def main():
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
     with open(args.config, 'r') as f:
         parsed_config = json.load(f)
-        logger.error(f"GOT THIS: {parsed_config}")
         config = HAKCPolicyProcessConfig(**parsed_config)
 
     data_source = init_data_source(config)
-    with HAKCPolicyServer(data_source=data_source, log_level=args.log_level, log_file=config.log_path, log_mode=args.log_mode) as server:
+    with HAKCPolicyServer(data_source=data_source, log_level=args.log_level, log_file=config.log_path,
+                          log_mode=args.log_mode) as server:
         try:
             if config.server_timeout > 0:
                 signal.signal(signal.SIGALRM, timeout_handler)

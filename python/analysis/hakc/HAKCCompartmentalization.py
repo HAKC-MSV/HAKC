@@ -48,19 +48,19 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             self.add_edge(u_for_edge, v_for_edge, key, **attr)
 
     def add_symbol(self, symbol: HAKCSymbol, compilation_unit: HAKCCompilationUnit):
-        self.add_persistent_edge(symbol, symbol.Type, key=HAKCSymbol.IsTypeTable)
-        self.add_persistent_edge(symbol, symbol.Scope, key=HAKCSymbol.HasScopeTable)
+        self.add_persistent_edge(symbol, symbol.type, key=HAKCSymbol.IsTypeTable)
+        self.add_persistent_edge(symbol, symbol.scope, key=HAKCSymbol.HasScopeTable)
         self.add_persistent_edge(symbol, compilation_unit, key=HAKCSymbol.SymbolCompilationUnitTable)
-        if symbol.DefiningFile is not None:
-            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.DefiningFile),
-                                     key=HAKCSymbol.DefinedInTable, line=symbol.DefiningLine)
+        if symbol.defining_file is not None:
+            self.add_persistent_edge(symbol, HAKCCompilationUnit(filename=symbol.defining_file),
+                                     key=HAKCSymbol.DefinedInTable, line=symbol.defining_line)
 
-        for used_symbol in symbol.UsedSymbols:
+        for used_symbol in symbol.used_symbols:
             self.add_persistent_edge(symbol, used_symbol, key=HAKCSymbol.UsesSymbolTable)
 
         if isinstance(symbol, HAKCFunction):
             for indirect_call in symbol.indirect_calls:
-                self.add_persistent_edge(symbol, indirect_call.Type, key=HAKCFunction.IndirectCallTable)
+                self.add_persistent_edge(symbol, indirect_call.type, key=HAKCFunction.IndirectCallTable)
             for direct_call in symbol.direct_calls:
                 self.add_persistent_edge(symbol, direct_call, key=HAKCFunction.DirectCallTable)
 

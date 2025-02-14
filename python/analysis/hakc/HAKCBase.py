@@ -2,6 +2,8 @@ import hashlib
 from enum import Enum
 from typing import Type
 
+import yaml
+
 
 class QuotedString(str):
     pass
@@ -36,9 +38,6 @@ class HAKCPrintableObj:
         inside_strings = [f'{key}={str(value)}' for key, value in self.get_info_tokens().items()]
         return f'{cls}({", ".join(sorted(inside_strings))})'
 
-    def __repr__(self):
-        return str(self)
-
     def get_info_tokens(self) -> dict[str, object]:
         raise NotImplementedError
 
@@ -47,8 +46,6 @@ class HAKCPrintableObj:
         for key, value in self.get_info_tokens().items():
             if isinstance(value, HAKCPrintableObj):
                 result[key] = value.to_yaml_dict()
-            elif isinstance(value, str):
-                result[key] = QuotedString(value)
             else:
                 result[key] = value
         return result
@@ -109,6 +106,14 @@ class HAKCDBColumn(HAKCPrintableObj):
 class HAKCDBNode(HAKCPrintableObj):
     def __init__(self, **kwargs):
         HAKCPrintableObj.__init__(self, **kwargs)
+
+    @classmethod
+    def to_yaml(cls, dumper: yaml.Dumper, data):
+        return dumper.represent_dict(data.to_yaml_dict())
+
+    def get_info_tokens(self) -> dict[str, object]:
+        result = {column.column_name: value for column, value in self.get_db_data().items()}
+        return result
 
     def get_db_data(self) -> dict[HAKCDBColumn, object]:
         raise NotImplementedError

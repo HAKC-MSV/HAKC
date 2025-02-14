@@ -75,11 +75,11 @@ class HAKCDatabase:
         WHERE Name = $Name AND Scope = $Scope
         RETURN division_id, compartment_id;
         """
-        response = self.execute_prepared_stmt(cmd, Name=symbol.Name, Scope=symbol.Scope.scope)
+        response = self.execute_prepared_stmt(cmd, Name=symbol.name, Scope=symbol.scope.scope)
         ret = response.get_as_df()
         if ret.empty:
             logger.error(f'Command: {cmd} returned None\n')
-            logger.error(f'Searched with Name: {symbol.Name}, Scope: {str(symbol.Scope)}')
+            logger.error(f'Searched with Name: {symbol.name}, Scope: {str(symbol.scope)}')
             return None
         else:
             # TODO: check that this is correct when this is eventually called
