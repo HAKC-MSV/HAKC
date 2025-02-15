@@ -12,7 +12,7 @@ from .HAKCBase import HAKCPrintableObj
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision, \
-    HAKCObject_constructors, get_hakc_yaml_loader
+    get_hakc_yaml_loader
 
 logger = logging.getLogger('hakc-policy-server')
 
@@ -160,9 +160,8 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
-        self.yamlin = config.data_path
         self.compartmentalization = None
-        self.deserialize_compartmentalization(self.yamlin)
+        self.deserialize_compartmentalization(config.data_path)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
         return self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
@@ -177,8 +176,6 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):
-        # add custom constructors to yaml loader 
-        # I guess networkx constructor stuff is not in safeloader, but is in loader?
         loader = get_hakc_yaml_loader(yaml.Loader)
         if yamlin is None:
             raise RuntimeError(f'yamlin is None')
@@ -188,6 +185,8 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
             raise RuntimeError(f'Graph from yamlin is empty')
 
         self.compartmentalization = graphin
+        for symbol in self.compartmentalization.get_symbols():
+            logger.debug(f'{symbol}')
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
 
