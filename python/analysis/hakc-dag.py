@@ -16,7 +16,7 @@ import yaml
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging
-from hakc.HAKCObjects import get_hakc_yaml_loader, HAKCSymbol, HAKCFunction, HAKCGlobalVariable, \
+from hakc.HAKCObjects import HAKCSymbol, HAKCFunction, HAKCGlobalVariable, \
     HAKCCompartment, HAKCDivision, HAKCCompilationUnit, HAKCCompartmentalizationAdjustment
 
 logger = logging.getLogger('hakc-dag')
@@ -32,7 +32,7 @@ def batched(iterable, n):
 
 def parse_yaml(filename: str):
     with open(filename, 'rb') as f:
-        parsed_yaml = yaml.load(f, Loader=get_hakc_yaml_loader())
+        parsed_yaml = yaml.load(f, Loader=yaml.Loader)
         compilation_unit = parsed_yaml["CU"]
         functions = parsed_yaml['functions'] if 'functions' in parsed_yaml else list()
         global_variables = parsed_yaml['globals'] if 'globals' in parsed_yaml else list()
@@ -358,7 +358,7 @@ def main():
     if args.adjust:
         logger.info(f'Adjusting compartmentalization based on {args.adjust_path}')
         with open(args.adjust_path, 'r') as f:
-            adjustments = yaml.load(f, Loader=get_hakc_yaml_loader())
+            adjustments = yaml.load(f, Loader=yaml.Loader)
         adjust_compartmentalization(args.db_dir, adjustments)
         logger.info("Done")
 

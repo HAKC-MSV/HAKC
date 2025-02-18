@@ -9,9 +9,10 @@ from typing import Optional
 import yaml
 
 from .HAKCBase import HAKCPrintableObj
+from .HAKCCompartmentalization import get_compartmentalization_loader
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
-from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision, get_hakc_yaml_loader
+from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
 
 logger = logging.getLogger('hakc-policy-server')
 
@@ -68,7 +69,7 @@ class HAKCPolicyDataSource:
                           config.get_division_endpoint: self.get_division_by_id,
                           config.get_division_from_symbol_endpoint: self.get_symbol_division,
                           config.get_valid_targets_from_compartment_id_endpoint: self.get_valid_targets_from_compartment_id}
-        self.yaml_loader = get_hakc_yaml_loader(yaml.SafeLoader)
+        self.yaml_loader = yaml.SafeLoader
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
         self.socket_path = config.socket_path
@@ -160,6 +161,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, **kwargs)
         self.compartmentalization = None
+        self.yaml_loader = get_compartmentalization_loader(yaml.Loader)
         self.deserialize_compartmentalization(config.data_path)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
@@ -175,17 +177,13 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):
-        loader = get_hakc_yaml_loader(yaml.Loader)
         if yamlin is None:
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
-            graphin = yaml.load(file, Loader=loader)
-        if graphin is None:
-            raise RuntimeError(f'Graph from yamlin is empty')
+            self.compartmentalization = yaml.load(file, self.yaml_loader)
 
-        self.compartmentalization = graphin
-        for symbol in self.compartmentalization.get_symbols():
-            logger.debug(f'{symbol}')
+        if len(self.compartmentalization) == 0:
+            raise RuntimeError(f'{yamlin} does not contain a compartmentalization policy')
         logger.debug(f'Successfully deserialized compartmentalization info! {self.compartmentalization}')
 
 

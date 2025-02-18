@@ -5,6 +5,8 @@ from typing import Type, Optional
 import networkx as nx
 import pandas as pd
 import tqdm
+import yaml
+from networkx.readwrite import json_graph
 
 from .HAKCBase import HAKCDivisionEnum, HAKCDBNode, HAKCDBRelation
 from .HAKCDatabase import HAKCDatabase
@@ -14,20 +16,33 @@ from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType
 logger = logging.getLogger('hakc-dag')
 
 
-class HAKCCompartmentalization(nx.MultiDiGraph):
+class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
     kernel_compartment_id = 0
     kernel_division = HAKCDivisionEnum.NO_DIVISION.value
     default_division = HAKCDivisionEnum.TEAL_DIVISION.value
     DefaultDivisionCount = max(1, len(HAKCDivisionEnum) - 1)
     persisted_attr = 'persisted'
+    yaml_tag = "!HAKCCompartmentalization"
 
-    def __init__(self, division_count=16, nxgraph=None, **kwargs):
+    def __init__(self, division_count: Optional[int] = 16, nxgraph: Optional[nx.MultiDiGraph] = None):
         if nxgraph is None:
-            super().__init__(self)
+            nx.MultiDiGraph.__init__(self)
         else:
-            super().__init__(self, nxgraph)
-
+            nx.MultiDiGraph.__init__(self, nxgraph)
+        yaml.YAMLObject.__init__(self)
         self.division_count = division_count
+
+    @classmethod
+    def from_yaml(cls, loader: yaml.Loader, node):
+        graph_data = loader.construct_mapping(node, deep=True)
+        graph = json_graph.node_link_graph(graph_data, edges='edges')
+        return cls(division_count=graph_data.get('division_count', None), nxgraph=graph)
+
+    @classmethod
+    def to_yaml(cls, dumper: yaml.Dumper, data):
+        compartmentalization_data = json_graph.node_link_data(data, edges='edges')
+        compartmentalization_data['division_count'] = data.division_count
+        return dumper.represent_mapping(cls.yaml_tag, compartmentalization_data)
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:

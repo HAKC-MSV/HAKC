@@ -32,11 +32,18 @@ class HAKCDivisionEnum(Enum):
 class HAKCHashValue:
     ByteOrder = 'big'
 
-    def __init__(self, values):
-        h = hashlib.sha256()
-        for value in values:
-            h.update(HAKCHashValue.get_bytes(value))
-        self.final_hash = int.from_bytes(h.digest()[:8], byteorder=HAKCHashValue.ByteOrder)
+    @classmethod
+    def from_int(cls, hash_value: int):
+        result = cls([])
+        result.final_hash = hash_value
+        return result
+
+    def __init__(self, values: list[object]):
+        if len(values) > 0:
+            h = hashlib.sha256()
+            for value in values:
+                h.update(HAKCHashValue.get_bytes(value))
+            self.final_hash = int.from_bytes(h.digest()[:8], byteorder=HAKCHashValue.ByteOrder)
 
     @staticmethod
     def get_bytes(value) -> bytes:
@@ -121,12 +128,15 @@ class HAKCDBColumn(HAKCPrintableObj):
         }
 
     def get_hash_inputs(self) -> list[object]:
-        return [self.column_name, self.column_type]
+        return list(self.get_info_tokens().values())
 
 
 class HAKCDBNode(HAKCPrintableObj):
     def __init__(self, **kwargs):
         HAKCPrintableObj.__init__(self, **kwargs)
+        for key, value in kwargs.items():
+            if key == self.get_primary_key().column_name and self.uses_hashed_key():
+                self.computed_hash = HAKCHashValue.from_int(int(value, 16))
 
     @classmethod
     def to_yaml(cls, dumper: yaml.Dumper, data):
@@ -138,6 +148,9 @@ class HAKCDBNode(HAKCPrintableObj):
 
     def get_db_data(self, convert_hash=True) -> dict[HAKCDBColumn, object]:
         raise NotImplementedError
+
+    def uses_hashed_key(self) -> bool:
+        return False
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
@@ -176,6 +189,14 @@ class HAKCDBNode(HAKCPrintableObj):
                 return data
         raise RuntimeError(
             f'Could not find data for primary key {primary_key} in object for table {self.get_table_name()}')
+
+
+class HashedHAKCDBNode(HAKCDBNode):
+    def __init__(self, **kwargs):
+        HAKCDBNode.__init__(self, **kwargs)
+
+    def uses_hashed_key(self) -> bool:
+        return True
 
 
 class HAKCDBRelation:
