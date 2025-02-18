@@ -29,6 +29,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
             nx.MultiDiGraph.__init__(self)
         else:
             nx.MultiDiGraph.__init__(self, nxgraph)
+            self._finalize_construction()
         yaml.YAMLObject.__init__(self)
         self.division_count = division_count
 
@@ -36,13 +37,24 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
     def from_yaml(cls, loader: yaml.Loader, node):
         graph_data = loader.construct_mapping(node, deep=True)
         graph = json_graph.node_link_graph(graph_data, edges='edges')
-        return cls(division_count=graph_data.get('division_count', None), nxgraph=graph)
+        compartmentalization = cls(division_count=graph_data.get('division_count', 16), nxgraph=graph)
+
+        return compartmentalization
 
     @classmethod
     def to_yaml(cls, dumper: yaml.Dumper, data):
         compartmentalization_data = json_graph.node_link_data(data, edges='edges')
         compartmentalization_data['division_count'] = data.division_count
         return dumper.represent_mapping(cls.yaml_tag, compartmentalization_data)
+
+    def _finalize_construction(self):
+        for symbol in self.get_symbols():
+            for nbr in self.neighbors(symbol):
+                nbrdict = self.get_edge_data(symbol, nbr)
+                if isinstance(nbr, HAKCType) and HAKCSymbol.IsTypeTable in nbrdict:
+                    symbol.type = nbr
+                elif isinstance(nbr, HAKCScope) and HAKCSymbol.HasScopeTable in nbrdict:
+                    symbol.scope = nbr
 
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:

@@ -9,7 +9,7 @@ from typing import Optional
 import yaml
 
 from .HAKCBase import HAKCPrintableObj
-from .HAKCCompartmentalization import get_compartmentalization_loader
+from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
@@ -64,12 +64,12 @@ class HAKCPolicyProcessConfig:
 
 
 class HAKCPolicyDataSource:
-    def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
+    def __init__(self, config: HAKCPolicyProcessConfig, yaml_loader=yaml.SafeLoader, **kwargs):
         self.endpoints = {config.get_compartment_endpoint: self.get_compartment_by_id,
                           config.get_division_endpoint: self.get_division_by_id,
                           config.get_division_from_symbol_endpoint: self.get_symbol_division,
                           config.get_valid_targets_from_compartment_id_endpoint: self.get_valid_targets_from_compartment_id}
-        self.yaml_loader = yaml.SafeLoader
+        self.yaml_loader = yaml_loader
         self.default_compartment = HAKCCompartment(config.default_compartment_id)
         self.default_division = HAKCDivision(config.default_division_id, config.default_compartment_id)
         self.socket_path = config.socket_path
@@ -159,9 +159,9 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
 
 class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
-        HAKCPolicyDataSource.__init__(self, config, **kwargs)
+        HAKCPolicyDataSource.__init__(self, config, yaml_loader=yaml.Loader, **kwargs)
         self.compartmentalization = None
-        self.yaml_loader = get_compartmentalization_loader(yaml.Loader)
+        self.yaml_loader.add_constructor(HAKCCompartmentalization.yaml_tag, HAKCCompartmentalization.from_yaml)
         self.deserialize_compartmentalization(config.data_path)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
@@ -180,7 +180,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         if yamlin is None:
             raise RuntimeError(f'yamlin is None')
         with open(yamlin, 'r') as file:
-            self.compartmentalization = yaml.load(file, self.yaml_loader)
+            self.compartmentalization = yaml.load(file, Loader=self.yaml_loader)
 
         if len(self.compartmentalization) == 0:
             raise RuntimeError(f'{yamlin} does not contain a compartmentalization policy')
@@ -271,8 +271,8 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
-                logger.debug(f"dumped json")
                 encoded_data = response_data.encode('utf-8')
+                logger.debug(f"dumped json {encoded_data}")
 
                 self.write_raw_bytes(struct.pack(HAKCRequestHandler.size_fmt, len(encoded_data)))
                 self.write_raw_bytes(encoded_data)
