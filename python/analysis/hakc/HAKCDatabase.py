@@ -71,9 +71,9 @@ class HAKCDatabase:
     def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int, int]]:
         cmd = f"""        
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
-        WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, comp.CompartmentID as compartment_id
+        WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
         WHERE Name = $Name AND Scope = $Scope
-        RETURN division_id, compartment_id;
+        RETURN division_id, access_token, compartment_id, entry_token
         """
         response = self.execute_prepared_stmt(cmd, Name=symbol.name, Scope=symbol.scope.scope)
         ret = response.get_as_df()
@@ -84,10 +84,12 @@ class HAKCDatabase:
         else:
             # TODO: check that this is correct when this is eventually called
             division_id = ret["division_id"][0]
+            access_token = ret["access_token"][0]
             compartment_id = ret["compartment_id"][0]
-            logger.error(f"Found division_id, compartment_id: ({division_id}, {compartment_id}) for symbol: {symbol}")
+            entry_token = ret["entry_token"][0]
+            logger.error(f"Found division_id, access_token, compartment_id, entry_token: ({division_id}, {access_token}, {compartment_id}, {entry_token}) for symbol: {symbol}")
             # need to cast to int because json cant parse numpy.uint64s apparently
-            return int(division_id), int(compartment_id)
+            return int(division_id), int(access_token), int(compartment_id), int(entry_token)
 
     def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[int]:
         # TODO: double check this
@@ -140,7 +142,6 @@ class HAKCDatabase:
         """
         response = self.execute_prepared_stmt(cmd)
         ret = response.get_as_df()['symbol_hash'].to_list()
-        logger.info(f'response0 df: {ret}')
         return ret
 
     def get_symbol_by_hash(self, symbol_hashes: list[int]) -> list[HAKCSymbol]:
