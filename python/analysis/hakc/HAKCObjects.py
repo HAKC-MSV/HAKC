@@ -91,8 +91,6 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
     def get_primary_key() -> HAKCDBColumn:
         return HAKCDBColumn('division_hash', 'UINT64')
 
-    # Need to add CompartmentID here, or else can't construct HAKCDivision in HAKCCompartmentalizatonPolicy.cpp
-    # TODO: discuss the api with derrick, don't want the db and yaml to diverge
     @classmethod
     def get_data_columns(cls) -> list[HAKCDBColumn]:
         return [HAKCDBColumn('DivisionID', 'UINT64'),

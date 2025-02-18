@@ -68,7 +68,7 @@ class HAKCDatabase:
             logger.error(f"Found access_token: {access_token} for division_id: {division_id}")
             return int(access_token)
 
-    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int, int]]:
+    def get_division_id_compartment_id_from_symbol(self, symbol: HAKCSymbol) -> Optional[Tuple[int, int, int, int]]:
         cmd = f"""        
         MATCH (scope:{HAKCScope.get_table_name()})<-[:{HAKCSymbol.HasScopeTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp:{HAKCCompartment.get_table_name()})
         WITH sym.Name as Name, scope.Scope as Scope, div.DivisionID as division_id, div.AccessToken as access_token, comp.CompartmentID as compartment_id, comp.EntryToken as entry_token
@@ -76,6 +76,7 @@ class HAKCDatabase:
         RETURN division_id, access_token, compartment_id, entry_token
         """
         response = self.execute_prepared_stmt(cmd, Name=symbol.name, Scope=symbol.scope.scope)
+        # TODO: double check that this only returns one row
         ret = response.get_as_df()
         if ret.empty:
             logger.error(f'Command: {cmd} returned None\n')
@@ -91,7 +92,7 @@ class HAKCDatabase:
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(access_token), int(compartment_id), int(entry_token)
 
-    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[int]:
+    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[dict[int, int]]:
         # TODO: double check this
         # NOTE: comp1 is fixed to the caller's compartment
         # from the perspective of the caller, the compartment_id is their own and they are looking for compartment_ids of targets
@@ -101,7 +102,7 @@ class HAKCDatabase:
         MATCH (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp2:{HAKCCompartment.get_table_name()})
         WITH  *
         WHERE comp1.CompartmentID = $source_compartment_id
-        RETURN comp1.CompartmentID, comp2.CompartmentID;
+        RETURN comp1.CompartmentID, comp2.CompartmentID, comp2.EntryToken;
         """
         response = self.execute_prepared_stmt(cmd, source_compartment_id=source_compartment_id)
         ret = response.get_as_df()
@@ -113,9 +114,9 @@ class HAKCDatabase:
             source = ret["comp1.CompartmentID"][0]
             targets = ret["comp2.CompartmentID"].values
             # need to cast from numpy.uint64s to int, then remove duplicates, and sort
-            valid_targets = sorted(list(set(map(lambda x: int(x), targets))))
-            logger.debug(f"Found valid_targets from {source} to {valid_targets}")
-            return valid_targets
+            # valid_targets = set(map(lambda x: int(x), targets))
+            logger.debug(f"Found valid_targets from {source} to {ret}")
+            return targets
 
     def persist_dag_edges(self, dag_edge_data):
         head_hashes = list()
