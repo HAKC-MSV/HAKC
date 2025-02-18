@@ -8,8 +8,12 @@ from typing import Optional
 
 import yaml
 
+<<<<<<< HEAD
 from .HAKCBase import HAKCPrintableObj
 from .HAKCCompartmentalization import HAKCCompartmentalization
+=======
+from .HAKCBase import HAKCPrintableObj, HAKCPrintableObjs
+>>>>>>> ddb4cb8 (mid update to sending objs as dict over socket)
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
@@ -120,11 +124,11 @@ class HAKCPolicyDataSource:
         if symbol is None:
             raise Exception("ERROR: get_symbol_division did not receive a symbol object")
         symbol = yaml.load(symbol, Loader=self.yaml_loader)
-        division = self._get_symbol_division_from_backing_store(symbol)
-        if division is None:
-            division = self._get_default_division()
-        logger.debug(f"Returning Division {division} for symbol {symbol}")
-        return division
+        ret = self._get_symbol_division_from_backing_store(symbol)
+        if ret is None: # TODO update this
+            ret = self._get_default_division()
+        logger.debug(f"Returning Division {ret} for symbol {symbol}")
+        return ret
 
     def get_valid_targets_from_compartment_id(self, **kwargs) -> list[int]:
         compartment_id = kwargs.get("compartment-id", None)
@@ -207,7 +211,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
             return None
         return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
-    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[dict]:
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCPrintableObjs]:
         logger.debug(f"Trying to get HAKCDivision object from backing store with symbol: {symbol}")
         compartment_id_division_id_tuple = self.database.get_division_id_compartment_id_from_symbol(symbol)
         if compartment_id_division_id_tuple is None:
@@ -218,10 +222,17 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         access_token = compartment_id_division_id_tuple[1]
         compartment_id = compartment_id_division_id_tuple[2]
         entry_token = compartment_id_division_id_tuple[3]
-        return {"DivisionID":division_id, "AccessToken":access_token, "CompartmentID":compartment_id,"EntryToken":entry_token}
+        # return HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token)
+        ret = HAKCPrintableObjs({"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token), "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
+        logger.debug(f"get symbol division returning: {ret}")
+        return ret
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
-        return self.database.get_valid_targets_from_compartment_id(compartment_id)
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> HAKCPrintableObjs:
+        valid_targets = HAKCPrintableObjs()
+        targets = self.database.get_valid_targets_from_compartment_id(compartment_id)
+        for target in targets:
+            valid_targets.add(target[0], HAKCCompartment(CompartmentID=target[0], AccessToken=target[1]))
+        return valid_targets
 
     def connect(self, kuzuin):
         logger.debug(f"Kuzu opening connection to {kuzuin}")
@@ -264,11 +275,15 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 hakc_request = HAKCDataRequest(**json_request)
                 data = self.hakc_policy_server.data_source.handle_request(hakc_request)
 
-                if not (isinstance(data, HAKCPrintableObj) or isinstance(data,dict)):
+                if not (isinstance(data, HAKCPrintableObj)):
                     logger.error(f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
+<<<<<<< HEAD
+=======
+                logger.debug(f"dumped json: {response_data}")
+>>>>>>> ddb4cb8 (mid update to sending objs as dict over socket)
                 encoded_data = response_data.encode('utf-8')
                 logger.debug(f"dumped json {encoded_data}")
 
