@@ -210,7 +210,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
             return None
         return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
-    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivision]:
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[dict]:
         logger.debug(f"Trying to get HAKCDivision object from backing store with symbol: {symbol}")
         compartment_id_division_id_tuple = self.database.get_division_id_compartment_id_from_symbol(symbol)
         if compartment_id_division_id_tuple is None:
@@ -218,12 +218,10 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
             return None
         logger.debug(f"compartment_id_division_id_tuple: {compartment_id_division_id_tuple}")
         division_id = compartment_id_division_id_tuple[0]
-        compartment_id = compartment_id_division_id_tuple[1]
-        access_token = self.database.get_division_access_token_from_id(division_id, compartment_id)
-        if access_token is None:
-            logger.debug(f"get_division_access_token_from_id returned None for symbol {symbol}")
-            return None
-        return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
+        access_token = compartment_id_division_id_tuple[1]
+        compartment_id = compartment_id_division_id_tuple[2]
+        entry_token = compartment_id_division_id_tuple[3]
+        return {"DivisionID":division_id, "AccessToken":access_token, "CompartmentID":compartment_id,"EntryToken":entry_token}
 
     def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
         return self.database.get_valid_targets_from_compartment_id(compartment_id)

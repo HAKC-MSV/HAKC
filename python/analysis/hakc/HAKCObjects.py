@@ -55,13 +55,13 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = u'!HAKCDivision'
     InCompartmentTable = 'InCompartment'
 
-    def __init__(self, division_id: int, compartment_id: int,
-                 division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
+    def __init__(self, DivisionID: int, CompartmentID: int,
+                 DivisionCount: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
         HAKCDBNode.__init__(self, **kwargs)
-        self.division_id = division_id
-        self.compartment_id = compartment_id
-        self.division_count = division_count
+        self.division_id = DivisionID
+        self.compartment_id = CompartmentID
+        self.division_count = DivisionCount
         self.access_token = kwargs.get("AccessToken", self.compute_access_token([]))
 
     def __eq__(self, other):
@@ -91,6 +91,8 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
     def get_primary_key() -> HAKCDBColumn:
         return HAKCDBColumn('division_hash', 'UINT64')
 
+    # Need to add CompartmentID here, or else can't construct HAKCDivision in HAKCCompartmentalizatonPolicy.cpp
+    # TODO: discuss the api with derrick, don't want the db and yaml to diverge
     @classmethod
     def get_data_columns(cls) -> list[HAKCDBColumn]:
         return [HAKCDBColumn('DivisionID', 'UINT64'),
@@ -129,12 +131,12 @@ class HAKCDivision(HAKCDBNode, yaml.YAMLObject):
 class HAKCCompartment(HAKCDBNode, yaml.YAMLObject):
     yaml_tag = u'!HAKCCompartment'
 
-    def __init__(self, compartment_id: int, division_count: int = len(HAKCDivisionEnum) - 1, **kwargs):
+    def __init__(self, CompartmentID: int, DivisionCount: int = len(HAKCDivisionEnum) - 1, **kwargs):
         yaml.YAMLObject.__init__(self)
-        kwargs["Name"] = kwargs.get("Name", str(compartment_id))
+        kwargs["Name"] = kwargs.get("Name", str(CompartmentID))
         HAKCDBNode.__init__(self, **kwargs)
-        self.compartment_id = compartment_id
-        self.division_count = division_count
+        self.compartment_id = CompartmentID
+        self.division_count = DivisionCount
         self.divisions = kwargs.get("Divisions", set())
         self.entry_token = kwargs.get("EntryToken", self.compute_entry_token())
 
