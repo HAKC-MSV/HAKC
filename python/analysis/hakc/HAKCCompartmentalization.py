@@ -110,7 +110,6 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
         if len(nbrs) == 0:
             return None
         elif len(nbrs) > 1:
-            logger.error(f'Symbol {symbol} is in {len(nbrs)} divisions.')
             for division in nbrs:
                 logger.error(f'{division}')
             raise RuntimeError(f'Symbol {symbol} is in {len(nbrs)} divisions.')
@@ -161,7 +160,7 @@ class HAKCCompartmentalization(nx.MultiDiGraph):
             for callee in self.neighbors(caller):
                 if self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable, 0)['weight'] > 0:
                     valid_targets.add(self.get_symbol_compartment_id(callee))
-        logger.error(f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
+        logger.debug(f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
         return sorted(list(valid_targets))
 
     def get_unpersisted_nodes(self) -> dict[str, list[HAKCDBNode]]:
