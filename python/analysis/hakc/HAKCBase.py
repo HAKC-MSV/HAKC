@@ -192,9 +192,7 @@ class HAKCDBNode(HAKCPrintableObj):
 
 
 class HAKCPayload(HAKCPrintableObj):
-    yaml_tag = "!HAKCPayload"
-
-    def __init__(self, payload: dict[str, HAKCPrintableObj] = None, **kwargs):
+    def __init__(self, payload: dict[str, object] = None, **kwargs):
         HAKCPrintableObj.__init__(self, **kwargs)
         self.payload = payload
 

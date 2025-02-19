@@ -56,6 +56,12 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
                 elif isinstance(nbr, HAKCScope) and HAKCSymbol.HasScopeTable in nbrdict:
                     symbol.scope = nbr
 
+        for division in self.get_divisions():
+            for nbr in self.neighbors(division):
+                nbrdict = self.get_edge_data(division, nbr)
+                if isinstance(nbr, HAKCCompartment) and HAKCDivision.InCompartmentTable in nbrdict:
+                    division.compartment_id = nbr.compartment_id
+
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:
             self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, add_nodes=add_nodes,
@@ -165,6 +171,9 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
     def get_compilation_units(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCCompilationUnit))
 
+    def get_divisions(self):
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCDivision))
+
     def get_symbol_compartment_id(self, symbol: HAKCSymbol) -> int:
         for neighbor in self.neighbors(symbol):
             if isinstance(neighbor, HAKCDivision):
@@ -175,7 +184,9 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
 
     def get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
         # going to brute force for now
+        logger.debug(f'Getting valid targets for {compartment_id}')
         valid_targets = set()
+
         all_symbols_by_compartment_id = set()
         # get all symbols in compartment
         for symbol in self.get_symbols():
@@ -185,8 +196,10 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
         # now search all valid neighbors
         for caller in all_symbols_by_compartment_id:
             for callee in self.neighbors(caller):
-                if self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable, 0)['weight'] > 0:
-                    valid_targets.add(self.get_symbol_compartment_id(callee))
+                if self.has_edge(caller, callee, HAKCSymbol.DagEdgeTable):
+                    edge_weight = self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable)['weight']
+                    if edge_weight > 0:
+                        valid_targets.add(self.get_symbol_compartment_id(callee))
         logger.debug(
             f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
         return sorted(list(valid_targets))
