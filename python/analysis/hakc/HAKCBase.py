@@ -191,19 +191,24 @@ class HAKCDBNode(HAKCPrintableObj):
             f'Could not find data for primary key {primary_key} in object for table {self.get_table_name()}')
 
 
-class HAKCPrintableObjs(HAKCPrintableObj):
-    yaml_tag = "!HAKCPrintableObjs"
+class HAKCPayload(HAKCPrintableObj):
+    yaml_tag = "!HAKCPayload"
 
     def __init__(self, payload: dict[str, HAKCPrintableObj] = None, **kwargs):
         HAKCPrintableObj.__init__(self, **kwargs)
         self.payload = payload
+
     @classmethod
     def to_yaml(cls, dumper: yaml.Dumper, data):
         return dumper.represent_dict(data.to_yaml_dict())
 
+    def get_info_tokens(self, convert_hash=True) -> dict[str, object]:
+        return self.payload
+
     def add(self, key, val):
         if key not in self.payload:
             self.payload[key] = val
+
 
 class HashedHAKCDBNode(HAKCDBNode):
     def __init__(self, **kwargs):

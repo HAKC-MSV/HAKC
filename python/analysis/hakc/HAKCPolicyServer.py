@@ -8,7 +8,7 @@ from typing import Optional
 
 import yaml
 
-from .HAKCBase import HAKCPrintableObj, HAKCPrintableObjs
+from .HAKCBase import HAKCPrintableObj, HAKCPayload
 from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
@@ -131,7 +131,7 @@ class HAKCPolicyDataSource:
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return {"valid_targets": sorted(valid_targets)}
+        return valid_targets
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
@@ -207,7 +207,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
             return None
         return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
-    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCPrintableObjs]:
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCPayload]:
         logger.debug(f"Trying to get HAKCDivision object from backing store with symbol: {symbol}")
         compartment_id_division_id_tuple = self.database.get_division_id_compartment_id_from_symbol(symbol)
         if compartment_id_division_id_tuple is None:
@@ -219,14 +219,14 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         compartment_id = compartment_id_division_id_tuple[2]
         entry_token = compartment_id_division_id_tuple[3]
         # return HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token)
-        ret = HAKCPrintableObjs(
+        ret = HAKCPayload(
             {"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token),
              "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
         logger.debug(f"get symbol division returning: {ret}")
         return ret
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> HAKCPrintableObjs:
-        valid_targets = HAKCPrintableObjs()
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> HAKCPayload:
+        valid_targets = HAKCPayload()
         targets = self.database.get_valid_targets_from_compartment_id(compartment_id)
         for target in targets:
             valid_targets.add(target[0], HAKCCompartment(CompartmentID=target[0], AccessToken=target[1]))
