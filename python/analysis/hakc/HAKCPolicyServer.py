@@ -131,6 +131,7 @@ class HAKCPolicyDataSource:
         compartment_id = kwargs.get("compartment-id", None)
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
+        logger.debug(f'Calling _get_valid_targets_from_compartment_id with {compartment_id}')
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
         return HAKCPayload({'ValidTargets': valid_targets})
 
@@ -167,10 +168,10 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         self.deserialize_compartmentalization(config.data_path)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
-        return self.compartmentalization.get_compartment_entry_token_from_id(compartment_id)
+        return self.compartmentalization.get_compartment_node(compartment_id)
 
     def _get_division_from_backing_store(self, division_id: int, compartment_id: int) -> Optional[HAKCDivision]:
-        return self.compartmentalization.get_division_access_token_from_id(division_id, compartment_id)
+        return self.compartmentalization.get_division_node(division_id, compartment_id)
 
     def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCDivisionCompartmentPayload]:
         division = self.compartmentalization.get_division(symbol)
@@ -185,6 +186,7 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
         return HAKCDivisionCompartmentPayload(division=division, compartment=compartment)
 
     def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
+        logger.debug(f'Finding valid targets in YAML for {compartment_id}')
         return self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)
 
     def deserialize_compartmentalization(self, yamlin):

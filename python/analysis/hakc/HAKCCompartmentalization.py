@@ -184,7 +184,9 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
 
     def get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
         # going to brute force for now
+        logger.debug(f'Getting valid targets for {compartment_id}')
         valid_targets = set()
+
         all_symbols_by_compartment_id = set()
         # get all symbols in compartment
         for symbol in self.get_symbols():
@@ -194,8 +196,10 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
         # now search all valid neighbors
         for caller in all_symbols_by_compartment_id:
             for callee in self.neighbors(caller):
-                if self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable, 0)['weight'] > 0:
-                    valid_targets.add(self.get_symbol_compartment_id(callee))
+                if self.has_edge(caller, callee, HAKCSymbol.DagEdgeTable):
+                    edge_weight = self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable)['weight']
+                    if edge_weight > 0:
+                        valid_targets.add(self.get_symbol_compartment_id(callee))
         logger.debug(
             f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
         return sorted(list(valid_targets))
