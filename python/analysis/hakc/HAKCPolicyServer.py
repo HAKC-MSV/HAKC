@@ -8,7 +8,7 @@ from typing import Optional
 
 import yaml
 
-from .HAKCBase import HAKCPrintableObj
+from .HAKCBase import HAKCPrintableObj, HAKCPayload
 from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
@@ -127,12 +127,12 @@ class HAKCPolicyDataSource:
         logger.debug(f"Returning Division {ret} for symbol {symbol}")
         return ret
 
-    def get_valid_targets_from_compartment_id(self, **kwargs) -> list[int]:
+    def get_valid_targets_from_compartment_id(self, **kwargs) -> HAKCPayload:
         compartment_id = kwargs.get("compartment-id", None)
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return valid_targets
+        return HAKCPayload({'ValidTargets': valid_targets})
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
