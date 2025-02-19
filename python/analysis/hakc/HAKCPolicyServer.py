@@ -8,8 +8,8 @@ from typing import Optional
 
 import yaml
 
+from .HAKCBase import HAKCPrintableObj, HAKCPayload
 from .HAKCCompartmentalization import HAKCCompartmentalization
-from .HAKCBase import HAKCPrintableObj, HAKCPrintableObjs
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
@@ -121,7 +121,7 @@ class HAKCPolicyDataSource:
             raise Exception("ERROR: get_symbol_division did not receive a symbol object")
         symbol = yaml.load(symbol, Loader=self.yaml_loader)
         ret = self._get_symbol_division_from_backing_store(symbol)
-        if ret is None: # TODO update this
+        if ret is None:  # TODO update this
             ret = self._get_default_division()
         logger.debug(f"Returning Division {ret} for symbol {symbol}")
         return ret
@@ -131,7 +131,7 @@ class HAKCPolicyDataSource:
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return {"valid_targets": sorted(valid_targets)}
+        return valid_targets
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
@@ -207,7 +207,7 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
             return None
         return HAKCDivision(division_id, compartment_id, AccessToken=access_token)
 
-    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCPrintableObjs]:
+    def _get_symbol_division_from_backing_store(self, symbol: HAKCSymbol) -> Optional[HAKCPayload]:
         logger.debug(f"Trying to get HAKCDivision object from backing store with symbol: {symbol}")
         compartment_id_division_id_tuple = self.database.get_division_id_compartment_id_from_symbol(symbol)
         if compartment_id_division_id_tuple is None:
@@ -219,12 +219,14 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         compartment_id = compartment_id_division_id_tuple[2]
         entry_token = compartment_id_division_id_tuple[3]
         # return HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token)
-        ret = HAKCPrintableObjs({"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token), "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
+        ret = HAKCPayload(
+            {"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token),
+             "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
         logger.debug(f"get symbol division returning: {ret}")
         return ret
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> HAKCPrintableObjs:
-        valid_targets = HAKCPrintableObjs()
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> HAKCPayload:
+        valid_targets = HAKCPayload()
         targets = self.database.get_valid_targets_from_compartment_id(compartment_id)
         for target in targets:
             valid_targets.add(target[0], HAKCCompartment(CompartmentID=target[0], AccessToken=target[1]))
@@ -272,11 +274,11 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 data = self.hakc_policy_server.data_source.handle_request(hakc_request)
 
                 if not (isinstance(data, HAKCPrintableObj)):
-                    logger.error(f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
+                    logger.error(
+                        f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
-                logger.debug(f"dumped json: {response_data}")
                 encoded_data = response_data.encode('utf-8')
                 logger.debug(f"dumped json {encoded_data}")
 

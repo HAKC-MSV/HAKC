@@ -10,7 +10,6 @@ from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAK
 
 logger = logging.getLogger('hakc-policy-process')
 
-
 def init_data_source(config: HAKCPolicyProcessConfig) -> Optional[HAKCPolicyDataSource]:
     if config.type == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
