@@ -29,51 +29,79 @@ class HAKCDivisionEnum(Enum):
     GOLD_DIVISION = 16  # GLD
 
 
-class HAKCPrintableObj:
-    def __init__(self, **kwargs):
-        self.computed_hash = None
+class HAKCHashValue:
+    ByteOrder = 'big'
 
-    def __str__(self):
-        cls = self.__class__.__name__
-        inside_strings = [f'{key}={str(value)}' for key, value in self.get_info_tokens().items()]
-        return f'{cls}({", ".join(sorted(inside_strings))})'
-
-    def get_info_tokens(self) -> dict[str, object]:
-        raise NotImplementedError
-
-    def to_yaml_dict(self) -> dict[str, object]:
-        result = dict()
-        for key, value in self.get_info_tokens().items():
-            if isinstance(value, HAKCPrintableObj):
-                result[key] = value.to_yaml_dict()
-            else:
-                result[key] = value
+    @classmethod
+    def from_int(cls, hash_value: int):
+        result = cls([])
+        result.final_hash = hash_value
         return result
 
-    def __hash__(self):
-        if self.computed_hash is None:
-            self.computed_hash = HAKCPrintableObj.hash_values(self.get_hash_inputs())
-        return self.computed_hash
-
-    def get_hash_inputs(self) -> list[object]:
-        raise NotImplementedError
-
-    @staticmethod
-    def hash_values(values: list) -> int:
-        h = hashlib.sha256()
-        for value in values:
-            h.update(HAKCPrintableObj.get_bytes(value))
-        return int.from_bytes(h.digest()[:8], byteorder='big')
+    def __init__(self, values: list[object]):
+        if len(values) > 0:
+            h = hashlib.sha256()
+            for value in values:
+                h.update(HAKCHashValue.get_bytes(value))
+            self.final_hash = int.from_bytes(h.digest()[:8], byteorder=HAKCHashValue.ByteOrder)
 
     @staticmethod
     def get_bytes(value) -> bytes:
         if isinstance(value, str):
             return value.encode('utf-8')
         elif isinstance(value, int):
-            return value.to_bytes(8, byteorder='big')
+            return value.to_bytes(8, byteorder=HAKCHashValue.ByteOrder)
         else:
             hash_value = hash(value)
-            return hash_value.to_bytes(8, byteorder='big')
+            return hash_value.to_bytes(8, byteorder=HAKCHashValue.ByteOrder)
+
+    def __hash__(self):
+        return self.final_hash
+
+    def __str__(self):
+        return f'{self.final_hash:0x}'
+
+    def __repr__(self):
+        return str(self)
+
+
+class HAKCPrintableObj:
+    def __init__(self, **kwargs):
+        self.computed_hash = None
+
+    def __str__(self):
+        cls = self.__class__.__name__
+        inside_strings = [f'{key}={str(value)}' for key, value in self.get_info_tokens(convert_hash=False).items()]
+        return f'{cls}({", ".join(sorted(inside_strings))})'
+
+    def get_info_tokens(self, convert_hash=True) -> dict[str, object]:
+        raise NotImplementedError
+
+    def to_yaml_dict(self) -> dict[str, object]:
+        result = dict()
+        for key, value in self.get_info_tokens(convert_hash=False).items():
+            if isinstance(value, HAKCPrintableObj):
+                result[key] = value.to_yaml_dict()
+            elif isinstance(value, HAKCHashValue):
+                result[key] = str(value)
+            else:
+                result[key] = value
+        return result
+
+    def compute_hash(self):
+        if self.computed_hash is None:
+            self.computed_hash = HAKCHashValue(self.get_hash_inputs())
+
+    def get_computed_hash(self) -> HAKCHashValue:
+        self.compute_hash()
+        return self.computed_hash
+
+    def __hash__(self):
+        self.compute_hash()
+        return hash(self.computed_hash)
+
+    def get_hash_inputs(self) -> list[object]:
+        raise NotImplementedError
 
 
 class HAKCDBColumn(HAKCPrintableObj):
@@ -93,30 +121,36 @@ class HAKCDBColumn(HAKCPrintableObj):
     def __hash__(self):
         return HAKCPrintableObj.__hash__(self)
 
-    def get_info_tokens(self) -> dict[str, object]:
+    def get_info_tokens(self, convert_hash=True) -> dict[str, object]:
         return {
             'column_name': self.column_name,
             'column_type': self.column_type
         }
 
     def get_hash_inputs(self) -> list[object]:
-        return [self.column_name, self.column_type]
+        return list(self.get_info_tokens().values())
 
 
 class HAKCDBNode(HAKCPrintableObj):
     def __init__(self, **kwargs):
         HAKCPrintableObj.__init__(self, **kwargs)
+        for key, value in kwargs.items():
+            if key == self.get_primary_key().column_name and self.uses_hashed_key():
+                self.computed_hash = HAKCHashValue.from_int(int(value, 16))
 
     @classmethod
     def to_yaml(cls, dumper: yaml.Dumper, data):
-        return dumper.represent_dict(data.to_yaml_dict())
+        return dumper.represent_mapping(data.yaml_tag, data.to_yaml_dict())
 
-    def get_info_tokens(self) -> dict[str, object]:
-        result = {column.column_name: value for column, value in self.get_db_data().items()}
+    def get_info_tokens(self, convert_hash=True) -> dict[str, object]:
+        result = {column.column_name: value for column, value in self.get_db_data(convert_hash).items()}
         return result
 
-    def get_db_data(self) -> dict[HAKCDBColumn, object]:
+    def get_db_data(self, convert_hash=True) -> dict[HAKCDBColumn, object]:
         raise NotImplementedError
+
+    def uses_hashed_key(self) -> bool:
+        return False
 
     @staticmethod
     def get_primary_key() -> HAKCDBColumn:
@@ -148,9 +182,9 @@ class HAKCDBNode(HAKCPrintableObj):
         member_str = ", ".join([" ".join([column.column_name, column.column_type]) for column in columns])
         return f'{cls.get_table_name()}({member_str}, PRIMARY KEY ({primary_key.column_name}))'
 
-    def get_primary_key_data(self) -> object:
+    def get_primary_key_data(self, convert_hash=True) -> object:
         primary_key = self.get_primary_key()
-        for column, data in self.get_db_data().items():
+        for column, data in self.get_db_data(convert_hash).items():
             if column == primary_key:
                 return data
         raise RuntimeError(
@@ -170,6 +204,14 @@ class HAKCPrintableObjs(HAKCPrintableObj):
     def add(self, key, val):
         if key not in self.payload:
             self.payload[key] = val
+
+class HashedHAKCDBNode(HAKCDBNode):
+    def __init__(self, **kwargs):
+        HAKCDBNode.__init__(self, **kwargs)
+
+    def uses_hashed_key(self) -> bool:
+        return True
+
 
 class HAKCDBRelation:
     def __init__(self, relation_name: str, from_class: Type[HAKCDBNode], to_class: Type[HAKCDBNode], **kwargs):
