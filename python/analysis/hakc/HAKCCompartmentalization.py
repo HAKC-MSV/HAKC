@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Type
+from typing import Type, Optional
 
 import networkx as nx
 import pandas as pd
@@ -187,7 +187,8 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
             for callee in self.neighbors(caller):
                 if self.get_edge_data(caller, callee, HAKCSymbol.DagEdgeTable, 0)['weight'] > 0:
                     valid_targets.add(self.get_symbol_compartment_id(callee))
-        logger.debug(f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
+        logger.debug(
+            f"In get_valid_targets, compartment_id: {compartment_id}, valid targets: {sorted(list(valid_targets))}")
         return sorted(list(valid_targets))
 
     def get_unpersisted_nodes(self) -> dict[str, list[HAKCDBNode]]:

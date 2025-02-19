@@ -9,6 +9,7 @@ from typing import Optional
 import yaml
 
 from .HAKCBase import HAKCPrintableObj, HAKCPrintableObjs
+from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
@@ -120,7 +121,7 @@ class HAKCPolicyDataSource:
             raise Exception("ERROR: get_symbol_division did not receive a symbol object")
         symbol = yaml.load(symbol, Loader=self.yaml_loader)
         ret = self._get_symbol_division_from_backing_store(symbol)
-        if ret is None: # TODO update this
+        if ret is None:  # TODO update this
             ret = self._get_default_division()
         logger.debug(f"Returning Division {ret} for symbol {symbol}")
         return ret
@@ -218,7 +219,9 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         compartment_id = compartment_id_division_id_tuple[2]
         entry_token = compartment_id_division_id_tuple[3]
         # return HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token)
-        ret = HAKCPrintableObjs({"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token), "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
+        ret = HAKCPrintableObjs(
+            {"Division": HAKCDivision(DivisionID=division_id, CompartmentID=compartment_id, AccessToken=access_token),
+             "Compartment": HAKCCompartment(CompartmentID=compartment_id, EntryToken=entry_token)})
         logger.debug(f"get symbol division returning: {ret}")
         return ret
 
@@ -271,11 +274,11 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                 data = self.hakc_policy_server.data_source.handle_request(hakc_request)
 
                 if not (isinstance(data, HAKCPrintableObj)):
-                    logger.error(f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
+                    logger.error(
+                        f"Generated response to request is not a HAKCPrintableObj or list, and is invalid: {data}")
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
-                logger.debug(f"dumped json: {response_data}")
                 encoded_data = response_data.encode('utf-8')
                 logger.debug(f"dumped json {encoded_data}")
 
@@ -300,7 +303,7 @@ class HAKCPolicyServer(socketserver.ThreadingUnixStreamServer):
                  log_file: str = "", log_mode: str = 'w', **kwargs):
         self.data_source = data_source
         setup_logging(logger, log_level=log_level, log_file=log_file, log_mode=log_mode)
-        logger.debug(f'Starting Socket Server at {data_source.socket_path}, type: {type(data_source.socket_path)}')
+        logger.debug(f'Starting Socket Server at {data_source.socket_path}, type: {type(data_source)}')
         socketserver.ThreadingUnixStreamServer.__init__(self, str(data_source.socket_path),
                                                         RequestHandlerClass=HAKCRequestHandler)
 
