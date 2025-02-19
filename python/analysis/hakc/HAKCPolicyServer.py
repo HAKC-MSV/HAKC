@@ -8,12 +8,8 @@ from typing import Optional
 
 import yaml
 
-<<<<<<< HEAD
-from .HAKCBase import HAKCPrintableObj
 from .HAKCCompartmentalization import HAKCCompartmentalization
-=======
 from .HAKCBase import HAKCPrintableObj, HAKCPrintableObjs
->>>>>>> ddb4cb8 (mid update to sending objs as dict over socket)
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision
@@ -280,10 +276,7 @@ class HAKCRequestHandler(socketserver.StreamRequestHandler):
                     raise Exception
                 logger.debug(f"data got from handle request: {data}")
                 response_data = json.dumps(data.to_yaml_dict(), default=str)
-<<<<<<< HEAD
-=======
                 logger.debug(f"dumped json: {response_data}")
->>>>>>> ddb4cb8 (mid update to sending objs as dict over socket)
                 encoded_data = response_data.encode('utf-8')
                 logger.debug(f"dumped json {encoded_data}")
 

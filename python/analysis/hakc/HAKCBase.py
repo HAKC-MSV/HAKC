@@ -191,7 +191,6 @@ class HAKCDBNode(HAKCPrintableObj):
             f'Could not find data for primary key {primary_key} in object for table {self.get_table_name()}')
 
 
-<<<<<<< HEAD
 class HashedHAKCDBNode(HAKCDBNode):
     def __init__(self, **kwargs):
         HAKCDBNode.__init__(self, **kwargs)
@@ -199,7 +198,7 @@ class HashedHAKCDBNode(HAKCDBNode):
     def uses_hashed_key(self) -> bool:
         return True
 
-=======
+
 class HAKCPrintableObjs(HAKCPrintableObj):
     yaml_tag = "!HAKCPrintableObjs"
 
@@ -210,10 +209,20 @@ class HAKCPrintableObjs(HAKCPrintableObj):
     def to_yaml(cls, dumper: yaml.Dumper, data):
         return dumper.represent_dict(data.to_yaml_dict())
 
+    def to_yaml_dict(self) -> dict[str, object]:
+        result = dict()
+        for key, value in self.get_info_tokens(convert_hash=False).items():
+            if isinstance(value, HAKCPrintableObj):
+                result[key] = value.to_yaml_dict()
+            elif isinstance(value, HAKCHashValue):
+                result[key] = str(value)
+            else:
+                result[key] = value
+        return result
+
     def add(self, key, val):
         if key not in self.payload:
             self.payload[key] = val
->>>>>>> ddb4cb8 (mid update to sending objs as dict over socket)
 
 class HAKCDBRelation:
     def __init__(self, relation_name: str, from_class: Type[HAKCDBNode], to_class: Type[HAKCDBNode], **kwargs):
