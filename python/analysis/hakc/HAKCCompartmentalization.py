@@ -16,7 +16,7 @@ from .HAKCObjects import HAKCSymbol, HAKCCompilationUnit, HAKCFunction, HAKCType
 logger = logging.getLogger('hakc-dag')
 
 
-class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
+class HAKCCompartmentalization(yaml.YAMLObject, nx.MultiDiGraph):
     kernel_compartment_id = 0
     kernel_division = HAKCDivisionEnum.NO_DIVISION.value
     default_division = HAKCDivisionEnum.TEAL_DIVISION.value
@@ -25,12 +25,12 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
     yaml_tag = "!HAKCCompartmentalization"
 
     def __init__(self, division_count: Optional[int] = 16, nxgraph: Optional[nx.MultiDiGraph] = None):
+        yaml.YAMLObject.__init__(self)
         if nxgraph is None:
             nx.MultiDiGraph.__init__(self)
         else:
             nx.MultiDiGraph.__init__(self, nxgraph)
             self._finalize_construction()
-        yaml.YAMLObject.__init__(self)
         self.division_count = division_count
 
     @classmethod

@@ -9,7 +9,6 @@ from typing import Optional
 import yaml
 
 from .HAKCBase import HAKCPrintableObj, HAKCPayload
-from .HAKCCompartmentalization import HAKCCompartmentalization
 from .HAKCDatabase import HAKCDatabase
 from .HAKCLogger import setup_logging, LoggingLevelEnum
 from .HAKCObjects import HAKCSymbol, HAKCCompartment, HAKCDivision, HAKCDivisionCompartmentPayload
@@ -164,7 +163,6 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
     def __init__(self, config: HAKCPolicyProcessConfig, **kwargs):
         HAKCPolicyDataSource.__init__(self, config, yaml_loader=yaml.Loader, **kwargs)
         self.compartmentalization = None
-        self.yaml_loader.add_constructor(HAKCCompartmentalization.yaml_tag, HAKCCompartmentalization.from_yaml)
         self.deserialize_compartmentalization(config.data_path)
 
     def _get_compartment_from_backing_store(self, compartment_id: int) -> Optional[HAKCCompartment]:
