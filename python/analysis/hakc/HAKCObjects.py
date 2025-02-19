@@ -4,7 +4,8 @@ from typing import Optional
 
 import yaml
 
-from .HAKCBase import HAKCDivisionEnum, HAKCDBColumn, HAKCDBRelation, HAKCDBNode, HAKCPrintableObj, HashedHAKCDBNode
+from .HAKCBase import HAKCDivisionEnum, HAKCDBColumn, HAKCDBRelation, HAKCDBNode, HAKCPrintableObj, HashedHAKCDBNode, \
+    HAKCPayload
 
 logger = logging.getLogger('hakc-dag')
 
@@ -549,3 +550,8 @@ class HAKCCompartmentalizationAdjustment(yaml.YAMLObject):
                 adjusted_division = adjustment.division
 
         return adjusted_division
+
+
+class HAKCDivisionCompartmentPayload(HAKCPayload):
+    def __init__(self, division: HAKCDivision, compartment: HAKCCompartment, **kwargs):
+        HAKCPayload.__init__(self, {'Division': division, 'Compartment': compartment}, **kwargs)

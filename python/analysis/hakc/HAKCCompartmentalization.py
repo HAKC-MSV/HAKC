@@ -56,6 +56,12 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
                 elif isinstance(nbr, HAKCScope) and HAKCSymbol.HasScopeTable in nbrdict:
                     symbol.scope = nbr
 
+        for division in self.get_divisions():
+            for nbr in self.neighbors(division):
+                nbrdict = self.get_edge_data(division, nbr)
+                if isinstance(nbr, HAKCCompartment) and HAKCDivision.InCompartmentTable in nbrdict:
+                    division.compartment_id = nbr.compartment_id
+
     def add_dag_edge(self, head: HAKCSymbol, tail: HAKCSymbol, dag_edge_weight: int, add_nodes: bool = True):
         if dag_edge_weight > 0:
             self.add_persistent_edge(head, tail, key=HAKCSymbol.DagEdgeTable, add_nodes=add_nodes,
@@ -164,6 +170,9 @@ class HAKCCompartmentalization(nx.MultiDiGraph, yaml.YAMLObject):
 
     def get_compilation_units(self):
         return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCCompilationUnit))
+
+    def get_divisions(self):
+        return self.get_filtered_nodes(node_filter=lambda n: isinstance(n, HAKCDivision))
 
     def get_symbol_compartment_id(self, symbol: HAKCSymbol) -> int:
         for neighbor in self.neighbors(symbol):
