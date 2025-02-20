@@ -92,7 +92,7 @@ class HAKCDatabase:
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(access_token), int(compartment_id), int(entry_token)
 
-    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[dict[int, int]]:
+    def get_valid_targets_from_compartment_id(self, source_compartment_id: int) -> list[int]:
         # TODO: double check this
         # NOTE: comp1 is fixed to the caller's compartment
         # from the perspective of the caller, the compartment_id is their own and they are looking for compartment_ids of targets
@@ -105,17 +105,21 @@ class HAKCDatabase:
         RETURN comp1.CompartmentID, comp2.CompartmentID, comp2.EntryToken;
         """
         response = self.execute_prepared_stmt(cmd, source_compartment_id=source_compartment_id)
-        ret = response.get_as_df()
-        if ret.empty:
+        data = response.get_as_df()
+        if data.empty:
             logger.debug(f'Command: {cmd} returned None\n')
             logger.debug(f'Searched with CompartmentID: {source_compartment_id}')
-            return []
+            return list()
         else:
-            source = ret["comp1.CompartmentID"][0]
-            targets = ret["comp2.CompartmentID"].values
-            # need to cast from numpy.uint64s to int, then remove duplicates, and sort
-            # valid_targets = set(map(lambda x: int(x), targets))
-            logger.debug(f"Found valid_targets from {source} to {ret}")
+            # using dictionary to remove duplicates
+            targets = list()
+            for index, row in data.iterrows():
+                target_id = row["comp2.CompartmentID"]
+                # entry_token = row["comp2.EntryToken"] // probably don't need entry token here
+                if target_id not in targets:
+                    logger.debug(f"Found valid_targets from {row['comp1.CompartmentID']} to {target_id}")
+                    targets.append(int(target_id))
+
             return targets
 
     def persist_dag_edges(self, dag_edge_data):

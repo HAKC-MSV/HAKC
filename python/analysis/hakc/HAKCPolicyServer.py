@@ -64,7 +64,7 @@ class HAKCPolicyProcessConfig:
 
 
 class HAKCPolicyDataSource:
-    def __init__(self, config: HAKCPolicyProcessConfig, yaml_loader=yaml.SafeLoader, **kwargs):
+    def __init__(self, config: HAKCPolicyProcessConfig, yaml_loader=yaml.Loader, **kwargs):
         self.endpoints = {config.get_compartment_endpoint: self.get_compartment_by_id,
                           config.get_division_endpoint: self.get_division_by_id,
                           config.get_division_from_symbol_endpoint: self.get_symbol_division,
@@ -132,8 +132,10 @@ class HAKCPolicyDataSource:
         if compartment_id is None:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         logger.debug(f'Calling _get_valid_targets_from_compartment_id with {compartment_id}')
-        valid_targets = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        return HAKCPayload({'ValidTargets': valid_targets})
+        payload = self._get_valid_targets_from_compartment_id(int(compartment_id))
+        if(payload is None):
+            return HAKCPayload({"ValidTargets": None})
+        return payload
 
     def handle_request(self, request: HAKCDataRequest) -> HAKCPrintableObj:
         logger.debug(f"handle_request processing endpoint: {request.endpoint}")
@@ -156,7 +158,7 @@ class NullHAKCPolicyDataStore(HAKCPolicyDataSource):
         return HAKCDivisionCompartmentPayload(division=self._get_default_division(),
                                               compartment=self._get_default_compartment())
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[HAKCPayload]:
         return list()
 
 
@@ -185,9 +187,9 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
 
         return HAKCDivisionCompartmentPayload(division=division, compartment=compartment)
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[HAKCPayload]:
         logger.debug(f'Finding valid targets in YAML for {compartment_id}')
-        return self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)
+        return HAKCPayload({"ValidTargets": self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)})
 
     def deserialize_compartmentalization(self, yamlin):
         if yamlin is None:
@@ -237,9 +239,11 @@ class KUZUHAKCPolicyDataStore(HAKCPolicyDataSource):
         logger.debug(f"get symbol division returning: {ret}")
         return ret
 
-    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
-        targets = self.database.get_valid_targets_from_compartment_id(compartment_id)
-        return targets
+    def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[HAKCPayload]:
+        target_id_entry_token = self.database.get_valid_targets_from_compartment_id(compartment_id)
+        if len(target_id_entry_token) == 0:
+            return None
+        return HAKCPayload({'ValidTargets': target_id_entry_token})
 
     def connect(self, kuzuin):
         logger.debug(f"Kuzu opening connection to {kuzuin}")
