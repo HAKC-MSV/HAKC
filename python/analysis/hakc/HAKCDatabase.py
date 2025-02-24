@@ -88,7 +88,8 @@ class HAKCDatabase:
             access_token = ret["access_token"][0]
             compartment_id = ret["compartment_id"][0]
             entry_token = ret["entry_token"][0]
-            logger.error(f"Found division_id, access_token, compartment_id, entry_token: ({division_id}, {access_token}, {compartment_id}, {entry_token}) for symbol: {symbol}")
+            logger.error(
+                f"Found division_id, access_token, compartment_id, entry_token: ({division_id}, {access_token}, {compartment_id}, {entry_token}) for symbol: {symbol}")
             # need to cast to int because json cant parse numpy.uint64s apparently
             return int(division_id), int(access_token), int(compartment_id), int(entry_token)
 

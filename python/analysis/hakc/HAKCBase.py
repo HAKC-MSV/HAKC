@@ -215,6 +215,7 @@ class HashedHAKCDBNode(HAKCDBNode):
     def uses_hashed_key(self) -> bool:
         return True
 
+
 class HAKCDBRelation:
     def __init__(self, relation_name: str, from_class: Type[HAKCDBNode], to_class: Type[HAKCDBNode], **kwargs):
         self.relation_name = relation_name

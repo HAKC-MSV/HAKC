@@ -139,7 +139,7 @@ SafeTransitionFunctions:
   - { name: "__ashrti3" }
   - { name: "__lshrti3" }
 IgnoredTypes:
-  - { type: struct, subtypes: [ list_head, proto, atomic64_s, atomic_s ] }
+  - { types: [struct list_head,struct proto,struct atomic64_s,struct atomic_s ] }
 IgnoredGlobals:
   - { name: kmalloc_caches }
 KernelAllocationSizeMap:

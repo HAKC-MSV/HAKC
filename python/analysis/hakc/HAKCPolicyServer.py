@@ -133,7 +133,7 @@ class HAKCPolicyDataSource:
             raise Exception("ERROR: get_valid_targets_from_compartment_id did not receive a compartment_id")
         logger.debug(f'Calling _get_valid_targets_from_compartment_id with {compartment_id}')
         payload = self._get_valid_targets_from_compartment_id(int(compartment_id))
-        if(payload is None):
+        if (payload is None):
             return HAKCPayload({"ValidTargets": None})
         return payload
 
@@ -189,7 +189,8 @@ class YAMLHAKCPolicyDataStore(HAKCPolicyDataSource):
 
     def _get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[HAKCPayload]:
         logger.debug(f'Finding valid targets in YAML for {compartment_id}')
-        return HAKCPayload({"ValidTargets": self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)})
+        return HAKCPayload(
+            {"ValidTargets": self.compartmentalization.get_valid_targets_from_compartment_id(compartment_id)})
 
     def deserialize_compartmentalization(self, yamlin):
         if yamlin is None:
