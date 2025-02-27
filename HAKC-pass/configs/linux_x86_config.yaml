@@ -15,7 +15,7 @@ Database:
 PreTransferActions:
   - { label: "step0", name: "get_hakc_address_color" }
 PostTargetActions:
-  - { name: "hakc_color_address", arg: { idx: 3, value: "step0" } }
+  - { name: "hakc_color_address", arg: { idx: 1, value: "step0" } }
 CustomTransferFunctions:
   - { type: "char *", name: "hakc_transfer_string", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
   - { type: "struct sk_buff*", name: "hakc_transfer_skb", ptr-idx: 0, compartment-idx: 1, division-idx: 2 }
