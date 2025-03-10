@@ -182,7 +182,7 @@ class HAKCCompartmentalization(yaml.YAMLObject, nx.MultiDiGraph):
                         return div_neighbor.compartment_id
         raise RuntimeError(f'Symbol {symbol} is not in a compartment!')
 
-    def get_valid_targets_from_compartment_id(self, compartment_id: int) -> list[int]:
+    def get_valid_targets_from_compartment_id(self, compartment_id: int) -> Optional[list[int]]:
         # going to brute force for now
         logger.debug(f'Getting valid targets for {compartment_id}')
         valid_targets = set()
