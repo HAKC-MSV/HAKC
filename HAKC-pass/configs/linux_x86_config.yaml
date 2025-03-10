@@ -34,7 +34,7 @@ CompartmentalizationSupportFunctions:
   - { type: "ptr (ptr, i32, i1)", name: "hakc_sign_pointer_with_color", params: [ { idx: 0, name: address }, { idx: 1, name: compartment }, { idx: 2, name: is_code } ] }
   - { type: "ptr (ptr, i32)", name: "hakc_sign_pcpu_pointer_with_color", params: [ { idx: 0, name: address }, { idx: 1, name: compartment } ] }
   - { type: "ptr (ptr, i32, i32, i1)", name: "hakc_sign_pointer", params: [ { idx: 0, name: address }, { idx: 1, name: compartment }, { idx: 2, name: division }, { idx: 3, name: is_code } ] }
-  - { type: "void (ptr, i32, i64)", name: "hakc_color_address", params: [ { idx: 0, name: address }, { idx: 1, name: division }, { idx: 2, name: is_code } ] }
+  - { type: "void (ptr, i32, i64)", name: "hakc_color_address", params: [ { idx: 0, name: address }, { idx: 1, name: division }, { idx: 2, name: size } ] }
 IgnoredTypes:
   - { type: struct, subtypes: [ list_head, proto, atomic64_s, atomic_s ] }
 NoTransferFunctions:
