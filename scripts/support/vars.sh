@@ -1,13 +1,6 @@
 export HAKC_LLVM_COMMIT='7ba7d8e2f7b6445b60679da826210cdde29eaf8b'
 
-export HAKC_ROOT=$(git rev-parse --show-toplevel)
-export HAKC_INSTALL_PATH=$HAKC_ROOT/install
-export HAKC_LLVM_SOURCE_PATH=$HAKC_ROOT/llvm-project
-export HAKC_LLVM_BUILD_PATH=$HAKC_ROOT/cmake-build-hakc-llvm
-export HAKC_SUPPORT_SCRIPTS_PATH=$HAKC_ROOT/scripts/support
-export HAKC_TEST_ROOT=$HAKC_ROOT/llvm-project/llvm/test/Transforms/Compartmentalization
-export HAKC_CLANG=$HAKC_INSTALL_PATH/bin/clang
-export HAKC_OPT=$HAKC_INSTALL_PATH/bin/opt
+source $(git rev-parse --show-toplevel)/.envrc
 
 exec_cmd_and_check_status () {
   cmd_to_run="$@"
