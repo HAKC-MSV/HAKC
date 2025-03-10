@@ -6,16 +6,16 @@ cd $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test && clear
 if [[ -n "$1" ]]; then
     if [[ -n "$2" ]]; then
         echo Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c 
-        $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a --timeout $2 Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c
+        $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c
     else
         echo Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c
-        $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a --timeout 15 Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c
+        $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a Transforms/Compartmentalization/hakc_test$1/hakc_test$1.c
     fi
 
 else
     echo "Running all tests" 
-    echo "$HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a --timeout 15 Transforms/Compartmentalization/hakc_test*"
-    $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a --timeout 15 Transforms/Compartmentalization/hakc_test*
+    echo "$HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a  Transforms/Compartmentalization/hakc_test*"
+    $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/bin/llvm-lit -a  Transforms/Compartmentalization/hakc_test*
 fi
 
 
