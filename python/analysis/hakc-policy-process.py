@@ -10,6 +10,7 @@ from hakc.HAKCPolicyServer import HAKCPolicyServer, NullHAKCPolicyDataStore, HAK
 
 logger = logging.getLogger('hakc-policy-process')
 
+
 def init_data_source(config: HAKCPolicyProcessConfig) -> Optional[HAKCPolicyDataSource]:
     if config.type == SupportedBackingStore.NULL.value:
         logger.debug(f'Creating NullHAKCPolicyDataStore')
@@ -36,12 +37,16 @@ def main():
                         type=parse_log_level)
     parser.add_argument('-l', '--log', default=None, dest='log_path')
     parser.add_argument('--log-mode', default='w', dest='log_mode')
+    parser.add_argument('--no-timeout', required=False, dest='no_timeout', action='store_true',
+                        help='Ignore timeout in config file')
 
     args = parser.parse_args()
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
     with open(args.config, 'r') as f:
         parsed_config = json.load(f)
         config = HAKCPolicyProcessConfig(**parsed_config)
+        if args.no_timeout:
+            config.server_timeout = -1
 
     data_source = init_data_source(config)
     with HAKCPolicyServer(data_source=data_source, log_level=args.log_level, log_file=config.log_path,
