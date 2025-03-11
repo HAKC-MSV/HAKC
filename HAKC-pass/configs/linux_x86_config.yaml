@@ -93,6 +93,12 @@ PerCPUCompartmentTransferFunction:
     - { idx: 2, type: i64, arg-use: compartment }
     - { idx: 3, type: i64, arg-use: division }
 CompartmentalizationSupportFunctions:
+  - return-type: void
+    name: hakc_color_address
+    arguments:
+      - { idx: 0, type: ptr, arg-use: signed-ptr }
+      - { idx: 1, type: i64, arg-use: division }
+      - { idx: 2, type: i64, arg-use: size }
   - return-type: i32
     name: get_hakc_color_by_name
     arguments:
@@ -123,12 +129,6 @@ CompartmentalizationSupportFunctions:
       - { idx: 0, type: ptr, arg-use: signed-ptr }
       - { idx: 1, type: i64, arg-use: compartment }
       - { idx: 2, type: i1, arg-use: is-code }
-  - return-type: void
-    name: hakc_color_address
-    arguments:
-      - { idx: 0, type: ptr, arg-use: signed-ptr }
-      - { idx: 1, type: i64, arg-use: division }
-      - { idx: 2, type: i64, arg-use: size }
 IgnoredTypes: [ "struct list_head", "struct proto", "struct atomic64_s", "struct atomic_s" ]
 NoTransferFunctions:
   - { name: "clear_page_orig" }
