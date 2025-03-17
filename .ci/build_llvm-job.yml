@@ -5,30 +5,21 @@ build_llvm-job:
   rules:
     - changes:
         paths:
-          - llvm-patches/*.patch
+          - .git/modules/llvm-project/HEAD
+          - scripts/llvm-cmake.sh
         compare_to: 'main'
   script:
-    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
-    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
-    - echo "Building llvm into $CLANG_BUILD_PATH"
+    - echo "Building LLVM into $LLVM_BUILD_DIR"
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule init llvm-project
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update
-    - mkdir -p $CLANG_BUILD_PATH
-    - cd llvm-project
-    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git apply ../llvm-patches/*.patch
-    - cd ..
-    - mkdir cmake-build-hakc-llvm
-    - cd cmake-build-hakc-llvm
-    - |
-      cmake -G Ninja \
-      -DLLVM_ENABLE_PROJECTS='clang;lld;clang-tools-extra;llvm' \
-      -DCMAKE_INSTALL_PREFIX=$(realpath $CLANG_BUILD_PATH) \
-      -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-      -DCMAKE_C_COMPILER=/usr/bin/clang \
-      -DCMAKE_CXX_COMPILER=/usr/bin/clang++ \
-      -DLLVM_TARGETS_TO_BUILD='X86;AArch64' \
-      -DLLVM_OPTIMIZED_TABLEGEN=True \
-      -DLLVM_USE_LINKER=lld \
-      -DLLVM_ENABLE_IDE=True \
-      -DHAKC_LLVM=True ..
-    - cmake --build . --target install -j$BUILD_PROCESSORS
+    - mkdir -p $LLVM_BUILD_DIR
+    - cd $LLVM_BUILD_DIR
+    - export CMAKE_INIT_LINE="
+      cmake -G Ninja
+      -DCMAKE_INSTALL_PREFIX=$(realpath $CLANG_BUILD_PATH)
+      -DCMAKE_BUILD_TYPE=Release
+      -DLLVM_ENABLE_ASSERTIONS=On
+      $(grep -v '^#' $CI_PROJECT_DIR/scripts/llvm-cmake.sh)
+      $CI_PROJECT_DIR"
+    - exec $CMAKE_INIT_LINE
+    - cmake --build . -j$BUILD_PROCESSORS

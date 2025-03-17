@@ -1,0 +1,14 @@
+run_llvm_tests-job:
+  stage: run_llvm_tests
+  needs:
+    - job: build_llvm-job
+  rules:
+    - changes:
+        paths:
+          - .git/modules/llvm-project/HEAD
+          - scripts/llvm-cmake.sh
+        compare_to: 'main'
+  script:
+    - echo "Running LLVM Tests"
+    - cd $LLVM_BUILD_DIR
+    - cmake --build . --target check-llvm
