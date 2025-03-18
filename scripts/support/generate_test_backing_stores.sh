@@ -13,6 +13,6 @@ if [[ -n "$1" ]]; then
     $HAKC_OPT -passes=hakc --hakc-config=$HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test$1/hakc_dag_config.yml $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test$1/hakc_test$1.orig.ll -o $HAKC_TEST_ROOT/hakc_test$1/hakc_test$1.tmp.ll
     python3 -m venv $(git rev-parse --show-toplevel)/python/venv && source $(git rev-parse --show-toplevel)/python/venv/bin/activate
     # 3. Generate yaml backing store using hakc-dag.py
-    python3 $HAKC_ROOT/llvm-project/utils/hakc/hakc-static-analysis.py \
+    python3 $HAKC_ROOT/llvm-project/llvm/utils/hakc/hakc-static-analysis.py \
     --dump-dag  $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test$1/backing_$1.yml --create-dag --dag-files-root $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test$1/dag_analysis/_HAKC_SOURCE_PATH_ --db-dir $HAKC_LLVM_BUILD_PATH/llvm-project/llvm/test/Transforms/Compartmentalization/hakc_test$1/hakc-db
 fi
