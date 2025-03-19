@@ -8,3 +8,4 @@
 -DLLVM_ENABLE_IDE=On
 -DLLVM_ENABLE_HAKC=On
 -DLLVM_BUILD_TESTS=On
+-DHAKC_PYTHON_VENV=$(git rev-parse --show-toplevel)/venv/bin/activate
