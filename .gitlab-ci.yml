@@ -1,0 +1,31 @@
+# CI framework for HAKC repo
+
+variables:
+  NEXT_BRANCH: '/^*-next/'
+  DEV_BRANCH: '/^*-dev/'
+  EXT_BRANCH: '/^ext-*/'
+  MAIN_BRANCH: 'main'
+  STAGING_BRANCH: 'staging'
+  DAG_FILE_PATH: 'dag-output'
+  RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
+  BUILD_PROCESSORS: 32
+  LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/
+
+# Overview of stages (all jobs for a given stage run parallel before the next stage)
+# check - check that repo is in logical functioning manner (e.g. submodules match)
+# build - build everything (we may need to break this down for building DAGs)
+# test - Test different setups
+
+stages:
+  - check
+  - build_llvm
+  - run_llvm_tests
+  - install_llvm
+  - cleanup
+
+include:
+  - '.ci/submodule_consistency-job.yml'
+  - '.ci/build_llvm-job.yml'
+  - '.ci/cleanup_llvm-jobs.yml'
+  - '.ci/deploy_llvm-job.yml'
+  - '.ci/run_llvm_tests-jobs.yml'

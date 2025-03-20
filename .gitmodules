@@ -1,12 +1,8 @@
-[submodule "ARM-MTE"]
-	path = ARM-MTE
-	url = git@github.mit.edu:inherently-secure/ARM-MTE.git
-	branch = main
-[submodule "linux"]
-	path = linux
-	url = git@github.mit.edu:inherently-secure/MTE-kernel.git
-	branch = main
 [submodule "llvm-project"]
 	path = llvm-project
-	url = https://github.com/llvm/llvm-project.git
-	branch = release/12.x
+	url = https://g53gitlab.llan.ll.mit.edu/inherently-secure/llvm-project.git
+	branch = hakc
+[submodule "linux"]
+	path = linux
+	url = https://g53gitlab.llan.ll.mit.edu/inherently-secure/linux.git
+	branch = hakc

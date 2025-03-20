@@ -1,0 +1,76 @@
+build_linux_v5-armv8-btree_rosdemo_compartmentalized_kernel-job:
+  stage: build2_v5
+  needs:
+    - job: build_linux-armv8_pass-job
+    - job: build_linux_v5-armv8-memory_rosdemo_compartmentalized_kernel-job
+    - job: qemu_test_linux_v5-armv8-memory_rosdemo-job
+  rules:
+    #    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: on_success # Will run once dag_analysis has completed
+  variables:
+    BUILD_TYPE: "linux-armv8"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+  script:
+    - export CLANG_BUILD_PATH="$HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/"
+    - export CLANG_DEPLOY_PATH="$HAKC_CLANG_PATH/deploy/"
+    - echo "Checking which clang to use"
+    - |
+      if [ -d "$CLANG_BUILD_PATH" ] && [ ! -z "$CI_COMMIT_BRANCH" ]; then
+        export CLANG_PATH=$(realpath $CLANG_BUILD_PATH)
+      else
+        export CLANG_PATH=$(realpath $CLANG_DEPLOY_PATH)
+      fi
+    - echo "Using $CLANG_PATH"
+    - mkdir -p $MODULES_ROOT
+    - export ROOT_ROOT=`pwd`
+    - |
+      if [ -d $ROOT_ROOT/linux ]; then
+        cd $ROOT_ROOT/linux
+        git checkout -- . || echo "checkout clear"
+        git clean -f -d || echo "clean clear"
+        git checkout v5.15 || echo "checkout version"
+        cd $ROOT_ROOT
+      fi
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule init linux
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update
+    - cd $ROOT_ROOT/linux
+    - git checkout -- .
+    - git clean -f -d
+    - git checkout v5.15
+    - cd $ROOT_ROOT
+    - echo "returning to $ROOT_ROOT after patching"
+    - cd scripts/patch-generation
+    - ./apply_v515_patches.sh
+    - cd $ROOT_ROOT/linux
+    - echo "Building kernel"
+    - export PATH=$CLANG_PATH/bin:$PATH
+    # modify config in place
+    - sed -i 's\CONFIG_HAKC_ARM_V8_MEMORY=y\CONFIG_HAKC_ARM_V8_BTREE=y\g' $(realpath ../build-$BUILD_TYPE/.config)
+    - |
+      env HAKC_ANALYSIS=compartmentalize \
+      HAKC_COMPARTMENT_PATH=$(realpath ../$HAKC_DAG_ROOT/hakc-compartments.yml) \
+      HAKC_SOURCE_PATH=$(realpath $ROOT_ROOT/linux) \
+      HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
+      make \
+      ARCH=arm64 \
+      CROSS_COMPILE=aarch64-linux-gnu- \
+      LLVM=1 \
+      O=$(realpath ../build-$BUILD_TYPE) \
+      INSTALL_MOD_PATH=$(realpath ../modules-$BUILD_TYPE) \
+      CC=$CLANG_PATH/bin/clang \
+      HOSTCC=$CLANG_PATH/bin/clang \
+      LOCALVERSION=$BUILD_TYPE \
+      -j$BUILD_PROCESSORS
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - build_linux-armv8_pass-job
+    - build_linux_v5-armv8-memory_rosdemo_compartmentalized_kernel-job
+    - qemu_test_linux_v5-armv8-memory_rosdemo-job

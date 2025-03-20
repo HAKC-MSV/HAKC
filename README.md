@@ -2,73 +2,134 @@
 
 Instructions for how to build all code and run the ROS2 demo in QEMU.
 
+## Prerequisites
+
+* `Binutils 2.33.1+`
+* `aarch64-linux-gnu`
+* `python3-psutil`
+* `python-kuzu`
+* `python-pyyaml`
+
 ## Set up
 
-1. `ROOT=$PWD`
-1. `git submodule update --init --recursive`
+1. `bash scripts/support/init.sh`
 
-## Build LLVM 12
-1. `cd llvm-project && mkdir -p build-12.x/install`
-1. `git apply ../ARM-MTE/HAKC-Annotator/*.patch`
-1. `cd build-12.x`
-1. `../../scripts/llvm-cmake-configure.sh && ninja && ninja install`
-1. `PATH=$ROOT/llvm-project/build-12.x/install/bin:$PATH`
+## Build LLVM
 
-## Build the HAKC compiler pass
-1. `cd $ROOT`
-1. `cd ARM-MTE && mkdir build && cd build`
-1. `cmake -DLT_LLVM_INSTALL_DIR=$ROOT/llvm-project/build-12.x/install -DPMC_LLVM_VERSION=12.0.1 ..`
-1. `cmake --build . -j 8`
+1. `bash scripts/support/build_llvm.sh`
 
 ## Build the Kernel
 
-1. `ln -s $ROOT/ARM-MTE/build/HAKC-Compartmentalizer/lib/libHAKC-Compartmentalizer.so scripts/hakc`
-1. `cd linux`
-1. Adjust LOCATION and BUILD_TYPE in build-ros2-demo-kernel.sh 
-1. `../scripts/build-ros2-demo-kernel.sh defconfig`
-1. `../scripts/build-ros2-demo-kernel.sh menuconfig`
-1. HAKC Options:
-  * Kernel Features -> ARMv8.5 architectural features
-    * Memory Tagging Extension Support
-    * Enable PAC and MTE kernel protections
-      * Only: track failed HAKC accesses, sign pointers using the PAC/MTE
-        Compartment context
-  * Device Drivers -> ROS Demo malicious driver
-    * be sure to use the `M` option for module not `Y` or `*` or it won't
-      compile
-  * Kernel hacking -> compile-time check and compiler options
-      * compiler the kernel with debug info
-      * produce split debuginfo in .dwo files
-      * provide gdb scripts for kernel debugging
-      * enable DWARF4 debug symbols
-1. `export HAKC_ANALYSIS=dag`
-1. `export HAKC_DAG_ANALYSIS_ROOT=$PWD/$BUILD_TYPE/hakc-dag-analysis` 
-1. `../scripts/build-ros2-demo-kernel.sh build`
+1. `export BUILD_TYPE=linux-x86`
+2. `cd $ROOT`
+3. `mkdir -p build-$BUILD_TYPE/hakc-dag-analysis`
+4. `cd linux`
+5. ```
+   env HAKC_ANALYSIS=dag \
+   HAKC_DAG_ANALYSIS_ROOT=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
+   make \
+   ARCH=arm64 \
+   CROSS_COMPILE=aarch64-linux-gnu- \
+   LLVM=1 \
+   O=$(realpath ../build-$BUILD_TYPE) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=$BUILD_TYPE \
+   -j$(nproc) defconfig
+   ```
+6. ```
+   `scripts/config --file $(realpath ../`build-$BUILD_TYPE/.config) \
+   -e CONFIG_HAKC \
+   --set-str CONFIG_HAKC_PASS_PATH \
+   $(realpath ../install/lib/libHAKC-Compartmentalizer-$BUILD_TYPE.so) \
+   -d CONFIG_WERROR \
+   -d CONFIG_HAKC_ALLOW_FAILED \
+   -e CONFIG_HAKC_SIGN_PTR \
+   -m CONFIG_ROSDEMO \
+   -e CONFIG_DEBUG_INFO \
+   -e CONFIG_DEBUG_INFO_SPLIT \
+   -e CONFIG_DEBUG_INFO_DWARF4 \
+   -e CONFIG_GDB_SCRIPTS \
+   -d CONFIG_HAKC_DEBUG_PRINT \
+   -d CONFIG_HAKC_ALLOW_FAILED \
+   -d CONFIG_HAKC_LOG_FAILURE \
+   -d CONFIG_HAKC_ARM_V9 \
+   -e CONFIG_HAKC_ARM_V8 \
+   -e CONFIG_HAKC_ARM_V8_MEMORY
+   ```
+7. ```
+   env HAKC_ANALYSIS=dag \
+   HAKC_DAG_ANALYSIS_ROOT=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
+   make \
+   ARCH=arm64 \
+   CROSS_COMPILE=aarch64-linux-gnu- \
+   LLVM=1 \
+   O=$(realpath ../build-$BUILD_TYPE) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=$BUILD_TYPE \
+   -j$(nproc)
+   ```
 
 ## DAG Analysis
 
-1. `cd linux/$BUILD_TYPE`
-1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag.bin -r
-   $HAKC_DAG_ANALYSIS_ROOT -o $PWD/calls-and-types.bin --dag --filter_types
---filter_mod_files`
+1. `cd $ROOT`
+2. ```
+   python3 python/analysis/hakc-dag.py \
+   --c-out build-$BUILD_TYPE/hakc-dag-analysis/dag.bin \ 
+   --create-dag --dag-files-root build-$BUILD_TYPE/hakc-dag-analysis \ 
+   --core-count $(( $(nproc) * 9 / 10 ))
+   ```
 
-## Create and apply compartmentalization modifications
-1. Modify paths in scripts/rosdemo-compartments.yml
-1. From the linux/$BUILD_TYPE directory run
-1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag.bin
-   --adjust ../../scripts/rosdemo-compartments.yml`
-1. This creates `dag-adjusted.bin`
+## Apply compartmentalization modifications and output compartmentalization policy
 
-## Output compartmentalization policy
-1. From the linux/$BUILD_TYPE directory run
-1. `python ../../ARM-MTE/scripts/data-access-analysis.py -c $PWD/dag-adjusted.bin --output_compart $PWD/hakc-compartments.yml`
-2. `export HAKC_COMPARTMENT_PATH=$PWD/hakc-compartments.yml`
-   * Note: currently the file name for the compartments to apply in the next step is hardcoded, 
-     so please observe this naming convention. 
+1. `cd $ROOT`
+2. ```
+   python3 python/analysis/hakc-dag.py \
+   --c-in build-$BUILD_TYPE/hakc-dag-analysis/dag.bin \
+   --adjust --adjust-path scripts/ros2-demo/rosdemo-compartments.yml \ 
+   --output-yaml \ 
+   --output-yaml-path build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml
+   ``` 
+    * This creates `build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml` which is
+      the compartmentalization policy that will be used to build a protected kernel.
 
 ## Compile kernel with compartments enforced
-1. `export HAKC_DAG_ANALYSIS=compartmentalize
-1. `../scripts/build-ros2-demo-kernel.sh build`
+
+1. `cd linux`
+2. ```
+   env HAKC_ANALYSIS=compartmentalize \
+   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
+   make \
+   ARCH=arm64 \
+   CROSS_COMPILE=aarch64-linux-gnu- \
+   LLVM=1 \
+   O=$(realpath ../build-$BUILD_TYPE) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=$BUILD_TYPE \
+   -j$(( $(nproc) * 9 / 10 )) clean
+   ```
+3. ```
+   env HAKC_ANALYSIS=compartmentalize \
+   HAKC_COMPARTMENT_PATH=$(realpath ../build-$BUILD_TYPE/hakc-dag-analysis/hakc-compartments.yml) \
+   HAKC_SOURCE_PATH=$PWD \
+   HAKC_BUILD_PATH=$(realpath ../build-$BUILD_TYPE) \
+   make \
+   ARCH=arm64 \
+   CROSS_COMPILE=aarch64-linux-gnu- \
+   LLVM=1 \
+   O=$(realpath ../build-$BUILD_TYPE) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=$BUILD_TYPE \
+   -j$(( $(nproc) * 9 / 10 )) 
+   ```
 
 ## Run the kernel in QEMU
-1. 
