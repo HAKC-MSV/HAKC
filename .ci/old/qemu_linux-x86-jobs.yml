@@ -1,0 +1,195 @@
+qemu_stage_linux_v6-x86-memory_rosdemo_img-job:
+  stage: test_v6
+  needs:
+    - job: build_linux_v6-x86-memory_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    # needed to apt-get install qemu-utils for this to work
+    - sudo qemu-nbd -c /dev/nbd0 $X86_IMG_FILE
+    - sleep 1
+    - sudo mount /dev/nbd0p2 /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo cp $BUILD_ROOT/arch/x86/boot/bzImage /data/gitlab-runner/mnt/testing/boot
+    - sleep 1
+    - sudo cp -r $MODULES_ROOT/lib/modules/6.6.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sleep 5
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sleep 5
+    - sudo qemu-nbd -d /dev/nbd0
+    - sleep 1
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - build_linux_v6-x86-memory_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v6-x86-memory_rosdemo-job:
+  stage: test_v6
+  needs:
+    - job: qemu_stage_linux_v6-x86-memory_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-x86_64 -L /data/gitlab-runner/qemu-6.2.0/pc-bios -cpu Cascadelake-Server -m 4G -drive if=virtio,file=$X86_IMG_FILE -kernel $BUILD_ROOT/arch/x86/boot/bzImage -append "root=/dev/vda2 console=ttyS0" -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 240
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 60
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+    # the following two lines vary depending on platform, more work is needed on scripting this
+    #    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    #    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "non-canonical" -e "general protection fault, maybe" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 6.6 X86 MEMORY ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v6-x86-memory_rosdemo_img-job
+
+qemu_stage_linux_v6-x86-btree_rosdemo_img-job:
+  stage: test2_v6
+  needs:
+    - job: qemu_test_linux_v6-x86-memory_rosdemo-job
+    - job: build_linux_v6-x86-btree_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    # needed to apt-get install qemu-utils for this to work
+    - sudo qemu-nbd -c /dev/nbd0 $X86_IMG_FILE
+    - sleep 1
+    - sudo mount /dev/nbd0p2 /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo cp $BUILD_ROOT/arch/x86/boot/bzImage /data/gitlab-runner/mnt/testing/boot
+    - sleep 1
+    - sudo cp -r $MODULES_ROOT/lib/modules/6.6.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sleep 5
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sleep 5
+    - sudo qemu-nbd -d /dev/nbd0
+    - sleep 1
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - qemu_test_linux_v6-x86-memory_rosdemo-job
+    - build_linux_v6-x86-btree_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v6-x86-btree_rosdemo-job:
+  stage: test2_v6
+  needs:
+    - job: qemu_stage_linux_v6-x86-btree_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-x86_64 -L /data/gitlab-runner/qemu-6.2.0/pc-bios -cpu Cascadelake-Server -m 4G -drive if=virtio,file=$X86_IMG_FILE -kernel $BUILD_ROOT/arch/x86/boot/bzImage -append "root=/dev/vda2 console=ttyS0" -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 240
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 60
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+    # the following two lines vary depending on platform, more work is needed on scripting this
+    #    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    #    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "non-canonical" -e "general protection fault, maybe" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 6.6 X86 BTREE ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v6-x86-btree_rosdemo_img-job
+
+qemu_stage_linux_v5-x86-memory_rosdemo_img-job:
+  stage: test_v5
+  needs:
+    - job: qemu_test_linux_v6-x86-btree_rosdemo-job
+    - job: build_linux_v5-x86-memory_rosdemo_compartmentalized_kernel-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - export BUILD_PATH=$(realpath ./$BUILD_ROOT)
+    # needed to apt-get install qemu-utils for this to work
+    - sudo qemu-nbd -c /dev/nbd0 $X86_IMG_FILE
+    - sleep 1
+    - sudo mount /dev/nbd0p2 /data/gitlab-runner/mnt/testing
+    - sleep 1
+    - sudo cp $BUILD_ROOT/arch/x86/boot/bzImage /data/gitlab-runner/mnt/testing/boot
+    - sleep 1
+    - sudo cp -r $MODULES_ROOT/lib/modules/5.15.0$BUILD_TYPE /data/gitlab-runner/mnt/testing/lib/modules
+    - sleep 5
+    - sudo umount /data/gitlab-runner/mnt/testing
+    - sleep 5
+    - sudo qemu-nbd -d /dev/nbd0
+    - sleep 1
+  artifacts:
+    paths:
+      - build-$BUILD_TYPE
+      - modules-$BUILD_TYPE
+  dependencies:
+    - qemu_test_linux_v6-x86-btree_rosdemo-job
+    - build_linux_v5-x86-memory_rosdemo_compartmentalized_kernel-job
+
+qemu_test_linux_v5-x86-memory_rosdemo-job:
+  stage: test_v5
+  needs:
+    - job: qemu_stage_linux_v5-x86-memory_rosdemo_img-job
+  variables:
+    BUILD_TYPE: "linux-x86"
+    BUILD_ROOT: "build-$BUILD_TYPE"
+    MODULES_ROOT: "modules-$BUILD_TYPE"
+    X86_IMG_FILE: "/data/gitlab-runner/uvbox.vdi"
+  script:
+    - /home/gitlab-runner/qemu-6.2.0/build/qemu-system-x86_64 -L /data/gitlab-runner/qemu-6.2.0/pc-bios -cpu Cascadelake-Server -m 4G -drive if=virtio,file=$X86_IMG_FILE -kernel $BUILD_ROOT/arch/x86/boot/bzImage -append "root=/dev/vda2 console=ttyS0" -device virtio-rng-pci -no-reboot -nographic -net user,hostfwd=tcp::10022-:22 -net nic &
+    - sleep 240
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/exploit_setup.sh &
+    - sleep 60
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 dmesg > dmesg_out &
+    - sleep 60
+    - grep "Initializing tags" dmesg_out
+    - grep "rosdemo_leaker" dmesg_out
+    - grep "rosdemo_consumer" dmesg_out
+    - grep "leaked topicnameaddr ffff" dmesg_out
+    # the following two lines vary depending on platform, more work is needed on scripting this
+    #    - grep "Unable to handle kernel paging request at virtual address" dmesg_out
+    #    - grep "address between user and kernel address ranges" dmesg_out
+    - grep -e "non-canonical" -e "general protection fault, maybe" dmesg_out
+    - grep -e "hakc" -e "HAKC" dmesg_out
+    - ssh -i /data/gitlab-runner/demokey/id_rsa -o StrictHostKeyChecking=no root@127.0.0.1 -p 10022 /root/turn_off.sh
+    - echo "HAKC 5.5 X86 MEMORY ROSDEMO WORKS AS EXPECTED"
+    - cp -r $BUILD_ROOT /data/gitlab-runner
+    - cp -r $MODULES_ROOT /data/gitlab-runner
+    - exit 0
+  dependencies:
+    - qemu_stage_linux_v5-x86-memory_rosdemo_img-job

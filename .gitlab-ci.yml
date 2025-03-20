@@ -8,7 +8,8 @@ variables:
   STAGING_BRANCH: 'staging'
   DAG_FILE_PATH: 'dag-output'
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
-  BUILD_PROCESSORS: 64
+  BUILD_PROCESSORS: 32
+  LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/
 
 # Overview of stages (all jobs for a given stage run parallel before the next stage)
 # check - check that repo is in logical functioning manner (e.g. submodules match)
@@ -18,70 +19,13 @@ variables:
 stages:
   - check
   - build_llvm
-  - pre_build
-  - pre_test
-  - dag_v6
-  - dag_v5
-  - build_v6
-  - build_v5
-  - test_v6
-  - build2_v6
-  - test2_v6
-  - test_v5
-  - build2_v5
-  - test2_v5
-  - deploy
+  - run_llvm_tests
+  - install_llvm
   - cleanup
 
-# List of jobs (and stage)
-# - submodule consistency test (check)
-# - building everything (build)
-# - DAG generation (build?)
-# - DAG testing (test)
-# - Build successful (test?)
-# - rosdemo (deploy)
-# - spectra demo (deploy - on hw)
-
 include:
-  - 'submodule_consistency-job.yml'
-  - 'build_llvm-job.yml'
-# builds arm v8, arm v9, x86
-  - 'build_linux-armv8_pass-job.yml'
-  - 'build_linux-armv9_pass-job.yml'
-  - 'build_linux-x86_pass-job.yml'
-  - 'test_linux_pass-job.yml'
-  - 'build_linux_v6-armv8_kernel_dag-job.yml'
-  - 'build_linux_v6-armv9_kernel_dag-job.yml'
-  - 'build_linux_v6-x86_kernel_dag-job.yml'
-  - 'build_linux_v5-armv8_kernel_dag-job.yml'
-  - 'build_linux_v5-armv9_kernel_dag-job.yml'
-  - 'build_linux_v5-x86_kernel_dag-job.yml'
-  - 'linux_v6-armv8_rosdemo_dag_analysis-job.yml'
-  - 'linux_v5-armv8_rosdemo_dag_analysis-job.yml'
-  - 'linux_v6-armv9_rosdemo_dag_analysis-job.yml'
-  - 'linux_v5-armv9_rosdemo_dag_analysis-job.yml'
-  - 'linux_v6-x86_rosdemo_dag_analysis-job.yml'
-  - 'linux_v5-x86_rosdemo_dag_analysis-job.yml'
-  - 'linux_v6-armv8_rosdemo_dag_adjustment-job.yml'
-  - 'linux_v5-armv8_rosdemo_dag_adjustment-job.yml'
-  - 'linux_v6-armv9_rosdemo_dag_adjustment-job.yml'
-  - 'linux_v5-armv9_rosdemo_dag_adjustment-job.yml'
-  - 'linux_v6-x86_rosdemo_dag_adjustment-job.yml'
-  - 'linux_v5-x86_rosdemo_dag_adjustment-job.yml'
-  - 'build_linux_v6-armv8-memory_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v5-armv8-memory_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v6-armv9_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v5-armv9_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v6-x86-memory_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v5-x86-memory_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v6-armv8-btree_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v5-armv8-btree_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v6-x86-btree_rosdemo_compartmentalized_kernel-job.yml'
-  - 'build_linux_v5-x86-btree_rosdemo_compartmentalized_kernel-job.yml'
-  - 'qemu_linux-armv8-jobs.yml'
-  - 'qemu_linux-armv9-jobs.yml'
-  - 'qemu_linux-x86-jobs.yml'
-#  - 'deploy_llvm-job.yml'
-#  - 'deploy_kernel-job.yml'
-#  - 'cleanup_llvm-jobs.yml'
-#  - 'development-job.yml'
+  - '.ci/submodule_consistency-job.yml'
+  - '.ci/build_llvm-job.yml'
+  - '.ci/cleanup_llvm-jobs.yml'
+  - '.ci/deploy_llvm-job.yml'
+  - '.ci/run_llvm_tests-jobs.yml'
