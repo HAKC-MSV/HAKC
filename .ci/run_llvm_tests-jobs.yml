@@ -1,7 +1,7 @@
 setup_python_venv-job:
   stage: run_llvm_tests
   needs:
-    -job: build_llvm-job
+    - job: build_llvm-job
   script:
     - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
     - python3 -m venv $PYTHON_VENV_DIR
