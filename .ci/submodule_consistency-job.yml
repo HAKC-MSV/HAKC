@@ -11,7 +11,7 @@ submodule_consistency-job:
       when: manual
   script:
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule deinit -f .
-    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update --init --recursive
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update --init --recursive --depth=1
     - export COUNT=0
     # TODO: Add necessary checks, if any
     - exit $COUNT
