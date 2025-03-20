@@ -9,6 +9,7 @@ cmake -G Ninja
       -DCMAKE_INSTALL_PREFIX=$HAKC_INSTALL_PATH
       -DCMAKE_BUILD_TYPE=RelWithDebInfo
       $(grep -v '^#' $HAKC_ROOT/scripts/llvm-cmake.sh)
+      -DHAKC_PYTHON_VENV=$HAKC_ROOT/python/venv
       $HAKC_ROOT
 "
 echo "Building LLVM in $PWD using command "
