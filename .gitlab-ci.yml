@@ -8,7 +8,7 @@ variables:
   STAGING_BRANCH: 'hakc-staging'
   DAG_FILE_PATH: 'dag-output'
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
-  BUILD_PROCESSORS: 32
+  BUILD_PROCESSORS: 96
   LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/
   PYTHON_VENV_DIR: $CI_PROJECT_DIR/python/venv
 
