@@ -4,5 +4,5 @@
 	branch = hakc-staging
 [submodule "linux"]
 	path = linux
-	url = git@g53gitlab.llan.ll.mit.edu/inherently-secure/linux.git
+	url = git@g53gitlab.llan.ll.mit.edu:inherently-secure/linux.git
 	branch = hakc-staging
