@@ -18,6 +18,7 @@ cleanup_llvm_failure:
 
 cleanup_llvm_success:
   needs:
+    - job: build_llvm-job
     - job: deploy_llvm-job
       optional: true
   rules:
