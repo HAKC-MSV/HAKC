@@ -1,7 +1,17 @@
+setup_python_venv-job:
+  stage: run_llvm_tests
+  needs: build_llvm-job
+  script:
+    - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
+    - python3 -m venv $PYTHON_VENV_DIR
+    - source $PYTHON_VENV_DIR/bin/activate
+    - python3 -m pip install -r $HAKC_CLANG_PATH/llvm-project/llvm/utils/hakc/requirements.txt
+    - deactivate
+
 run_llvm_tests-job:
   stage: run_llvm_tests
   needs:
-    - job: build_llvm-job
+    - job: setup_python_venv-job
   rules:
     - changes:
         paths:
