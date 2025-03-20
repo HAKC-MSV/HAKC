@@ -18,7 +18,8 @@ cleanup_llvm_failure:
 
 cleanup_llvm_success:
   needs:
-    - deploy_llvm-job
+    - job: deploy_llvm-job
+      optional: true
   rules:
     - if: $CI_COMMIT_BRANCH != $MAIN_BRANCH
       changes:
