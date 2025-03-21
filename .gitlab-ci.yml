@@ -22,7 +22,7 @@ stages:
   - build_llvm
   - run_llvm_tests
   - install_llvm
-  - cleanup
+#  - cleanup
 
 include:
   - '.ci/submodule_consistency-job.yml'
