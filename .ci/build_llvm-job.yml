@@ -2,11 +2,11 @@ build_llvm-job:
   stage: build_llvm
   needs:
     - job: submodule_consistency-job
-  rules:
-    - changes:
-        paths:
-          - .git/modules/llvm-project/HEAD
-        compare_to: 'main'
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/HEAD
+  #        compare_to: 'main'
   script:
     - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule init llvm-project

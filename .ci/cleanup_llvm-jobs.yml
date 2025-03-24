@@ -7,11 +7,11 @@
 cleanup_llvm_failure:
   needs:
     - job: build_llvm-job
-  rules:
-    - changes:
-        paths:
-          - .git/modules/llvm-project/HEAD
-        compare_to: 'main'
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/HEAD
+  #        compare_to: 'main'
   when: on_failure
   <<: *cleanup_llvm-job
 
