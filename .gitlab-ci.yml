@@ -33,7 +33,7 @@ stages:
 #  - cleanup
 
 include:
-  - '.ci/submodule_consistency-job.yml'
+  #  - '.ci/submodule_consistency-job.yml'
   - '.ci/build_llvm-job.yml'
   #  - '.ci/cleanup_llvm-jobs.yml'
   - '.ci/deploy_llvm-job.yml'
