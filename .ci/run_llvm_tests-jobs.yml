@@ -6,7 +6,7 @@ setup_python_venv-job:
   #    - changes:
   #        paths:
   #          - .git/modules/llvm-project/HEAD
-  #        compare_to: 'main'
+  #        compare_to: 'hakc'
   script:
     - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
     - python3 -m venv $PYTHON_VENV_DIR
@@ -26,7 +26,7 @@ run_llvm_tests-job:
   #    - changes:
   #        paths:
   #          - .git/modules/llvm-project/HEAD
-  #        compare_to: 'main'
+  #        compare_to: 'hakc'
   script:
     - echo "Running LLVM Tests"
     - cd $LLVM_BUILD_DIR
