@@ -20,7 +20,7 @@ variables:
 default:
   cache:
     key: $CI_COMMIT_REF_NAME
-    path:
+    paths:
       - llvm-project
       - linux
 
