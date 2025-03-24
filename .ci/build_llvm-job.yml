@@ -9,7 +9,7 @@ build_llvm-job:
   #        compare_to: 'main'
   script:
     - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
-    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git deinit llvm-project
+    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule deinit llvm-project
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule init llvm-project
     - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update
     - mkdir -p $LLVM_BUILD_DIR
