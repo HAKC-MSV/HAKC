@@ -11,22 +11,32 @@ variables:
   BUILD_PROCESSORS: 96
   LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/
   PYTHON_VENV_DIR: $CI_PROJECT_DIR/python/venv
+  LLVM_INSTALL_DIR: $CI_PROJECT_DIR/llvm-install
+  GIT_SUBMODULE_DEPTH: 1
+  GIT_SUBMODULE_STRATEGY: recursive
 
 # Overview of stages (all jobs for a given stage run parallel before the next stage)
 # check - check that repo is in logical functioning manner (e.g. submodules match)
 # build - build everything (we may need to break this down for building DAGs)
 # test - Test different setups
 
+default:
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    paths:
+      - llvm-project
+      - linux
+
 stages:
   - check
   - build_llvm
   - run_llvm_tests
   - install_llvm
-  - cleanup
+#  - cleanup
 
 include:
-  - '.ci/submodule_consistency-job.yml'
+  #  - '.ci/submodule_consistency-job.yml'
   - '.ci/build_llvm-job.yml'
-  - '.ci/cleanup_llvm-jobs.yml'
+  #  - '.ci/cleanup_llvm-jobs.yml'
   - '.ci/deploy_llvm-job.yml'
   - '.ci/run_llvm_tests-jobs.yml'

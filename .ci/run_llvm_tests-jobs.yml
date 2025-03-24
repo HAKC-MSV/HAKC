@@ -2,23 +2,31 @@ setup_python_venv-job:
   stage: run_llvm_tests
   needs:
     - job: build_llvm-job
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/HEAD
+  #        compare_to: 'hakc'
   script:
     - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
     - python3 -m venv $PYTHON_VENV_DIR
     - source $PYTHON_VENV_DIR/bin/activate
     - python3 -m pip install -r $CI_PROJECT_DIR/llvm-project/llvm/utils/hakc/requirements.txt
     - deactivate
+  artifacts:
+    paths:
+      - $PYTHON_VENV_DIR
 
 run_llvm_tests-job:
   stage: run_llvm_tests
   needs:
     - job: setup_python_venv-job
-  rules:
-    - changes:
-        paths:
-          - .git/modules/llvm-project/HEAD
-          - scripts/llvm-cmake.sh
-        compare_to: 'main'
+    - job: build_llvm-job
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/HEAD
+  #        compare_to: 'hakc'
   script:
     - echo "Running LLVM Tests"
     - cd $LLVM_BUILD_DIR
