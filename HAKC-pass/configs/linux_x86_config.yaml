@@ -1,7 +1,5 @@
 Arch: X86
 Platform: Linux
-SourcePath: somepath
-BuildPath: somepath
 DagAnalysisRootPath: somepath
 PassMode: RunDataAccessGraphAnalysis
 IncludePaths: somepath
