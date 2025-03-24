@@ -6,7 +6,7 @@ setup_python_venv-job:
     - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
     - python3 -m venv $PYTHON_VENV_DIR
     - source $PYTHON_VENV_DIR/bin/activate
-    - python3 -m pip install -r $HAKC_CLANG_PATH/llvm-project/llvm/utils/hakc/requirements.txt
+    - python3 -m pip install -r $CI_PROJECT_DIR/llvm-project/llvm/utils/hakc/requirements.txt
     - deactivate
 
 run_llvm_tests-job:

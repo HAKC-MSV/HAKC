@@ -6,12 +6,9 @@ build_llvm-job:
     - changes:
         paths:
           - .git/modules/llvm-project/HEAD
-          - scripts/llvm-cmake.sh
         compare_to: 'main'
   script:
-    - echo "Building LLVM into $LLVM_BUILD_DIR"
-    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule init llvm-project
-    - GIT_CURL_VERBOSE=1 GIT_TRACE=1 git submodule update
+    - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
     - mkdir -p $LLVM_BUILD_DIR
     - cd $LLVM_BUILD_DIR
     - cmake -G Ninja -DCMAKE_INSTALL_PREFIX=$CLANG_BUILD_PATH -DCMAKE_BUILD_TYPE=Release -DLLVM_ENABLE_ASSERTIONS=On -DLLVM_ENABLE_PROJECTS='clang;clang-tools-extra;lld' -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_TARGETS_TO_BUILD='X86;AArch64;ARM' -DLLVM_USE_LINKER=lld -DLLVM_ENABLE_HAKC=On -DLLVM_BUILD_TESTS=On -DHAKC_PYTHON_VENV=$PYTHON_VENV_DIR $CI_PROJECT_DIR

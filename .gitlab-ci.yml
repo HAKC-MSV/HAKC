@@ -17,6 +17,13 @@ variables:
 # build - build everything (we may need to break this down for building DAGs)
 # test - Test different setups
 
+default:
+  cache:
+    key: $CI_COMMIT_REF_NAME
+    path:
+      - llvm-project
+      - linux
+
 stages:
   - check
   - build_llvm
