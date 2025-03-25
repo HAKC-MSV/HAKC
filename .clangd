@@ -1,0 +1,9 @@
+If:
+  PathMatch: HAKC-pass/.*
+CompileFlags:
+  CompilationDatabase: cmake-build-hakc-pass-linux-armv8
+---
+If:
+  PathMatch: llvm-system/.*
+CompileFlags:
+  CompilationDatabase: cmake-build-hakc-llvm

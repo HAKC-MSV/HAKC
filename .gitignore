@@ -1,8 +1,14 @@
+hakc-jg.log
+test.bc
+build-linux-armv8-rosdemo/source/
+build-kuzu/
+python/venv/
+python/analysis/kuzu-test/
+
+**/__pycache__/
 .idea/
 cmake-build-*/
 install/
-build-*/
-llvm-project/
 
 # Prerequisites
 *.d
@@ -56,4 +62,3 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
-python/*/__pycache__/

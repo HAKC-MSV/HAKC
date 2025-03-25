@@ -1,0 +1,5 @@
+kernel:
+  - "$HAKC_SOURCE_PATH$"
+  - "$HAKC_BUILD_PATH$"
+compartmentalize:
+  - "$HAKC_SOURCE_PATH$/kernel/sched/core"

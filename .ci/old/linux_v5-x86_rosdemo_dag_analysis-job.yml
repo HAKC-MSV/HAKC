@@ -1,0 +1,53 @@
+linux_v5-x86_rosdemo_dag_analysis-job:
+  stage: dag_v5
+  needs:
+    - job: build_linux_v5-x86_kernel_dag-job
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event' && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH == $STAGING_BRANCH
+    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $NEXT_BRANCH
+    - if: $CI_COMMIT_BRANCH =~ $DEV_BRANCH && $CI_COMMIT_BRANCH !~ $EXT_BRANCH # manual build for internal dev branches
+      when: on_success # Will run once build-kernel is kicked off
+  variables:
+    BUILD_TYPE: "linux-x86"
+    HAKC_DAG_ROOT: "build-$BUILD_TYPE/hakc-dag-analysis"
+  script:
+    - |
+      export DEMO_NAME="rosdemo"
+      cd HAKC-pass
+      IFS=' ' read -ra pass_commit_string_array <<< `git log src | head -n 1`
+      export PASS_ID=${pass_commit_string_array[1]:0:8}
+      cd ..
+      cd linux-patches/v5.15
+      IFS=' ' read -ra patchset_commit_string_array <<< `git log . | head -n 1`
+      export PATCHSET_ID=${patchset_commit_string_array[1]:0:8}
+      cd ../..
+      # after config generated
+      cd build-$BUILD_TYPE
+      IFS=' ' read -ra config_hash_string_array <<< `sha256sum .config | head -n 1`
+      export CONFIG_ID=${config_hash_string_array[0]:0:8}
+      cd ..
+      export ARTIFACT_PATH="/data/gitlab-runner/artifact_stage/$BUILD_TYPE/DAG/$PASS_ID/$PATCHSET_ID/$CONFIG_ID"
+      if [ -d $ARTIFACT_PATH ]; then
+        # this dag has been generated previously, copy HAKC_DAG_ROOT and config into expected location
+        export DAG_TO_COPY_PATH="/data/gitlab-runner/artifact_stage/$BUILD_TYPE/DAG/$PASS_ID/$PATCHSET_ID/$CONFIG_ID"
+        cp -r $DAG_TO_COPY_PATH/hakc-dag-analysis build-$BUILD_TYPE
+        cp $DAG_TO_COPY_PATH/.config build-$BUILD_TYPE
+        exit 0
+      else
+          echo "this has not been done before, continuing with build"
+      fi
+    - echo "Performing DAG Analysis"
+    - python3 python/analysis/hakc-dag.py --c-out $HAKC_DAG_ROOT/dag.bin --create-dag --dag-files-root $HAKC_DAG_ROOT
+    # put copy in artifact stage area
+    - mkdir -p $ARTIFACT_PATH
+    - mkdir -p $ARTIFACT_PATH/hakc-dag-analysis
+    - cp $HAKC_DAG_ROOT/dag.bin $ARTIFACT_PATH/hakc-dag-analysis
+    - cp build-$BUILD_TYPE/.config $ARTIFACT_PATH/
+  artifacts:
+    paths:
+      - $HAKC_DAG_ROOT/dag.bin
+      - build-$BUILD_TYPE/.config
+  dependencies:
+    - build_linux_v5-x86_kernel_dag-job

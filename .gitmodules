@@ -1,7 +1,8 @@
 [submodule "llvm-project"]
 	path = llvm-project
-	url = https://github.com/llvm/llvm-project.git
-	branch = release/12.x
+	url = git@g53gitlab.llan.ll.mit.edu:inherently-secure/llvm-project.git
+	branch = hakc-staging
 [submodule "linux"]
 	path = linux
-	url = https://github.com/torvalds/linux.git
+	url = git@g53gitlab.llan.ll.mit.edu:inherently-secure/linux.git
+	branch = hakc-staging

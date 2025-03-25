@@ -1,0 +1,30 @@
+.cleanup_llvm-job: &cleanup_llvm-job
+  stage: cleanup
+  script:
+    - echo "Removing $LLVM_BUILD_DIR"
+    - rm -rf $LLVM_BUILD_DIR
+
+cleanup_llvm_failure:
+  needs:
+    - job: build_llvm-job
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/HEAD
+  #        compare_to: 'main'
+  when: on_failure
+  <<: *cleanup_llvm-job
+
+cleanup_llvm_success:
+  needs:
+    - job: build_llvm-job
+    - job: deploy_llvm-job
+      optional: true
+  rules:
+    - if: $CI_COMMIT_BRANCH != $MAIN_BRANCH
+      changes:
+        paths:
+          - .git/modules/llvm-project/HEAD
+        compare_to: 'main'
+  when: on_success
+  <<: *cleanup_llvm-job
