@@ -6,7 +6,7 @@ setup_python_venv-job:
   rules:
     - changes:
         paths:
-          - llvm-project/llvm/utils/hakc/requirements.txt
+          - 'llvm-project/llvm/utils/hakc/requirements.txt'
   variables:
     !reference [ .llvm_settings, variables ]
   script:
