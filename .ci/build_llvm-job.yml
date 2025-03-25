@@ -13,3 +13,4 @@ build_llvm-job:
   artifacts:
     paths:
       - $LLVM_BUILD_DIR
+      - $CI_PROJECT_DIR/llvm-project
