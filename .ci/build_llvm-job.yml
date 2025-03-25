@@ -4,6 +4,9 @@ build_llvm-job:
     - changes:
         paths:
           - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_PATHS: llvm-project
   script:
     - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
     - git submodule sync
