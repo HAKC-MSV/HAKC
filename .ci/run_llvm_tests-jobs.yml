@@ -22,6 +22,9 @@ run_llvm_tests-job:
   needs:
     - job: setup_python_venv-job
     - job: build_llvm-job
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_PATHS: llvm-project
   #  rules:
   #    - changes:
   #        paths:
