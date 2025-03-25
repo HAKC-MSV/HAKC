@@ -9,10 +9,10 @@ variables:
   DAG_FILE_PATH: 'dag-output'
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
   BUILD_PROCESSORS: 96
-  LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/cmake-llvm-build
-  PYTHON_VENV_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/python/venv
-  LLVM_INSTALL_DIR: $HAKC_CLANG_PATH/deploy/llvm-install
-  PYTHON_DEPLOY_DIR: $HAKC_CLANG_PATH/deploy/python/venv
+  LLVM_BUILD_DIR: $CI_PROJECT_DIR/cmake-llvm-build
+  PYTHON_VENV_DIR: $CI_PROJECT_DIR/python/venv
+  LLVM_INSTALL_DIR: $CI_PROJECT_DIR/deploy/llvm-install
+  PYTHON_DEPLOY_DIR: $CI_PROJECT_DIR/deploy/python/venv
   GIT_SUBMODULE_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: none
 
