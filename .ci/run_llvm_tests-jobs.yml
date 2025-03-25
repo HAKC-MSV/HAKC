@@ -3,7 +3,7 @@ setup_python_venv-job:
   needs:
     - job: build_llvm-job
   rules:
-    - !reference [ .llvm_settings, rules ]
+    !reference [ .llvm_settings, rules ]
   variables:
     !reference [ .llvm_settings, variables ]
   script:
