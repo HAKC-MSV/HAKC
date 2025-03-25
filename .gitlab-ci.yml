@@ -12,7 +12,7 @@ variables:
   LLVM_BUILD_DIR: $CI_PROJECT_DIR/cmake-llvm-build
   PYTHON_VENV_DIR: $CI_PROJECT_DIR/python/venv
   LLVM_INSTALL_DIR: $CI_PROJECT_DIR/deploy/llvm-install
-  PYTHON_DEPLOY_DIR: $CI_PROJECT_DIR/deploy/python/venv
+  PYTHON_DEPLOY_DIR: $CI_PROJECT_DIR/deploy/python
   GIT_SUBMODULE_DEPTH: 1
   GIT_SUBMODULE_STRATEGY: none
 

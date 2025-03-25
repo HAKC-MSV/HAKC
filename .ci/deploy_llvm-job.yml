@@ -26,11 +26,8 @@ deploy_python-job:
         paths:
           - llvm-project/llvm/utils/hakc/requirements.txt
   script:
-    - echo "Setting up python virtual environment at PYTHON_DEPLOY_DIR"
-    - python3 -m venv PYTHON_DEPLOY_DIR
-    - source $PYTHON_DEPLOY_DIR/bin/activate
-    - python3 -m pip install -r $CI_PROJECT_DIR/llvm-project/llvm/utils/hakc/requirements.txt
-    - deactivate
+    - echo "Setting up python virtual environment at $PYTHON_DEPLOY_DIR"
+    - cmake -E copy_directory $PYTHON_VENV_DIR $PYTHON_DEPLOY_DIR
   artifacts:
     paths:
       - $PYTHON_DEPLOY_DIR
