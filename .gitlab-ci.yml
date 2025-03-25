@@ -21,12 +21,23 @@ variables:
 # build - build everything (we may need to break this down for building DAGs)
 # test - Test different setups
 
-default:
-  cache:
-    key: $CI_COMMIT_REF_NAME
-    paths:
-      - llvm-project
-      - linux
+#default:
+#  cache:
+#    key: $CI_COMMIT_REF_NAME
+#    paths:
+#      - llvm-project
+#      - linux
+
+.llvm_settings:
+  variables:
+    GIT_SUBMODULE_STRATEGY: recursive
+    GIT_SUBMODULE_PATHS: llvm-project
+  rules:
+    - changes:
+        paths:
+          - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
+          - .ci/build_llvm-job.yml
+          - .gitlab-ci.yml
 
 stages:
   - check

@@ -1,12 +1,9 @@
 build_llvm-job:
   stage: build_llvm
-  #  rules:
-  #    - changes:
-  #        paths:
-  #          - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
+  rules:
+    - !reference [ .llvm_settings, rules ]
   variables:
-    GIT_SUBMODULE_STRATEGY: recursive
-    GIT_SUBMODULE_PATHS: llvm-project
+    - !reference [ .llvm_settings, variables ]
   script:
     - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
     - mkdir -p $LLVM_BUILD_DIR
