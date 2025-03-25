@@ -5,7 +5,7 @@ setup_python_venv-job:
   rules:
     - !reference [ .llvm_settings, rules ]
   variables:
-    - !reference [ .llvm_settings, variables ]
+    !reference [ .llvm_settings, variables ]
   script:
     - echo "Setting up python virtual environment at $PYTHON_VENV_DIR"
     - python3 -m venv $PYTHON_VENV_DIR
@@ -24,7 +24,7 @@ run_llvm_tests-job:
   rules:
     - !reference [ .llvm_settings, rules ]
   variables:
-    - !reference [ .llvm_settings, variables ]
+    !reference [ .llvm_settings, variables ]
   script:
     - echo "Running LLVM Tests"
     - cd $LLVM_BUILD_DIR

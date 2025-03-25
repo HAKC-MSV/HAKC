@@ -3,7 +3,7 @@ build_llvm-job:
   rules:
     - !reference [ .llvm_settings, rules ]
   variables:
-    - !reference [ .llvm_settings, variables ]
+    !reference [ .llvm_settings, variables ]
   script:
     - echo "Building LLVM into $LLVM_BUILD_DIR from $CI_PROJECT_DIR"
     - mkdir -p $LLVM_BUILD_DIR
