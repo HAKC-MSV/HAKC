@@ -2,13 +2,16 @@ deploy_llvm-job:
   stage: install_llvm
   needs:
     - build_llvm-job
+    - run_llvm_tests-job
   rules:
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH # TODO - We may need to do this on a pull request?
       changes:
         paths:
-          - .git/modules/llvm-project/HEAD
-          - scripts/llvm-cmake.sh
-        compare_to: 'main'
+          - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
+        compare_to: $MAIN_BRANCH
   script:
     - cd $LLVM_BUILD_DIR
     - cmake --build . --target install -j$BUILD_PROCESSORS
+  artifacts:
+    paths:
+      - $LLVM_INSTALL_DIR
