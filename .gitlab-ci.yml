@@ -10,7 +10,7 @@ variables:
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
   BUILD_PROCESSORS: 96
   LLVM_BUILD_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/cmake-llvm-build
-  PYTHON_VENV_DIR: $HAKC_CLANG_PATH/python/venv
+  PYTHON_VENV_DIR: $HAKC_CLANG_PATH/build/$CI_COMMIT_BRANCH/python/venv
   LLVM_INSTALL_DIR: $HAKC_CLANG_PATH/deploy/llvm-install
   PYTHON_DEPLOY_DIR: $HAKC_CLANG_PATH/deploy/python/venv
   GIT_SUBMODULE_DEPTH: 1
