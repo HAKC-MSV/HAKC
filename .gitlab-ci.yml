@@ -32,6 +32,7 @@ variables:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_SUBMODULE_PATHS: llvm-project
+    TEST_SOCKET_PATH: '/tmp/hakc-sockets'
   rules:
     - changes:
         paths:
