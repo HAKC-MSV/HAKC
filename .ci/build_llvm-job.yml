@@ -1,9 +1,9 @@
 build_llvm-job:
   stage: build_llvm
-  rules:
-    - changes:
-        paths:
-          - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
+  #  rules:
+  #    - changes:
+  #        paths:
+  #          - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
     GIT_SUBMODULE_PATHS: llvm-project

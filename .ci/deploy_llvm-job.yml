@@ -8,7 +8,6 @@ deploy_llvm-job:
       changes:
         paths:
           - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
-        compare_to: $MAIN_BRANCH
   script:
     - cd $LLVM_BUILD_DIR
     - cmake --build . --target install -j$BUILD_PROCESSORS
@@ -26,7 +25,6 @@ deploy_python-job:
       changes:
         paths:
           - llvm-project/llvm/utils/hakc/requirements.txt
-        compare_to: $MAIN_BRANCH
   script:
     - echo "Setting up python virtual environment at PYTHON_DEPLOY_DIR"
     - python3 -m venv PYTHON_DEPLOY_DIR
