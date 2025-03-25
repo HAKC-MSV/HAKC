@@ -30,4 +30,4 @@ run_llvm_tests-job:
   script:
     - echo "Running LLVM Tests"
     - cd $LLVM_BUILD_DIR
-    - cmake --build . --target check-llvm
+    - cmake --build . --target check-llvm -j$BUILD_PROCESSORS
