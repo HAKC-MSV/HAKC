@@ -1,6 +1,6 @@
 Arch: X86
 Platform: Linux
-DagAnalysisRootPath: somepath
+DagAnalysisRootPath: hakc-dag-analysis/dag-files
 PassMode: RunDataAccessGraphAnalysis
 IncludePaths: somepath
 Database:
