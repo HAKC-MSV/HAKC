@@ -13,7 +13,7 @@ Database:
 PreTransferActions:
   - { name: "get_hakc_address_color", label: "saved-color" }
 PostTargetActions:
-  - { name: "hakc_color_address", args: [ { idx: 2, label: "saved-color" } ] }
+  - { name: "hakc_color_address", arguments: [ { idx: 2, label: "saved-color" } ] }
 CustomTransferFunctions:
   - transfer-obj-type: "char *"
     name: hakc_transfer_string
@@ -236,29 +236,29 @@ SafeTransitionFunctions:
   - { name: "__lshrti3" }
 IgnoredGlobals:
   - { name: kmalloc_caches }
-KernelAllocationSizeMap:
-  - { name: kmalloc, type: SimpleArgumentSize, args: [ 0 ] }
-  - { name: kzalloc, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: __kmalloc, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: neigh_parms_alloc, type: simpleStaticSize, args: [ 144 ] }
-  - { name: nlmsg_new, type: staticPlusArgument, args: [ 64,0 ] }
-  - { name: kmemdup, type: simpleArgumentSize, args: [ 1 ] }
-  - { name: __alloc_percpu, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: __alloc_percpu_gfp, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: kmalloc_array, type: multiplyTwoArguments, args: [ 0,1 ] }
-  - { name: kcalloc, type: multiplyTwoArguments, args: [ 0,1 ] }
-  - { name: sk_alloc, type: simpleStaticSize, args: [ 64 ] }
-  - { name: __alloc_skb, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: kmem_cache_zalloc, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: nla_memdup, type: simpleStaticSize, args: [ 64 ] }
-  - { name: kzalloc_node, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: fib_rules_register, type: simpleStaticSize, args: [ 256 ] }
-  - { name: nla_strdup, type: simpleStaticSize, args: [ 64 ] }
-  - { name: kvmalloc, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: kvmalloc_array, type: multiplyTwoArguments, args: [ 0,1 ] }
-  - { name: kvzalloc, type: simpleArgumentSize, args: [ 0 ] }
-  - { name: kmem_cache_alloc, type: argumentGEP, args: [ 0,1 ] }
-  - { name: kmem_cache_alloc_trace, type: simpleArgumentSize, args: [ 2 ] }
-  - { name: create_workqueue, type: simpleStaticSize, args: [ 320 ] }
-  - { name: device_create, type: simpleStaticSize, args: [ 768 ] }
-  - { name: __class_create, type: simpleStaticSize, args: [ 120 ] }
+AllocationFunctions:
+  - { name: kmalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: kzalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: __kmalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: neigh_parms_alloc, type: SimpleStaticSize, arguments: [ 144 ] }
+  - { name: nlmsg_new, type: StaticPlusArgument, arguments: [ 64,0 ] }
+  - { name: kmemdup, type: SimpleArgumentSize, arguments: [ 1 ] }
+  - { name: __alloc_percpu, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: __alloc_percpu_gfp, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: kmalloc_array, type: MultiplyTwoArguments, arguments: [ 0,1 ] }
+  - { name: kcalloc, type: MultiplyTwoArguments, arguments: [ 0,1 ] }
+  - { name: sk_alloc, type: SimpleStaticSize, arguments: [ 64 ] }
+  - { name: __alloc_skb, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: kmem_cache_zalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: nla_memdup, type: SimpleStaticSize, arguments: [ 64 ] }
+  - { name: kzalloc_node, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: fib_rules_register, type: SimpleStaticSize, arguments: [ 256 ] }
+  - { name: nla_strdup, type: SimpleStaticSize, arguments: [ 64 ] }
+  - { name: kvmalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: kvmalloc_array, type: MultiplyTwoArguments, arguments: [ 0,1 ] }
+  - { name: kvzalloc, type: SimpleArgumentSize, arguments: [ 0 ] }
+  - { name: kmem_cache_alloc, type: ArgumentGEP, arguments: [ 0,1 ] }
+  - { name: kmem_cache_alloc_trace, type: SimpleArgumentSize, arguments: [ 2 ] }
+  - { name: create_workqueue, type: SimpleStaticSize, arguments: [ 320 ] }
+  - { name: device_create, type: SimpleStaticSize, arguments: [ 768 ] }
+  - { name: __class_create, type: SimpleStaticSize, arguments: [ 120 ] }
