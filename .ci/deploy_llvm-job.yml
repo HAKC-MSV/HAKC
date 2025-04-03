@@ -3,6 +3,7 @@ deploy_llvm-job:
   needs:
     - build_llvm-job
     - run_llvm_tests-job
+    - run_hakc_tests-job
   rules:
     - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
       changes:

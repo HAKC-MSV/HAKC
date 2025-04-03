@@ -27,6 +27,6 @@ run_hakc_tests-job:
   variables:
     !reference [ .llvm_settings, variables ]
   script:
-    - echo "Running LLVM Tests"
+    - echo "Running HAKC Tests"
     - cd $LLVM_BUILD_DIR
     - cmake --build . --target check-hakc -j$BUILD_PROCESSORS
