@@ -30,3 +30,17 @@ run_llvm_tests-job:
     - echo "Running LLVM Tests"
     - cd $LLVM_BUILD_DIR
     - cmake --build . --target check-llvm -j$BUILD_PROCESSORS
+
+run_hakc_tests-job:
+  stage: run_hakc_tests
+  needs:
+    - job: setup_python_venv-job
+    - job: build_llvm-job
+  rules:
+    - !reference [ .llvm_settings, rules ]
+  variables:
+    !reference [ .llvm_settings, variables ]
+  script:
+    - echo "Running HAKC Tests"
+    - cd $LLVM_BUILD_DIR
+    - cmake --build . --target check-hakc -j$BUILD_PROCESSORS
