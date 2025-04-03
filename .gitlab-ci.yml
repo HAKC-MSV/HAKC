@@ -44,4 +44,3 @@ include:
   - '.ci/build_llvm-job.yml'
   - '.ci/deploy_llvm-job.yml'
   - '.ci/run_llvm_tests-jobs.yml'
-  - '.ci/run_hakc_tests-jobs.yml'
