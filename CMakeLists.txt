@@ -34,6 +34,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
             ${linux_build_path}/analysis-config.yaml
     )
+    
     add_custom_target(linux-${arch}-analysis-pass
             BYPRODUCTS ${linux_build_path}/analysis/vmlinux
             DEPENDS ${linux_build_path}/analysis-config.yaml clang

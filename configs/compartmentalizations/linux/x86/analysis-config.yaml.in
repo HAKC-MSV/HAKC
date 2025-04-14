@@ -2,7 +2,6 @@ Arch: X86
 Platform: Linux
 DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: RunDataAccessGraphAnalysis
-IncludePaths:
 Database:
   server-url: @linux_build_path@/hakc-dag-analysis/db-socket
   server-timeout: 1000
@@ -180,7 +179,6 @@ HAKCSourcePaths:
   - { path_root: fs/fuse/, file_names: [ transfer.c ] }
   - { path_root: kernel/hakc/, file_names: [ hakc_common.c, hakc_noarch_tag_btree.c, hakc_noarch_tag_memory.c ] }
 SafeTransitionFunctions:
-  - { name: "clear_page" }
   - { name: "kmemdup" }
   - { name: "__memcpy" }
   - { name: "__pi_memcmp" }
