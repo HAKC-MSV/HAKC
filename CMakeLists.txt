@@ -27,6 +27,7 @@ message("-- HAKC is using ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
 
 list(APPEND LINUX_ARCHES_TO_BUILD x86)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
+set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})

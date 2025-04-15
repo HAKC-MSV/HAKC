@@ -18,7 +18,6 @@ cmake -G Ninja \
   -DLLVM_ENABLE_IDE=On \
   -DLLVM_ENABLE_HAKC=On \
   -DLLVM_BUILD_TESTS=On \
-  -DHAKC_LINUX_BUILD_PATH=$HAKC_ROOT/linux-build \
   $HAKC_ROOT
 
 cmake --build . -j$(nproc) --target install
