@@ -20,10 +20,10 @@ if (LLVM_PARALLEL_COMPILE_JOBS)
     set(HAKC_LINUX_CORE_COUNT ${LLVM_PARALLEL_COMPILE_JOBS})
 else ()
     cmake_host_system_information(RESULT HAKC_LINUX_CORE_COUNT
-            QUERY NUMBER_OF_PHYSICAL_CORES)
+            QUERY NUMBER_OF_LOGICAL_CORES)
 endif ()
 
-message("Using ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
+message("-- HAKC is using ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
 
 list(APPEND LINUX_ARCHES_TO_BUILD x86)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
@@ -34,13 +34,13 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
             ${linux_build_path}/analysis-config.yaml
     )
-    
     add_custom_target(linux-${arch}-analysis-pass
             BYPRODUCTS ${linux_build_path}/analysis/vmlinux
             DEPENDS ${linux_build_path}/analysis-config.yaml clang
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Running ${arch} Linux analysis pass"
-            COMMAND make O=${linux_build_path}/analysis ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts} -j${HAKC_LINUX_CORE_COUNT}
+            USES_TERMINAL
+            COMMAND make O=${linux_build_path}/analysis LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts} -j${HAKC_LINUX_CORE_COUNT}
     )
     add_custom_target(linux-${arch}-compilation-db
             BYPRODUCTS ${linux_build_path}/compile_commands.json
