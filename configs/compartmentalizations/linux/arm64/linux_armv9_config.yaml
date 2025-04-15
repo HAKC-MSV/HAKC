@@ -1,8 +1,9 @@
+# THIS FILE IS INVALID
 SYSTEMINFO:
-  ARCH:             armv8
-  PLATFORM:         Linux
+  ARCH: armv9
+  PLATFORM: Linux
   METHODS:
-    - NAME:         GetNoTransferFunctions
+    - NAME: GetNoTransferFunctions
       FUNCTIONS:
         - "__bpf_call_base"
         - "ftrace_stub"
@@ -26,18 +27,15 @@ SYSTEMINFO:
         - "aesbs_xts_decrypt"
         - "_cpu_resume"
         - "kretprobe_trampoline"
-
-    - NAME:         GetSeparateNamespacePaths
+    - NAME: GetSeparateNamespacePaths
       FUNCTIONS:
         - "arch/arm64/kvm/hyp/"
         - "arch/arm64/kernel/vdso/"
-    - NAME:         GetHAKCSourcePaths
+    - NAME: GetHAKCSourcePaths
       FUNCTIONS:
-        - "arch/arm64/kernel/hakc/armv8/hakc_neon.c"
-        - "arch/arm64/kernel/hakc/armv8/hakc.c"
-        - "arch/arm64/kernel/hakc/armv8/hakc_btree.c"
-        - "arch/arm64/kernel/hakc/armv8/hakc_memory.c"
-    - NAME:         GetSafeTransitionFunctions
+        - "arch/arm64/kernel/hakc/armv9/hakc_pac_mte.c"
+        - "arch/arm64/kernel/hakc/armv9/hakc.c"
+    - NAME: GetSafeTransitionFunctions
       FUNCTIONS:
         - "clear_page"
         - "kmemdup"
@@ -91,13 +89,14 @@ SYSTEMINFO:
         - "__lshrti3"
         - "memcmp"
         - "strcmp"
-        - "strchr"   
-    - NAME:          GetIgnoredTypes
+        - "strchr"
+        - "memset"
+    - NAME: GetIgnoredTypes
       FUNCTIONS:
         - "struct.list_head"
         - "struct.proto"
         - "struct.atomic64_s"
         - "struct.atomic_s"
-    - NAME:          GetIgnoredGlobals
+    - NAME: GetIgnoredGlobals
       FUNCTIONS:
         - "kmalloc_caches"
