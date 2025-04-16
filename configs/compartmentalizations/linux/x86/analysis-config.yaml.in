@@ -9,7 +9,7 @@ Database:
   get-division-by-id-endpoint: "get-division-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"
   get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
-PreTransferActions:
+PreTargetActions:
   - { name: "get_hakc_address_color", label: "saved-color" }
 PostTargetActions:
   - { name: "hakc_color_address", arguments: [ { idx: 2, label: "saved-color" } ] }
