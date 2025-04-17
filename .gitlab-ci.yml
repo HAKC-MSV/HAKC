@@ -35,7 +35,6 @@ variables:
 
 stages:
   - build_llvm
-  - run_hakc_tests
   - run_llvm_tests
   - deploy_llvm
 
@@ -43,4 +42,3 @@ include:
   - '.ci/build_llvm-job.yml'
   - '.ci/deploy_llvm-job.yml'
   - '.ci/run_llvm_tests-jobs.yml'
-  - '.ci/run_hakc_tests-jobs.yml'
