@@ -2,6 +2,7 @@ setup_python_venv-job:
   stage: run_llvm_tests
   needs:
     - job: build_llvm-job
+      artifacts: false
   rules:
     - !reference [ .llvm_settings, rules ]
   variables:
