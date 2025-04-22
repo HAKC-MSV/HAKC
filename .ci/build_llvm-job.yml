@@ -1,7 +1,7 @@
 build_llvm-job:
   stage: build_llvm
   rules:
-    - !reference [ .llvm_settings, rules ]
+    !reference [ .llvm_settings, rules ]
   variables:
     !reference [ .llvm_settings, variables ]
   script:
@@ -13,3 +13,4 @@ build_llvm-job:
   artifacts:
     paths:
       - $LLVM_BUILD_DIR
+      - $CI_PROJECT_DIR/llvm-project

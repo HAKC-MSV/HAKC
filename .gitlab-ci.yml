@@ -21,13 +21,6 @@ variables:
 # build - build everything (we may need to break this down for building DAGs)
 # test - Test different setups
 
-#default:
-#  cache:
-#    key: $CI_COMMIT_REF_NAME
-#    paths:
-#      - llvm-project
-#      - linux
-
 .llvm_settings:
   variables:
     GIT_SUBMODULE_STRATEGY: recursive
@@ -41,15 +34,11 @@ variables:
           - .gitlab-ci.yml
 
 stages:
-  - check
   - build_llvm
   - run_llvm_tests
   - deploy_llvm
-#  - cleanup
 
 include:
-  #  - '.ci/submodule_consistency-job.yml'
   - '.ci/build_llvm-job.yml'
-  #  - '.ci/cleanup_llvm-jobs.yml'
   - '.ci/deploy_llvm-job.yml'
   - '.ci/run_llvm_tests-jobs.yml'

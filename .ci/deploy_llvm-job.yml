@@ -14,20 +14,3 @@ deploy_llvm-job:
   artifacts:
     paths:
       - $LLVM_INSTALL_DIR
-
-deploy_python-job:
-  stage: deploy_llvm
-  needs:
-    - build_llvm-job
-    - run_llvm_tests-job
-  rules:
-    - if: $CI_COMMIT_BRANCH == $MAIN_BRANCH
-      changes:
-        paths:
-          - llvm-project/llvm/utils/hakc/requirements.txt
-  script:
-    - echo "Setting up python virtual environment at $PYTHON_DEPLOY_DIR"
-    - cmake -E copy_directory $PYTHON_VENV_DIR $PYTHON_DEPLOY_DIR
-  artifacts:
-    paths:
-      - $PYTHON_DEPLOY_DIR

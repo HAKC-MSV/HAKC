@@ -1,0 +1,5 @@
+!HAKCAdjustments
+add-kernel-division: true
+compartmentalize:
+  - path: 'linux/drivers/rosdemo/.+\.c'
+    division: { division_id: 5, compartment_id: 2 }
