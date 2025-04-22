@@ -2,6 +2,7 @@ Arch: X86
 Platform: Linux
 DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: RunDataAccessGraphAnalysis
+OutputDebugInfo: false
 Database:
   server-url: @linux_build_path@/hakc-dag-analysis/db-socket
   server-timeout: 1000
