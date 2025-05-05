@@ -32,17 +32,42 @@ set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Li
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})
     file(MAKE_DIRECTORY ${linux_build_path}/analysis ${linux_build_path}/hakc-dag-analysis)
+    set(LINUX_MAKE_OPTS O=${linux_build_path}/analysis LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
     configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
             ${linux_build_path}/analysis-config.yaml
     )
+    add_custom_command(
+            OUTPUT ${linux_build_path}/analysis/.config
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            COMMENT "Generating ${arch} Linux config"
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+            COMMAND "scripts/config --file ${linux_build_path}/analysis/.config
+            -e CONFIG_HAKC --set-str CONFIG_HAKC_CONFIG_PATH ${linux_build_path}/analysis-config.yaml
+            -e CONFIG_DEBUG_INFO_DWARF5 -d CONFIG_DEBUG_INFO_NONE -e CONFIG_DEBUG_INFO
+            -e CONFIG_DEBUG_INFO_COMPRESSED_NONE -d CONFIG_DEBUG_INFO_COMPRESSED_ZLIB
+            -d CONFIG_DEBUG_INFO_COMPRESSED_ZSTD -d CONFIG_DEBUG_INFO_REDUCED
+               -e CONFIG_DEBUG_INFO_SPLIT
+               -e CONFIG_GDB_SCRIPTS
+               -e CONFIG_HAKC_ALLOW_FAILED
+               -d CONFIG_HAKC_DEBUG_PRINT
+               -d CONFIG_HAKC_DEMO_LEAK
+               -d CONFIG_HAKC_KOBUKI_CHECKSUM_TWEAK
+               -d CONFIG_HAKC_LOG_FAILURE
+               -e CONFIG_HAKC_X86
+               -e CONFIG_HAKC_X86_MEMORY
+               -e CONFIG_HAKC_X86_SIGN_NI
+               -d CONFIG_HAKC_XPAD_INSERT_COMMAND
+               -d CONFIG_HAKC_XPAD_RANDOMIZE"
+    )
     add_custom_target(linux-${arch}-analysis-pass
             BYPRODUCTS ${linux_build_path}/analysis/vmlinux
-            DEPENDS ${linux_build_path}/analysis-config.yaml clang
+            DEPENDS ${linux_build_path}/analysis-config.yaml clang ${linux_build_path}/analysis/.config
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Running ${arch} Linux analysis pass"
             USES_TERMINAL
-            COMMAND make O=${linux_build_path}/analysis LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
     )
+
     add_custom_target(linux-${arch}-compilation-db
             BYPRODUCTS ${linux_build_path}/compile_commands.json
             DEPENDS linux-${arch}-analysis-pass
