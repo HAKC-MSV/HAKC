@@ -16,10 +16,14 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ### tl;dr
 
-The following steps can be accomplished by
+The following steps can be accomplished (assuming the python virtual environment is still
+active) by
 
 1. `cd cmake-build-hakc`
 2. `cmake --build . --target linux-x86-dag`
+
+The kernel will be built in `cmake-build-hakc/linux/x86/analysis` and the database storing
+the compartmentalization policy will be in `cmake-build-hakc/linux/x86/hakc-db`
 
 ## Build LLVM
 
