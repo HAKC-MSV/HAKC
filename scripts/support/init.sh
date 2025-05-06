@@ -2,6 +2,8 @@
 
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
+source $HAKC_ROOT/scripts/support/init_venv.sh
+
 echo "Updating submodules"
 exec_cmd_and_check_status "git submodule update --init --recursive"
 echo "Creating Directories"

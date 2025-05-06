@@ -2,6 +2,7 @@ Arch: X86
 Platform: Linux
 DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: RunDataAccessGraphAnalysis
+OutputDebugInfo: false
 Database:
   server-url: @linux_build_path@/hakc-dag-analysis/db-socket
   server-timeout: 1000
@@ -15,6 +16,13 @@ PostTargetActions:
   - { name: "hakc_color_address", arguments: [ { idx: 2, label: "saved-color" } ] }
 CustomTransferFunctions:
   - transfer-obj-type: "char *"
+    name: hakc_transfer_string
+    return-type: ptr
+    arguments:
+      - { idx: 0, type: ptr, arg-use: signed-ptr }
+      - { idx: 1, type: i64, arg-use: compartment }
+      - { idx: 2, type: i64, arg-use: division }
+  - transfer-obj-type: "char []"
     name: hakc_transfer_string
     return-type: ptr
     arguments:
