@@ -33,8 +33,13 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})
     file(MAKE_DIRECTORY ${linux_build_path}/analysis ${linux_build_path}/hakc-dag-analysis)
     set(LINUX_MAKE_OPTS O=${linux_build_path}/analysis LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
+    set(hakc_config_mode "RunDataAccessGraphAnalysis")
     configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
             ${linux_build_path}/analysis-config.yaml
+    )
+    set(hakc_config_mode "RunCompartmentalization")
+    configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
+            ${linux_build_path}/compartmentalize-config.yaml
     )
     configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
             ${linux_build_path}/modify-config.sh

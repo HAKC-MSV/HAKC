@@ -85,7 +85,7 @@ information.
 ## Create Initial Compartmentalization
 
 1. ```
-   python3 llvm-project/llvm/utils/hakc/hakc-policy-process \
+   python3 llvm-project/llvm/utils/hakc/hakc-static-analysis \
    --dag-files-root cmake-build-hakc/linux/x86/hakc-dag-analysis \
    --create-dag --db-dir cmake-build-hakc/linux/x86/hakc-db
    ```
@@ -93,7 +93,32 @@ information.
 ## Adjusting the compartmentalization for targeted compartmentalization applications
 
 This is an example of how to adjust the initial compartmentalization to suit a specific
-application.
+application. Adjusting a compartmentalization involves writing a YAML file that instructs
+the static analysis Python script to adjust the base compartmentalization by placing
+symbols together into a compartment, and which other symbols should be placed in the
+permissive compartment (named the kernel compartment for historic reasons).  
+The permissive compartment does not perform any checks, but instead ensures that a pointer
+is valid before dereferencing it. This example is for the ROS 2 demo.
 
 1. `cp -r cmake-build-hakc/linux/x86/hakc-db cmake-build-hakc/linux/x86/hakc-db-base`
-2. 
+2. ```
+   python3 llvm-project/llvm/utils/hakc/hakc-static-analysis --db-dir \
+   cmake-build-hakc/linux/x86/hakc-db --adjust \
+   --adjust-path configs/compartmentalizations/linux/adjustments/linux-x86-adjustments.yml
+    ```
+
+## Build the protected kernel
+
+1. `mkdir -p cmake-build-hakc/linux/x86/compartmentalized`
+2. `cp cmake-build-hakc/linux/x86/analysis/.config 
+cmake-build-hakc/linux/x86/compartmentalized`
+3. `cd linux`
+4. ```
+   make \
+   LLVM=1 \
+   O=$(realpath ../cmake-build-hakc/linux/x86/compartmentalized) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=hakc-linux-x86 \
+   -j$(nproc)
+   ```
