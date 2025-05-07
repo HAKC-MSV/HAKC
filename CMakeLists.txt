@@ -31,36 +31,40 @@ set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Li
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})
-    file(MAKE_DIRECTORY ${linux_build_path}/analysis ${linux_build_path}/hakc-dag-analysis)
-    set(LINUX_MAKE_OPTS O=${linux_build_path}/analysis LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
-    set(hakc_config_mode "RunDataAccessGraphAnalysis")
-    configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
-            ${linux_build_path}/analysis-config.yaml
-    )
-    set(hakc_config_mode "RunCompartmentalization")
-    configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
-            ${linux_build_path}/compartmentalize-config.yaml
-    )
-    configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
-            ${linux_build_path}/modify-config.sh
-    )
-    add_custom_command(
-            OUTPUT ${linux_build_path}/analysis/.config
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            COMMENT "Generating ${arch} Linux config"
-            DEPENDS ${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
-            COMMAND bash ${linux_build_path}/modify-config.sh
-    )
-    add_custom_target(linux-${arch}-analysis-pass
-            BYPRODUCTS ${linux_build_path}/analysis/vmlinux
-            DEPENDS ${linux_build_path}/analysis-config.yaml clang ${linux_build_path}/analysis/.config
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            COMMENT "Running ${arch} Linux analysis pass"
-            USES_TERMINAL
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+    file(MAKE_DIRECTORY ${linux_build_path}/hakc-dag-analysis)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/policy-server/hakc-policy-server.yml.in
+            ${linux_build_path}/hakc-policy-server.yaml
     )
 
+    set(build_modes analysis;compartmentalize)
+    set(hakc_config_modes RunDataAccessGraphAnalysis;RunCompartmentalization)
+    foreach (build_mode hakc_config_mode IN ZIP_LISTS build_modes hakc_config_modes)
+        set(LINUX_MAKE_OPTS O=${linux_build_path}/${build_mode} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
+        file(MAKE_DIRECTORY ${linux_build_path}/${build_mode})
+        configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
+                ${linux_build_path}/${build_mode}-config.yaml
+        )
+        configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
+                ${linux_build_path}/modify-${build_mode}-config.sh
+        )
+        add_custom_target(hakc-linux-${arch}-${build_mode}-config
+                BYPRODUCTS ${linux_build_path}/${build_mode}/.config
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                COMMENT "Generating ${arch} ${build_mode} Linux config"
+                DEPENDS ${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
+                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+                COMMAND bash ${linux_build_path}/modify-${build_mode}-config.sh
+        )
+        add_custom_target(linux-${arch}-${build_mode}-pass
+                BYPRODUCTS ${linux_build_path}/${build_mode}/vmlinux
+                DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                COMMENT "Running ${arch} Linux ${build_mode} pass"
+                USES_TERMINAL
+                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+        )
+
+    endforeach ()
     add_custom_target(linux-${arch}-dag
             BYPRODUCTS ${linux_build_path}/hakc-db/data.kz
             DEPENDS linux-${arch}-analysis-pass

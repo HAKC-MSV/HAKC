@@ -109,16 +109,7 @@ is valid before dereferencing it. This example is for the ROS 2 demo.
 
 ## Build the protected kernel
 
-1. `mkdir -p cmake-build-hakc/linux/x86/compartmentalized`
-2. `cp cmake-build-hakc/linux/x86/analysis/.config 
-cmake-build-hakc/linux/x86/compartmentalized`
-3. `cd linux`
-4. ```
-   make \
-   LLVM=1 \
-   O=$(realpath ../cmake-build-hakc/linux/x86/compartmentalized) \
-   CC=$(realpath ../install/bin/clang) \
-   HOSTCC=$(realpath ../install/bin/clang) \
-   LOCALVERSION=hakc-linux-x86 \
-   -j$(nproc)
-   ```
+1. `llvm-project/llvm/utils/hakc/hakc-policy-process --config 
+cmake-build-hakc/linux/x86/hakc-policy-server.yaml &`
+1. `cd cmake-build-hakc`
+2. `cmake --build . --target linux-x86-compartmentalize-pass`

@@ -4,10 +4,10 @@ DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: @hakc_config_mode@
 OutputDebugInfo: false
 Database:
-  server-url: @linux_build_path@/hakc-dag-analysis/db-socket
-  server-timeout: 1000
-  get-compartment-by-id-endpoint: "get-compartment-id"
-  get-division-by-id-endpoint: "get-division-id"
+  server-url: @CMAKE_BINARY_DIR@/db-socket
+  server-timeout: 100
+  get-compartment-by-id-endpoint: "get-compartment-by-id"
+  get-division-by-id-endpoint: "get-division-by-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"
   get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
 PreTargetActions:

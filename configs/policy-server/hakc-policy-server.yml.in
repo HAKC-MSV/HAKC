@@ -1,13 +1,13 @@
-# See HAKCPolicyProcessConfig in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
 {
+  # See HAKCPolicyProcessConfig in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
   "backing_policy_config": {
     # See SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
     "type": "kuzu",
-    "path": "<path/to/kuzu/database/dir>",
+    "path": "@linux_build_path@/hakc-dag-analysis/hakc-db",
     "default_compartment": 0,
     "default_division": 0
   },
-  "socket_path": "hakc-dag-analysis/db-socket",
+  "socket_path": "@CMAKE_BINARY_DIR@/db-socket",
   "reuse_path": true,
   "test-mode": false,
   "server_timeout": 100,
