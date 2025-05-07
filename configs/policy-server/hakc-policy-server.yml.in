@@ -3,7 +3,7 @@
   "backing_policy_config": {
     # See SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
     "type": "kuzu",
-    "path": "@linux_build_path@/hakc-dag-analysis/hakc-db",
+    "path": "@linux_build_path@/hakc-db",
     "default_compartment": 0,
     "default_division": 0
   },
