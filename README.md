@@ -10,6 +10,20 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## Set up
 
 1. `bash scripts/support/init.sh`
+2. `python3 -m venv python/venv`
+3. `source python/venv/bin/activate`
+4. `python3 -m pip install -r llvm-project/llvm/utils/hakc/requirements.txt`
+
+### tl;dr
+
+The following steps can be accomplished (assuming the python virtual environment is still
+active) by
+
+1. `cd cmake-build-hakc`
+2. `cmake --build . --target linux-x86-dag`
+
+The kernel will be built in `cmake-build-hakc/linux/x86/analysis` and the database storing
+the compartmentalization policy will be in `cmake-build-hakc/linux/x86/hakc-db`
 
 ## Build LLVM
 
@@ -68,12 +82,8 @@ information.
 
 ## Create Initial Compartmentalization
 
-1. `cd $HAKC_ROOT`
-2. `python3 -m venv python/venv`
-3. `source python/venv/bin/activate`
-4. `python3 -m pip install -r install/bin/hakc/requirements.txt`
-5. ```
-   python3 install/bin/hakc/hakc-static-analysis \
+1. ```
+   python3 llvm-project/llvm/utils/hakc/hakc-policy-process \
    --dag-files-root cmake-build-hakc/linux/x86/hakc-dag-analysis \
    --create-dag --db-dir cmake-build-hakc/linux/x86/hakc-db
    ```
