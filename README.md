@@ -14,6 +14,10 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 3. `source python/venv/bin/activate`
 4. `python3 -m pip install -r llvm-project/llvm/utils/hakc/requirements.txt`
 
+## Build LLVM
+
+1. `bash scripts/support/build_llvm.sh`
+
 ### tl;dr
 
 Creating the initial compartmentalization can be accomplished (assuming the python virtual
@@ -24,10 +28,6 @@ environment is still active) by
 
 The kernel will be built in `cmake-build-hakc/linux/x86/analysis` and the database storing
 the compartmentalization policy will be in `cmake-build-hakc/linux/x86/hakc-db`
-
-## Build LLVM
-
-1. `bash scripts/support/build_llvm.sh`
 
 ## Build the Kernel
 
