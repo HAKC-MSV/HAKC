@@ -63,6 +63,14 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
                 USES_TERMINAL
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
         )
+        #add_custom_target(hakc-linux-${arch}-${build_mode}-temporal-analysis
+                #BYPRODUCTS ${linux_build_path}/${build_mode}-temporal-analysis
+                #DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
+                #WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                #COMMENT "Running ${arch} Linux ${build_mode} temporal analysis"
+                #USES_TERMINAL
+                #COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+        #)
 
     endforeach ()
     add_custom_target(linux-${arch}-dag
