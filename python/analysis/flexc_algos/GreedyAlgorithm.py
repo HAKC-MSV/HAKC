@@ -1,7 +1,6 @@
 import concurrent.futures
 import itertools
 import logging
-import math
 
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import HAKCLogger
@@ -24,14 +23,9 @@ def init_mp_database(db_dir: str):
 def compute_greedy_interaction(compartment_id: int):
     global mp_conn
     valid_targets = mp_conn.get_valid_targets_from_compartment_id(compartment_id)
-    compartment_interactions = dict()
-    for compartment_2 in valid_targets:
-        compartment_interaction_level = GreedyAlgorithm.compute_compartment_interaction(mp_conn, compartment_id,
-                                                                                        compartment_2)
-        logger.debug(
-            f'{compartment_id} -> {compartment_2}: {compartment_interaction_level}')
-        compartment_interactions[compartment_2] = compartment_interaction_level
-    return compartment_interactions
+    compartment_interaction_levels = GreedyAlgorithm.compute_compartment_interaction(mp_conn, compartment_id,
+                                                                                     valid_targets)
+    return compartment_interaction_levels
 
 
 class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
@@ -49,23 +43,24 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
 
     @staticmethod
     def compute_compartment_interaction(db: HAKCDatabase, compartment_id_1: int,
-                                        compartment_id_2: int) -> int:
+                                        target_compartments: list[int]) -> dict[int, int]:
         cmd = f"""
         MATCH
         (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[dag:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp2:{HAKCCompartment.get_table_name()})
-        WHERE comp1.{str(HAKCCompartment.get_primary_key())} = $comp1_id AND comp2.{str(HAKCCompartment.get_primary_key())} = $comp2_id
-        RETURN sum(dag.weight) AS interaction_level
+        WHERE comp1.{str(HAKCCompartment.get_primary_key())} = $comp1_id AND comp2.{str(HAKCCompartment.get_primary_key())} IN [{','.join([str(i) for i in target_compartments])}]
+        RETURN comp2.{str(HAKCCompartment.get_primary_key())} AS CompartmentID, dag.weight AS Weight
         """
-        response = db.execute_prepared_stmt(cmd, comp1_id=compartment_id_1, comp2_id=compartment_id_2)
+        response = db.execute_prepared_stmt(cmd, comp1_id=compartment_id_1)
         data = response.get_as_df()
-        if data.empty:
-            return 0
-        else:
-            info = data.to_dict(orient='records')[0]
-            result = info['interaction_level']
-            if math.isnan(result):
-                result = 0
-            return result
+        weights = dict()
+        for _, row in data.iterrows():
+            compartment_id = row['CompartmentID'].item()
+            weight = row['Weight'].item()
+            if compartment_id not in weights:
+                weights[compartment_id] = weight
+            else:
+                weights[compartment_id] += weight
+        return weights
 
     def get_compartments_to_merge(self, db: HAKCDatabase):
         cmd = f"""
@@ -75,7 +70,7 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
         ORDER BY CompartmentID
         """
         response = db.execute_prepared_stmt(cmd)
-        compartments = response.get_as_df()['CompartmentID'].tolist()[:20]
+        compartments = response.get_as_df()['CompartmentID'].tolist()
 
         return compartments
 
@@ -95,16 +90,13 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                        reverse=True), 0,
                 max(len(self.compartment_interactions) - max_compartments, max_compartments)):
             logger.debug(f'Merging {head_compartment_id} -> {tail_compartment_id} with interaction {max_interaction}')
-            if head_compartment_id not in resulting_compartment_map:
-                resulting_compartment_map[tail_compartment_id] = head_compartment_id
+            if tail_compartment_id not in resulting_compartment_map:
+                resulting_compartment_map[head_compartment_id] = tail_compartment_id
             else:
-                resulting_compartment_map[tail_compartment_id] = resulting_compartment_map[head_compartment_id]
+                resulting_compartment_map[head_compartment_id] = resulting_compartment_map[tail_compartment_id]
 
-        with logger.progress_bar(total=len(resulting_compartment_map),
-                                 desc="Merging Compartments") as pbar:
-            for tail_compartment_id, head_compartment_id in resulting_compartment_map.items():
-                db.merge_compartments(head_compartment_id, tail_compartment_id)
-                pbar.update(1)
+        logger.info(f'Merging Compartments')
+        db.merge_compartments(resulting_compartment_map)
 
         logger.info(f'Removed {len(resulting_compartment_map)} compartments')
         db.close()
