@@ -1,6 +1,7 @@
 import argparse
 import logging
 import multiprocessing as mp
+import shutil
 import time
 
 from hakc.HAKCDatabase import HAKCDatabase
@@ -23,6 +24,8 @@ def main():
     parser.add_argument('-l', '--log', default=None, dest='log_path')
     parser.add_argument('--log-mode', default='w', dest='log_mode')
     parser.add_argument('--core-count', dest='core_count', help='Number of cores to use', default=mp.cpu_count())
+    parser.add_argument('--output-db-dir', help='Directory to store compartmentalization policy', default=None,
+                        dest='output_db_dir')
 
     algo_parser = parser.add_subparsers(title='algo', dest='algo', help='Which algorithm to use')
     algos = list()
@@ -33,7 +36,13 @@ def main():
 
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
 
-    logger.info(f'Opening database at {args.db_dir}')
+    db_dir_to_use = args.db_dir
+    if args.output_db_dir is not None:
+        logger.info(f'Copying database from {args.db_dir} to {args.output_db_dir}')
+        shutil.copytree(args.db_dir, args.output_db_dir, dirs_exist_ok=True)
+        db_dir_to_use = args.output_db_dir
+
+    logger.info(f'Opening database at {db_dir_to_use}')
     database = HAKCDatabase(args.db_dir, read_only=True)
 
     for algo in algos:
@@ -42,7 +51,7 @@ def main():
             start = time.time()
             algo.run(database, **vars(args))
             end = time.time()
-            logger.info(f'Algorithm {algo} took {end - start} seconds')
+            logger.info(f'{algo} took {end - start} seconds')
 
 
 if __name__ == "__main__":
