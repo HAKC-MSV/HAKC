@@ -43,7 +43,7 @@ def main():
         db_dir_to_use = args.output_db_dir
 
     logger.info(f'Opening database at {db_dir_to_use}')
-    database = HAKCDatabase(args.db_dir, read_only=True)
+    database = HAKCDatabase(db_dir_to_use, read_only=True)
 
     for algo in algos:
         if algo == args.algo:
