@@ -1,4 +1,5 @@
 import concurrent.futures
+import itertools
 import logging
 import os
 
@@ -14,6 +15,7 @@ logging.setLoggerClass(HAKCLogger)
 logger = logging.getLogger('flexc')
 
 mp_conn = None
+mp_graph = None
 
 
 def init_mp_database(db_dir: str):
@@ -28,6 +30,36 @@ def compute_greedy_interaction(compartment_id: int):
     compartment_interaction_levels = GreedyAlgorithm.compute_compartment_interaction(mp_conn, compartment_id,
                                                                                      valid_targets)
     return compartment_interaction_levels
+
+
+def merge_compartment(graph):
+    resulting_compartments = dict()
+    for compartment_id in graph.nodes:
+        resulting_compartments[compartment_id] = compartment_id
+
+    max_edge = max(graph.edges(data=True), key=lambda edge: edge[2].get(GreedyAlgorithm.weight_attr, 0))
+    original_max_weight = max_edge[2].get(GreedyAlgorithm.weight_attr, 0)
+
+    while len(graph.edges) > 0:
+        max_edge = max(graph.edges(data=True), key=lambda edge: edge[2].get(GreedyAlgorithm.weight_attr, 0))
+        if max_edge[2].get(GreedyAlgorithm.weight_attr, 0) < original_max_weight:
+            break
+        head_compartment_id = max_edge[0]
+        tail_compartment_id = max_edge[1]
+        logger.debug(
+            f'Merging {head_compartment_id} -> {tail_compartment_id} with interaction {max_edge[2].get(GreedyAlgorithm.weight_attr, 0)}')
+        compartments_to_change = set()
+        for compartment_id, result in resulting_compartments.items():
+            if result == head_compartment_id:
+                compartments_to_change.add(compartment_id)
+
+        for compartment_id in compartments_to_change:
+            resulting_compartments[compartment_id] = tail_compartment_id
+
+        resulting_compartments[head_compartment_id] = tail_compartment_id
+        GreedyAlgorithm.remove_compartment(head_compartment_id, tail_compartment_id, graph)
+
+    return resulting_compartments
 
 
 class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
@@ -46,6 +78,44 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                             dest="max_compartments", required=True)
         parser.add_argument('--start-compartment-count', type=int,
                             help='Number of compartments to start with (for debugging)', dest='start_count', default=-1)
+
+    @staticmethod
+    def mp_merge_compartment(subgraph_nodes):
+        global mp_graph
+        subgraph = mp_graph.subgraph(subgraph_nodes).copy()
+        return merge_compartment(subgraph)
+
+    @staticmethod
+    def remove_compartment(compartment_id: int, resulting_compartment_id: int, graph):
+        edges_to_add = list()
+        edges_to_adjust = list()
+        for in_edge in graph.in_edges(compartment_id, data=True):
+            head = in_edge[0]
+            if head == resulting_compartment_id:
+                continue
+
+            weight = in_edge[2].get(GreedyAlgorithm.weight_attr, 0)
+            if graph.has_edge(head, resulting_compartment_id):
+                edges_to_adjust.append((head, resulting_compartment_id, weight))
+            else:
+                edges_to_add.append((head, resulting_compartment_id, weight))
+
+        for out_edge in graph.out_edges(compartment_id, data=True):
+            tail = out_edge[1]
+            if tail == resulting_compartment_id:
+                continue
+
+            weight = out_edge[2].get(GreedyAlgorithm.weight_attr, 0)
+            if graph.has_edge(resulting_compartment_id, tail):
+                edges_to_adjust.append((resulting_compartment_id, tail, weight))
+            else:
+                edges_to_add.append((resulting_compartment_id, tail, weight))
+
+        graph.remove_node(compartment_id)
+        for (head, tail, weight) in edges_to_add:
+            graph.add_edge(head, tail, **{GreedyAlgorithm.weight_attr: weight})
+        for (head, tail, weight) in edges_to_adjust:
+            graph[head][tail][GreedyAlgorithm.weight_attr] += weight
 
     @staticmethod
     def compute_compartment_interaction(db: HAKCDatabase, compartment_id_1: int,
@@ -70,7 +140,8 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                 weights[compartment_id] += weight
         return weights
 
-    def get_compartments_to_merge(self, db: HAKCDatabase):
+    @staticmethod
+    def get_compartments_to_merge(db: HAKCDatabase):
         cmd = f"""
         MATCH 
         (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[dag:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})
@@ -96,126 +167,110 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
     def reset_interactions(self):
         self.compartment_interactions.clear()
 
-    def merge_compartment(self, edge):
-        head_compartment_id = edge[0]
-        tail_compartment_id = edge[1]
-        logger.debug(
-            f'Merging {head_compartment_id} -> {tail_compartment_id} with interaction {edge[2].get(GreedyAlgorithm.weight_attr, 0)}')
-        existing_merged_nodes = self.compartment_interactions.nodes[head_compartment_id][
-            GreedyAlgorithm.merged_compartment_attr]
-        for merged_node in existing_merged_nodes:
-            self.compartment_interactions.nodes[tail_compartment_id][GreedyAlgorithm.merged_compartment_attr].add(
-                merged_node)
-        self.compartment_interactions.nodes[tail_compartment_id][GreedyAlgorithm.merged_compartment_attr].add(
-            head_compartment_id)
-        edges_to_add = list()
-        edges_to_adjust = list()
-        edges_removed = list()
-        for in_edge in self.compartment_interactions.in_edges(head_compartment_id, data=True):
-            edges_removed.append(in_edge)
-            head = in_edge[0]
-            if head == tail_compartment_id:
-                continue
+    @staticmethod
+    def handle_merge(compartment_interactions: nx.DiGraph, resulting_compartments: dict, max_compartments: int):
+        for compartment_id, resulting_compartment in resulting_compartments.items():
+            if len(compartment_interactions) <= max_compartments:
+                break
+            if compartment_id != resulting_compartment:
+                existing_merged_nodes = compartment_interactions.nodes[compartment_id][
+                    GreedyAlgorithm.merged_compartment_attr]
+                for merged_node in existing_merged_nodes:
+                    compartment_interactions.nodes[resulting_compartment][
+                        GreedyAlgorithm.merged_compartment_attr].add(merged_node)
+                compartment_interactions.nodes[resulting_compartment][GreedyAlgorithm.merged_compartment_attr].add(
+                    compartment_id)
+                GreedyAlgorithm.remove_compartment(compartment_id, resulting_compartment, compartment_interactions)
 
-            weight = in_edge[2].get(GreedyAlgorithm.weight_attr, 0)
-            if self.compartment_interactions.has_edge(head, tail_compartment_id):
-                edges_to_adjust.append((head, tail_compartment_id, weight))
-            else:
-                edges_to_add.append((head, tail_compartment_id, weight))
+    @staticmethod
+    def compute_subgraphs(compartment_interactions: nx.DiGraph) -> list[set[int]]:
+        independent_graphs = list()
+        graph_indicies = dict()
+        resulting_indicies = dict()
+        current_idx = 0
+        for sorted_edge in logger.progress_bar(
+                iterable=sorted(compartment_interactions.edges(data=True), reverse=True,
+                                key=lambda edge: edge[2].get(GreedyAlgorithm.weight_attr, 0)),
+                desc="Creating subgraphs"):
+            compartment_to_be_removed = sorted_edge[0]
+            remaining_compartment = sorted_edge[1]
 
-        for out_edge in self.compartment_interactions.out_edges(head_compartment_id, data=True):
-            edges_removed.append(out_edge)
-            tail = out_edge[1]
-            if tail == tail_compartment_id:
-                continue
+            head_idx = graph_indicies.get(compartment_to_be_removed, None)
+            tail_idx = graph_indicies.get(remaining_compartment, None)
 
-            weight = out_edge[2].get(GreedyAlgorithm.weight_attr, 0)
-            if self.compartment_interactions.has_edge(tail_compartment_id, tail):
-                edges_to_adjust.append((tail_compartment_id, tail, weight))
-            else:
-                edges_to_add.append((tail_compartment_id, tail, weight))
+            if head_idx is None and tail_idx is None:
+                graph_indicies[compartment_to_be_removed] = current_idx
+                graph_indicies[remaining_compartment] = current_idx
+                resulting_indicies[current_idx] = current_idx
+                current_idx += 1
 
-        self.compartment_interactions.remove_node(head_compartment_id)
+            if head_idx is not None and tail_idx is not None:
+                if head_idx < tail_idx:
+                    resulting_indicies[tail_idx] = head_idx
+                if tail_idx < head_idx:
+                    resulting_indicies[head_idx] = tail_idx
 
-        edges_added = list()
-        for head, tail, weight in edges_to_add:
-            self.compartment_interactions.add_edge(head, tail, **{GreedyAlgorithm.weight_attr: weight})
-            edges_added.append((head, tail, {GreedyAlgorithm.weight_attr: weight}))
+            if head_idx is not None and tail_idx is None:
+                graph_indicies[remaining_compartment] = head_idx
+            if tail_idx is not None and head_idx is None:
+                graph_indicies[compartment_to_be_removed] = tail_idx
 
-        edges_adjusted = list()
-        for head, tail, weight in edges_to_adjust:
-            if not self.compartment_interactions.has_edge(head, tail):
-                logger.error(f'{head} -> {tail} does not exist')
-                continue
-            new_weight = self.compartment_interactions[head][tail][GreedyAlgorithm.weight_attr] + weight
-            self.compartment_interactions[head][tail][GreedyAlgorithm.weight_attr] = new_weight
+        indicies = list(sorted(set(resulting_indicies.values())))
+        normalized_indicies = dict()
+        for i in range(len(indicies)):
+            normalized_indicies[indicies[i]] = i
+            independent_graphs.append(set())
 
-            edges_adjusted.append(
-                (head, tail, {GreedyAlgorithm.weight_attr: new_weight, 'old_weight': new_weight - weight}))
+        for compartment_id, index in graph_indicies.items():
+            normalized_index = normalized_indicies[resulting_indicies[index]]
+            independent_graphs[normalized_index].add(compartment_id)
 
-        return edges_added, edges_adjusted, edges_removed
+        return independent_graphs
 
-    def add_edge_to_weights(self, edge, weights):
-        weight = edge[2].get(GreedyAlgorithm.weight_attr, 0)
-        if weight not in weights:
-            weights[weight] = dict()
-        if edge[0] not in weights[weight]:
-            weights[weight][edge[0]] = list()
-        weights[weight][edge[0]].append(edge[1])
-
-    def remove_edge_from_weights(self, edge, weights):
-        weight = edge[2].get(GreedyAlgorithm.weight_attr, 0)
-        if weight in weights:
-            if edge[0] in weights[weight]:
-                try:
-                    weights[weight][edge[0]].remove(edge[1])
-                except ValueError:
-                    pass
-                if len(weights[weight][edge[0]]) == 0:
-                    del weights[weight][edge[0]]
-            if len(weights[weight]) == 0:
-                del weights[weight]
-
-    def merge_compartments(self, db: HAKCDatabase, max_compartments: int):
+    def merge_compartments(self, db: HAKCDatabase, max_compartments: int, core_count: int):
         db.close()
         db.open()
 
-        with logger.progress_bar(total=len(self.compartment_interactions.edges), desc="Organizing Weights") as pbar:
-            weights = dict()
-
-            for sorted_edge in sorted(self.compartment_interactions.edges(data=True),
-                                      key=lambda edge: edge[2].get(GreedyAlgorithm.weight_attr, 0)):
-                self.add_edge_to_weights(sorted_edge, weights)
-                pbar.update(1)
-
-        with logger.progress_bar(total=len(self.compartment_interactions.edges),
-                                 desc="Merging Compartments") as pbar:
-            while len(self.compartment_interactions) > max_compartments and len(weights) > 0:
-                max_weight = max(weights.keys())
-                head, tails = next(iter(weights[max_weight].items()))
-                max_edge = (head, tails.pop(), {GreedyAlgorithm.weight_attr: max_weight})
-                if self.compartment_interactions.has_node(max_edge[0]) and self.compartment_interactions.has_node(
-                        max_edge[1]):
-                    edges_added, edges_adjusted, edges_removed = self.merge_compartment(max_edge)
-                    for removed_edge in edges_removed:
-                        self.remove_edge_from_weights(removed_edge, weights)
-                    for added_edge in edges_added:
-                        self.add_edge_to_weights(added_edge, weights)
-                    for adjusted_edge in edges_adjusted:
-                        new_weight = adjusted_edge[2].get(GreedyAlgorithm.weight_attr, 0)
-                        old_weight = adjusted_edge[2].get('old_weight', 0)
-                        adjusted_edge[2][GreedyAlgorithm.weight_attr] = old_weight
-                        self.remove_edge_from_weights(adjusted_edge, weights)
-                        adjusted_edge[2][GreedyAlgorithm.weight_attr] = new_weight
-                        self.add_edge_to_weights(adjusted_edge, weights)
-
-                pbar.update(1)
-                if len(self.compartment_interactions.edges()) == 0:
-                    logger.info(
-                        f"No more edges to merge. Compartment count is {len(self.compartment_interactions)}")
-                    break
-
         final_compartment_map = dict()
+
+        try:
+            while (len(self.compartment_interactions) > max_compartments) and len(
+                    self.compartment_interactions.edges) > 0:
+                edge_count = len(self.compartment_interactions.edges)
+                compartment_count = len(self.compartment_interactions)
+
+                independent_graphs = self.compute_subgraphs(self.compartment_interactions)
+
+                global mp_graph
+                mp_graph = self.compartment_interactions
+                if core_count == 1 or len(independent_graphs) == 1:
+                    for subgraph_nodes in logger.progress_bar(iterable=independent_graphs,
+                                                              desc='Merging Compartments'):
+                        resulting_compartments = GreedyAlgorithm.mp_merge_compartment(subgraph_nodes)
+                        GreedyAlgorithm.handle_merge(self.compartment_interactions, resulting_compartments,
+                                                     max_compartments)
+                else:
+                    with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+                        futures_to_edge = dict()
+                        for subgraph_nodes in logger.progress_bar(iterable=independent_graphs,
+                                                                  desc="Compartment Merge Scheduling"):
+                            futures_to_edge[
+                                executor.submit(GreedyAlgorithm.mp_merge_compartment, subgraph_nodes)] = subgraph_nodes
+                        with logger.progress_bar(total=len(futures_to_edge),
+                                                 desc="Merging Compartments") as pbar:
+                            for future in concurrent.futures.as_completed(futures_to_edge):
+                                pbar.update(1)
+                                resulting_compartments = future.result()
+                                GreedyAlgorithm.handle_merge(self.compartment_interactions, resulting_compartments,
+                                                             max_compartments)
+                if len(self.compartment_interactions.edges) == edge_count:
+                    logger.info(f'Edge count unchanged. Stopping')
+                    break
+                else:
+                    logger.info(
+                        f'Removed {edge_count - len(self.compartment_interactions.edges)} edges and {compartment_count - len(self.compartment_interactions)} compartments. There are {len(self.compartment_interactions)} compartments remaining')
+        except KeyboardInterrupt:
+            logger.info(f'User stopped analysis')
 
         for compartment_id in self.compartment_interactions.nodes():
             for merged_compartment_id in self.compartment_interactions.nodes[compartment_id][
@@ -228,6 +283,26 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
             yaml.dump(final_compartment_map, f, indent=2)
 
         db.merge_compartments(final_compartment_map)
+
+        if len(self.compartment_interactions.edges) == 0:
+            remaining_compartments = db.get_all_compartments()
+            logger.info(f'No more edges to merge. Total compartments is {len(remaining_compartments)}')
+            if len(remaining_compartments) > max_compartments:
+                compartment_sizes = db.get_compartment_symbol_count()
+                final_compartment_map = dict()
+                compartments_remaining = len(remaining_compartments) - max_compartments
+                with logger.progress_bar(total=compartments_remaining, desc='Merging remaining compartments') as pbar:
+                    for (compartment_1, compartment_2) in itertools.batched(
+                            sorted(compartment_sizes.items(), key=lambda size: size[1]), 2):
+                        final_compartment_map[compartment_1[0]] = compartment_2[0]
+                        pbar.update(1)
+                        compartments_remaining -= 1
+                        if compartments_remaining == 0:
+                            break
+                logger.info(f'Writing remaining merges to manifest')
+                with open(merge_manifest_path, 'a') as f:
+                    yaml.dump(final_compartment_map, f, indent=2)
+                db.merge_compartments(final_compartment_map)
 
         db.close()
         db.open(read_only=True)
@@ -266,4 +341,4 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                 compartment_interaction_levels = compute_greedy_interaction(compartment_id)
                 self.handle_interaction_result(compartment_id, compartment_interaction_levels)
 
-        self.merge_compartments(db, max_compartments)
+        self.merge_compartments(db, max_compartments, core_count)
