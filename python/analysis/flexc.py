@@ -1,17 +1,25 @@
 import argparse
 import logging
-import multiprocessing as mp
 import shutil
 import time
+from multiprocessing import cpu_count
 
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging, HAKCLogger
 from hakc.HAKCObjects import HAKCCompartment, HAKCDivision, HAKCSymbol
 
 from flexc_algos import GreedyAlgorithm
+from flexc_algos.FlexCAlgorithm import FlexCAlgorithm
 
 logging.setLoggerClass(HAKCLogger)
 logger = logging.getLogger('flexc')
+
+
+def setup_algorithms(parser) -> list[FlexCAlgorithm]:
+    algo_parser = parser.add_subparsers(title='algo', dest='algo', help='Which algorithm to use')
+    algos = [GreedyAlgorithm.GreedyAlgorithm(algo_parser)]
+
+    return algos
 
 
 def main():
@@ -23,14 +31,11 @@ def main():
                         type=parse_log_level)
     parser.add_argument('-l', '--log', default=None, dest='log_path')
     parser.add_argument('--log-mode', default='w', dest='log_mode')
-    parser.add_argument('--core-count', dest='core_count', help='Number of cores to use', default=mp.cpu_count())
+    parser.add_argument('--core-count', dest='core_count', help='Number of cores to use', default=cpu_count())
     parser.add_argument('--output-db-dir', help='Directory to store compartmentalization policy', default=None,
                         dest='output_db_dir')
 
-    algo_parser = parser.add_subparsers(title='algo', dest='algo', help='Which algorithm to use')
-    algos = list()
-
-    algos.append(GreedyAlgorithm.GreedyAlgorithm(algo_parser))
+    algos = setup_algorithms(parser)
 
     args = parser.parse_args()
 
