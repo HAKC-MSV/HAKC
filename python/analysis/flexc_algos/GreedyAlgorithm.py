@@ -1,5 +1,4 @@
 import concurrent.futures
-import itertools
 import logging
 import os
 
@@ -277,32 +276,30 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                 GreedyAlgorithm.merged_compartment_attr]:
                 final_compartment_map[merged_compartment_id] = compartment_id
 
+        db.merge_compartments(final_compartment_map)
+        remaining_compartments = db.get_all_compartments()
+        logger.info(f'Initial merging complete. There are {len(remaining_compartments)} compartments')
+
+        if len(remaining_compartments) > max_compartments:
+            compartment_sizes = db.get_compartment_symbol_count()
+            cleanup_compartment_map = dict()
+            compartments_remaining = len(remaining_compartments) - max_compartments
+            with logger.progress_bar(total=compartments_remaining, desc='Merging remaining compartments') as pbar:
+                compartments_sorted_by_size = [compartment[0] for compartment in
+                                               sorted(compartment_sizes.items(), key=lambda size: size[1])]
+                for i in range(compartments_remaining):
+                    target_compartment_idx = (i % max_compartments) + 1
+                    target_compartment = compartments_sorted_by_size[-target_compartment_idx]
+                    source_compartment = compartments_sorted_by_size[i]
+                    cleanup_compartment_map[source_compartment] = target_compartment
+                    final_compartment_map[source_compartment] = target_compartment
+
+            db.merge_compartments(cleanup_compartment_map)
+
         merge_manifest_path = os.path.join(db.db_dir, 'merge-manifest.yml')
         logger.info(f'Writing merge manifest to {merge_manifest_path}')
         with open(merge_manifest_path, 'w') as f:
             yaml.dump(final_compartment_map, f, indent=2)
-
-        db.merge_compartments(final_compartment_map)
-
-        if len(self.compartment_interactions.edges) == 0:
-            remaining_compartments = db.get_all_compartments()
-            logger.info(f'No more edges to merge. Total compartments is {len(remaining_compartments)}')
-            if len(remaining_compartments) > max_compartments:
-                compartment_sizes = db.get_compartment_symbol_count()
-                final_compartment_map = dict()
-                compartments_remaining = len(remaining_compartments) - max_compartments
-                with logger.progress_bar(total=compartments_remaining, desc='Merging remaining compartments') as pbar:
-                    for (compartment_1, compartment_2) in itertools.batched(
-                            sorted(compartment_sizes.items(), key=lambda size: size[1]), 2):
-                        final_compartment_map[compartment_1[0]] = compartment_2[0]
-                        pbar.update(1)
-                        compartments_remaining -= 1
-                        if compartments_remaining == 0:
-                            break
-                logger.info(f'Writing remaining merges to manifest')
-                with open(merge_manifest_path, 'a') as f:
-                    yaml.dump(final_compartment_map, f, indent=2)
-                db.merge_compartments(final_compartment_map)
 
         db.close()
         db.open(read_only=True)
