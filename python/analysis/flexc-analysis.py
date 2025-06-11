@@ -46,6 +46,8 @@ class VulnerableSymbol:
 
 
 class FlexCAnalysisData:
+    symbol_name_filters = ["_SCT_", "_SCK_", "_UNIQUE_ID_", ".str"]
+
     def __init__(self):
         self.escalation_types: set[EscalationObjectType] = set()
         self.vulnerable_symbols: set[VulnerableSymbol] = set()
@@ -53,13 +55,45 @@ class FlexCAnalysisData:
         self.compartments_that_allow_escalation: set[int] = set()
         self.compartments_with_escalation_objects: set[int] = set()
         self.compartments_with_vulnerable_symbols: set[int] = set()
+        self.compartment_symbol_map = dict()
+
+    @staticmethod
+    def output_list_information(analysis_output: dict, analysis_name: str, analysis_set: set):
+        analysis_output[analysis_name] = dict()
+        analysis_output[analysis_name]['size'] = len(analysis_set)
+        analysis_output[analysis_name]['data'] = sorted(list(analysis_set)) if len(analysis_set) > 0 else []
 
     def write_analysis_output(self, f):
         analysis_output = dict()
         analysis_output['total-compartments'] = self.total_compartments
-        analysis_output['allowable-escalation-compartment-total'] = len(self.compartments_that_allow_escalation)
-        analysis_output['escalation-compartment-total'] = len(self.compartments_with_escalation_objects)
-        analysis_output['vulnerable-compartment-total'] = len(self.compartments_with_vulnerable_symbols)
+
+        self.output_list_information(analysis_output, 'allowable-escalation-compartments',
+                                     self.compartments_that_allow_escalation)
+        self.output_list_information(analysis_output, 'escalation-compartments',
+                                     self.compartments_with_escalation_objects)
+        self.output_list_information(analysis_output, 'vulnerable-compartments',
+                                     self.compartments_with_vulnerable_symbols)
+
+        analysis_output['compartmentalization-info'] = dict()
+        for compartment_id, symbols in self.compartment_symbol_map.items():
+            analysis_output['compartmentalization-info'][compartment_id] = dict()
+            filtered_symbols_names = set()
+            filtered_symbol_definition_files = set()
+            for symbol in symbols:
+                add_symbol = True
+                for name_filter in FlexCAnalysisData.symbol_name_filters:
+                    if name_filter in symbol.name:
+                        add_symbol = False
+                        break
+                if add_symbol:
+                    filtered_symbols_names.add(symbol.name)
+                    if symbol.defining_file is not None:
+                        filtered_symbol_definition_files.add(symbol.defining_file)
+
+            self.output_list_information(analysis_output['compartmentalization-info'][compartment_id],
+                                         'filtered-symbol-names', filtered_symbols_names)
+            self.output_list_information(analysis_output['compartmentalization-info'][compartment_id],
+                                         'filter-symbol-definition-files', filtered_symbol_definition_files)
 
         yaml.dump(analysis_output, f)
 
@@ -111,6 +145,12 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str):
         for vulnerable_compartment in analysis_data.compartments_with_vulnerable_symbols:
             if vulnerable_compartment in analysis_data.compartments_with_escalation_objects:
                 analysis_data.compartments_that_allow_escalation.add(vulnerable_compartment)
+
+        for compartment in compartments:
+            symbol_hashes = db.get_all_symbol_hashes_in_compartment(compartment.compartment_id)
+            symbols = db.get_symbol_by_hash(symbol_hashes)
+            analysis_data.compartment_symbol_map[compartment.compartment_id] = symbols
+
     finally:
         db.close()
 
