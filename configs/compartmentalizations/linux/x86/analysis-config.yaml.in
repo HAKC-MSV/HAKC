@@ -5,7 +5,7 @@ PassMode: @hakc_config_mode@
 OutputDebugInfo: false
 Database:
   server-url: @CMAKE_BINARY_DIR@/db-socket
-  server-timeout: 100
+  server-timeout: 1000
   get-compartment-by-id-endpoint: "get-compartment-by-id"
   get-division-by-id-endpoint: "get-division-by-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"

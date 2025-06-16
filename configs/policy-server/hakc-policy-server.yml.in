@@ -10,7 +10,7 @@
   "socket_path": "@CMAKE_BINARY_DIR@/db-socket",
   "reuse_path": true,
   "test-mode": false,
-  "server_timeout": 100,
+  "server_timeout": -1,
   "get-compartment-by-id-endpoint": "get-compartment-by-id",
   "get-division-by-id-endpoint": "get-division-by-id",
   "get-division-from-symbol-endpoint": "get-division-from-symbol",
