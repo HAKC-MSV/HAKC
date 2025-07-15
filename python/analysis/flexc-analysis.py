@@ -1,5 +1,6 @@
 import argparse
 import logging
+import os
 
 import yaml
 from hakc.HAKCDatabase import HAKCDatabase
@@ -171,6 +172,9 @@ def main():
     args = parser.parse_args()
 
     setup_logging(logger, log_file=args.log_path, log_level=args.log_level, log_mode=args.log_mode)
+
+    if not os.path.exists(os.path.dirname(args.analysis_output)):
+        os.makedirs(os.path.dirname(args.analysis_output))
 
     with open(args.analysis_output, 'w') as f:
         analysis_data = parse_inputs(args.input)
