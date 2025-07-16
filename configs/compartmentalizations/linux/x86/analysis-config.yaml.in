@@ -5,7 +5,7 @@ PassMode: @hakc_config_mode@
 OutputDebugInfo: false
 Database:
   server-url: @CMAKE_BINARY_DIR@/db-socket
-  server-timeout: 100
+  server-timeout: 2000
   get-compartment-by-id-endpoint: "get-compartment-by-id"
   get-division-by-id-endpoint: "get-division-by-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"
@@ -185,7 +185,7 @@ HAKCSourcePaths:
   - { path_root: arch/x86/kernel/hakc/, file_names: [ hakc_ni.c, hakc.c, hakc_btree.c, hakc_memory.c ] }
   - { path_root: drivers/usb/storage/, file_names: [ transfer.c ] }
   - { path_root: fs/fuse/, file_names: [ transfer.c ] }
-  - { path_root: kernel/hakc/, file_names: [ hakc_common.c, hakc_noarch_tag_btree.c, hakc_noarch_tag_memory.c ] }
+  - { path_root: kernel/hakc/, file_names: [ hakc_common.c, hakc_noarch_tag_btree.c, hakc_noarch_tag_memory.c, hakc_global_init.c ] }
 SafeTransitionFunctions:
   - { name: "kmemdup" }
   - { name: "__memcpy" }
