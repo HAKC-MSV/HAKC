@@ -1,4 +1,5 @@
 import argparse
+import concurrent.futures
 import logging
 import os
 
@@ -123,21 +124,95 @@ def get_compartments_using_type(db: HAKCDatabase, type_name: str) -> list[int]:
     """
     response = db.execute_prepared_stmt(cmd, type_name=type_name)
     data = response.get_as_df()
-    return sorted(data['CompartmentID'].tolist())
+
+    compartment_ids = set()
+    compartment_ids.update(data['CompartmentID'].tolist())
+
+    # cmd = f"""
+    # MATCH (ty:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(:{HAKCSymbol.get_table_name()})<-[:{HAKCSymbol.UsesSymbolTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
+    # WHERE contains(ty.{str(HAKCType.get_data_columns()[0])}, $type_name)
+    # RETURN DISTINCT c.{str(HAKCCompartment.get_primary_key())} AS CompartmentID
+    # """
+    # response = db.execute_prepared_stmt(cmd, type_name=type_name)
+    # data = response.get_as_df()
+    # 
+    # compartment_ids.update(data['CompartmentID'].tolist())
+
+    return sorted(list(compartment_ids))
 
 
-def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str):
+def get_escalation_type_compartments(db: HAKCDatabase, type_name: str) -> list[int]:
+    compartment_ids = get_compartments_using_type(db, type_name)
+    return compartment_ids
+
+
+def multicore_get_escalation_type_compartments(db_dir, type_name: str):
     db = HAKCDatabase(db_dir, read_only=True)
-    try:
-        for escalation_type in analysis_data.escalation_types:
-            compartment_ids = get_compartments_using_type(db, escalation_type.type_name)
-            for compartment_id in compartment_ids:
-                analysis_data.compartments_with_escalation_objects.add(compartment_id)
+    compartment_ids = get_escalation_type_compartments(db, type_name)
+    db.close()
+    return compartment_ids
 
-        for vulnerable_symbol in analysis_data.vulnerable_symbols:
-            db_symbols = db.get_symbols_by_name(vulnerable_symbol.name)
-            for db_symbol in db_symbols:
-                compartment_tuple = db.get_division_id_compartment_id_from_symbol(db_symbol)
+
+def get_compartment_with_vulnerable_symbol(db, symbol):
+    return db.get_division_id_compartment_id_from_symbol(symbol)
+
+
+def multicore_get_compartment_with_vulnerable_symbol(db_dir, symbol):
+    db = HAKCDatabase(db_dir, read_only=True)
+    compartment_tuple = get_compartment_with_vulnerable_symbol(db, symbol)
+    db.close()
+    return compartment_tuple
+
+
+def get_symbols_in_compartment(db, compartment_id):
+    symbol_hashes = db.get_all_symbol_hashes_in_compartment(compartment_id)
+    return db.get_symbol_by_hash(symbol_hashes)
+
+
+def multicore_get_symbols_in_compartment(db_dir, compartment_id):
+    db = HAKCDatabase(db_dir, read_only=True)
+    symbols = get_symbols_in_compartment(db, compartment_id)
+    db.close()
+    return symbols
+
+
+def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: bool):
+    core_count = 1
+    db = HAKCDatabase(db_dir, read_only=True)
+    if multicore:
+        from multiprocessing import cpu_count
+        core_count = cpu_count()
+
+    try:
+        if multicore:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+                futures_to_data = {executor.submit(multicore_get_escalation_type_compartments, db_dir,
+                                                   escalation_type.type_name): escalation_type.type_name for
+                                   escalation_type in analysis_data.escalation_types}
+                for future in concurrent.futures.as_completed(futures_to_data):
+                    for compartment_id in future.result():
+                        analysis_data.compartments_with_escalation_objects.add(compartment_id)
+        else:
+            for escalation_type in analysis_data.escalation_types:
+                compartment_ids = get_compartments_using_type(db, escalation_type.type_name)
+                for compartment_id in compartment_ids:
+                    analysis_data.compartments_with_escalation_objects.add(compartment_id)
+
+        vulnerable_symbol_names = [vulnerable_symbol.name for vulnerable_symbol in analysis_data.vulnerable_symbols]
+        vulnerable_symbols = db.get_symbols_by_name_list(vulnerable_symbol_names)
+        if multicore:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+                futures_to_data = {
+                    executor.submit(multicore_get_compartment_with_vulnerable_symbol, db_dir,
+                                    vulnerable_symbol): vulnerable_symbol for
+                    vulnerable_symbol in vulnerable_symbols}
+                for future in concurrent.futures.as_completed(futures_to_data):
+                    compartment_tuple = future.result()
+                    if compartment_tuple is not None:
+                        analysis_data.compartments_with_vulnerable_symbols.add(compartment_tuple[1].compartment_id)
+        else:
+            for vulnerable_symbol in vulnerable_symbols:
+                compartment_tuple = get_compartment_with_vulnerable_symbol(db, vulnerable_symbol)
                 if compartment_tuple:
                     analysis_data.compartments_with_vulnerable_symbols.add(compartment_tuple[1].compartment_id)
 
@@ -147,10 +222,20 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str):
             if vulnerable_compartment in analysis_data.compartments_with_escalation_objects:
                 analysis_data.compartments_that_allow_escalation.add(vulnerable_compartment)
 
-        for compartment in compartments:
-            symbol_hashes = db.get_all_symbol_hashes_in_compartment(compartment.compartment_id)
-            symbols = db.get_symbol_by_hash(symbol_hashes)
-            analysis_data.compartment_symbol_map[compartment.compartment_id] = symbols
+        if multicore:
+            with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
+                futures_to_data = {executor.submit(multicore_get_symbols_in_compartment, db_dir,
+                                                   compartment.compartment_id): compartment.compartment_id for
+                                   compartment
+                                   in compartments}
+                for future in concurrent.futures.as_completed(futures_to_data):
+                    compartment_id = futures_to_data[future]
+                    symbols = future.result()
+                    analysis_data.compartment_symbol_map[compartment_id] = symbols
+        else:
+            for compartment in compartments:
+                symbols = get_symbols_in_compartment(db, compartment.compartment_id)
+                analysis_data.compartment_symbol_map[compartment.compartment_id] = symbols
 
     finally:
         db.close()
@@ -168,6 +253,8 @@ def main():
     parser.add_argument('--analysis-output', default='analysis-output.yml', help='File to write analysis output',
                         dest="analysis_output")
     parser.add_argument('--input', nargs='+', required=True, help="Input files")
+    parser.add_argument('--multicore', dest='multicore', action='store_true', default=False)
+    args = parser.parse_args()
 
     args = parser.parse_args()
 
@@ -178,7 +265,7 @@ def main():
 
     with open(args.analysis_output, 'w') as f:
         analysis_data = parse_inputs(args.input)
-        perform_analysis(analysis_data, args.db_dir)
+        perform_analysis(analysis_data, args.db_dir, args.multicore)
         analysis_data.write_analysis_output(f)
 
 
