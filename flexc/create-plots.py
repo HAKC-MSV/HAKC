@@ -4,6 +4,7 @@ import os
 import statistics
 from multiprocessing import cpu_count
 
+import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import pandas as pd
 import tqdm
@@ -42,21 +43,32 @@ def compute_plot_data(filename):
 def main():
     parser = argparse.ArgumentParser(description='FLEXC Plot Creator')
 
-    parser.add_argument('--analysis-dir', dest='analysis_dir', required=True)
+    parser.add_argument('--analysis-dir', dest='analysis_dirs', nargs='+')
     parser.add_argument('--core-count', dest='core_count', default=cpu_count())
+    parser.add_argument('--categories', dest='categories', nargs='+')
     args = parser.parse_args()
+
+    if len(args.categories) != len(args.analysis_dirs):
+        raise ValueError('Number of categories and analysis directories must match')
 
     plot_data = {
         'max-normalized-vulnerable-compartment-size': [],
         'average-compartment-size': [],
         'total-compartments': [],
+        'colors': []
     }
 
     filenames = set()
-    for root, _, files in os.walk(args.analysis_dir):
-        for file in files:
-            if file.endswith(".yml"):
-                filenames.add(os.path.join(root, file))
+    colors = ['red', 'green', 'blue']
+    filename_map = dict()
+    for i in range(len(args.analysis_dirs)):
+        analysis_dir = args.analysis_dirs[i]
+        for root, _, files in os.walk(analysis_dir):
+            for file in files:
+                if file.endswith(".yml"):
+                    filename = os.path.join(root, file)
+                    filenames.add(filename)
+                    filename_map[filename] = colors[i]
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.core_count) as executor:
         futures_to_files = {}
@@ -68,15 +80,20 @@ def main():
                 filename = futures_to_files[future]
                 try:
                     result = future.result()
+                    plot_data['colors'].append(filename_map[filename])
                     for name, value in result.items():
                         plot_data[name].append(value)
                 except Exception as e:
                     print(f"Error processing {filename}: {e}")
                 pbar.update(1)
 
+    legend_handles = [mpatches.Patch(color=colors[i], label=args.categories[i]) for i in range(len(args.analysis_dirs))]
+
     df = pd.DataFrame(plot_data)
-    df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size')
-    df.plot.scatter(x='total-compartments', y='max-normalized-vulnerable-compartment-size')
+    ax = df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size', c='colors')
+    ax.legend(handles=legend_handles, loc='upper left', title='Compartment Strategy')
+    ax = df.plot.scatter(x='total-compartments', y='max-normalized-vulnerable-compartment-size', c='colors')
+    ax.legend(handles=legend_handles, loc='upper right', title='Compartment Strategy')
 
     plt.xlim(left=0)
     plt.ylim(bottom=0)
