@@ -53,54 +53,29 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
                 ${linux_build_path}/modify-${build_mode}-config.sh
         )
-        if (value STREQUAL "analysis")
-            add_custom_target(hakc-linux-${arch}-${build_mode}-config
-                    BYPRODUCTS ${linux_build_path}/${build_mode}/.config
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                    COMMENT "Generating ${arch} ${build_mode} Linux config"
-                    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
-                    COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_ANALYSIS_CORE_COUNT} defconfig
-                    COMMAND bash ${linux_build_path}/modify-${build_mode}-config.sh
-            )
+        if (${build_mode} STREQUAL "analysis")
+            set(HAKC_LINUX_CORE_COUNT ${HAKC_ANALYSIS_CORE_COUNT})
         else()
-            add_custom_target(hakc-linux-${arch}-${build_mode}-config
-                    BYPRODUCTS ${linux_build_path}/${build_mode}/.config
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                    COMMENT "Generating ${arch} ${build_mode} Linux config"
-                    DEPENDS ${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
-                    COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_COMPARTMENTALIZE_CORE_COUNT} defconfig
-                    COMMAND bash ${linux_build_path}/modify-${build_mode}-config.sh
-            )
+            set(HAKC_LINUX_CORE_COUNT ${HAKC_COMPARTMENTALIZE_CORE_COUNT})
         endif()
 
-        if (value STREQUAL "analysis")
-            add_custom_target(linux-${arch}-${build_mode}-pass
-                    BYPRODUCTS ${linux_build_path}/${build_mode}/vmlinux
-                    DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                    COMMENT "Running ${arch} Linux ${build_mode} pass"
-                    USES_TERMINAL
-                    COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_ANALYSIS_CORE_COUNT}
-            )
-        else()
-            add_custom_target(linux-${arch}-${build_mode}-pass
-                    BYPRODUCTS ${linux_build_path}/${build_mode}/vmlinux
-                    DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
-                    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                    COMMENT "Running ${arch} Linux ${build_mode} pass"
-                    USES_TERMINAL
-                    COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_COMPARTMENTALIZE_CORE_COUNT}
-            )
-        endif()
-        #add_custom_target(hakc-linux-${arch}-${build_mode}-temporal-analysis
-                #BYPRODUCTS ${linux_build_path}/${build_mode}-temporal-analysis
-                #DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
-                #WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                #COMMENT "Running ${arch} Linux ${build_mode} temporal analysis"
-                #USES_TERMINAL
-                #COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
-        #)
+        add_custom_target(hakc-linux-${arch}-${build_mode}-config
+                BYPRODUCTS ${linux_build_path}/${build_mode}/.config
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                COMMENT "Generating ${arch} ${build_mode} Linux config"
+                DEPENDS ${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
+                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+                COMMAND bash ${linux_build_path}/modify-${build_mode}-config.sh
+        )
 
+        add_custom_target(linux-${arch}-${build_mode}-pass
+                BYPRODUCTS ${linux_build_path}/${build_mode}/vmlinux
+                DEPENDS ${linux_build_path}/${build_mode}-config.yaml clang hakc-linux-${arch}-${build_mode}-config
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+                COMMENT "Running ${arch} Linux ${build_mode} pass"
+                USES_TERMINAL
+                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+        )
     endforeach ()
     add_custom_target(linux-${arch}-dag
             BYPRODUCTS ${linux_build_path}/hakc-db/data.kz
