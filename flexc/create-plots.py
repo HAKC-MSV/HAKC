@@ -46,10 +46,15 @@ def main():
     parser.add_argument('--analysis-dir', dest='analysis_dirs', nargs='+')
     parser.add_argument('--core-count', dest='core_count', default=cpu_count())
     parser.add_argument('--categories', dest='categories', nargs='+')
+    parser.add_argument('--apply-labels', dest='label_categories', nargs='+', default=set())
     args = parser.parse_args()
 
     if len(args.categories) != len(args.analysis_dirs):
         raise ValueError('Number of categories and analysis directories must match')
+
+    for label_category in args.label_categories:
+        if label_category not in args.categories:
+            raise ValueError(f'Label {label_category} is not in category list {args.categories}')
 
     plot_data = {
         'max-normalized-vulnerable-compartment-size': [],
@@ -61,6 +66,7 @@ def main():
     filenames = set()
     colors = ['red', 'green', 'blue']
     filename_map = dict()
+    label_map = dict()
     for i in range(len(args.analysis_dirs)):
         analysis_dir = args.analysis_dirs[i]
         for root, _, files in os.walk(analysis_dir):
@@ -69,6 +75,8 @@ def main():
                     filename = os.path.join(root, file)
                     filenames.add(filename)
                     filename_map[filename] = colors[i]
+                    if args.categories[i] in args.label_categories:
+                        label_map[filename] = filename
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=args.core_count) as executor:
         futures_to_files = {}
@@ -81,6 +89,8 @@ def main():
                 try:
                     result = future.result()
                     plot_data['colors'].append(filename_map[filename])
+                    label = label_map.get(filename, "")
+                    plot_data['label'] = label
                     for name, value in result.items():
                         plot_data[name].append(value)
                 except Exception as e:
@@ -90,13 +100,23 @@ def main():
     legend_handles = [mpatches.Patch(color=colors[i], label=args.categories[i]) for i in range(len(args.analysis_dirs))]
 
     df = pd.DataFrame(plot_data)
-    ax = df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size', c='colors')
-    ax.legend(handles=legend_handles, loc='upper left', title='Compartment Strategy')
-    ax = df.plot.scatter(x='total-compartments', y='max-normalized-vulnerable-compartment-size', c='colors')
-    ax.legend(handles=legend_handles, loc='upper right', title='Compartment Strategy')
+    fig1, ax1 = plt.subplots(figsize=(10, 6))
+    df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size', c='colors', ax=ax1)
+    ax1.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1), title='Compartment Strategy')
+    fig1.tight_layout(rect=[0, 0, 0.85, 1])
+
+    fig2, ax2 = plt.subplots(figsize=(10, 6))
+    df.plot.scatter(x='total-compartments', y='max-normalized-vulnerable-compartment-size', c='colors', ax=ax2)
+    ax2.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1), title='Compartment Strategy')
+    for i, label in enumerate(plot_data['label']):
+        if len(label) > 0:
+            ax2.annotate(label, (df['total-compartments'][i], df['max-normalized-vulnerable-compartment-size'][i]))
+
+    fig2.tight_layout(rect=[0, 0, 0.85, 1])
 
     plt.xlim(left=0)
     plt.ylim(bottom=0)
+
     plt.show()
 
 
