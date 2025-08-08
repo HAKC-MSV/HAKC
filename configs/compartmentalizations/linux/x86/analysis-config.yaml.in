@@ -2,7 +2,6 @@ Arch: X86
 Platform: Linux
 DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: @hakc_config_mode@
-OutputDebugInfo: false
 Database:
   server-url: @CMAKE_BINARY_DIR@/db-socket
   server-timeout: 2000
