@@ -69,3 +69,5 @@ hakc_include
 hakc_lib
 hakc_test
 hakc_utils
+/flexc/compartmentalizations/
+/flexc/analysis/
