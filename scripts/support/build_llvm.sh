@@ -2,8 +2,10 @@
 # build llvm and hakc with it 
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
-mkdir -p $HAKC_BUILD_ROOT
-cd $HAKC_BUILD_ROOT
+source python/venv/bin/activate
+
+mkdir -p $HAKC_LLVM_BUILD_PATH
+cd $HAKC_LLVM_BUILD_PATH
 
 echo "Building LLVM in $PWD using command "
 cmake -G Ninja \
