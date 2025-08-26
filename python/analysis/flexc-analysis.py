@@ -3,6 +3,7 @@ import concurrent.futures
 import logging
 import os
 
+import pandas as pd
 import yaml
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging, HAKCLogger
@@ -231,6 +232,74 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
         db.close()
 
 
+def perform_node_analysis(db_dir: str, analysis_output_path: str):
+    db = HAKCDatabase(db_dir, read_only=True)
+    try:
+        cmd = f"""
+        MATCH (:{HAKCSymbol.get_table_name()})-[:UsesSymbol]->(sym:{HAKCSymbol.get_table_name()})-[:IsType]->(ty:{HAKCType.get_table_name()})
+        RETURN DISTINCT sym.Name AS Name, ty.DebugType AS DebugType, ty.LLVMType as LLVMType, COUNT {{ MATCH (:{HAKCSymbol.get_table_name()})-[:UsesSymbol]->(sym) }} AS UseCount
+        ORDER BY UseCount DESC
+        """
+        response = db.execute_prepared_stmt(cmd)
+        data = response.get_as_df()
+        response.close()
+
+        cmd = f"""
+        MATCH (:{HAKCSymbol.get_table_name()})-[:IndirectCall]->(ty:{HAKCType.get_table_name()})<-[:IsType]-(sym:{HAKCSymbol.get_table_name()})
+        RETURN DISTINCT sym.Name AS Name, ty.DebugType AS DebugType, ty.LLVMType as LLVMType, COUNT {{ MATCH (:{HAKCSymbol.get_table_name()})-[:IndirectCall]->(ty:{HAKCType.get_table_name()})<-[:IsType]-(sym:{HAKCSymbol.get_table_name()}) }} AS UseCount
+        ORDER BY UseCount DESC
+        """
+        response = db.execute_prepared_stmt(cmd)
+        data2 = response.get_as_df()
+        response.close()
+
+        data = pd.merge(data, data2, on=['Name', 'DebugType', 'LLVMType'], how='outer', suffixes=('_df1', '_df2'))
+        data['UseCount_df1'] = data['UseCount_df1'].fillna(0)
+        data['UseCount_df2'] = data['UseCount_df2'].fillna(0)
+        data['UseSum'] = data['UseCount_df1'] + data['UseCount_df2']
+        data = data[['Name', 'DebugType', 'LLVMType', 'UseSum']]
+
+        data = data.sort_values(by='UseSum', ascending=False)
+
+        data.to_csv(analysis_output_path)
+    finally:
+        db.close()
+
+
+def perform_type_analysis(db_dir: str, analysis_output_path: str):
+    db = HAKCDatabase(db_dir, read_only=True)
+
+    try:
+        cmd = f"""
+        MATCH (ty:{HAKCType.get_table_name()})<-[e:IsType]-(:{HAKCSymbol.get_table_name()})<-[:UsesSymbol]-(:{HAKCSymbol.get_table_name()})
+        RETURN DISTINCT ty.DebugType AS DebugType, ty.LLVMType AS LLVMType, COUNT {{ MATCH (ty:{HAKCType.get_table_name()})<-[:IsType]-(:{HAKCSymbol.get_table_name()})<-[:UsesSymbol]-(:{HAKCSymbol.get_table_name()}) }} AS IncomingCount
+        ORDER BY IncomingCount DESC
+        """
+        response = db.execute_prepared_stmt(cmd)
+        data = response.get_as_df()
+        response.close()
+
+        cmd = f"""
+        MATCH (:{HAKCSymbol.get_table_name()})-[:IndirectCall]->(ty:{HAKCType.get_table_name()})
+        RETURN DISTINCT ty.DebugType AS DebugType, ty.LLVMType AS LLVMType, COUNT {{ MATCH (:{HAKCSymbol.get_table_name()})-[:IndirectCall]->(ty:{HAKCType.get_table_name()}) }} AS IncomingCount
+        ORDER BY IncomingCount DESC
+        """
+        response = db.execute_prepared_stmt(cmd)
+        data2 = response.get_as_df()
+        response.close()
+
+        data = pd.merge(data, data2, on=['DebugType', 'LLVMType'], how='outer', suffixes=('_df1', '_df2'))
+        data['IncomingCount_df1'] = data['IncomingCount_df1'].fillna(0)
+        data['IncomingCount_df2'] = data['IncomingCount_df2'].fillna(0)
+        data['IncomingSum'] = data['IncomingCount_df1'] + data['IncomingCount_df2']
+        data = data[['DebugType', 'LLVMType', 'IncomingSum']]
+
+        data = data.sort_values(by='IncomingSum', ascending=False)
+        data.to_csv(analysis_output_path)
+    finally:
+        db.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description='FLEXC Compartment Analysis')
     parser.add_argument('--db-dir', help='Directory to use for the kuzu database', dest='db_dir',
@@ -242,9 +311,11 @@ def main():
     parser.add_argument('--log-mode', default='w', dest='log_mode')
     parser.add_argument('--analysis-output', default='analysis-output.yml', help='File to write analysis output',
                         dest="analysis_output")
-    parser.add_argument('--input', nargs='+', required=True, help="Input files")
+    parser.add_argument('--input', nargs='+', required=False, help="Input files")
     parser.add_argument('--multicore', dest='multicore', action='store_true', default=False)
-    args = parser.parse_args()
+    parser.add_argument('--type-analysis', dest='type_analysis', action='store_true', default=False)
+    parser.add_argument('--vulnerability-analysis', dest='vulnerability_analysis', action='store_true', default=False)
+    parser.add_argument('--node-analysis', dest='node_analysis', action='store_true', default=False)
 
     args = parser.parse_args()
 
@@ -253,10 +324,17 @@ def main():
     if not os.path.exists(os.path.dirname(args.analysis_output)):
         os.makedirs(os.path.dirname(args.analysis_output))
 
-    with open(args.analysis_output, 'w') as f:
-        analysis_data = parse_inputs(args.input)
-        perform_analysis(analysis_data, args.db_dir, args.multicore)
-        analysis_data.write_analysis_output(f)
+    if args.node_analysis:
+        perform_node_analysis(args.db_dir, args.analysis_output)
+
+    if args.type_analysis:
+        perform_type_analysis(args.db_dir, args.analysis_output)
+
+    if args.vulnerability_analysis:
+        with open(args.analysis_output, 'w') as f:
+            analysis_data = parse_inputs(args.input)
+            perform_analysis(analysis_data, args.db_dir, args.multicore)
+            analysis_data.write_analysis_output(f)
 
 
 if __name__ == "__main__":
