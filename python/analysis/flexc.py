@@ -8,7 +8,7 @@ from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging, HAKCLogger
 from hakc.HAKCObjects import HAKCCompartment, HAKCDivision, HAKCSymbol
 
-from flexc_algos import GreedyAlgorithm
+from flexc_algos import GreedyAlgorithm, FilesystemAlgorithm
 from flexc_algos.FlexCAlgorithm import FlexCAlgorithm
 
 logging.setLoggerClass(HAKCLogger)
@@ -17,7 +17,7 @@ logger = logging.getLogger('flexc')
 
 def setup_algorithms(parser) -> list[FlexCAlgorithm]:
     algo_parser = parser.add_subparsers(title='algo', dest='algo', help='Which algorithm to use')
-    algos = [GreedyAlgorithm.GreedyAlgorithm(algo_parser)]
+    algos = [GreedyAlgorithm.GreedyAlgorithm(algo_parser), FilesystemAlgorithm.FilesystemAlgorithm(algo_parser)]
 
     return algos
 
