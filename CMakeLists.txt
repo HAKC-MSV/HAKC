@@ -18,7 +18,7 @@ add_subdirectory(llvm-project/llvm)
 
 if (LLVM_PARALLEL_COMPILE_JOBS)
     set(FULL_CORE_COUNT ${LLVM_PARALLEL_COMPILE_JOBS})
-else()
+else ()
     cmake_host_system_information(RESULT FULL_CORE_COUNT
             QUERY NUMBER_OF_LOGICAL_CORES)
 endif ()
@@ -27,9 +27,9 @@ math(EXPR HAKC_ANALYSIS_CORE_COUNT "${FULL_CORE_COUNT}")
 math(EXPR HAKC_COMPARTMENTALIZE_CORE_COUNT "(((${FULL_CORE_COUNT} + 1)/ 2) - 1)")
 if (HAKC_COMPARTMENTALIZE_COUNT_COUNT EQUAL 0)
     math(EXPR HAKC_COMPARTMENTALIZE_CORE_COUNT "1")
-endif()
+endif ()
 
-message("-- HAKC is using up to ${ANALYSIS_CORE_COUNT} cores to build Linux")
+message("-- HAKC is using up to ${HAKC_ANALYSIS_CORE_COUNT} cores to build Linux")
 
 list(APPEND LINUX_ARCHES_TO_BUILD x86)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
@@ -55,9 +55,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         )
         if (${build_mode} STREQUAL "analysis")
             set(HAKC_LINUX_CORE_COUNT ${HAKC_ANALYSIS_CORE_COUNT})
-        else()
+        else ()
             set(HAKC_LINUX_CORE_COUNT ${HAKC_COMPARTMENTALIZE_CORE_COUNT})
-        endif()
+        endif ()
 
         add_custom_target(hakc-linux-${arch}-${build_mode}-config
                 BYPRODUCTS ${linux_build_path}/${build_mode}/.config
