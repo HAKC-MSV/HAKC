@@ -50,6 +50,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
                 ${linux_build_path}/${build_mode}-config.yaml
         )
+        configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/adjustments/linux-x86-adjustments.yml
+                ${linux_build_path}/linux-x86-adjustments.yml
+        )
         configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
                 ${linux_build_path}/modify-${build_mode}-config.sh
         )
