@@ -8,17 +8,14 @@
     "default_division": 0
   },
   "socket_path": "@CMAKE_BINARY_DIR@/db-socket",
-  "max_sockets": 32,
   "reuse_path": true,
   "test-mode": false,
-  "server_timeout_analysis": 100,
-  "server_timeout_policy": 1000,
+  "server_timeout": 100,
   "get-compartment-by-id-endpoint": "get-compartment-by-id",
   "get-division-by-id-endpoint": "get-division-by-id",
   "get-division-from-symbol-endpoint": "get-division-from-symbol",
   "get-valid-targets-from-compartment-id-endpoint": "get-valid-targets-from-compartment-id",
   "set-dag-filename-endpoint": "set-dag-filename",
-  "add-symbols-endpoint": "add-symbols",
   "add-function-endpoint": "add-function",
   "add-global-variable-endpoint": "add-global-variable",
   "terminate-connection-endpoint": "terminate-connection"
