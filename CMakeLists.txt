@@ -38,8 +38,8 @@ set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Li
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})
     file(MAKE_DIRECTORY ${linux_build_path}/hakc-dag-analysis)
-    configure_file(${CMAKE_SOURCE_DIR}/configs/policy-server/hakc-policy-server.yml.in
-            ${linux_build_path}/hakc-policy-server.yaml
+    configure_file(${CMAKE_SOURCE_DIR}/configs/server/hakc-server.yml.in
+            ${linux_build_path}/hakc-server.yaml
     )
 
     set(build_modes analysis;compartmentalize)

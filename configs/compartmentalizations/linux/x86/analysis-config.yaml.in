@@ -12,6 +12,10 @@ Database:
   get-division-by-id-endpoint: "get-division-by-id"
   get-division-from-symbol-endpoint: "get-division-from-symbol"
   get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
+  set-dag-filename-endpoint: "set-dag-filename"
+  add-function-endpoint: "add-function"
+  add-global-variable-endpoint: "add-global-variable"
+  terminate-connection-endpoint: "terminate-connection"
 PreTargetActions:
   - { name: "get_hakc_address_color", label: "saved-color" }
 PostTargetActions:
