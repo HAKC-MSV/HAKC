@@ -29,8 +29,34 @@ class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
         db.close()
         db.open()
 
-        symbol_hashes = db.get_all_symbol_hashes()
-        logger.info(f'Separating {len(symbol_hashes)} into compartments of size {symbols_per_compartment}')
+        logger.info(f"Getting all ordered symbols")
+        all_symbol_hashes = db.get_all_symbol_hashes()
+
+        symbol_hashes = list()
+        added_hashes = set()
+        cmd = f"""
+        MATCH (s0:{HAKCSymbol.get_table_name()})-[e:{HAKCSymbol.relation_dag}]->(s1:{HAKCSymbol.get_table_name()})
+        RETURN s0.{str(HAKCSymbol.get_primary_key())} as SymbolHash0, s1.{str(HAKCSymbol.get_primary_key())} as SymbolHash1, e.weight as Weight
+        ORDER BY Weight
+        """
+        data = db.execute_prepared_stmt(cmd).get_as_df()
+        for _, row in data.iterrows():
+            s0hash = row['SymbolHash0']
+            s1hash = row['SymbolHash1']
+            if s0hash not in added_hashes:
+                symbol_hashes.append(s0hash)
+                added_hashes.add(s0hash)
+
+            if s1hash not in added_hashes:
+                symbol_hashes.append(s1hash)
+                added_hashes.add(s1hash)
+
+        for symbol_hash in all_symbol_hashes:
+            if symbol_hash not in added_hashes:
+                symbol_hashes.append(symbol_hash)
+                added_hashes.add(symbol_hash)
+
+        logger.info(f'Separating {len(symbol_hashes)} symbols into compartments of size {symbols_per_compartment}')
 
         current_compartment_id = 1
         compartment_map = dict()
@@ -49,6 +75,7 @@ class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
         DETACH DELETE d, c;
         """
         db.execute_prepared_stmt(cmd)
+        logger.info(f'Compartmentalization now has {len(db.get_all_compartments())} compartments')
 
         compartment_ids = list(range(1, current_compartment_id))
         division_hashes = [hash(compartment_id) for compartment_id in compartment_ids]
