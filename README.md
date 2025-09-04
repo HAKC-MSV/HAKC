@@ -129,8 +129,27 @@ cd /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test\
 && /usr/bin/python3.10 /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/./bin/llvm-lit \
 -a /home/al32163/HAKC/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0
 
+python /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-analysis-server-process \
+--config /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc_server_config.yml \
+--log-level DEBUG
+
+cmake-build-hakc/llvm-project/llvm/bin/clang -O0 -g -S -emit-llvm -mllvm --enable-hakc -mllvm \
+--hakc-config=/home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc_config.yml \
+-o /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/Output/hakc_analysis_test0.c.tmp \
+/home/al32163/HAKC/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/hakc_analysis_test0.c
+
+clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
+--dag-files-root /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/dag-analysis \
+--create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc-db \
+--adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG
+
 ## Run Analysis:
 1. start analysis server 
 llvm-project/llvm/utils/hakc/hakc-analysis-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml --log-level INFO -l cmake-build-hakc/analysis-log.log
 2. 
 cmake --build . --target linux-x86-dag
+
+clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
+--dag-files-root /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-dag-analysis/dag-files/home/al32163/HAKC/linux/arch \
+--create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db \
+--adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG
