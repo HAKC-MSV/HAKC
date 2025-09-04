@@ -141,7 +141,8 @@ cmake-build-hakc/llvm-project/llvm/bin/clang -O0 -g -S -emit-llvm -mllvm --enabl
 clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
 --dag-files-root /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/dag-analysis \
 --create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc-db \
---adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG
+--adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG \
+--core-count 100
 
 ## Run Analysis:
 1. start analysis server 
@@ -150,6 +151,7 @@ llvm-project/llvm/utils/hakc/hakc-analysis-server-process --config cmake-build-h
 cmake --build . --target linux-x86-dag
 
 clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
---dag-files-root /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-dag-analysis/dag-files/home/al32163/HAKC/linux/arch \
+--dag-files-root /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-dag-analysis/dag-files/home/al32163/HAKC/linux \
 --create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db \
---adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG
+--adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG \
+--core-count 100
