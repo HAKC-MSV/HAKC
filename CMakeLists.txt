@@ -80,6 +80,10 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
         )
     endforeach ()
+    add_custom_target(linux-${arch}-dag
+            DEPENDS linux-${arch}-analysis-pass
+            COMMENT "Generating Initial ${arch} Linux Compartmentalization"
+    )
 
     add_custom_target(linux-${arch}-compilation-db
             BYPRODUCTS ${linux_build_path}/compile_commands.json
