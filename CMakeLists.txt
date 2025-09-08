@@ -112,5 +112,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         )
 
     endforeach ()
+    add_custom_target(linux-${arch}-dag
+            DEPENDS linux-${arch}-analysis-pass
+            COMMENT "Generating Initial ${arch} Linux Compartmentalization"
+    )
 
 endforeach ()
