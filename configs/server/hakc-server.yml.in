@@ -11,6 +11,7 @@
   "reuse_path": true,
   "test-mode": false,
   "server_timeout": 100,
+  "dag_path": "@linux_build_path@/linux_kernel_dag.yml",
   "get-compartment-by-id-endpoint": "get-compartment-by-id",
   "get-division-by-id-endpoint": "get-division-by-id",
   "get-division-from-symbol-endpoint": "get-division-from-symbol",

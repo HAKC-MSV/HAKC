@@ -81,11 +81,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         )
     endforeach ()
     add_custom_target(linux-${arch}-dag
-            BYPRODUCTS ${linux_build_path}/hakc-db/data.kz
             DEPENDS linux-${arch}-analysis-pass
             COMMENT "Generating Initial ${arch} Linux Compartmentalization"
-            USES_TERMINAL
-            COMMAND python3 ${LLVM_SOURCE_DIR}/utils/hakc/hakc-static-analysis --dag-files-root ${linux_build_path}/hakc-dag-analysis --create-dag --db-dir ${linux_build_path}/hakc-db
     )
 
     add_custom_target(linux-${arch}-compilation-db
