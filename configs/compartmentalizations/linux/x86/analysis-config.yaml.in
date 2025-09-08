@@ -2,7 +2,7 @@ Arch: X86
 Platform: Linux
 DagAnalysisRootPath: @linux_build_path@/hakc-dag-analysis/dag-files
 PassMode: @hakc_config_mode@
-ConsoleLogLevel: Disabled
+ConsoleLogLevel: Error
 FileLogLevel: Debug
 TemporalAnalysisEnabled: false
 Database:
