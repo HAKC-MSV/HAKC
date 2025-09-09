@@ -149,3 +149,6 @@ clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-ana
 --create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db \
 --adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG \
 --core-count 100
+
+
+clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml --server-mode analysis --log-level DEBUG
