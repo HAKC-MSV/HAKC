@@ -12,6 +12,17 @@ logging.setLoggerClass(HAKCLogger)
 logger = logging.getLogger('flexc')
 
 
+def batched(iterable, n, *, strict=False):
+    # batched('ABCDEFG', 2) → AB CD EF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    iterator = iter(iterable)
+    while batch := tuple(itertools.islice(iterator, n)):
+        if strict and len(batch) != n:
+            raise ValueError('batched(): incomplete batch')
+        yield batch
+
+
 class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
     title = "ecs"
     aliases = ['e']
@@ -71,7 +82,7 @@ class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
 
         current_compartment_id = 1
         compartment_map = dict()
-        for batched_symbols in logger.progress_bar(iterable=itertools.batched(symbol_hashes, symbols_per_compartment),
+        for batched_symbols in logger.progress_bar(iterable=batched(symbol_hashes, symbols_per_compartment),
                                                    desc="Compartmentalizing symbols"):
             for symbol_hash in batched_symbols:
                 compartment_map[int(symbol_hash)] = current_compartment_id
