@@ -8,6 +8,7 @@
     "default_division": 0
   },
   "socket_path": "@CMAKE_BINARY_DIR@/db-socket",
+  "max_sockets": 32,
   "reuse_path": true,
   "test-mode": false,
   "server_timeout_analysis": 100,
