@@ -90,7 +90,7 @@ class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
         compartment_ids = list(range(1, current_compartment_id))
         division_hashes = [hash(compartment_id) for compartment_id in compartment_ids]
         access_tokens = [compartment_id << 16 | 1 for compartment_id in compartment_ids]
-        logger.info(f'Inserting {current_compartment_id} new divisions')
+        logger.info(f'Inserting {len(division_hashes)} new divisions')
         df = pd.DataFrame({
             'division_hash': division_hashes,
             'AccessToken': access_tokens,
