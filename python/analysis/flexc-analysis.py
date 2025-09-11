@@ -118,7 +118,7 @@ def parse_inputs(input_yaml_files: set[str]) -> FlexCAnalysisData:
 
 def get_compartments_using_type(db: HAKCDatabase, type_name: str) -> list[int]:
     cmd = f"""
-    MATCH (ty:{HAKCType.get_table_name()})<-[e]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
+    MATCH (ty:{HAKCType.get_table_name()})<-[e]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.relation_division}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.relation_compartment}]->(c:{HAKCCompartment.get_table_name()})
     WHERE contains(ty.{str(HAKCType.get_data_columns()[0])}, $type_name)
     RETURN DISTINCT c.{str(HAKCCompartment.get_primary_key())} AS CompartmentID
     """
@@ -127,16 +127,6 @@ def get_compartments_using_type(db: HAKCDatabase, type_name: str) -> list[int]:
 
     compartment_ids = set()
     compartment_ids.update(data['CompartmentID'].tolist())
-
-    # cmd = f"""
-    # MATCH (ty:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(:{HAKCSymbol.get_table_name()})<-[:{HAKCSymbol.UsesSymbolTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
-    # WHERE contains(ty.{str(HAKCType.get_data_columns()[0])}, $type_name)
-    # RETURN DISTINCT c.{str(HAKCCompartment.get_primary_key())} AS CompartmentID
-    # """
-    # response = db.execute_prepared_stmt(cmd, type_name=type_name)
-    # data = response.get_as_df()
-    # 
-    # compartment_ids.update(data['CompartmentID'].tolist())
 
     return sorted(list(compartment_ids))
 
