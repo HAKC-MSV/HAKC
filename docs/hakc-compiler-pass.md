@@ -34,6 +34,7 @@ However, for large projects a graph database will likely be faster. We are using
 the [Kuzu graph database](https://docs.kuzudb.com/) for our database, since it has wide
 support for many different languages.
 
+TODO: Update this 
 HAKC compartmentalizes software in two phases. First, HAKC finds all symbols and types
 used in an application. This is triggered by setting the `PassMode` in the HAKC config to
 be `RunDataAccessGraphAnalysis`. This process generates one file per compilation unit that
@@ -42,7 +43,7 @@ end in `.dag.yml` under the directory listed in
 Access Graph (DAG), which is a directed graph that contains all symbols and their
 interactions with other symbols needs to be created. Creating the DAG is done by invoking
 [
-`llvm-project/llvm/utils/hakc/hakc-static-analysis`](../llvm-project/llvm/utils/hakc/hakc-static-analysis)
+
 like so:
 
 * `python3 llvm-project/llvm/utils/hakc/hakc-static-analysis --dag-files-root 
