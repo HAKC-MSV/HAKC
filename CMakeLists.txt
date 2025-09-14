@@ -38,7 +38,10 @@ set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Li
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_path ${HAKC_LINUX_BUILD_PATH}/${arch})
     file(MAKE_DIRECTORY ${linux_build_path}/hakc-dag-analysis)
-    configure_file(${CMAKE_SOURCE_DIR}/configs/server/hakc-server.yml.in
+    set(HAKC_SERVER_CONFIG_PATH ${linux_build_path}/hakc-server.yaml)
+    set(HAKC_ADJUSTMENTS_PATH ${linux_build_path}/linux-x86-adjustments.yaml)
+
+    configure_file(${CMAKE_SOURCE_DIR}/configs/server/hakc-server.yaml.in
             ${linux_build_path}/hakc-server.yaml
     )
 
@@ -46,12 +49,13 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_config_modes RunDataAccessGraphAnalysis;RunCompartmentalization)
     foreach (build_mode hakc_config_mode IN ZIP_LISTS build_modes hakc_config_modes)
         set(LINUX_MAKE_OPTS O=${linux_build_path}/${build_mode} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
+        set(HAKC_CONFIG_MODE ${hakc_config_mode} )
         file(MAKE_DIRECTORY ${linux_build_path}/${build_mode})
         configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/${arch}/analysis-config.yaml.in
                 ${linux_build_path}/${build_mode}-config.yaml
         )
-        configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/adjustments/linux-x86-adjustments.yml
-                ${linux_build_path}/linux-x86-adjustments.yml
+        configure_file(${CMAKE_SOURCE_DIR}/configs/compartmentalizations/linux/adjustments/linux-x86-adjustments.yaml
+                ${linux_build_path}/linux-x86-adjustments.yaml
         )
         configure_file(${CMAKE_SOURCE_DIR}/scripts/config-edits/${arch}/modify-config.sh.in
                 ${linux_build_path}/modify-${build_mode}-config.sh
