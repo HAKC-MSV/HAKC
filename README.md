@@ -23,6 +23,12 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 Creating the initial compartmentalization can be accomplished (assuming the python virtual
 environment is still active) by
 
+Creating the DAG:
+python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-server-process \
+--config cmake-build-hakc/linux/x86/hakc-server.yaml \
+--db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db \
+--adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml \
+--server-mode analysis
 1. `llvm-project/llvm/utils/hakc/hakc-analysis-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml &`
 2. `cd cmake-build-hakc`
 3. `cmake --build . --target linux-x86-dag`
@@ -151,6 +157,6 @@ clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-ana
 --core-count 100
 
 
-clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml --db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --server-mode analysis --log-level DEBUG
+
 clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml --server-mode policy  --log-level INFO
 
