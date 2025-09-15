@@ -1,13 +1,13 @@
-root-path: @CMAKE_BINARY_DIR@/
-socket-path: @CMAKE_BINARY_DIR@/db-socket
-database-path: @CMAKE_BINARY_DIR@/hakc-db
+root-path: "@CMAKE_BINARY_DIR@"
+socket-path: "@CMAKE_BINARY_DIR@/db-socket"
+database-path: "@CMAKE_BINARY_DIR@/hakc-db"
 reuse-path: true
 test-mode: false
-max-server-processes: 64
+max-server-processes: 100
 log-level: INFO
 AnalysisConfig:
-    adjustments-path: @HAKC_ADJUSTMENTS_PATH@
-    max-dag-processes: 64
+    adjustments-path: "@HAKC_ADJUSTMENTS_PATH@"
+    max-dag-processes: 100
     timeout: 100
 PolicyConfig:
     # See HAKCPolicyProcessConfig, SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
