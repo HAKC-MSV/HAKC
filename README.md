@@ -129,3 +129,4 @@ source scripts/support/vars.sh
 cd $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/test\
 && /usr/bin/python3.10 $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/./bin/llvm-lit \
 -a $HAKC_ROOT/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0
+ 
