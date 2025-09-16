@@ -7,6 +7,7 @@ FileLogLevel: Debug
 TemporalAnalysisEnabled: false
 Database:
   server-url: @CMAKE_BINARY_DIR@/db-socket
+  max-sockets: 32
   server-timeout: 100
   get-compartment-by-id-endpoint: "get-compartment-by-id"
   get-division-by-id-endpoint: "get-division-by-id"
