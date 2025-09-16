@@ -23,8 +23,9 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 Creating the initial compartmentalization can be accomplished (assuming the python virtual
 environment is still active) by
 
-1. `cd cmake-build-hakc`
-2. `cmake --build . --target linux-x86-dag`
+1. `llvm-project/llvm/utils/hakc/hakc-analysis-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml &`
+2. `cd cmake-build-hakc`
+3. `cmake --build . --target linux-x86-dag`
 
 The kernel will be built in `cmake-build-hakc/linux/x86/analysis` and the database storing
 the compartmentalization policy will be in `cmake-build-hakc/linux/x86/hakc-db`
