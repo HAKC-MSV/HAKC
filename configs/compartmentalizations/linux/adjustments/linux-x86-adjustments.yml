@@ -1,2 +1,7 @@
 !HAKCAdjustments
 add-no-enforcement-compartment: true
+compartmentalize:
+  - !HAKCAdjustment
+    path: 'linux/drivers/rosdemo/.+\.c'
+    division: 5
+    compartment: 2
