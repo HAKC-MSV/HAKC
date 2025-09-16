@@ -117,9 +117,6 @@ cmake-build-hakc/linux/x86/hakc-policy-server.yaml &`
 
 llvm-project/llvm/utils/hakc/hakc-policy-process --config  cmake-build-hakc/linux/x86/hakc-server.yaml
 
-[//]: # (make O=/home/de29664/code/HAKC/cmake-build-hakc/linux/x86/compartmentalize LLVM=1 ARCH=x86 CC=/home/de29664/code/HAKC/cmake-build-hakc/llvm-project/llvm/bin/clang-21 HOSTCC=/home/de29664/code/HAKC/cmake-build-hakc/llvm-project/llvm/bin/clang-21 -j$&#40;nproc&#41;)
-
-
 ## Run all tests 
 1. `cd cmake-build-hakc`
 2. `cmake --build . --target check-hakc`
