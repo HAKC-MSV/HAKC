@@ -131,32 +131,8 @@ llvm-project/llvm/utils/hakc/hakc-policy-process --config  cmake-build-hakc/linu
 2. `cmake --build . --target check-hakc`
 
 ## Run an individual test 
-1. `cd /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test\
-&& /usr/bin/python3.10 /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/./bin/llvm-lit \
--a /home/al32163/HAKC/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0
-
-python /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-analysis-server-process \
---config /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc_server_config.yml \
---log-level DEBUG
-
-cmake-build-hakc/llvm-project/llvm/bin/clang -O0 -g -S -emit-llvm -mllvm --enable-hakc -mllvm \
---hakc-config=/home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc_config.yml \
--o /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/Output/hakc_analysis_test0.c.tmp \
-/home/al32163/HAKC/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/hakc_analysis_test0.c
-
-clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
---dag-files-root /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/dag-analysis \
---create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0/yaml/hakc-db \
---adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG \
---core-count 100
-
-clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-static-analysis \
---dag-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux_kernel_dag.yml \
---create-dag --db-dir /home/al32163/HAKC/cmake-build-hakc/linux/x86/hakc-db \
---adjust --adjust-path /home/al32163/HAKC/cmake-build-hakc/linux/x86/linux-x86-adjustments.yml --delete-existing-db --log-level DEBUG \
---core-count 100
-
-
-
-clear && python3 /home/al32163/HAKC/llvm-project/llvm/utils/hakc/hakc-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml --server-mode policy  --log-level INFO
+source scripts/support/vars.sh
+cd $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/test\
+&& /usr/bin/python3.10 $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/./bin/llvm-lit \
+-a $HAKC_ROOT/llvm-project/llvm/test/Transforms/Compartmentalization/hakc/tests/hakc_analysis_test0
 
