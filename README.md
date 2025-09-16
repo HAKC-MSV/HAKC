@@ -25,7 +25,7 @@ environment is still active) by
 
 1. `llvm-project/llvm/utils/hakc/hakc-analysis-server-process --config cmake-build-hakc/linux/x86/hakc-server.yaml &`
 2. `cd cmake-build-hakc`
-3. `cmake --build . --target linux-x86-dag`
+3. `cmake --build . --target linux-x86-analysis-pass`
 
 The kernel will be built in `cmake-build-hakc/linux/x86/analysis` and the database storing
 the compartmentalization policy will be in `cmake-build-hakc/linux/x86/hakc-db`
@@ -121,7 +121,7 @@ llvm-project/llvm/utils/hakc/hakc-policy-process --config  cmake-build-hakc/linu
 1. `cd cmake-build-hakc`
 2. `cmake --build . --target check-hakc`
 
-## Run an individual testh
+## Run an individual test
 source scripts/support/vars.sh
 cd $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/test\
 && /usr/bin/python3.10 $HAKC_ROOT/cmake-build-hakc/llvm-project/llvm/./bin/llvm-lit \
