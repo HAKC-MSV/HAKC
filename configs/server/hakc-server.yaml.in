@@ -1,6 +1,6 @@
 root-path: "@CMAKE_BINARY_DIR@"
 socket-path: "@CMAKE_BINARY_DIR@/db-socket"
-database-path: "@CMAKE_BINARY_DIR@/hakc-db"
+database-path: "@linux_build_path@/hakc-db"
 reuse-path: true
 test-mode: false
 max-server-processes: @FULL_CORE_COUNT@
@@ -12,7 +12,6 @@ AnalysisConfig:
 PolicyConfig:
   # See HAKCPolicyProcessConfig, SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
   type: "kuzu"
-  path: "@linux_build_path@/hakc-db"
   default-compartment: 0
   default-division: 0
   timeout: 1000
