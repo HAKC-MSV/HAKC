@@ -3,23 +3,23 @@ socket-path: "@CMAKE_BINARY_DIR@/db-socket"
 database-path: "@CMAKE_BINARY_DIR@/hakc-db"
 reuse-path: true
 test-mode: false
-max-server-processes: 100
+max-server-processes: @FULL_CORE_COUNT@
 log-level: INFO
 AnalysisConfig:
-    adjustments-path: "@HAKC_ADJUSTMENTS_PATH@"
-    max-dag-processes: 100
-    timeout: 100
+  adjustments-path: "@HAKC_ADJUSTMENTS_PATH@"
+  max-dag-processes: @HAKC_ANALYSIS_CORE_COUNT@
+  timeout: 100
 PolicyConfig:
-    # See HAKCPolicyProcessConfig, SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
-    type: "kuzu"
-    path: "@linux_build_path@/hakc-db"
-    default-compartment: 0
-    default-division: 0
-    timeout: 1000
+  # See HAKCPolicyProcessConfig, SupportedBackingStore in llvm-project/llvm/utils/hakc/hakc/HAKCPolicyServer.py
+  type: "kuzu"
+  path: "@linux_build_path@/hakc-db"
+  default-compartment: 0
+  default-division: 0
+  timeout: 1000
 Endpoints:
-    get-compartment-by-id-endpoint: "get-compartment-by-id"
-    get-division-by-id-endpoint: "get-division-by-id"
-    get-division-from-symbol-endpoint: "get-division-from-symbol"
-    get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
-    add-symbols-endpoint: "add-symbols"
-    terminate-connection-endpoint: "terminate-connection"
+  get-compartment-by-id-endpoint: "get-compartment-by-id"
+  get-division-by-id-endpoint: "get-division-by-id"
+  get-division-from-symbol-endpoint: "get-division-from-symbol"
+  get-valid-targets-from-compartment-id-endpoint: "get-valid-targets-from-compartment-id"
+  add-symbols-endpoint: "add-symbols"
+  terminate-connection-endpoint: "terminate-connection"
