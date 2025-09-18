@@ -108,6 +108,7 @@ dereferencing it. This example is for the ROS 2 demo.
    cmake-build-hakc/linux/x86/hakc-db \
    --adjust-path configs/compartmentalizations/linux/adjustments/linux-x86-adjustments.yaml
     ```
+3. `cp -r cmake-build-hakc/linux/x86/hakc-db-adjusted cmake-build-hakc/linux/x86/hakc-db`
 
 ## Build the protected kernel
 
