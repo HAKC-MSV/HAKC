@@ -112,7 +112,6 @@ class EqualCompartmentSizeAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
         logger.info(f'Inserting compartments')
         df = pd.DataFrame({
             'CompartmentID': compartment_ids,
-            'EntryToken': access_tokens
         })
         db.insert_from_dataframe(HAKCCompartment.get_table_name(), df)
 

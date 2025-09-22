@@ -6,7 +6,7 @@ import pandas as pd
 from hakc.HAKCBase import HAKCDBNode
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import HAKCLogger
-from hakc.HAKCObjects import HAKCCompartment, HAKCCompilationUnit, HAKCSymbol, HAKCDivision
+from hakc.HAKCObjects import HAKCCompartment, HAKCDefinitionLocation, HAKCSymbol, HAKCDivision
 
 from . import FlexCAlgorithm
 
@@ -29,8 +29,8 @@ class FilesystemAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
     def get_all_symbol_hashes_and_files(self, db: HAKCDatabase) -> dict[int, str]:
         cmd = f"""
         MATCH (sym:{HAKCSymbol.get_table_name()})
-        OPTIONAL MATCH (sym)-[:{HAKCSymbol.DefinedInTable}]->(cu:{HAKCCompilationUnit.get_table_name()})
-        RETURN sym.{str(HAKCSymbol.get_primary_key())} AS symbol_hash, cu.{str(HAKCCompilationUnit.get_primary_key())} AS filename
+        OPTIONAL MATCH (sym)-[:{HAKCSymbol.DefinedInTable}]->(cu:{HAKCDefinitionLocation.get_table_name()})
+        RETURN sym.{str(HAKCSymbol.get_primary_key())} AS symbol_hash, cu.{str(HAKCDefinitionLocation.get_primary_key())} AS filename
         """
 
         response = db.execute_prepared_stmt(cmd)
