@@ -2,6 +2,8 @@ import argparse
 import logging
 import shutil
 
+import pandas as pd
+from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging, HAKCLogger
 from hakc.HAKCObjects import HAKCSymbol, HAKCType, HAKCDefinitionLocation, HAKCScope, HAKCFunction
@@ -56,7 +58,7 @@ def main():
         current_id = 0
         outgoing_primary_keys = dict()
         edges_to_add = dict()
-        # Tuple of (HAKCFunction Parameter name, Default Value, Edge Data Name List)
+        # Tuple of (HAKCFunction Parameter name, Default Value, Edge Data Name dict)
         hakc_symbol_input_map = {HAKCFunction.relation_scope: ("Scope", None, {}),
                                  HAKCFunction.relation_type: ("Type", None, {}),
                                  HAKCFunction.relation_definition_location: ("DefinitionLocation", None,
@@ -89,9 +91,8 @@ def main():
                     else:
                         hakc_symbol_input_map[edge_type] = (input_name, default_value.append(node), new_edge_values)
 
-        for _, data in incoming_nodes.iterrows():
-            node_info = data['Node']
-            edge_data = data['edge']
+        logger.info(f'Handling {len(incoming_nodes)} incoming nodes')
+        for node_info, edge_data in zip(incoming_nodes['Node'], incoming_nodes['edge']):
             node_primary_key = None
             for hakc_obj in hakc_objects:
                 if hakc_obj.__name__ == node_info['_label']:
@@ -103,9 +104,9 @@ def main():
                     current_id += 1
                     hakc_symbol_inputs = {t[0]: t[1] for _, t in hakc_symbol_input_map.items()}
                     hakc_symbol_inputs["Name"] = new_name
-                    logger.info(f"Creating duplicated HAKCFunction with inputs {hakc_symbol_inputs}")
+                    logger.debug(f"Creating duplicated HAKCFunction with inputs {hakc_symbol_inputs}")
                     duplicated_symbol = HAKCFunction(**hakc_symbol_inputs)
-                    logger.info(f"Created duplicated symbol {duplicated_symbol}")
+                    logger.debug(f"Created duplicated symbol {duplicated_symbol}")
                     existing_primary_key_map[node_primary_key] = duplicated_symbol
 
                     for relation, relation_data in hakc_symbol_input_map.items():
@@ -113,11 +114,50 @@ def main():
                         if target_object is not None:
                             if isinstance(target_object, list):
                                 for item in target_object:
-                                    edges_to_add[relation]['from'].append(hash(duplicated_symbol))
-                                    edges_to_add[relation]['to'].append(hash(item))
+                                    edges_to_add[relation]['from'].append(duplicated_symbol.get_primary_key_data())
+                                    edges_to_add[relation]['to'].append(item.get_primary_key_data())
                             else:
-                                edges_to_add[relation]['from'].append(hash(duplicated_symbol))
-                                edges_to_add[relation]["to"].append(hash(target_object))
+                                edges_to_add[relation]['from'].append(duplicated_symbol.get_primary_key_data())
+                                edges_to_add[relation]["to"].append(target_object.get_primary_key_data())
+                        for key, value in relation_data[2].items():
+                            if key not in edges_to_add[relation]:
+                                edges_to_add[relation][key] = []
+                            edges_to_add[relation][key].append(value)
+                duplicated_symbol = existing_primary_key_map[node_primary_key]
+                edge_type = edge_data['_label']
+                if edge_type not in edges_to_add:
+                    edges_to_add[edge_type] = {"from": [], "to": []}
+                edges_to_add[edge_type]["from"].append(node_primary_key)
+                edges_to_add[edge_type]["to"].append(duplicated_symbol.get_primary_key_data())
+                for edge_data_name, edge_data_value in edge_data.items():
+                    if edge_data_name[0] != '_' and edge_data_value is not None:
+                        edges_to_add[edge_type][edge_data_name] = edge_data_value
+
+        duplicated_symbol_data_to_persist = dict()
+        for _, duplicated_symbol in existing_primary_key_map.items():
+            for column, data in duplicated_symbol.get_db_data().items():
+                if data is None:
+                    logger.debug(f'Node {duplicated_symbol} has None for column {column.column_name}')
+                    data = column.column_type.default_value
+                if column.column_name not in duplicated_symbol_data_to_persist:
+                    duplicated_symbol_data_to_persist[column.column_name] = list()
+                duplicated_symbol_data_to_persist[column.column_name].append(data)
+
+        logger.info(f'Deleting {duplicated_symbol_name} from database')
+        delete_query = f'MATCH (s:{HAKCSymbol.get_table_name()}) WHERE s.{str(HAKCSymbol.get_primary_key())} = $symbol_hash DETACH DELETE s'
+        db.execute(delete_query, symbol_hash=symbol_hash)
+        logger.info(f'Persisting {len(existing_primary_key_map)} duplicated symbols')
+        df = pd.DataFrame(duplicated_symbol_data_to_persist)
+        db.insert_from_dataframe(HAKCSymbol.get_table_name(), df)
+        logger.info(f'Persisting {len(edges_to_add)} edge set')
+        for relation, relation_data in edges_to_add.items():
+            df = pd.DataFrame(relation_data)
+            try:
+                db.insert_from_dataframe(relation, df)
+            except Exception as e:
+                logger.error(f'Failed to persist {relation}: {e}')
+                raise e
+    logger.info(f'Finished persisting database to {dest_db_dir}')
 
 
 if __name__ == "__main__":

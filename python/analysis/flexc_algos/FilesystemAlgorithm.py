@@ -29,7 +29,7 @@ class FilesystemAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
     def get_all_symbol_hashes_and_files(self, db: HAKCDatabase) -> dict[int, str]:
         cmd = f"""
         MATCH (sym:{HAKCSymbol.get_table_name()})
-        OPTIONAL MATCH (sym)-[:{HAKCSymbol.DefinedInTable}]->(cu:{HAKCDefinitionLocation.get_table_name()})
+        OPTIONAL MATCH (sym)-[:{HAKCSymbol.relation_definition_location}]->(cu:{HAKCDefinitionLocation.get_table_name()})
         RETURN sym.{str(HAKCSymbol.get_primary_key())} AS symbol_hash, cu.{str(HAKCDefinitionLocation.get_primary_key())} AS filename
         """
 
