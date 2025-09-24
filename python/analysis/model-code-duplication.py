@@ -6,10 +6,24 @@ import pandas as pd
 from hakc.HAKCCompartmentalization import HAKCCompartmentalization
 from hakc.HAKCDatabase import HAKCDatabase
 from hakc.HAKCLogger import LoggingLevelEnum, parse_log_level, setup_logging, HAKCLogger
-from hakc.HAKCObjects import HAKCSymbol, HAKCType, HAKCDefinitionLocation, HAKCScope, HAKCFunction
+from hakc.HAKCObjects import HAKCSymbol, HAKCType, HAKCDefinitionLocation, HAKCScope, HAKCFunction, HAKCDivision, \
+    HAKCCompartment
 
 logging.setLoggerClass(HAKCLogger)
 logger = logging.getLogger('flexc')
+
+
+def construct_node_dataframe(hakc_objects: list) -> pd.DataFrame:
+    symbol_data_to_persist = dict()
+    for hakc_object in hakc_objects:
+        for column, data in hakc_object.get_db_data().items():
+            if data is None:
+                logger.debug(f'Node {hakc_object} has None for column {column.column_name}')
+                data = column.column_type.default_value
+            if column.column_name not in symbol_data_to_persist:
+                symbol_data_to_persist[column.column_name] = list()
+            symbol_data_to_persist[column.column_name].append(data)
+    return pd.DataFrame(symbol_data_to_persist)
 
 
 def main():
@@ -133,21 +147,12 @@ def main():
                     if edge_data_name[0] != '_' and edge_data_value is not None:
                         edges_to_add[edge_type][edge_data_name] = edge_data_value
 
-        duplicated_symbol_data_to_persist = dict()
-        for _, duplicated_symbol in existing_primary_key_map.items():
-            for column, data in duplicated_symbol.get_db_data().items():
-                if data is None:
-                    logger.debug(f'Node {duplicated_symbol} has None for column {column.column_name}')
-                    data = column.column_type.default_value
-                if column.column_name not in duplicated_symbol_data_to_persist:
-                    duplicated_symbol_data_to_persist[column.column_name] = list()
-                duplicated_symbol_data_to_persist[column.column_name].append(data)
-
+        duplicated_symbols = [duplicated_symbol for _, duplicated_symbol in existing_primary_key_map.items()]
         logger.info(f'Deleting {duplicated_symbol_name} from database')
         delete_query = f'MATCH (s:{HAKCSymbol.get_table_name()}) WHERE s.{str(HAKCSymbol.get_primary_key())} = $symbol_hash DETACH DELETE s'
         db.execute(delete_query, symbol_hash=symbol_hash)
         logger.info(f'Persisting {len(existing_primary_key_map)} duplicated symbols')
-        df = pd.DataFrame(duplicated_symbol_data_to_persist)
+        df = construct_node_dataframe(duplicated_symbols)
         db.insert_from_dataframe(HAKCSymbol.get_table_name(), df)
         logger.info(f'Persisting {len(edges_to_add)} edge set')
         for relation, relation_data in edges_to_add.items():
@@ -157,7 +162,40 @@ def main():
             except Exception as e:
                 logger.error(f'Failed to persist {relation}: {e}')
                 raise e
-    logger.info(f'Finished persisting database to {dest_db_dir}')
+
+    logger.info(f'There are {len(db.get_all_compartments())} Compartments prior to deletion')
+    logger.info(f'Deleting all divisions and compartments')
+    db.delete_all_compartments()
+    logger.info(f'Creating default compartmentalization')
+    compartment_id = 1
+    symbol_to_division_edges = {"from": [], "to": []}
+    division_to_compartment_edges = {"from": [], "to": []}
+    divisions = list()
+    compartments = list()
+    for symbol_hash in db.get_all_symbol_hashes():
+        division = HAKCDivision(DivisionID=1)
+        divisions.append(division)
+        compartment = HAKCCompartment(CompartmentID=compartment_id)
+        compartment_id += 1
+        compartments.append(compartment)
+        symbol_to_division_edges['from'].append(symbol_hash)
+        symbol_to_division_edges['to'].append(division.get_primary_key_data())
+        division_to_compartment_edges['from'].append(division.get_primary_key_data())
+        division_to_compartment_edges['to'].append(compartment.get_primary_key_data())
+    df = construct_node_dataframe(compartments)
+    logger.info(f'Creating {len(compartments)} compartments')
+    db.insert_from_dataframe(HAKCCompartment.get_table_name(), df)
+    df = construct_node_dataframe(divisions)
+    logger.info(f'Creating {len(divisions)} divisions')
+    db.insert_from_dataframe(HAKCDivision.get_table_name(), df)
+    df = pd.DataFrame(symbol_to_division_edges)
+    logger.info(f'Adding {len(symbol_to_division_edges['from'])} symbol to division edges')
+    db.insert_from_dataframe(HAKCSymbol.relation_division, df)
+    df = pd.DataFrame(division_to_compartment_edges)
+    logger.info(f'Adding {len(division_to_compartment_edges['from'])} division to compartment edges')
+    db.insert_from_dataframe(HAKCDivision.relation_compartment, df)
+    logger.info(
+        f'Finished persisting database to {dest_db_dir}. There are now {len(db.get_all_compartments())} compartments.')
 
 
 if __name__ == "__main__":
