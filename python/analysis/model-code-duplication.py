@@ -54,9 +54,9 @@ def main():
 
     logger.info(f'Duplicating\n{symbols_to_duplicate}')
 
-    existing_primary_key_map = dict()
     hakc_objects = [HAKCSymbol]
     for _, row in symbols_to_duplicate.iterrows():
+        existing_primary_key_map = dict()
         symbol_hash = row['SymbolHash']
         duplicated_symbol_name = row['Name']
         incoming_nodes = db.execute(
@@ -70,7 +70,7 @@ def main():
         logger.debug(f'Incoming to {row['Name']}\n{incoming_nodes}')
         logger.debug(f'Outgoing from {row['Name']}\n{outgoing_nodes}')
         current_id = 0
-        outgoing_primary_keys = dict()
+
         edges_to_add = dict()
         # Tuple of (HAKCFunction Parameter name, Default Value, Edge Data Name dict)
         hakc_symbol_input_map = {HAKCFunction.relation_scope: ("Scope", None, {}),
@@ -105,7 +105,7 @@ def main():
                     else:
                         hakc_symbol_input_map[edge_type] = (input_name, default_value.append(node), new_edge_values)
 
-        logger.info(f'Handling {len(incoming_nodes)} incoming nodes')
+        logger.info(f'Handling {len(incoming_nodes)} incoming nodes to {duplicated_symbol_name}')
         for node_info, edge_data in zip(incoming_nodes['Node'], incoming_nodes['edge']):
             node_primary_key = None
             for hakc_obj in hakc_objects:
