@@ -47,6 +47,7 @@ def main():
     parser.add_argument('--core-count', dest='core_count', default=cpu_count())
     parser.add_argument('--categories', dest='categories', nargs='+')
     parser.add_argument('--apply-labels', dest='label_categories', nargs='+', default=set())
+    parser.add_argument('--output-dataframe', dest='output_dataframe')
     args = parser.parse_args()
 
     if len(args.categories) != len(args.analysis_dirs):
@@ -100,6 +101,8 @@ def main():
     legend_handles = [mpatches.Patch(color=colors[i], label=args.categories[i]) for i in range(len(args.analysis_dirs))]
 
     df = pd.DataFrame(plot_data)
+    if args.output_dataframe:
+        df.to_csv(args.output_dataframe)
     fig1, ax1 = plt.subplots(figsize=(10, 6))
     df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size', c='colors', ax=ax1)
     ax1.legend(handles=legend_handles, loc='upper left', bbox_to_anchor=(1, 1), title='Compartment Strategy')
