@@ -121,7 +121,7 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                                         target_compartments: list[int]) -> dict[int, int]:
         cmd = f"""
         MATCH
-        (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.InCompartmentTable}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.InDivisionTable}]-(sym1:{HAKCSymbol.get_table_name()})-[dag:{HAKCSymbol.DagEdgeTable}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(comp2:{HAKCCompartment.get_table_name()})
+        (comp1:{HAKCCompartment.get_table_name()})<-[:{HAKCDivision.relation_compartment}]-(div1:{HAKCDivision.get_table_name()})<-[:{HAKCSymbol.relation_division}]-(sym1:{HAKCSymbol.get_table_name()})-[dag:{HAKCSymbol.relation_dag}]->(sym2:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.relation_division}]->(div2:{HAKCDivision.get_table_name()})-[:{HAKCDivision.relation_compartment}]->(comp2:{HAKCCompartment.get_table_name()})
         WHERE comp1.{str(HAKCCompartment.get_primary_key())} = $comp1_id AND comp2.{str(HAKCCompartment.get_primary_key())} IN [{','.join([str(i) for i in target_compartments])}]
         RETURN comp2.{str(HAKCCompartment.get_primary_key())} AS CompartmentID, dag.weight AS Weight
         """
