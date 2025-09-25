@@ -268,6 +268,7 @@ class GreedyAlgorithm(FlexCAlgorithm.FlexCAlgorithm):
                 else:
                     logger.info(
                         f'Removed {edge_count - len(self.compartment_interactions.edges)} edges and {compartment_count - len(self.compartment_interactions)} compartments. There are {len(self.compartment_interactions)} compartments remaining')
+                    break
         except KeyboardInterrupt:
             logger.info(f'User stopped analysis')
 
