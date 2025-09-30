@@ -1,10 +1,9 @@
-ServerConfigPath: @HAKC_SERVER_CONFIG_PATH@
-Arch: X86
-Platform: Linux
-PassMode: @HAKC_CONFIG_MODE@
-ConsoleLogLevel: Error
-FileLogLevel: Debug
-TemporalAnalysisEnabled: false
+arch:                   X86
+platform:               Linux
+timeout:                @hakc_client_timeout@
+console-log-level:      Error
+file-log-level:         Debug
+max-connection-retries: @hakc_max_connection_retries@
 PreTargetActions:
   - { name: "get_hakc_address_color", label: "saved-color" }
 PostTargetActions:

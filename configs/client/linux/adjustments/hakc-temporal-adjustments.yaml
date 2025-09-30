@@ -1,0 +1,6 @@
+!HAKCAdjustments
+add-default-epochs: true
+top-n-types: 2
+adjustments:
+  - !HAKCEpochAdjustment
+    merge_epochs: true
