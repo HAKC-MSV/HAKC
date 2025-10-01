@@ -190,7 +190,11 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
                     analysis_data.compartments_with_escalation_objects.add(compartment_id)
 
         vulnerable_symbol_names = [vulnerable_symbol.name for vulnerable_symbol in analysis_data.vulnerable_symbols]
-        vulnerable_symbols = db.get_symbols_by_name_list(vulnerable_symbol_names)
+        vulnerable_symbols = list()
+        for vulnerable_symbol_name in vulnerable_symbol_names:
+            for sym in db.get_symbols_by_name(vulnerable_symbol_name):
+                vulnerable_symbols.append(sym)
+
         if multicore:
             with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
                 futures_to_data = {
