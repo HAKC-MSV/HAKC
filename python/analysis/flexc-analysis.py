@@ -90,8 +90,8 @@ class FlexCAnalysisData:
                         break
                 if add_symbol:
                     filtered_symbols_names.add(symbol.name)
-                    if symbol.defining_file is not None:
-                        filtered_symbol_definition_files.add(symbol.defining_file)
+                    if symbol.definition_location is not None:
+                        filtered_symbol_definition_files.add(symbol.definition_location)
 
             self.output_list_information(analysis_output['compartmentalization-info'][compartment_id],
                                          'filtered-symbol-names', filtered_symbols_names)
