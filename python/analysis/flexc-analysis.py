@@ -91,7 +91,7 @@ class FlexCAnalysisData:
                 if add_symbol:
                     filtered_symbols_names.add(symbol.name)
                     if symbol.definition_location is not None:
-                        filtered_symbol_definition_files.add(symbol.definition_location)
+                        filtered_symbol_definition_files.add(symbol.definition_location.defining_file)
 
             self.output_list_information(analysis_output['compartmentalization-info'][compartment_id],
                                          'filtered-symbol-names', filtered_symbols_names)
@@ -220,7 +220,7 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
         if multicore:
             with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
                 futures_to_data = {executor.submit(multicore_get_symbols_in_compartment, db_dir,
-                                                   compartment.compartment_id): compartment.compartment_id for
+                                                   int(compartment.compartment_id)): int(compartment.compartment_id) for
                                    compartment
                                    in compartments}
                 for future in concurrent.futures.as_completed(futures_to_data):
@@ -230,7 +230,7 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
         else:
             for compartment in compartments:
                 symbols = get_symbols_in_compartment(db, compartment.compartment_id)
-                analysis_data.compartment_symbol_map[compartment.compartment_id] = symbols
+                analysis_data.compartment_symbol_map[int(compartment.compartment_id)] = symbols
 
     finally:
         db.close()
