@@ -31,11 +31,12 @@ def main():
     parser.add_argument('--db-dir', help='Directory to use for the kuzu database', dest='db_dir',
                         required=True)
     parser.add_argument('--duplication-count', '-c', help='Number of functions to duplicate', dest='duplication_count',
-                        required=True)
+                        default=0, type=int)
     parser.add_argument('--dest-db-dir', help='Path to store new database', dest='dest_db_dir')
     parser.add_argument('--log-level', required=False, dest='log_level', default=LoggingLevelEnum.INFO,
                         help=f'Log level to display, can be lower case {[level.name for level in LoggingLevelEnum]}',
                         type=parse_log_level)
+    parser.add_argument('--vulnerable-symbols', help='path to vulnerable symbol yaml', dest='vulnerable_symbols')
     parser.add_argument('-l', '--log', default=None, dest='log_path')
     parser.add_argument('--log-mode', default='w', dest='log_mode')
     args = parser.parse_args()
@@ -45,12 +46,26 @@ def main():
     shutil.copytree(args.db_dir, dest_db_dir, dirs_exist_ok=True)
     db = HAKCDatabase(dest_db_dir)
 
-    symbols_to_duplicate = db.execute(
-        f'MATCH (s:{HAKCSymbol.get_table_name()})-[e:{HAKCSymbol.relation_dag}]->(s0:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.relation_type}]->(t:{HAKCType.get_table_name()}) '
-        f'WHERE NOT (s0)-[:{HAKCSymbol.relation_dag}]->() AND s0.IsFunction AND t.DebugType <> "{HAKCType.unknown_type}" '
-        f'WITH s0, count(e) AS DagCount '
-        f'RETURN DISTINCT s0.Name AS Name, s0.symbol_hash as SymbolHash, s0.IsFunction AS IsFunction, DagCount '
-        f'ORDER BY DagCount DESC LIMIT {args.duplication_count}')
+    if args.duplication_count > 0:
+        symbols_to_duplicate = db.execute(
+            f'MATCH (s:{HAKCSymbol.get_table_name()})-[e:{HAKCSymbol.relation_dag}]->(s0:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.relation_type}]->(t:{HAKCType.get_table_name()}) '
+            f'WHERE NOT (s0)-[:{HAKCSymbol.relation_dag}]->() AND s0.IsFunction AND t.DebugType <> "{HAKCType.unknown_type}" '
+            f'WITH s0, count(e) AS DagCount '
+            f'RETURN DISTINCT s0.Name AS Name, s0.symbol_hash as SymbolHash, s0.IsFunction AS IsFunction, DagCount '
+            f'ORDER BY DagCount DESC LIMIT {args.duplication_count}')
+    elif args.vulnerable_symbols:
+        import yaml
+        with open(args.vulnerable_symbols, 'r') as f:
+            vulnerable_symbols = set(yaml.safe_load(f)['vulnerable-symbols'])
+        vuln_list = [f'"{sym_name}"' for sym_name in vulnerable_symbols]
+        symbols_to_duplicate = db.execute(
+            f'MATCH (s:{HAKCSymbol.get_table_name()}) '
+            f'WHERE s.Name IN [{",".join(vuln_list)}] '
+            f'WITH s '
+            f'RETURN DISTINCT s.Name AS Name, s.symbol_hash as SymbolHash, s.IsFunction AS IsFunction '
+            f'ORDER BY Name DESC')
+    else:
+        raise RuntimeError(f'Duplication count or duplicate symbols not specified')
 
     logger.info(f'Duplicating\n{symbols_to_duplicate}')
 
@@ -103,7 +118,12 @@ def main():
                     if default_value is None:
                         hakc_symbol_input_map[edge_type] = (input_name, node, new_edge_values)
                     else:
-                        hakc_symbol_input_map[edge_type] = (input_name, default_value.append(node), new_edge_values)
+                        if isinstance(default_value, list):
+                            default_value.append(node)
+                            hakc_symbol_input_map[edge_type] = (input_name, default_value, new_edge_values)
+                        else:
+                            raise RuntimeError(
+                                f'Invalid default value for {edge_type}: {default_value} ({type(default_value)})')
 
         logger.info(f'Handling {len(incoming_nodes)} incoming nodes to {duplicated_symbol_name}')
         for node_info, edge_data in zip(incoming_nodes['Node'], incoming_nodes['edge']):
