@@ -102,6 +102,8 @@ def main():
 
     df = pd.DataFrame(plot_data)
     if args.output_dataframe:
+        if not os.path.exists(os.path.dirname(args.output_dataframe)):
+            os.makedirs(os.path.dirname(args.output_dataframe))
         df.to_csv(args.output_dataframe)
     fig1, ax1 = plt.subplots(figsize=(10, 6))
     df.plot.scatter(x='max-normalized-vulnerable-compartment-size', y='average-compartment-size', c='colors', ax=ax1)
