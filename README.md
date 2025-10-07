@@ -24,7 +24,7 @@ Creating the initial compartmentalization can be accomplished (assuming the pyth
 environment is still active) by
 
 1. `llvm-project/llvm/utils/hakc/hakc-server-process --config 
-cmake-build-hakc/linux/x86/analysis/hakc-server.yaml &`
+cmake-build-hakc/linux/x86/analysis/hakc-config.yaml &`
 2. `cd cmake-build-hakc`
 3. `cmake --build . --target linux-x86-analysis-pass`
 4. `cmake --build . --target linux-x86-enforcement-pass`
