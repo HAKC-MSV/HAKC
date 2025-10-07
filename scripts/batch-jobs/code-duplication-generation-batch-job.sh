@@ -11,6 +11,10 @@ PATH_TO_SCRIPT="$1"
 for i in $(seq 2 20); do
   echo "Running sbatch $PATH_TO_SCRIPT $i"
   JOB_ID=$(sbatch $PATH_TO_SCRIPT $i | awk '{print $NF}')
+  if [ -z "$JOB_ID" ]; then
+      echo "Error: Failed to submit job or retrieve job ID"
+      exit 1
+  fi
   echo "Submitted job with ID: $JOB_ID"
 
   # Wait for the job to complete
