@@ -50,7 +50,7 @@ exit_code=$?
 
 if [ $exit_code -eq 0 ]; then
   echo "Moving $WORKING_DB_DIR to $FINAL_DB_DIR"
-	mkdir -p $(dirname $FINAL_DB_DIR)
+  mkdir -p $(dirname $FINAL_DB_DIR)
   mv $WORKING_DB_DIR $FINAL_DB_DIR
 fi
 
