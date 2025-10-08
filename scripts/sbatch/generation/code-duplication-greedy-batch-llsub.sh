@@ -44,14 +44,14 @@ mkdir -p $(dirname $WORKING_DB_DIR)
 
 echo "Running python3 $HAKC_ROOT/python/analysis/flexc.py --db-dir $BASE_DB_DIR --output-db-dir $WORKING_DB_DIR --core-count $CPU_CORES $ALGORITHM $ALGORITHM_OPTS"
 
-#python3 $HAKC_ROOT/python/analysis/flexc.py --db-dir $BASE_DB_DIR --output-db-dir $WORKING_DB_DIR --core-count $CPU_CORES $ALGORITHM $ALGORITHM_OPTS
+python3 $HAKC_ROOT/python/analysis/flexc.py --db-dir $BASE_DB_DIR --output-db-dir $WORKING_DB_DIR --core-count $CPU_CORES $ALGORITHM $ALGORITHM_OPTS
 
 exit_code=$?
 
 if [ $exit_code -eq 0 ]; then
   echo "Moving $WORKING_DB_DIR to $FINAL_DB_DIR"
-#	mkdir -p $(dirname $FINAL_DB_DIR)
-#	mv $WORKING_DB_DIR $FINAL_DB_DIR
+	mkdir -p $(dirname $FINAL_DB_DIR)
+  mv $WORKING_DB_DIR $FINAL_DB_DIR
 fi
 
 exit $exit_code
