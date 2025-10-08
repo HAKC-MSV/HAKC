@@ -8,9 +8,17 @@ is_job_running() {
 
 PATH_TO_SCRIPT="$1"
 
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+ORIG_DIR=$PWD
+echo "Moving from $ORIG_DIR to $SCRIPT_DIR"
+cd "$SCRIPT_DIR"
+HAKC_ROOT=$(git rev-parse --show-toplevel)
+echo "Found HAKC_ROOT $HAKC_ROOT"
+cd "$ORIG_DIR"
+
 for i in $(seq 2 20); do
-  echo "Running sbatch $PATH_TO_SCRIPT $i"
-  JOB_ID=$(sbatch $PATH_TO_SCRIPT $i | awk '{print $NF}')
+  echo "Running env HAKC_ROOT=$HAKC_ROOT sbatch $PATH_TO_SCRIPT $i"
+  JOB_ID=$(env HAKC_ROOT=$HAKC_ROOT sbatch $PATH_TO_SCRIPT $i | awk '{print $NF}')
   if [ -z "$JOB_ID" ]; then
       echo "Error: Failed to submit job or retrieve job ID"
       exit 1

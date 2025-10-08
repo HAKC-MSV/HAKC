@@ -30,14 +30,6 @@ for module_to_load in "${modules_to_load[@]}"; do
 	module load $module_to_load
 done
 
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-ORIG_DIR=$PWD
-echo "Moving from $ORIG_DIR to $SCRIPT_DIR"
-cd "$SCRIPT_DIR"
-HAKC_ROOT=$(git rev-parse --show-toplevel)
-echo "Found HAKC_ROOT $HAKC_ROOT"
-cd "$ORIG_DIR"
-
 export PYTHONPATH=$HAKC_ROOT/llvm-project/llvm/utils/hakc:$PYTHONPATH
 
 ALGORITHM=greedy
