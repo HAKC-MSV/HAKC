@@ -48,6 +48,55 @@ Using the enforcement/hakc-config.yaml starts the hakc-server-process immediatel
 2. `cd cmake-build-hakc`
 3. `cmake --build . --target linux-x86-enforcement-pass`
 
+Alternatively, you can enter the commands manually: 
+
+1. `cd linux`
+2. ```
+   make \
+   LLVM=1 \
+   O=$(realpath ../cmake-build-hakc/linux/x86/analysis) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=hakc-linux-x86 \
+   -j$(nproc) defconfig
+   ```
+3. ```
+   `scripts/config --file $(realpath ../cmake-build-hakc/linux/x86/analysis/.config) \
+   -e CONFIG_HAKC \
+   --set-str CONFIG_HAKC_CONFIG_PATH \
+   $(realpath ../cmake-build-hakc/linux/x86/analysis-config.yaml) \
+   -e CONFIG_DEBUG_INFO_DWARF5 \
+   -d CONFIG_DEBUG_INFO_NONE \
+   -e CONFIG_DEBUG_INFO \
+   -e CONFIG_DEBUG_INFO_COMPRESSED_NONE \
+   -d CONFIG_DEBUG_INFO_COMPRESSED_ZLIB \
+   -d CONFIG_DEBUG_INFO_COMPRESSED_ZSTD \
+   -d CONFIG_DEBUG_INFO_REDUCED \
+   -e CONFIG_DEBUG_INFO_SPLIT \
+   -e CONFIG_GDB_SCRIPTS \
+   -e CONFIG_HAKC_ALLOW_FAILED \
+   -d CONFIG_HAKC_DEBUG_PRINT \
+   -d CONFIG_HAKC_DEMO_LEAK \
+   -d CONFIG_HAKC_KOBUKI_CHECKSUM_TWEAK \
+   -d CONFIG_HAKC_LOG_FAILURE \
+   -e CONFIG_HAKC_X86 \
+   -e CONFIG_HAKC_X86_MEMORY \
+   -e CONFIG_HAKC_X86_SIGN_NI \
+   -d CONFIG_HAKC_XPAD_INSERT_COMMAND \
+   -d CONFIG_HAKC_XPAD_RANDOMIZE \
+   -e CONFIG_HAKC_LEAK_POINTER \
+   -m CONFIG_ROSDEMO
+   ```
+4. ```
+   make \
+   LLVM=1 \
+   O=$(realpath ../cmake-build-hakc/linux/x86/analysis) \
+   CC=$(realpath ../install/bin/clang) \
+   HOSTCC=$(realpath ../install/bin/clang) \
+   LOCALVERSION=hakc-linux-x86 \
+   -j$(nproc)
+   ```
+
 ## Adjusting the compartmentalization for targeted compartmentalization applications
 
 **NB**: This does not need to be done if the default `hakc-server.yaml` configuration file was used for the analysis.

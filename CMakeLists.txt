@@ -77,7 +77,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
         configure_file(                 ${hakc_configs_path}/hakc-client-config.yaml.in
                                         ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
-        configure_file(                 ${hakc_configs_path}/hakc-modify-linux-config.sh.in
+        configure_file(                 ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
                                         ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
         configure_file(                 ${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
                                         ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
