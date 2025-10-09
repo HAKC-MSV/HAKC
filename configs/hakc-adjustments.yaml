@@ -2,6 +2,10 @@
 no-enforcement-compartment: true
 adjustments:
   - !HAKCCompartmentAdjustment
-    path: 'linux/drivers/rosdemo/.+\.c'
-    division-id: 5
-    compartment-id: 2
+    path: 'linux/drivers/rosdemo/rosdemo\-leaker.c'
+    division-id: 8
+    compartment-id: 2048
+  - !HAKCCompartmentAdjustment
+    path: 'linux/drivers/rosdemo/rosdemo\-consumer.c'
+    division-id: 16
+    compartment-id: 1024
