@@ -90,8 +90,8 @@ class FlexCAnalysisData:
                         break
                 if add_symbol:
                     filtered_symbols_names.add(symbol.name)
-                    if symbol.defining_file is not None:
-                        filtered_symbol_definition_files.add(symbol.defining_file)
+                    if symbol.definition_location is not None:
+                        filtered_symbol_definition_files.add(symbol.definition_location.defining_file)
 
             self.output_list_information(analysis_output['compartmentalization-info'][compartment_id],
                                          'filtered-symbol-names', filtered_symbols_names)
@@ -119,7 +119,7 @@ def parse_inputs(input_yaml_files: set[str]) -> FlexCAnalysisData:
 
 def get_compartments_using_type(db: HAKCDatabase, type_name: str) -> list[int]:
     cmd = f"""
-    MATCH (ty:{HAKCType.get_table_name()})<-[e]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
+    MATCH (ty:{HAKCType.get_table_name()})<-[e]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.relation_division}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.relation_compartment}]->(c:{HAKCCompartment.get_table_name()})
     WHERE contains(ty.{str(HAKCType.get_data_columns()[0])}, $type_name)
     RETURN DISTINCT c.{str(HAKCCompartment.get_primary_key())} AS CompartmentID
     """
@@ -128,16 +128,6 @@ def get_compartments_using_type(db: HAKCDatabase, type_name: str) -> list[int]:
 
     compartment_ids = set()
     compartment_ids.update(data['CompartmentID'].tolist())
-
-    # cmd = f"""
-    # MATCH (ty:{HAKCType.get_table_name()})<-[:{HAKCSymbol.IsTypeTable}]-(:{HAKCSymbol.get_table_name()})<-[:{HAKCSymbol.UsesSymbolTable}]-(sym:{HAKCSymbol.get_table_name()})-[:{HAKCSymbol.InDivisionTable}]->(:{HAKCDivision.get_table_name()})-[:{HAKCDivision.InCompartmentTable}]->(c:{HAKCCompartment.get_table_name()})
-    # WHERE contains(ty.{str(HAKCType.get_data_columns()[0])}, $type_name)
-    # RETURN DISTINCT c.{str(HAKCCompartment.get_primary_key())} AS CompartmentID
-    # """
-    # response = db.execute_prepared_stmt(cmd, type_name=type_name)
-    # data = response.get_as_df()
-    # 
-    # compartment_ids.update(data['CompartmentID'].tolist())
 
     return sorted(list(compartment_ids))
 
@@ -200,7 +190,11 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
                     analysis_data.compartments_with_escalation_objects.add(compartment_id)
 
         vulnerable_symbol_names = [vulnerable_symbol.name for vulnerable_symbol in analysis_data.vulnerable_symbols]
-        vulnerable_symbols = db.get_symbols_by_name_list(vulnerable_symbol_names)
+        vulnerable_symbols = list()
+        for vulnerable_symbol_name in vulnerable_symbol_names:
+            for sym in db.get_symbols_by_name(vulnerable_symbol_name):
+                vulnerable_symbols.append(sym)
+
         if multicore:
             with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
                 futures_to_data = {
@@ -226,7 +220,7 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
         if multicore:
             with concurrent.futures.ProcessPoolExecutor(max_workers=core_count) as executor:
                 futures_to_data = {executor.submit(multicore_get_symbols_in_compartment, db_dir,
-                                                   compartment.compartment_id): compartment.compartment_id for
+                                                   int(compartment.compartment_id)): int(compartment.compartment_id) for
                                    compartment
                                    in compartments}
                 for future in concurrent.futures.as_completed(futures_to_data):
@@ -236,7 +230,7 @@ def perform_analysis(analysis_data: FlexCAnalysisData, db_dir: str, multicore: b
         else:
             for compartment in compartments:
                 symbols = get_symbols_in_compartment(db, compartment.compartment_id)
-                analysis_data.compartment_symbol_map[compartment.compartment_id] = symbols
+                analysis_data.compartment_symbol_map[int(compartment.compartment_id)] = symbols
 
     finally:
         db.close()
