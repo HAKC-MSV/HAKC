@@ -88,7 +88,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
         add_custom_target(hakc-linux-${arch}-${build_mode}-config
                 BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
-                DEPENDS ${hakc_configs_path}/hakc-modify-linux-config.sh.in
+                DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
                 COMMENT "Generating ${arch} Linux ${build_mode} config"
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
