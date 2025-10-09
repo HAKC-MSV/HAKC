@@ -35,7 +35,7 @@ list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
 # HAKC Constants
-set(hakc_configs_path ${CMAKE_SOURCE_DIR}/configs)
+set(hakc_configs_path       ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc/configs)
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
@@ -75,24 +75,23 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         set(hakc_adjustments_path ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
         set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
-        configure_file(${hakc_configs_path}/client/linux/${arch}/hakc-client-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
-        configure_file(${hakc_configs_path}/client/linux/${arch}/modify-config.sh.in
-                ${hakc_build_dir}/${build_mode}/modify-config.sh)
-        configure_file(${hakc_configs_path}/client/linux/adjustments/hakc-adjustments.yaml
-                ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
-        configure_file(${hakc_configs_path}/hakc-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
-        configure_file(${hakc_configs_path}/server/hakc-server-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
+        configure_file(                 ${hakc_configs_path}/hakc-client-config.yaml.in
+                                        ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
+        configure_file(                 ${hakc_configs_path}/hakc-modify-linux-config.sh.in
+                                        ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
+        configure_file(                 ${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+                                        ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
+        configure_file(                 ${hakc_configs_path}/hakc-config.yaml.in
+                                        ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
+        configure_file(                 ${hakc_configs_path}/hakc-server-config.yaml.in
+                                        ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
 
         add_custom_target(hakc-linux-${arch}-${build_mode}-config
                 BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
-                DEPENDS ${hakc_configs_path}/client/linux/${arch}/modify-config.sh.in
+                DEPENDS ${hakc_configs_path}/hakc-modify-linux-config.sh.in
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
                 COMMENT "Generating ${arch} Linux ${build_mode} config"
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
-                COMMAND bash ${hakc_build_dir}/${build_mode}/modify-config.sh
         )
         add_custom_target(linux-${arch}-${build_mode}-pass
                 BYPRODUCTS ${hakc_build_dir}/${build_mode}/vmlinux
@@ -100,6 +99,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
                 COMMENT "Running ${arch} Linux ${build_mode} pass"
                 USES_TERMINAL
+                COMMAND make clean
+                COMMAND bash ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
         )
         add_custom_target(linux-${arch}-${build_mode}-compilation-db
