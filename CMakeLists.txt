@@ -15,7 +15,7 @@ set(LLVM_ENABLE_EH ON)
 set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 
 set(Python_EXECUTABLE "${HAKC_PYTHON_VENV}/bin/python")
-
+set(HAKC_SOCKET_ROOT ${hakc_build_dir}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
 
 add_subdirectory(llvm-project/llvm)
 
@@ -35,7 +35,7 @@ list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
 # HAKC Constants
-set(hakc_configs_path       ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc/configs)
+set(hakc_configs_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc/configs)
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
@@ -60,7 +60,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
         set(hakc_build_dir ${linux_build_dir})
 
-        set(hakc_socket_dir ${hakc_build_dir}/hakc-sockets)
+        set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
         string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
         if (socket_path_length GREATER_EQUAL 107)
             message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
@@ -75,16 +75,16 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         set(hakc_adjustments_path ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
         set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
-        configure_file(                 ${hakc_configs_path}/hakc-client-config.yaml.in
-                                        ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
-        configure_file(                 ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-                                        ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
-        configure_file(                 ${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-                                        ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
-        configure_file(                 ${hakc_configs_path}/hakc-config.yaml.in
-                                        ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
-        configure_file(                 ${hakc_configs_path}/hakc-server-config.yaml.in
-                                        ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
+        configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
+                ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
+        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+                ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
+        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+                ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
+        configure_file(${hakc_configs_path}/hakc-config.yaml.in
+                ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
+        configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
+                ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
 
         add_custom_target(hakc-linux-${arch}-${build_mode}-config
                 BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
