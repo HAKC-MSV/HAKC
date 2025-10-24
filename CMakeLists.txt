@@ -15,7 +15,6 @@ set(LLVM_ENABLE_EH ON)
 set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 
 set(Python_EXECUTABLE "${HAKC_PYTHON_VENV}/bin/python")
-set(HAKC_SOCKET_ROOT ${hakc_build_dir}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
 
 add_subdirectory(llvm-project/llvm)
 
@@ -47,6 +46,13 @@ set(hakc_server_log_level ERROR)
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(linux_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
 
+    # Q: Can we actually remove the analysis / enforcement directories and build everything in linux/x86?
+#    set(hakc_build_dir  ${HAKC_LINUX_BUILD_PATH}/${arch})
+    set(hakc_build_dir ${linux_build_dir})
+    set(hakc_server_config_path ${hakc_build_dir}/hakc-server-config.yaml)
+    set(hakc_client_config_path ${hakc_build_dir}/hakc-client-config.yaml)
+    set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
+
     foreach (build_mode ${build_modes})
 
         if (${build_mode} STREQUAL "analysis")
@@ -58,33 +64,29 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         set(LINUX_MAKE_OPTS O=${linux_build_dir}/${build_mode} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
         file(MAKE_DIRECTORY ${linux_build_dir}/${build_mode})
 
-        set(hakc_build_dir ${linux_build_dir})
 
-        set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
+        set(hakc_socket_dir ${hakc_build_dir}/hakc-sockets)
         string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
         if (socket_path_length GREATER_EQUAL 107)
             message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
         endif ()
 
-        set(hakc_server_config_path ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
-        set(hakc_client_config_path ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
         set(hakc_log_dir ${hakc_build_dir}/${build_mode}/hakc-logs)
         set(hakc_build_mode ${build_mode})
         set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
         set(hakc_backing_path ${hakc_build_dir}/hakc-db)
-        set(hakc_adjustments_path ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
         set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
         configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
+                ${hakc_client_config_path})
         configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
                 ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
         configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-                ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
+                ${hakc_adjustments_path})
         configure_file(${hakc_configs_path}/hakc-config.yaml.in
                 ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
         configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
+                ${hakc_server_config_path})
 
         add_custom_target(hakc-linux-${arch}-${build_mode}-config
                 BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
@@ -99,7 +101,6 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
                 COMMENT "Running ${arch} Linux ${build_mode} pass"
                 USES_TERMINAL
-                COMMAND make clean
                 COMMAND bash ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh
                 COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
         )
