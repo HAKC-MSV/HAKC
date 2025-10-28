@@ -62,3 +62,12 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+/linux-build
+
+# symbolic links to make browsing files easier in clion
+hakc_include
+hakc_lib
+hakc_test
+hakc_utils
+/flexc/compartmentalizations/
+/flexc/analysis/
