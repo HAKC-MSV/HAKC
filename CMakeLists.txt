@@ -15,7 +15,7 @@ set(LLVM_ENABLE_EH ON)
 set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 
 set(Python_EXECUTABLE "${HAKC_PYTHON_VENV}/bin/python")
-set(HAKC_SOCKET_ROOT ${hakc_build_dir}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
+set(HAKC_SOCKET_ROOT ${CMAKE_BINARY_DIR}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
 
 add_subdirectory(llvm-project/llvm)
 
@@ -29,6 +29,7 @@ endif ()
 math(EXPR HAKC_LINUX_CORE_COUNT "${FULL_CORE_COUNT}")
 
 message("-- HAKC is using up to ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
+message("-- Using ${HAKC_SOCKET_ROOT} for the socket root")
 
 list(APPEND LINUX_ARCHES_TO_BUILD x86)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
@@ -68,6 +69,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
         set(hakc_server_config_path ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
         set(hakc_client_config_path ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
+        set(compilation_db_path ${hakc_build_dir}/${build_mode}/compile_commands.json)
         set(hakc_log_dir ${hakc_build_dir}/${build_mode}/hakc-logs)
         set(hakc_build_mode ${build_mode})
         set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
