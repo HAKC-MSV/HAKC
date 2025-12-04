@@ -74,12 +74,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             ${hakc_build_dir}/hakc-modify-linux-config.sh)
     configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
             ${hakc_build_dir}/hakc-adjustments.yaml)
-    set(hakc_build_mode analysis)
     configure_file(${hakc_configs_path}/hakc-config.yaml.in
-            ${hakc_build_dir}/hakc-analysis-config.yaml)
-    set(hakc_build_mode enforcement)
-    configure_file(${hakc_configs_path}/hakc-config.yaml.in
-            ${hakc_build_dir}/hakc-enforcement-config.yaml)
+            ${hakc_build_dir}/hakc-config.yaml)
     configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
             ${hakc_build_dir}/hakc-server-config.yaml)
 
@@ -100,11 +96,11 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
     add_custom_target(hakc-linux-${arch}-analysis
             BYPRODUCTS ${hakc_backing_path}
-            DEPENDS ${hakc_build_dir}/hakc-analysis-config.yaml clang hakc-linux-${arch}-config linux-${arch}-compilation-db
+            DEPENDS ${hakc_build_dir}/hakc-config.yaml clang hakc-linux-${arch}-config linux-${arch}-compilation-db
             WORKING_DIRECTORY ${hakc_build_dir}
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            --config ${hakc_build_dir}/hakc-config.yaml
+            --config ${hakc_build_dir}/hakc-analysis-config.yaml --mode analysis
     )
     add_custom_target(hakc-linux-${arch}-enforcement
             BYPRODUCTS ${linux_build_dir}/vmlinux
@@ -112,7 +108,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             WORKING_DIRECTORY ${hakc_build_dir}
             COMMENT "Running ${arch} Linux Enforcement"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            --config ${hakc_build_dir}/hakc-config.yaml
+            --config ${hakc_build_dir}/hakc-config.yaml --mode enforcement
     )
 
 endforeach ()
