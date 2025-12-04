@@ -14,7 +14,7 @@ set(LLVM_ENABLE_RTTI ON)
 set(LLVM_ENABLE_EH ON)
 set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 
-set(Python_EXECUTABLE "${HAKC_PYTHON_VENV}/bin/python")
+set(HAKC_PYTHON_Executable "${HAKC_PYTHON_VENV}/bin/python")
 set(HAKC_SOCKET_ROOT ${CMAKE_BINARY_DIR}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
 
 add_subdirectory(llvm-project/llvm)
@@ -36,83 +36,83 @@ list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
 # HAKC Constants
-set(hakc_configs_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc/configs)
+set(hakc_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc)
+set(hakc_configs_path ${hakc_path}/configs)
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
-set(build_modes analysis;enforcement)
 set(hakc_client_timeout 100)
 set(hakc_max_connection_retries 1)
 set(hakc_server_log_level ERROR)
+set(hakc_server_timeout 100000)
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
-    set(linux_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
+    set(hakc_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
+    set(linux_build_dir ${hakc_build_dir}/build)
 
-    foreach (build_mode ${build_modes})
+    set(LINUX_MAKE_OPTS O=${linux_build_dir} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
+    file(MAKE_DIRECTORY ${linux_build_dir})
 
-        if (${build_mode} STREQUAL "analysis")
-            set(hakc_server_timeout 100)
-        else ()
-            set(hakc_server_timeout 1000)
-        endif ()
+    set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
+    string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
+    if (socket_path_length GREATER_EQUAL 107)
+        message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
+    endif ()
 
-        set(LINUX_MAKE_OPTS O=${linux_build_dir}/${build_mode} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
-        file(MAKE_DIRECTORY ${linux_build_dir}/${build_mode})
+    set(hakc_server_config_path ${hakc_build_dir}/hakc-server-config.yaml)
+    set(hakc_client_config_path ${hakc_build_dir}/hakc-client-config.yaml)
+    set(compilation_db_path ${hakc_build_dir}/compile_commands.json)
+    set(hakc_log_dir ${hakc_build_dir}/hakc-logs)
+    set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
+    set(hakc_backing_path ${hakc_build_dir}/hakc-db)
+    set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
+    set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
-        set(hakc_build_dir ${linux_build_dir})
+    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
+            ${hakc_build_dir}/hakc-client-config.yaml)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            ${hakc_build_dir}/hakc-modify-linux-config.sh)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+            ${hakc_build_dir}/hakc-adjustments.yaml)
+    set(hakc_build_mode analysis)
+    configure_file(${hakc_configs_path}/hakc-config.yaml.in
+            ${hakc_build_dir}/hakc-analysis-config.yaml)
+    set(hakc_build_mode enforcement)
+    configure_file(${hakc_configs_path}/hakc-config.yaml.in
+            ${hakc_build_dir}/hakc-enforcement-config.yaml)
+    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
+            ${hakc_build_dir}/hakc-server-config.yaml)
 
-        set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
-        string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
-        if (socket_path_length GREATER_EQUAL 107)
-            message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
-        endif ()
-
-        set(hakc_server_config_path ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
-        set(hakc_client_config_path ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
-        set(compilation_db_path ${hakc_build_dir}/${build_mode}/compile_commands.json)
-        set(hakc_log_dir ${hakc_build_dir}/${build_mode}/hakc-logs)
-        set(hakc_build_mode ${build_mode})
-        set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
-        set(hakc_backing_path ${hakc_build_dir}/hakc-db)
-        set(hakc_adjustments_path ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
-        set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
-
-        configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-client-config.yaml)
-        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-                ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
-        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-                ${hakc_build_dir}/${build_mode}/hakc-adjustments.yaml)
-        configure_file(${hakc_configs_path}/hakc-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
-        configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-server-config.yaml)
-
-        add_custom_target(hakc-linux-${arch}-${build_mode}-config
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
-                DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Generating ${arch} Linux ${build_mode} config"
-                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
-        )
-        add_custom_target(linux-${arch}-${build_mode}-pass
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/vmlinux
-                DEPENDS ${hakc_build_dir}/${build_mode}/hakc-config.yaml clang hakc-linux-${arch}-${build_mode}-config
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Running ${arch} Linux ${build_mode} pass"
-                USES_TERMINAL
-                COMMAND make clean
-                COMMAND bash ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh
-                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
-        )
-        add_custom_target(linux-${arch}-${build_mode}-compilation-db
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/compile_commands.json
-                DEPENDS linux-${arch}-${build_mode}-pass
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Generating ${arch} Linux ${build_mode} compile_commands.json"
-                COMMAND ./scripts/gen_compile_commands.py --output ${hakc_build_dir}/${build_mode}/compile_commands.json --directory ${hakc_build_dir}/${build_mode}
-        )
-
-    endforeach ()
+    add_custom_target(hakc-linux-${arch}-config
+            BYPRODUCTS ${linux_build_dir}/.config
+            DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            COMMENT "Generating ${arch} Linux config"
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+            COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
+    )
+    add_custom_target(linux-${arch}-compilation-db
+            BYPRODUCTS ${compilation_db_path}
+            DEPENDS hakc-linux-${arch}-config
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            COMMENT "Generating ${compilation_db_path}"
+            COMMAND ./scripts/gen_compile_commands.py --output ${compilation_db_path} --directory ${linux_build_dir}
+    )
+    add_custom_target(hakc-linux-${arch}-analysis
+            BYPRODUCTS ${hakc_backing_path}
+            DEPENDS ${hakc_build_dir}/hakc-analysis-config.yaml clang hakc-linux-${arch}-config linux-${arch}-compilation-db
+            WORKING_DIRECTORY ${hakc_build_dir}
+            COMMENT "Running ${arch} Linux Analysis"
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
+            --config ${hakc_build_dir}/hakc-config.yaml
+    )
+    add_custom_target(hakc-linux-${arch}-enforcement
+            BYPRODUCTS ${linux_build_dir}/vmlinux
+            DEPENDS hakc-linux-${arch}-analysis
+            WORKING_DIRECTORY ${hakc_build_dir}
+            COMMENT "Running ${arch} Linux Enforcement"
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
+            --config ${hakc_build_dir}/hakc-config.yaml
+    )
 
 endforeach ()
