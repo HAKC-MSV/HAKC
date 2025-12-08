@@ -41,10 +41,9 @@ set(hakc_configs_path ${hakc_path}/configs)
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
-set(hakc_client_timeout 100)
 set(hakc_max_connection_retries 1)
 set(hakc_server_log_level ERROR)
-set(hakc_server_timeout 100000)
+set(hakc_server_process ${hakc_path}/hakc-server-process)
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
@@ -81,34 +80,44 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
     add_custom_target(hakc-linux-${arch}-config
             BYPRODUCTS ${linux_build_dir}/.config
-            DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in clang
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Generating ${arch} Linux config"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
             COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
     )
+
     add_custom_target(linux-${arch}-compilation-db
             BYPRODUCTS ${compilation_db_path}
             DEPENDS hakc-linux-${arch}-config
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Generating ${compilation_db_path}"
-            COMMAND ./scripts/gen_compile_commands.py --output ${compilation_db_path} --directory ${linux_build_dir}
+            COMMAND ./scripts/config --file ${linux_build_dir}/.config -d CONFIG_HAKC
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND ./scripts/clang-tools/gen_compile_commands.py --output ${compilation_db_path} --directory ${linux_build_dir}
+            COMMAND ./scripts/config --file ${linux_build_dir}/.config -e CONFIG_HAKC
+            COMMAND rm -f ${linux_build_dir}/vmlinux
     )
+
     add_custom_target(hakc-linux-${arch}-analysis
             BYPRODUCTS ${hakc_backing_path}
             DEPENDS ${hakc_build_dir}/hakc-config.yaml clang hakc-linux-${arch}-config linux-${arch}-compilation-db
             WORKING_DIRECTORY ${hakc_build_dir}
+            USES_TERMINAL
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            --config ${hakc_build_dir}/hakc-analysis-config.yaml --mode analysis
+            ${hakc_server_process} --config ${hakc_build_dir}/hakc-config.yaml --mode analysis
     )
+
     add_custom_target(hakc-linux-${arch}-enforcement
             BYPRODUCTS ${linux_build_dir}/vmlinux
             DEPENDS hakc-linux-${arch}-analysis
-            WORKING_DIRECTORY ${hakc_build_dir}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            USES_TERMINAL
             COMMENT "Running ${arch} Linux Enforcement"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            --config ${hakc_build_dir}/hakc-config.yaml --mode enforcement
+            ${hakc_server_process} --config ${hakc_build_dir}/hakc-config.yaml --mode enforcement
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
     )
 
 endforeach ()
