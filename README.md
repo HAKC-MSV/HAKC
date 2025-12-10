@@ -11,8 +11,9 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 ## TL;DR
 
 1. `bash scripts/support/init.sh`
-2. `cd cmake-build-hakc`
-3. `cmake --build . --target hakc-linux-x86-enforcement`
+2. `bash scripts/support/setup-llvm.sh`
+3. `cd cmake-build-hakc`
+4. `cmake --build . --target hakc-linux-x86-enforcement`
 
 ## Set up
 
