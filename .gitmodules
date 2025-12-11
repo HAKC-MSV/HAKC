@@ -1,8 +1,8 @@
 [submodule "llvm-project"]
 	path = llvm-project
-	url = https://github.com/llvm/llvm-project.git
-	branch = hakc
+	url = git@llcad-github.llan.ll.mit.edu:RMC/llvm-project.git
+	branch = main
 [submodule "linux"]
 	path = linux
-	url = https://github.com/torvalds/linux.git
-	branch = hakc
+	url = git@llcad-github.llan.ll.mit.edu:RMC/linux.git
+	branch = main
