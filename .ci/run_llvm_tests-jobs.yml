@@ -28,5 +28,6 @@ run_llvm_tests-job:
     !reference [ .llvm_settings, variables ]
   script:
     - echo "Running LLVM Tests"
+    - source $PYTHON_VENV_DIR/bin/activate
     - cd $LLVM_BUILD_DIR
     - cmake --build . --target check-llvm -j$BUILD_PROCESSORS

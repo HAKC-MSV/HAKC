@@ -2,6 +2,8 @@
 # build llvm and hakc with it 
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
+source python/venv/bin/activate
+
 mkdir -p $HAKC_LLVM_BUILD_PATH
 cd $HAKC_LLVM_BUILD_PATH
 
@@ -19,5 +21,3 @@ cmake -G Ninja \
   -DLLVM_ENABLE_HAKC=On \
   -DLLVM_BUILD_TESTS=On \
   $HAKC_ROOT
-
-cmake --build . -j$(nproc) --target install
