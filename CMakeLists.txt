@@ -44,6 +44,9 @@ set(hakc_backing_type kuzu)
 set(hakc_max_connection_retries 1)
 set(hakc_server_log_level ERROR)
 set(hakc_server_process ${hakc_path}/hakc-server-process)
+set(hakc_kernel_ext "-hakc")
+set(hakc_kernel_version "6.14.0")
+set(hakc_kernel_name "vmlinuz-${hakc_kernel_version}${hakc_kernel_ext}")
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
@@ -51,7 +54,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hardened_kernel_install_path ${hakc_build_dir}/hakc-kernel)
     set(kernel_config_path ${linux_build_dir}/.config)
 
-    set(LINUX_MAKE_OPTS O=${linux_build_dir} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
+    set(LINUX_MAKE_OPTS O=${linux_build_dir} LOCALVERSION=${hakc_kernel_ext} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=clang ${make_opts})
     file(MAKE_DIRECTORY ${linux_build_dir})
 
     set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
@@ -60,6 +63,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
         message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
     endif ()
 
+    set(hakc_main_config_path ${hakc_build_dir}/hakc-config.yaml)
     set(hakc_server_config_path ${hakc_build_dir}/hakc-server-config.yaml)
     set(hakc_client_config_path ${hakc_build_dir}/hakc-client-config.yaml)
     set(compilation_db_path ${hakc_build_dir}/compile_commands.json)
@@ -76,7 +80,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
             ${hakc_build_dir}/hakc-adjustments.yaml)
     configure_file(${hakc_configs_path}/hakc-config.yaml.in
-            ${hakc_build_dir}/hakc-config.yaml)
+            ${hakc_main_config_path})
     configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
             ${hakc_build_dir}/hakc-server-config.yaml)
 
@@ -87,8 +91,6 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMENT "Generating ${arch} Linux config"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
             COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
-            COMMAND cp ${kernel_config_path} ${kernel_config_path}.no-hakc
-            COMMAND ./scripts/config --file ${kernel_config_path}.no-hakc -u CONFIG_HAKC
     )
 
     add_custom_target(hakc-linux-${arch}-config
@@ -101,7 +103,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             DEPENDS hakc-linux-${arch}-config
             COMMENT "Generating ${compilation_db_path}"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} clean
-            COMMAND bear --output ${compilation_db_path} -- make KCONFIG_CONFIG=${kernel_config_path}.no-hakc ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND ${CMAKE_SOURCE_DIR}/linux/scripts/clang-tools/gen_compile_commands.py -d ${linux_build_dir} -o ${compilation_db_path}
     )
 
     add_custom_target(linux-${arch}-compilation-db
@@ -115,26 +118,27 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             USES_TERMINAL
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            ${hakc_server_process} --config ${hakc_build_dir}/hakc-config.yaml --mode analysis
+            ${hakc_server_process} --config ${hakc_main_config_path} --mode analysis
     )
 
     add_custom_target(hakc-linux-${arch}-analysis
-            DEPENDS ${hakc_build_dir}/hakc-config.yaml clang hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
+            DEPENDS ${hakc_main_config_path} clang hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
     )
 
     add_custom_command(
-            OUTPUT ${hardened_kernel_install_path}
+            OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             DEPENDS hakc-linux-${arch}-analysis clang
             USES_TERMINAL
-            COMMENT "Building the ${arch} HAKC Linux"
+            COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            ${hakc_server_process} --config ${hakc_build_dir}/hakc-config.yaml --mode enforcement
-            COMMAND make KCONFIG_CONFIG=${kernel_config_path}.no-hakc INSTALL_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install
+            ${hakc_server_process} --config ${hakc_main_config_path} --mode enforcement
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path} clang
+            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} clang
     )
 
 endforeach ()

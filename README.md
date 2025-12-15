@@ -6,7 +6,6 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 * `Binutils 2.33.1+`
 * `aarch64-linux-gnu`
-* `bear`
 
 ## TL;DR
 
