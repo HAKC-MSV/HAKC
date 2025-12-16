@@ -17,6 +17,23 @@ set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 set(HAKC_PYTHON_Executable "${HAKC_PYTHON_VENV}/bin/python")
 set(HAKC_SOCKET_ROOT ${CMAKE_BINARY_DIR}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
 
+set(BUSYBOX_EXECUTABLE "" CACHE FILEPATH "Path to busybox binary")
+
+if (NOT BUSYBOX_EXECUTABLE)
+    find_program(BUSYBOX_EXECUTABLE busybox)
+
+    if (NOT BUSYBOX_EXECUTABLE AND EXISTS "/usr/bin/busybox")
+        set(BUSYBOX_EXECUTABLE "/usr/bin/busybox" CACHE FILEPATH "Path to busybox binary" FORCE)
+    endif ()
+endif ()
+
+if (NOT BUSYBOX_EXECUTABLE)
+    message(WARNING "BusyBox not found. Set BUSYBOX_EXECUTABLE=/usr/bin/busybox or another path.")
+    set(BUSYBOX_EXECUTABLE "busybox" CACHE FILEPATH "Path to busybox binary" FORCE)
+else ()
+    message(STATUS "Using BusyBox at: ${BUSYBOX_EXECUTABLE}")
+endif ()
+
 add_subdirectory(llvm-project/llvm)
 
 if (LLVM_PARALLEL_COMPILE_JOBS)
@@ -28,10 +45,10 @@ endif ()
 
 math(EXPR HAKC_LINUX_CORE_COUNT "${FULL_CORE_COUNT}")
 
-message("-- HAKC is using up to ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
-message("-- Using ${HAKC_SOCKET_ROOT} for the socket root")
+message(STATUS "HAKC is using up to ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
+message(STATUS "Using ${HAKC_SOCKET_ROOT} for the socket root")
 
-list(APPEND LINUX_ARCHES_TO_BUILD x86)
+list(APPEND LINUX_ARCHES_TO_BUILD x86_64)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
@@ -72,6 +89,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_backing_path ${hakc_build_dir}/hakc-db)
     set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
     set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
+
+    set(ROOTFS_DIR ${hakc_build_dir}/rootfs)
+    set(INITRAMFS_IMG ${hakc_build_dir}/rootfs.cpio.gz)
 
     configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
             ${hakc_build_dir}/hakc-client-config.yaml)
@@ -135,10 +155,57 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             ${hakc_server_process} --config ${hakc_main_config_path} --mode enforcement
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
             COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
+            COMMAND rm -rf ${hardened_kernel_install_path}/lib/modules/${hakc_kernel_version}${hakc_kernel_ext}/build
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
             DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} clang
+    )
+
+    add_custom_command(
+            OUTPUT ${INITRAMFS_IMG}
+            COMMAND ${CMAKE_COMMAND} -E rm -rf ${ROOTFS_DIR}
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+            ${ROOTFS_DIR}
+            ${ROOTFS_DIR}/bin
+            ${ROOTFS_DIR}/sbin
+            ${ROOTFS_DIR}/proc
+            ${ROOTFS_DIR}/sys
+            ${ROOTFS_DIR}/dev
+            ${ROOTFS_DIR}/etc
+            ${ROOTFS_DIR}/lib
+            COMMAND ${CMAKE_COMMAND} -E copy ${BUSYBOX_EXECUTABLE} ${ROOTFS_DIR}/bin/busybox
+            COMMAND chmod 755 ${ROOTFS_DIR}/bin/busybox
+
+            # Install BusyBox applets as symlinks in /bin
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin ./busybox --install -s .
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin sh -c "find . -type l | xargs -I{} ln -sf ./busybox {}"
+
+            # Create a minimal init script
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}
+            COMMAND chmod +x ${ROOTFS_DIR}/init
+
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
+
+
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}
+            sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
+
+            DEPENDS ${BUSYBOX_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${hardened_kernel_install_path}/${hakc_kernel_name}
+            WORKING_DIRECTORY ${hakc_build_dir}
+            VERBATIM
+    )
+
+    # High-level target that always builds the initramfs
+    add_custom_target(hakc-${arch}-userspace
+            DEPENDS ${INITRAMFS_IMG} hakc-linux-${arch}-enforcement
+    )
+
+    add_custom_target(run-${arch}-hakc-kernel
+            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -initrd ${INITRAMFS_IMG} -m 16G -append \"console=ttyS0 rdinit=/init\" -nographic
+            DEPENDS hakc-linux-${arch}-enforcement hakc-${arch}-userspace
+            USES_TERMINAL
+            WORKING_DIRECTORY ${hakc_build_dir}
     )
 
 endforeach ()
