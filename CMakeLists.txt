@@ -14,7 +14,25 @@ set(LLVM_ENABLE_RTTI ON)
 set(LLVM_ENABLE_EH ON)
 set(HAKC_PYTHON_VENV ${CMAKE_SOURCE_DIR}/python/venv)
 
-set(Python_EXECUTABLE "${HAKC_PYTHON_VENV}/bin/python")
+set(HAKC_PYTHON_Executable "${HAKC_PYTHON_VENV}/bin/python")
+set(HAKC_SOCKET_ROOT ${CMAKE_BINARY_DIR}/hakc-sockets CACHE FILEPATH "Path to use for HAKC server sockets")
+
+set(BUSYBOX_EXECUTABLE "" CACHE FILEPATH "Path to busybox binary")
+
+if (NOT BUSYBOX_EXECUTABLE)
+    find_program(BUSYBOX_EXECUTABLE busybox)
+
+    if (NOT BUSYBOX_EXECUTABLE AND EXISTS "/usr/bin/busybox")
+        set(BUSYBOX_EXECUTABLE "/usr/bin/busybox" CACHE FILEPATH "Path to busybox binary" FORCE)
+    endif ()
+endif ()
+
+if (NOT BUSYBOX_EXECUTABLE)
+    message(WARNING "BusyBox not found. Set BUSYBOX_EXECUTABLE=/usr/bin/busybox or another path.")
+    set(BUSYBOX_EXECUTABLE "busybox" CACHE FILEPATH "Path to busybox binary" FORCE)
+else ()
+    message(STATUS "Using BusyBox at: ${BUSYBOX_EXECUTABLE}")
+endif ()
 
 add_subdirectory(llvm-project/llvm)
 
@@ -27,91 +45,167 @@ endif ()
 
 math(EXPR HAKC_LINUX_CORE_COUNT "${FULL_CORE_COUNT}")
 
-message("-- HAKC is using up to ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
+message(STATUS "HAKC is using up to ${HAKC_LINUX_CORE_COUNT} cores to build Linux")
+message(STATUS "Using ${HAKC_SOCKET_ROOT} for the socket root")
 
-list(APPEND LINUX_ARCHES_TO_BUILD x86)
+list(APPEND LINUX_ARCHES_TO_BUILD x86_64)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
 
 # HAKC Constants
-set(hakc_configs_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc/configs)
+set(hakc_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc)
+set(hakc_configs_path ${hakc_path}/configs)
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
-set(build_modes analysis;enforcement)
-set(hakc_client_timeout 100)
 set(hakc_max_connection_retries 1)
 set(hakc_server_log_level ERROR)
+set(hakc_server_process ${hakc_path}/hakc-server-process)
+set(hakc_kernel_ext "-hakc")
+set(hakc_kernel_version "6.14.0")
+set(hakc_kernel_name "vmlinuz-${hakc_kernel_version}${hakc_kernel_ext}")
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
-    set(linux_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
+    set(hakc_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
+    set(linux_build_dir ${hakc_build_dir}/build)
+    set(hardened_kernel_install_path ${hakc_build_dir}/hakc-kernel)
+    set(kernel_config_path ${linux_build_dir}/.config)
 
-    # Q: Can we actually remove the analysis / enforcement directories and build everything in linux/x86?
-#    set(hakc_build_dir  ${HAKC_LINUX_BUILD_PATH}/${arch})
-    set(hakc_build_dir ${linux_build_dir})
+    set(LINUX_MAKE_OPTS O=${linux_build_dir} LOCALVERSION=${hakc_kernel_ext} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=clang ${make_opts})
+    file(MAKE_DIRECTORY ${linux_build_dir})
+
+    set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
+    string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
+    if (socket_path_length GREATER_EQUAL 107)
+        message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
+    endif ()
+
+    set(hakc_main_config_path ${hakc_build_dir}/hakc-config.yaml)
     set(hakc_server_config_path ${hakc_build_dir}/hakc-server-config.yaml)
     set(hakc_client_config_path ${hakc_build_dir}/hakc-client-config.yaml)
+    set(compilation_db_path ${hakc_build_dir}/compile_commands.json)
+    set(hakc_log_dir ${hakc_build_dir}/hakc-logs)
+    set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
+    set(hakc_backing_path ${hakc_build_dir}/hakc-db)
     set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
+    set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
-    foreach (build_mode ${build_modes})
+    set(ROOTFS_DIR ${hakc_build_dir}/rootfs)
+    set(INITRAMFS_IMG ${hakc_build_dir}/rootfs.cpio.gz)
 
-        if (${build_mode} STREQUAL "analysis")
-            set(hakc_server_timeout 100)
-        else ()
-            set(hakc_server_timeout 1000)
-        endif ()
+    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
+            ${hakc_build_dir}/hakc-client-config.yaml)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            ${hakc_build_dir}/hakc-modify-linux-config.sh)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+            ${hakc_build_dir}/hakc-adjustments.yaml)
+    configure_file(${hakc_configs_path}/hakc-config.yaml.in
+            ${hakc_main_config_path})
+    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
+            ${hakc_build_dir}/hakc-server-config.yaml)
 
-        set(LINUX_MAKE_OPTS O=${linux_build_dir}/${build_mode} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=$<TARGET_FILE:clang> ${make_opts})
-        file(MAKE_DIRECTORY ${linux_build_dir}/${build_mode})
+    add_custom_command(
+            OUTPUT ${kernel_config_path}
+            DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            COMMENT "Generating ${arch} Linux config"
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+            COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
+    )
+
+    add_custom_target(hakc-linux-${arch}-config
+            DEPENDS ${kernel_config_path}
+    )
+
+    add_custom_command(
+            OUTPUT ${compilation_db_path}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            DEPENDS hakc-linux-${arch}-config
+            COMMENT "Generating ${compilation_db_path}"
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} clean
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND ${CMAKE_SOURCE_DIR}/linux/scripts/clang-tools/gen_compile_commands.py -d ${linux_build_dir} -o ${compilation_db_path}
+    )
+
+    add_custom_target(linux-${arch}-compilation-db
+            DEPENDS ${compilation_db_path} hakc-linux-${arch}-config
+    )
+
+    add_custom_command(
+            OUTPUT ${hakc_backing_path}
+            WORKING_DIRECTORY ${hakc_build_dir}
+            DEPENDS clang
+            USES_TERMINAL
+            COMMENT "Running ${arch} Linux Analysis"
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
+            ${hakc_server_process} --config ${hakc_main_config_path} --mode analysis
+    )
+
+    add_custom_target(hakc-linux-${arch}-analysis
+            DEPENDS ${hakc_main_config_path} clang hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
+    )
+
+    add_custom_command(
+            OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
+            DEPENDS hakc-linux-${arch}-analysis clang
+            USES_TERMINAL
+            COMMENT "Building the ${arch} HAKC Linux kernel"
+            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
+            ${hakc_server_process} --config ${hakc_main_config_path} --mode enforcement
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
+            COMMAND rm -rf ${hardened_kernel_install_path}/lib/modules/${hakc_kernel_version}${hakc_kernel_ext}/build
+    )
+
+    add_custom_target(hakc-linux-${arch}-enforcement
+            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} clang
+    )
+
+    add_custom_command(
+            OUTPUT ${INITRAMFS_IMG}
+            COMMAND ${CMAKE_COMMAND} -E rm -rf ${ROOTFS_DIR}
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+            ${ROOTFS_DIR}
+            ${ROOTFS_DIR}/bin
+            ${ROOTFS_DIR}/sbin
+            ${ROOTFS_DIR}/proc
+            ${ROOTFS_DIR}/sys
+            ${ROOTFS_DIR}/dev
+            ${ROOTFS_DIR}/etc
+            ${ROOTFS_DIR}/lib
+            COMMAND ${CMAKE_COMMAND} -E copy ${BUSYBOX_EXECUTABLE} ${ROOTFS_DIR}/bin/busybox
+            COMMAND chmod 755 ${ROOTFS_DIR}/bin/busybox
+
+            # Install BusyBox applets as symlinks in /bin
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin ./busybox --install -s .
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin sh -c "find . -type l | xargs -I{} ln -sf ./busybox {}"
+
+            # Create a minimal init script
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}
+            COMMAND chmod +x ${ROOTFS_DIR}/init
+
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
 
 
-        set(hakc_socket_dir ${hakc_build_dir}/hakc-sockets)
-        string(LENGTH "${hakc_socket_dir}/___" socket_path_length)
-        if (socket_path_length GREATER_EQUAL 107)
-            message(WARNING "hakc_socket_dir ${hakc_socket_dir} is too long")
-        endif ()
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}
+            sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
 
-        set(hakc_log_dir ${hakc_build_dir}/${build_mode}/hakc-logs)
-        set(hakc_build_mode ${build_mode})
-        set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
-        set(hakc_backing_path ${hakc_build_dir}/hakc-db)
-        set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
+            DEPENDS ${BUSYBOX_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${hardened_kernel_install_path}/${hakc_kernel_name}
+            WORKING_DIRECTORY ${hakc_build_dir}
+            VERBATIM
+    )
 
-        configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
-                ${hakc_client_config_path})
-        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-                ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh)
-        configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-                ${hakc_adjustments_path})
-        configure_file(${hakc_configs_path}/hakc-config.yaml.in
-                ${hakc_build_dir}/${build_mode}/hakc-config.yaml)
-        configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
-                ${hakc_server_config_path})
+    # High-level target that always builds the initramfs
+    add_custom_target(hakc-${arch}-userspace
+            DEPENDS ${INITRAMFS_IMG} hakc-linux-${arch}-enforcement
+    )
 
-        add_custom_target(hakc-linux-${arch}-${build_mode}-config
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/.config
-                DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Generating ${arch} Linux ${build_mode} config"
-                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
-        )
-        add_custom_target(linux-${arch}-${build_mode}-pass
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/vmlinux
-                DEPENDS ${hakc_build_dir}/${build_mode}/hakc-config.yaml clang hakc-linux-${arch}-${build_mode}-config
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Running ${arch} Linux ${build_mode} pass"
-                USES_TERMINAL
-                COMMAND bash ${hakc_build_dir}/${build_mode}/hakc-modify-linux-config.sh
-                COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
-        )
-        add_custom_target(linux-${arch}-${build_mode}-compilation-db
-                BYPRODUCTS ${hakc_build_dir}/${build_mode}/compile_commands.json
-                DEPENDS linux-${arch}-${build_mode}-pass
-                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-                COMMENT "Generating ${arch} Linux ${build_mode} compile_commands.json"
-                COMMAND ./scripts/gen_compile_commands.py --output ${hakc_build_dir}/${build_mode}/compile_commands.json --directory ${hakc_build_dir}/${build_mode}
-        )
-
-    endforeach ()
+    add_custom_target(run-${arch}-hakc-kernel
+            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -initrd ${INITRAMFS_IMG} -m 16G -append \"console=ttyS0 rdinit=/init\" -nographic
+            DEPENDS hakc-linux-${arch}-enforcement hakc-${arch}-userspace
+            USES_TERMINAL
+            WORKING_DIRECTORY ${hakc_build_dir}
+    )
 
 endforeach ()

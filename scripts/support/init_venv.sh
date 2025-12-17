@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo "Creating Python Virtual Environment"
 source $(git rev-parse --show-toplevel)/scripts/support/vars.sh
 
 python3 -m venv $HAKC_ROOT/python/venv

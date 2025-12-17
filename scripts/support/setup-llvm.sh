@@ -21,5 +21,3 @@ cmake -G Ninja \
   -DLLVM_ENABLE_HAKC=On \
   -DLLVM_BUILD_TESTS=On \
   $HAKC_ROOT
-
-cmake --build . -j$(nproc) --target install
