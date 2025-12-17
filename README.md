@@ -125,4 +125,3 @@ Finally, adjust compartments:
 ## Run HAKC test suite standalone / LLVM + HAKC tests 
 1. `cd cmake-build-hakc`
 2. `cmake --build . --target check-{hakc, llvm}`
-
