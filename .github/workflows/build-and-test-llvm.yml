@@ -1,4 +1,4 @@
-name: Ubuntu-Build-AMD64
+name: Build-And-Test-LLVM
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -10,7 +10,7 @@ env:
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc"
-  DEPS_TO_INSTALL: "clang"
+  DEPS_TO_INSTALL: "clang ninja-build"
 on:
   push:
     branches:
