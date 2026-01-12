@@ -20,8 +20,8 @@
         "LLVM_BUILD_TESTS": "ON",
         "LLVM_ENABLE_ASSERTIONS": "ON",
         "LLVM_ENABLE_Z3_SOLVER": "ON",
-        "HAKC_PYTHON_VENV": "python/venv",
-        "CMAKE_INSTALL_PREFIX": "install"
+        "HAKC_PYTHON_VENV": "${sourceDir}/python/venv",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
       }
     },
     {
