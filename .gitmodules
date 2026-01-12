@@ -1,8 +1,8 @@
 [submodule "llvm-project"]
 	path = llvm-project
-	url = git@llcad-github.llan.ll.mit.edu:RMC/llvm-project.git
-	branch = main
+	url = git@g53gitlab.llan.ll.mit.edu:inherently-secure/llvm-project.git
+	branch = hakc-next
 [submodule "linux"]
 	path = linux
-	url = git@llcad-github.llan.ll.mit.edu:RMC/linux.git
-	branch = main
+	url = git@g53gitlab.llan.ll.mit.edu:inherently-secure/linux.git
+	branch = hakc-next
