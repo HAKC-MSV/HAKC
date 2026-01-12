@@ -10,7 +10,7 @@ env:
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc"
-  DEPS_TO_INSTALL: "clang ninja-build cmake"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
 on:
   push:
     branches:
@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  BuildContainer:
+  BuildLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
     #    outputs:
     #      image: ${{ steps.vars.outputs.image }}
