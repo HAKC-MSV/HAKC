@@ -72,3 +72,11 @@ either
 will generate a human readable LLVM IR output instead. This file will have the same name
 and location as the expected object file, but will end in `.ll`. This file can be used to
 examine the final transformation of any source file.
+
+
+
+# Run UnitTests
+
+cd cmake-build-hakc 
+cmake --build . -j$(nproc) --target UnitTests
+llvm-project/llvm/unittests/Transforms/Compartmentalization/hakc/HAKC_UNIT_TESTS 
