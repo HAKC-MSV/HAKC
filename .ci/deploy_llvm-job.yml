@@ -9,8 +9,7 @@ deploy_llvm-job:
         paths:
           - .git/modules/llvm-project/refs/heads/$CI_COMMIT_BRANCH
   script:
-    - cd $LLVM_BUILD_DIR
-    - cmake --build . --target install -j$BUILD_PROCESSORS
+    - cmake --build $LLVM_BUILD_DIR --target install -j$BUILD_PROCESSORS
   artifacts:
     paths:
       - $LLVM_INSTALL_DIR
