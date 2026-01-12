@@ -2,10 +2,11 @@
 # build llvm and hakc with it 
 source scripts/support/vars.sh
 
+echo "Making build directory at $HAKC_LLVM_BUILD_PATH"
 mkdir -p $HAKC_LLVM_BUILD_PATH
 cd $HAKC_LLVM_BUILD_PATH
 
-echo "Building LLVM in $PWD using command "
+echo "Building LLVM in $PWD"
 cmake -G Ninja \
   -DCMAKE_INSTALL_PREFIX=$HAKC_INSTALL_PATH \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \

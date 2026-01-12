@@ -10,7 +10,7 @@ env:
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc"
-  DEPS_TO_INSTALL: "clang ninja-build"
+  DEPS_TO_INSTALL: "clang ninja-build cmake"
 on:
   push:
     branches:
