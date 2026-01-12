@@ -9,7 +9,7 @@ env:
   TAGID: "amd64-${{ github.run_id }}"
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
-  BUILD_DIR: "cmake-build-hakc"
+  BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
 on:
   push:
@@ -35,13 +35,25 @@ jobs:
           apt install -y $DEPS_TO_INSTALL
       - name: Configure Build Environment
         run: |
-          bash scripts/support/init.sh
-          bash scripts/support/setup-llvm.sh
+          cmake --preset release
+      - name: Build Clang
+        run: |
+          cmake --build $BUILD_DIR -- -j $(nproc)
+  TestLLVM:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: BuildLLVM
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
       - name: Run Unit Tests
         run: |
-          cd $BUILD_DIR
-          cmake --build . --target check-llvm
-      - name: Install
+          cmake --build $BUILD_DIR --target check-llvm
+  InstallLLVM:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: TestLLVM
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Run Unit Tests
         run: |
-          cd $BUILD_DIR
-          cmake --build . --target install
+          cmake --build $BUILD_DIR --target install -- -j $(nproc)

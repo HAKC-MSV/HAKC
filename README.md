@@ -11,30 +11,28 @@ Instructions for how to build all code and run the ROS2 demo in QEMU.
 
 ## TL;DR
 
-1. `bash scripts/support/init.sh`
-2. `bash scripts/support/setup-llvm.sh`
-3. `cd cmake-build-hakc`
-4. `cmake --build . --target run-x86_64-hakc-kernel`
+1. `source .envrc`
+2. `cmake --preset debug`
+3. `cmake --build $HAKC_BUILD_ROOT --target run-x86_64-hakc-kernel`
 
 The built kernel will be installed at `cmake-build-hakc/linux/x86_64/hakc-kernel`.
 
 ## Set up
 
-1. `bash scripts/support/init.sh`
+1. `git submodule update --init --recursive`
+2. `source .envrc`
 
 ## Build LLVM
 
-1. `bash scripts/support/setup-llvm.sh`
-2. `cd cmake-build-hakc`
-3. `cmake --build . --target clang`
+1. `cmake --preset debug`
+2. `cmake --build $HAKC_BUILD_ROOT --target clang`
 
 ## Performing kernel analysis
 
 Creating the initial compartmentalization can be accomplished (assuming the python virtual
 environment is still active) by
 
-1. `cd cmake-build-hakc`
-2. `cmake --build . --target hakc-linux-x86_64-analysis`
+1. `cmake --build $HAKC_BUILD_ROOT --target hakc-linux-x86_64-analysis`
 
 This target first builds a compilation database for the kernel, and then that database is
 used to perform analysis and build the compartmentalization policy. The database storing
@@ -50,13 +48,12 @@ Note, these directions imply a valid HAKC configuration and policy server config
 created, and all paths are correct. See [docs/README.md](docs/README.md) for more
 information.
 
-1. `cd cmake-build-hakc`
-2. `cmake --build . --target hakc-linux-x86_64-enforcement`
+1. `cmake --build $HAKC_BUILD_ROOT --target hakc-linux-x86_64-enforcement`
 
-Running `cmake --build . --target hakc-linux-x86_64-enforcement` first will run the
+Running `cmake --build $HAKC_BUILD_ROOT --target hakc-linux-x86_64-enforcement` first will
+run the
 `hakc-linux-x86_64-analysis` target first.
 
 ## Run HAKC test suite standalone / LLVM + HAKC tests
 
-1. `cd cmake-build-hakc`
-2. `cmake --build . --target check-{hakc, llvm}`
+1. `cmake --build $HAKC_BUILD_ROOT --target check-{hakc, llvm}`
