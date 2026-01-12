@@ -3,7 +3,5 @@
 echo "Initializing in $PWD"
 source scripts/support/vars.sh
 
-echo "Updating submodules"
-exec_cmd_and_check_status "git submodule update --init --recursive"
 echo "Creating Directories"
 exec_cmd_and_check_status "mkdir -p $HAKC_LLVM_BUILD_PATH $HAKC_INSTALL_PATH"
