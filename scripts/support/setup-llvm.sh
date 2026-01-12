@@ -6,7 +6,7 @@ echo "Making build directory at $HAKC_LLVM_BUILD_PATH"
 mkdir -p $HAKC_LLVM_BUILD_PATH
 cd $HAKC_LLVM_BUILD_PATH
 
-echo "Building LLVM in $PWD"
+echo "Building LLVM in $PWD with HAKC_ROOT=$HAKC_ROOT"
 cmake -G Ninja \
   -DCMAKE_INSTALL_PREFIX=$HAKC_INSTALL_PATH \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo \
