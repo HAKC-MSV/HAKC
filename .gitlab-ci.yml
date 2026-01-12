@@ -9,7 +9,7 @@ variables:
   DAG_FILE_PATH: 'dag-output'
   RPI_IMG_FILE: '/data/gitlab-runner/rpi.img'
   BUILD_PROCESSORS: 96
-  LLVM_BUILD_DIR: $CI_PROJECT_DIR/cmake-llvm-build
+  LLVM_BUILD_DIR: $CI_PROJECT_DIR/cmake-llvm-build-release
   PYTHON_VENV_DIR: $CI_PROJECT_DIR/python/venv
   LLVM_INSTALL_DIR: $CI_PROJECT_DIR/deploy/llvm-install
   PYTHON_DEPLOY_DIR: $CI_PROJECT_DIR/deploy/python

@@ -1,0 +1,47 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "cacheVariables": {
+        "LLVM_ENABLE_PROJECTS": "clang;clang-tools-extra;lld",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "LLVM_TARGETS_TO_BUILD": "X86;AArch64;ARM",
+        "LLVM_USE_LINKER": "lld",
+        "LLVM_ENABLE_HAKC": "ON",
+        "LLVM_BUILD_TESTS": "ON",
+        "LLVM_ENABLE_ASSERTIONS": "ON",
+        "LLVM_ENABLE_Z3_SOLVER": "ON",
+        "HAKC_PYTHON_VENV": "${sourceDir}/python/venv",
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+      }
+    },
+    {
+      "name": "release",
+      "inherits": "base",
+      "description": "Release build configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hakc-release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "debug",
+      "inherits": "base",
+      "description": "Debug build configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hakc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    }
+  ]
+}

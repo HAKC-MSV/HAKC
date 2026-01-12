@@ -1,0 +1,59 @@
+name: Build-And-Test-LLVM
+env:
+  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  IMAGEID: "ubuntu"
+  REPOURL: "ett-jfrog.llan.ll.mit.edu"
+  REPOID: "isd-docker-local"
+  TAGID: "amd64-${{ github.run_id }}"
+  ADDITIONAL_TAGID: "latest"
+  PLATFORM_TAGID: "amd64-latest"
+  BUILD_DIR: "cmake-build-hakc-release"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
+on:
+  push:
+    branches:
+      - github-actions-dev
+  workflow_dispatch:
+
+jobs:
+  BuildLLVM:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    #    outputs:
+    #      image: ${{ steps.vars.outputs.image }}
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'true'
+      - name: Install Dependencies
+        run: |
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+      - name: Configure Build Environment
+        run: |
+          cmake --preset release
+      - name: Build Clang
+        run: |
+          cmake --build $BUILD_DIR -- -j $(nproc)
+  TestLLVM:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: BuildLLVM
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Run Unit Tests
+        run: |
+          cmake --build $BUILD_DIR --target check-llvm
+  InstallLLVM:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: TestLLVM
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Run Unit Tests
+        run: |
+          cmake --build $BUILD_DIR --target install -- -j $(nproc)
