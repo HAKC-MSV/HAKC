@@ -20,8 +20,7 @@
         "LLVM_BUILD_TESTS": "ON",
         "LLVM_ENABLE_ASSERTIONS": "ON",
         "LLVM_ENABLE_Z3_SOLVER": "ON",
-        "HAKC_PYTHON_VENV": "${sourceDir}/python/venv",
-        "CMAKE_INSTALL_PREFIX": "${sourceDir}/install"
+        "HAKC_PYTHON_VENV": "${sourceDir}/python/venv"
       }
     },
     {
@@ -29,6 +28,7 @@
       "inherits": "base",
       "description": "Release build configuration",
       "binaryDir": "${sourceDir}/cmake-build-hakc-release",
+      "installDir": "release-install",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
       }
@@ -38,6 +38,7 @@
       "inherits": "base",
       "description": "Debug build configuration",
       "binaryDir": "${sourceDir}/cmake-build-hakc",
+      "installDir": "debug-install",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
