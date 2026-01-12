@@ -1,4 +1,4 @@
-source $(git rev-parse --show-toplevel)/.envrc
+source .envrc
 
 exec_cmd_and_check_status () {
   cmd_to_run="$@"
