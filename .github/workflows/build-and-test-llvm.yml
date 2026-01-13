@@ -11,6 +11,7 @@ env:
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
+  VENV_DIR: "python/venv"
 on:
   push:
     branches:
@@ -47,6 +48,9 @@ jobs:
     steps:
       - name: Run Unit Tests
         run: |
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target check-llvm
   InstallLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
