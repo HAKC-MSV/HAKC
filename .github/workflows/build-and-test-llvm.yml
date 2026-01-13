@@ -12,6 +12,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
   VENV_DIR: "python/venv"
+  INSTALL_DIR: "release-install"
 on:
   push:
     branches:
@@ -21,8 +22,6 @@ on:
 jobs:
   BuildLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
-    #    outputs:
-    #      image: ${{ steps.vars.outputs.image }}
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
@@ -66,11 +65,13 @@ jobs:
           source $VENV_DIR/bin/activate
           pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target check-llvm
-  InstallLLVM:
+  CreateLLVMContainer:
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: TestLLVM
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      image: ${{ steps.vars.outputs.image }}
     steps:
       - name: Artifact Download
         uses: actions/download-artifact@v1
@@ -81,6 +82,19 @@ jobs:
         run: |
           apt update
           apt install -y $DEPS_TO_INSTALL
-      - name: Run Unit Tests
+      - name: Install LLVM
         run: |
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
+      - name: Build Image
+        run: |
+          envsubst < Dockerfile.template > Dockerfile
+          export _BUILDAH_STARTED_IN_USERNS="" 
+          export BUILDAH_ISOLATION=chroot
+
+          buildah login -u $jfrog_user -p $jfrog_pass $REPOURL          
+          buildah bud  --storage-driver vfs -t $REPOURL/$REPOID/$IMAGEID:$TAGID . 
+          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID 
+          buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
+          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
+          buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$PLATFORM_TAGID
+          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$PLATFORM_TAGID
