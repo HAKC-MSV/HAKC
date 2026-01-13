@@ -40,12 +40,26 @@ jobs:
       - name: Build Clang
         run: |
           cmake --build $BUILD_DIR -- -j $(nproc)
+      - name: Artifact upload
+        uses: actions/upload-artifact@v1
+        with:
+          name: LLVMBuildDirectory
+          path: ${{ env.BUILD_DIR }}
   TestLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: BuildLLVM
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
+      - name: Artifact Download
+        uses: actions/download-artifact@v1
+        with:
+          name: LLVMBuildDirectory
+          path: .
+      - name: Install Dependencies
+        run: |
+          apt update
+          apt install -y $DEPS_TO_INSTALL
       - name: Run Unit Tests
         run: |
           python3 -m venv $VENV_DIR
@@ -58,6 +72,15 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
+      - name: Artifact Download
+        uses: actions/download-artifact@v1
+        with:
+          name: LLVMBuildDirectory
+          path: .
+      - name: Install Dependencies
+        run: |
+          apt update
+          apt install -y $DEPS_TO_INSTALL
       - name: Run Unit Tests
         run: |
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
