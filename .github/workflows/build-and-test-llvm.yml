@@ -61,7 +61,7 @@ jobs:
           # Also output the current SHA to use for caching keys
           echo "llvm_sha=$head_sha" >> "$GITHUB_OUTPUT"
   BuildLLVM:
-    runs-on: [ arc-runner-set-llcad-prod ]
+    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     needs: DetectLLVMChange
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
@@ -97,7 +97,7 @@ jobs:
           name: LLVMBuildDirectory
           path: ${{ env.BUILD_DIR }}
   TestLLVM:
-    runs-on: [ arc-runner-set-llcad-prod ]
+    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     needs: [ DetectLLVMChange, BuildLLVM ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
