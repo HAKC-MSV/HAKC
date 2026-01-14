@@ -34,6 +34,16 @@
       }
     },
     {
+      "name": "ci-release",
+      "inherits": "base",
+      "description": "Release CI build configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hakc-release",
+      "installDir": "hakc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
       "name": "debug",
       "inherits": "base",
       "description": "Debug build configuration",
@@ -42,6 +52,18 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "ci-linux-build",
+      "inherits": "base",
+      "description": "Configuration for CI Linux builds (Assumes installed clang at /opt/hakc)",
+      "binaryDir": "${sourceDir}/cmake-build-hakc-release",
+      "installDir": "hakc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "HAKC_CC": "/opt/hakc/bin/clang",
+        "HAKC_SERVER_PROCESS_PATH": "/opt/hakc/utils/hakc/hakc-server-process"
       }
     }
   ]

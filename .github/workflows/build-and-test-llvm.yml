@@ -12,7 +12,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "release-install"
+  INSTALL_DIR: "hakc"
 on:
   push:
     branches:
@@ -20,8 +20,49 @@ on:
   workflow_dispatch:
 
 jobs:
+  DetectLLVMChange:
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      llvm_sha: ${{ steps.detect.outputs.llvm_sha }}
+    steps:
+      - name: Checkout (no submodules needed)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - name: Detect LLVM submodule change
+        id: detect
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SUBMODULE_PATH="llvm-project"
+
+          HEAD="${{ github.sha }}"
+          
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            BASE="${{ github.event.before }}"
+          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            # workflow_dispatch: best effort
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
+          fi
+
+          # Read the gitlink (submodule pointer) from each tree
+          base_sha="$(git ls-tree "$BASE" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
+          head_sha="$(git ls-tree "$HEAD" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
+
+          echo "Base submodule SHA: $base_sha"
+          echo "Head submodule SHA: $head_sha"
+
+          # Also output the current SHA to use for caching keys
+          echo "llvm_sha=$head_sha" >> "$GITHUB_OUTPUT"
   BuildLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
+    needs: DetectLLVMChange
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
@@ -33,12 +74,23 @@ jobs:
         run: |
           apt update
           apt install -y $DEPS_TO_INSTALL
+      - name: Restore LLVM build cache
+        id: llvm_cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.BUILD_DIR }}
+          key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}
+      # If cache-hit, we can skip configure/build entirely.
       - name: Configure Build Environment
+        if: steps.llvm_cache.outputs.cache-hit != 'true'
         run: |
-          cmake --preset release
+          cmake --preset ci-release
       - name: Build Clang
+        if: steps.llvm_cache.outputs.cache-hit != 'true'
         run: |
           cmake --build $BUILD_DIR -- -j $(nproc)
+
       - name: Artifact upload
         uses: actions/upload-artifact@v1
         with:
@@ -46,10 +98,15 @@ jobs:
           path: ${{ env.BUILD_DIR }}
   TestLLVM:
     runs-on: [ arc-runner-set-llcad-prod ]
-    needs: BuildLLVM
+    needs: [ DetectLLVMChange, BuildLLVM ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
       - name: Artifact Download
         uses: actions/download-artifact@v1
         with:
@@ -67,12 +124,17 @@ jobs:
           cmake --build $BUILD_DIR --target check-llvm
   CreateLLVMContainer:
     runs-on: [ arc-runner-set-llcad-prod ]
-    needs: TestLLVM
+    needs: [ DetectLLVMChange, TestLLVM ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     outputs:
       image: ${{ steps.vars.outputs.image }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
       - name: Artifact Download
         uses: actions/download-artifact@v1
         with:
