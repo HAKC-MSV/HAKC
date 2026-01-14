@@ -38,6 +38,8 @@ jobs:
         run: |
           set -euo pipefail
 
+          chown -R root:root .
+
           SUBMODULE_PATH="llvm-project"
 
           HEAD="${{ github.sha }}"
