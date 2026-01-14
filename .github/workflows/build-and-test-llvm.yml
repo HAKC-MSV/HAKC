@@ -106,6 +106,7 @@ jobs:
           apt update
           apt install -y $DEPS_TO_INSTALL
       - name: Run Unit Tests
+        shell: bash
         run: |
           python3 -m venv $VENV_DIR
           source $VENV_DIR/bin/activate
