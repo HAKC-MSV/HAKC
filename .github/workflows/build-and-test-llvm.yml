@@ -90,12 +90,17 @@ jobs:
         if: steps.llvm_cache.outputs.cache-hit != 'true'
         run: |
           cmake --build $BUILD_DIR -- -j $(nproc)
-
+      - name: Compress Build Directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -C . -czf "${{ env.BUILD_DIR }}.tar.gz" "${{ env.BUILD_DIR }}"
+          ls -lh "${{ env.BUILD_DIR }}.tar.gz"
       - name: Artifact upload
         uses: actions/upload-artifact@v1
         with:
           name: LLVMBuildDirectory
-          path: ${{ env.BUILD_DIR }}
+          path: ${{ env.BUILD_DIR }}.tar.gz
   TestLLVM:
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     needs: [ DetectLLVMChange, BuildLLVM ]
@@ -112,6 +117,12 @@ jobs:
         with:
           name: LLVMBuildDirectory
           path: .
+      - name: Extract Build Directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf "${{ env.BUILD_DIR }}.tar.gz"
+          ls -lah "${{ env.BUILD_DIR }}" | head
       - name: Install Dependencies
         run: |
           apt update
@@ -140,6 +151,12 @@ jobs:
         with:
           name: LLVMBuildDirectory
           path: .
+      - name: Extract Build Directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf "${{ env.BUILD_DIR }}.tar.gz"
+          ls -lah "${{ env.BUILD_DIR }}" | head
       - name: Install Dependencies
         run: |
           apt update

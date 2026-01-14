@@ -1,5 +1,5 @@
 FROM ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 RUN apt -y update && apt install -y $DEPS_TO_INSTALL \
     && apt clean all && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
-COPY $INSTALL_DIR /opt/$INSTALL_DIR
+ADD $INSTALL_DIR.tar.gz /opt
 CMD ["/bin/bash"]
