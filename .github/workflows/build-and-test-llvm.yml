@@ -10,7 +10,7 @@ env:
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "release-install"
 on:
