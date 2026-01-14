@@ -69,6 +69,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           submodules: 'true'
       - name: Install Dependencies
         run: |
@@ -80,7 +81,7 @@ jobs:
         with:
           path: |
             ${{ env.BUILD_DIR }}
-          key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}
+          key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
       # If cache-hit, we can skip configure/build entirely.
       - name: Configure Build Environment
         if: steps.llvm_cache.outputs.cache-hit != 'true'
@@ -90,17 +91,6 @@ jobs:
         if: steps.llvm_cache.outputs.cache-hit != 'true'
         run: |
           cmake --build $BUILD_DIR -- -j $(nproc)
-      - name: Compress Build Directory
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -C . -czf "${{ env.BUILD_DIR }}.tar.gz" "${{ env.BUILD_DIR }}"
-          ls -lh "${{ env.BUILD_DIR }}.tar.gz"
-      - name: Artifact upload
-        uses: actions/upload-artifact@v1
-        with:
-          name: LLVMBuildDirectory
-          path: ${{ env.BUILD_DIR }}.tar.gz
   TestLLVM:
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     needs: [ DetectLLVMChange, BuildLLVM ]
@@ -112,17 +102,13 @@ jobs:
         with:
           fetch-depth: 0
           submodules: 'true'
-      - name: Artifact Download
-        uses: actions/download-artifact@v1
+      - name: Restore LLVM build cache
+        id: llvm_cache
+        uses: actions/cache@v4
         with:
-          name: LLVMBuildDirectory
-          path: .
-      - name: Extract Build Directory
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -xzf "${{ env.BUILD_DIR }}.tar.gz"
-          ls -lah "${{ env.BUILD_DIR }}" | head
+          path: |
+            ${{ env.BUILD_DIR }}
+          key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
       - name: Install Dependencies
         run: |
           apt update
@@ -146,17 +132,13 @@ jobs:
         with:
           fetch-depth: 0
           submodules: 'true'
-      - name: Artifact Download
-        uses: actions/download-artifact@v1
+      - name: Restore LLVM build cache
+        id: llvm_cache
+        uses: actions/cache@v4
         with:
-          name: LLVMBuildDirectory
-          path: .
-      - name: Extract Build Directory
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -xzf "${{ env.BUILD_DIR }}.tar.gz"
-          ls -lah "${{ env.BUILD_DIR }}" | head
+          path: |
+            ${{ env.BUILD_DIR }}
+          key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
       - name: Install Dependencies
         run: |
           apt update
