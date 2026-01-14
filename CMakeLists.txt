@@ -36,6 +36,8 @@ endif ()
 
 add_subdirectory(llvm-project/llvm)
 
+set(HAKC_CC $<TARGET_FILE:clang> CACHE FILEPATH "Path to HAKC Enabled Clang")
+
 if (LLVM_PARALLEL_COMPILE_JOBS)
     set(FULL_CORE_COUNT ${LLVM_PARALLEL_COMPILE_JOBS})
 else ()
@@ -50,17 +52,18 @@ message(STATUS "Using ${HAKC_SOCKET_ROOT} for the socket root")
 
 list(APPEND LINUX_ARCHES_TO_BUILD x86_64)
 list(APPEND LINUX_ARCH_MAKE_OPTS "")
-set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels" FORCE)
+set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels")
 
 # HAKC Constants
 set(hakc_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc)
 set(hakc_configs_path ${hakc_path}/configs)
 
+set(HAKC_SERVER_PROCESS_PATH ${hakc_path}/hakc-server-process CACHE FILEPATH "Path to HAKC Server")
+
 # top level HAKC settings
 set(hakc_backing_type kuzu)
 set(hakc_max_connection_retries 1)
 set(hakc_server_log_level ERROR)
-set(hakc_server_process ${hakc_path}/hakc-server-process)
 set(hakc_kernel_ext "-hakc")
 set(hakc_kernel_version "6.14.0")
 set(hakc_kernel_name "vmlinuz-${hakc_kernel_version}${hakc_kernel_ext}")
@@ -71,7 +74,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hardened_kernel_install_path ${hakc_build_dir}/hakc-kernel)
     set(kernel_config_path ${linux_build_dir}/.config)
 
-    set(LINUX_MAKE_OPTS O=${linux_build_dir} LOCALVERSION=${hakc_kernel_ext} LLVM=1 ARCH=${arch} CC=$<TARGET_FILE:clang> HOSTCC=clang ${make_opts})
+    set(LINUX_MAKE_OPTS O=${linux_build_dir} LOCALVERSION=${hakc_kernel_ext} LLVM=1 ARCH=${arch} CC=$HAKC_CC HOSTCC=clang ${make_opts})
     file(MAKE_DIRECTORY ${linux_build_dir})
 
     set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
@@ -138,7 +141,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             USES_TERMINAL
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            ${hakc_server_process} --config ${hakc_main_config_path} --mode analysis
+            ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode analysis
     )
 
     add_custom_target(hakc-linux-${arch}-analysis
@@ -152,7 +155,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            ${hakc_server_process} --config ${hakc_main_config_path} --mode enforcement
+            ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode enforcement
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
             COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
             COMMAND rm -rf ${hardened_kernel_install_path}/lib/modules/${hakc_kernel_version}${hakc_kernel_ext}/build
