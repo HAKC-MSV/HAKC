@@ -32,7 +32,7 @@ jobs:
         with:
           fetch-depth: 0
           submodules: false
-      - name: Detect LLVM submodule change
+      - name: Get LLVM Submodule Pointer
         id: detect
         shell: bash
         run: |
@@ -43,21 +43,10 @@ jobs:
           SUBMODULE_PATH="llvm-project"
 
           HEAD="${{ github.sha }}"
-          
-          if [[ "${{ github.event_name }}" == "push" ]]; then
-            BASE="${{ github.event.before }}"
-          elif [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE="${{ github.event.pull_request.base.sha }}"
-          else
-            # workflow_dispatch: best effort
-            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
-          fi
 
           # Read the gitlink (submodule pointer) from each tree
-          base_sha="$(git ls-tree "$BASE" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
           head_sha="$(git ls-tree "$HEAD" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
 
-          echo "Base submodule SHA: $base_sha"
           echo "Head submodule SHA: $head_sha"
 
           # Also output the current SHA to use for caching keys
@@ -73,10 +62,6 @@ jobs:
         with:
           fetch-depth: 0
           submodules: 'true'
-      - name: Install Dependencies
-        run: |
-          apt update
-          apt install -y $DEPS_TO_INSTALL
       - name: Restore LLVM build cache
         id: llvm_cache
         uses: actions/cache@v4
@@ -85,6 +70,11 @@ jobs:
             ${{ env.BUILD_DIR }}
           key: llvm-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
       # If cache-hit, we can skip configure/build entirely.
+      - name: Install Dependencies
+        if: steps.llvm_cache.outputs.cache-hit != 'true'
+        run: |
+          apt update
+          apt install -y $DEPS_TO_INSTALL
       - name: Configure Build Environment
         if: steps.llvm_cache.outputs.cache-hit != 'true'
         run: |
