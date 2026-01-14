@@ -4,6 +4,7 @@ build-linux-armv8-rosdemo/source/
 build-kuzu/
 python/venv/
 python/analysis/kuzu-test/
+*-install/
 
 **/__pycache__/
 .idea/
