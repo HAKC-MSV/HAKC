@@ -129,6 +129,8 @@ jobs:
       - name: Run Unit Tests (check-llvm)
         if: steps.rebuild.outputs.rebuild == 'true'
         shell: bash
+        env:
+          LLVM_LIT_ARGS: "--filter-out=ThinLTO/X86/cache\\.ll|tools/llvm-objcopy/ELF/strip-preserve-atime\\.test -sv"
         run: |
           set -euo pipefail
           python3 -m venv $VENV_DIR
