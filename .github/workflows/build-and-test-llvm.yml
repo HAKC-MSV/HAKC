@@ -1,4 +1,5 @@
 name: Build-And-Test-LLVM
+
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -13,6 +14,7 @@ env:
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv ccache"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "hakc"
+
 on:
   push:
     branches:
@@ -20,134 +22,143 @@ on:
   workflow_dispatch:
 
 jobs:
-  DetectLLVMChange:
-    runs-on: [ arc-runner-set-llcad-prod ]
+  BuildTestInstallImage:
+    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
-    outputs:
-      llvm_sha: ${{ steps.detect.outputs.llvm_sha }}
+
     steps:
-      - name: Checkout (no submodules needed)
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: false
-      - name: Get LLVM Submodule Pointer
-        id: detect
+          submodules: 'true'
+
+      - name: Detect LLVM submodule pointer change
+        id: llvm_changed
         shell: bash
         run: |
           set -euo pipefail
-
-          chown -R root:root .
-
           SUBMODULE_PATH="llvm-project"
-
           HEAD="${{ github.sha }}"
 
-          # Read the gitlink (submodule pointer) from each tree
+          if [[ "${{ github.event_name }}" == "push" ]]; then
+            BASE="${{ github.event.before }}"
+          else
+            BASE="$(git rev-parse HEAD~1 2>/dev/null || echo '')"
+          fi
+
+          if [[ "$BASE" == "0000000000000000000000000000000000000000" || -z "$BASE" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          base_sha="$(git ls-tree "$BASE" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
           head_sha="$(git ls-tree "$HEAD" "$SUBMODULE_PATH" | awk '{print $3}' || true)"
 
-          echo "Head submodule SHA: $head_sha"
+          echo "Base llvm gitlink: $base_sha"
+          echo "Head llvm gitlink: $head_sha"
 
-          # Also output the current SHA to use for caching keys
-          echo "llvm_sha=$head_sha" >> "$GITHUB_OUTPUT"
-  BuildLLVM:
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
-    needs: DetectLLVMChange
-    container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: 'true'
-      - name: Restore LLVM build cache
-        id: llvm_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .ccache
-          key: llvm-ccache-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
-      # If cache-hit, we can skip configure/build entirely.
-      - name: Install Dependencies
-        if: steps.llvm_cache.outputs.cache-hit != 'true'
-        run: |
-          apt update
-          apt install -y $DEPS_TO_INSTALL
-      - name: Configure Build Environment
-        if: steps.llvm_cache.outputs.cache-hit != 'true'
-        run: |
-          cmake --preset ci-release
-      - name: Build Clang
-        if: steps.llvm_cache.outputs.cache-hit != 'true'
-        run: |
-          cmake --build $BUILD_DIR -- -j $(nproc)
-  TestLLVM:
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
-    needs: [ DetectLLVMChange, BuildLLVM ]
-    container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: 'true'
-      - name: Restore LLVM build cache
-        id: llvm_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .ccache
-          key: llvm-ccache-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
-      - name: Install Dependencies
-        run: |
-          apt update
-          apt install -y $DEPS_TO_INSTALL
-      - name: Run Unit Tests
+          if [[ -n "$base_sha" && -n "$head_sha" && "$base_sha" == "$head_sha" ]]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Get LLVM submodule SHA (cache key)
+        id: llvm_sha
         shell: bash
         run: |
+          set -euo pipefail
+          echo "sha=$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')" >> "$GITHUB_OUTPUT"
+
+      - name: Restore ccache
+        id: ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.ccache
+          key: llvm-ccache-${{ runner.os }}-${{ steps.llvm_sha.outputs.sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
+
+      - name: Decide whether to rebuild
+        id: rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true" || "${{ steps.ccache.outputs.cache-hit }}" != "true" ]]; then
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "rebuild=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
+          echo "ccache hit:   ${{ steps.ccache.outputs.cache-hit }}"
+          echo "rebuild:      $(cat "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)"
+
+      - name: Install Dependencies
+        if: steps.rebuild.outputs.rebuild == 'true'
+        run: |
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+
+      - name: Configure ccache
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${{ github.workspace }}/.ccache"
+          echo "Using CCACHE_DIR=${{ github.workspace }}/.ccache"
+          ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
+          ccache --set-config=max_size=20G
+          ccache --zero-stats
+          ccache --show-config
+
+      - name: Configure Build Environment
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset ci-release
+
+      - name: Build Clang/LLVM
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR -- -j $(nproc)
+
+      - name: Run Unit Tests (check-llvm)
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           python3 -m venv $VENV_DIR
           source $VENV_DIR/bin/activate
           pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target check-llvm
-  CreateLLVMContainer:
-    runs-on: [ arc-runner-set-llcad-prod ]
-    needs: [ DetectLLVMChange, TestLLVM ]
-    container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
-    outputs:
-      image: ${{ steps.vars.outputs.image }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          submodules: 'true'
-      - name: Restore LLVM build cache
-        id: llvm_cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            .ccache
-          key: llvm-ccache-${{ runner.os }}-${{ needs.DetectLLVMChange.outputs.llvm_sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
-      - name: Install Dependencies
-        run: |
-          apt update
-          apt install -y $DEPS_TO_INSTALL
+
       - name: Install LLVM
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
         run: |
+          set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
-      - name: Build Image
+
+      - name: Show ccache stats
+        if: steps.llvm_changed.outputs.changed == 'true' || steps.ccache.outputs.cache-hit == 'true'
         run: |
+          ccache --show-stats || true
+
+      - name: Build & Push Image
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
           envsubst < Dockerfile.template > Dockerfile
-          export _BUILDAH_STARTED_IN_USERNS="" 
+          export _BUILDAH_STARTED_IN_USERNS=""
           export BUILDAH_ISOLATION=chroot
 
-          buildah login -u $jfrog_user -p $jfrog_pass $REPOURL          
-          buildah bud  --storage-driver vfs -t $REPOURL/$REPOID/$IMAGEID:$TAGID . 
-          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID 
+          buildah login -u $jfrog_user -p $jfrog_pass $REPOURL
+          buildah bud  --storage-driver vfs -t $REPOURL/$REPOID/$IMAGEID:$TAGID .
+          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID
           buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
           buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
           buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$PLATFORM_TAGID
