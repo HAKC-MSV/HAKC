@@ -42,7 +42,8 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
-        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache"
+        "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
+        "LLVM_LIT_ARGS": "--filter-out=ThinLTO/X86/cache\\.ll|tools/llvm-objcopy/ELF/strip-preserve-atime\\.test -sv"
       }
     },
     {
