@@ -43,7 +43,7 @@
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_C_COMPILER_LAUNCHER": "ccache",
         "CMAKE_CXX_COMPILER_LAUNCHER": "ccache",
-        "LLVM_LIT_ARGS": "--filter-out=^LLVM :: ThinLTO/X86/cache\.ll$;--filter-out=tools/llvm-objcopy/ELF/strip-preserve-atime\\.test$;-sv"
+        "LLVM_LIT_ARGS": "--filter-out=^LLVM :: ThinLTO/X86/cache\\.ll$;--filter-out=tools/llvm-objcopy/ELF/strip-preserve-atime\\.test$;-sv"
       }
     },
     {
