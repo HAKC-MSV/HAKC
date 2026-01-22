@@ -151,6 +151,9 @@ jobs:
       - name: Build & Push Image
         if: steps.rebuild.outputs.rebuild == 'true'
         shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
         run: |
           set -euo pipefail
           envsubst < Dockerfile.template > Dockerfile
