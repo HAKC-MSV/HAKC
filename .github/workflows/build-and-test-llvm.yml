@@ -97,6 +97,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          cmake --preset ci-release
           cmake --build $BUILD_DIR -- -j $(nproc)
 
       - name: Run Unit Tests (check-llvm)
