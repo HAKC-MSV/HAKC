@@ -13,7 +13,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv ccache"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "hakc"
+  INSTALL_DIR: "${{ github.workspace }}/hakc"
 
 on:
   push:
