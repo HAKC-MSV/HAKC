@@ -11,7 +11,7 @@ env:
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv ccache"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "${{ github.workspace }}/hakc"
 
@@ -73,25 +73,17 @@ jobs:
           set -euo pipefail
           echo "sha=$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')" >> "$GITHUB_OUTPUT"
 
-      - name: Restore ccache
-        id: ccache
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/.ccache
-          key: llvm-ccache-${{ runner.os }}-${{ steps.llvm_sha.outputs.sha }}-${{ hashFiles('CMakePresets.json', 'CMakeLists.txt') }}
-
       - name: Decide whether to rebuild
         id: rebuild
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true" || "${{ steps.ccache.outputs.cache-hit }}" != "true" ]]; then
+          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true"; then
             echo "rebuild=true" >> "$GITHUB_OUTPUT"
           else
             echo "rebuild=false" >> "$GITHUB_OUTPUT"
           fi
           echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
-          echo "ccache hit:   ${{ steps.ccache.outputs.cache-hit }}"
           echo "rebuild:      $(cat "$GITHUB_OUTPUT" | tail -n 1 | cut -d= -f2)"
 
       - name: Install Dependencies
@@ -99,25 +91,6 @@ jobs:
         run: |
           apt update
           apt install -y $DEPS_TO_INSTALL
-
-      - name: Configure ccache
-        if: steps.rebuild.outputs.rebuild == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "${{ github.workspace }}/.ccache"
-          echo "Using CCACHE_DIR=${{ github.workspace }}/.ccache"
-          ccache --set-config=cache_dir="${{ github.workspace }}/.ccache"
-          ccache --set-config=max_size=20G
-          ccache --zero-stats
-          ccache --show-config
-
-      - name: Configure Build Environment
-        if: steps.rebuild.outputs.rebuild == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          cmake --preset ci-release
 
       - name: Build Clang/LLVM
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -143,11 +116,6 @@ jobs:
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
 
-      - name: Show ccache stats
-        if: steps.llvm_changed.outputs.changed == 'true' || steps.ccache.outputs.cache-hit == 'true'
-        run: |
-          ccache --show-stats || true
-
       - name: Build & Push Image
         if: steps.rebuild.outputs.rebuild == 'true'
         shell: bash
@@ -157,6 +125,7 @@ jobs:
         run: |
           set -euo pipefail
           envsubst < Dockerfile.template > Dockerfile
+          cat Dockerfile
           export _BUILDAH_STARTED_IN_USERNS=""
           export BUILDAH_ISOLATION=chroot
 
