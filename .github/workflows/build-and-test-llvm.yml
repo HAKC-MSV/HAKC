@@ -78,7 +78,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true"; then
+          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true" ]]; then
             echo "rebuild=true" >> "$GITHUB_OUTPUT"
           else
             echo "rebuild=false" >> "$GITHUB_OUTPUT"
