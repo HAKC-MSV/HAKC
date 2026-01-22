@@ -61,12 +61,12 @@ jobs:
           echo "Head llvm gitlink: $head_sha"
 
           if [[ -n "$base_sha" && -n "$head_sha" && "$base_sha" == "$head_sha" ]]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Get LLVM submodule SHA (cache key)
+      - name: Get LLVM submodule SHA
         id: llvm_sha
         shell: bash
         run: |
