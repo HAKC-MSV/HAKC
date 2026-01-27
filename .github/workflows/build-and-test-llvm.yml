@@ -13,7 +13,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "${{ github.workspace }}/hakc"
+  INSTALL_DIR: "hakc"
 
 on:
   push:
@@ -115,9 +115,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ls -al ${{ github.workspace }}
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
-          ls -al ${{ github.workspace }}
 
       - name: Build & Push Image
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -128,7 +126,6 @@ jobs:
         run: |
           set -euo pipefail
           envsubst < Dockerfile.template > Dockerfile
-          ls -al ${{ github.workspace }}
           cat Dockerfile
           export _BUILDAH_STARTED_IN_USERNS=""
           export BUILDAH_ISOLATION=chroot
