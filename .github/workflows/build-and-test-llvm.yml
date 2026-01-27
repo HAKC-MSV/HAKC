@@ -115,7 +115,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          ls -al ${{ github.workspace }}
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
+          ls -al ${{ github.workspace }}
 
       - name: Build & Push Image
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -126,6 +128,7 @@ jobs:
         run: |
           set -euo pipefail
           envsubst < Dockerfile.template > Dockerfile
+          ls -al ${{ github.workspace }}
           cat Dockerfile
           export _BUILDAH_STARTED_IN_USERNS=""
           export BUILDAH_ISOLATION=chroot
