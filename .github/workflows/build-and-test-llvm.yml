@@ -7,7 +7,6 @@ env:
   IMAGEID: "g53-hakc-llvm"
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
-  TAGID: "amd64-${{ github.run_id }}"
   ADDITIONAL_TAGID: "latest"
   PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc-release"
@@ -123,6 +122,7 @@ jobs:
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
+          TAGID: ${{ steps.llvm_sha.outputs.sha }}
         run: |
           set -euo pipefail
           echo "Current directory: $PWD"
