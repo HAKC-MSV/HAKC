@@ -7,8 +7,6 @@ env:
   IMAGEID: "g53-hakc-llvm"
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
-  ADDITIONAL_TAGID: "latest"
-  PLATFORM_TAGID: "amd64-latest"
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
@@ -60,7 +58,7 @@ jobs:
           echo "Head llvm gitlink: $head_sha"
 
           if [[ -n "$base_sha" && -n "$head_sha" && "$base_sha" == "$head_sha" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
@@ -116,26 +114,46 @@ jobs:
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
 
-      - name: Build & Push Image
+      - name: Build & Push Image (rebuild)
         if: steps.rebuild.outputs.rebuild == 'true'
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
-          TAGID: ${{ steps.llvm_sha.outputs.sha }}
+          COMMIT_TAG: "amd64-${{ github.sha }}"
+          LATEST_TAG: "amd64-latest"
         run: |
           set -euo pipefail
-          echo "Current directory: $PWD"
-          ls -al
-          envsubst < Dockerfile.template > Dockerfile
-          cat Dockerfile
+          envsubst < Dockerfile-llvm.template > Dockerfile
           export _BUILDAH_STARTED_IN_USERNS=""
           export BUILDAH_ISOLATION=chroot
+          
+          buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
+          
+          # Build with commit tag
+          buildah bud  --storage-driver vfs -t "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG" .
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG"
+          
+          # Update amd64-latest as a moving pointer (optional but useful)
+          buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG"
 
-          buildah login -u $jfrog_user -p $jfrog_pass $REPOURL
-          buildah bud  --storage-driver vfs -t $REPOURL/$REPOID/$IMAGEID:$TAGID .
-          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID
-          buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
-          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$ADDITIONAL_TAGID
-          buildah tag  --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$TAGID $REPOURL/$REPOID/$IMAGEID:$PLATFORM_TAGID
-          buildah push --storage-driver vfs    $REPOURL/$REPOID/$IMAGEID:$PLATFORM_TAGID
+      - name: Publish commit tag without rebuild
+        if: steps.rebuild.outputs.rebuild != 'true'
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          COMMIT_TAG: "amd64-${{ github.sha }}"
+          LATEST_TAG: "amd64-latest"
+        run: |
+          set -euo pipefail
+          export _BUILDAH_STARTED_IN_USERNS=""
+          export BUILDAH_ISOLATION=chroot
+          
+          buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
+          
+          # Pull the current baseline image and re-tag it for this commit
+          buildah pull --storage-driver vfs "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG"
+          buildah tag  --storage-driver vfs "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG" "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG"
+          buildah push --storage-driver vfs "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG"

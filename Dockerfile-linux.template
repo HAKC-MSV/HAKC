@@ -1,0 +1,6 @@
+FROM ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+RUN apt -y update && apt install -y $DEPS_TO_INSTALL \
+    && apt clean all && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+ADD $INSTALL_DIR/hakc-kernel /opt
+ADD $INSTALL_DIR/rootfs.cpio.gz /opt
+CMD ["/bin/bash"]
