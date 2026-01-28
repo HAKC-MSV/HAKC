@@ -36,7 +36,29 @@ endif ()
 
 add_subdirectory(llvm-project/llvm)
 
-set(HAKC_CC $<TARGET_FILE:clang> CACHE FILEPATH "Path to HAKC Enabled Clang")
+# If user did not set HAKC_CC, default to the built clang target.
+# We'll also record whether we're using the default so we can conditionally add deps.
+set(HAKC_CC_IS_DEFAULT FALSE)
+
+if (NOT DEFINED HAKC_CC OR HAKC_CC STREQUAL "")
+    set(HAKC_CC_IS_DEFAULT TRUE)
+    # Use a real path (not a generator expr) for custom commands.
+    # TARGET_FILE is evaluated at generate/build time, so we keep it as a generator expression,
+    # but DO NOT store it in the cache.
+    set(HAKC_CC "$<TARGET_FILE:clang>")
+else ()
+    # User provided a compiler path; treat as non-default.
+    set(HAKC_CC_IS_DEFAULT FALSE)
+endif ()
+
+# Cache the user-facing value only if it was user-provided, or store a readable default string.
+# (Avoid caching raw generator expressions if you can.)
+set(HAKC_CC "${HAKC_CC}" CACHE FILEPATH "Path to Clang used for Linux builds")
+
+set(_hakc_clang_dep "")
+if (HAKC_CC_IS_DEFAULT)
+    set(_hakc_clang_dep clang)
+endif ()
 
 if (LLVM_PARALLEL_COMPILE_JOBS)
     set(FULL_CORE_COUNT ${LLVM_PARALLEL_COMPILE_JOBS})
@@ -55,10 +77,13 @@ list(APPEND LINUX_ARCH_MAKE_OPTS "")
 set(HAKC_LINUX_BUILD_PATH ${CMAKE_BINARY_DIR}/linux CACHE PATH "Path to build Linux kernels")
 
 # HAKC Constants
-set(hakc_path ${CMAKE_SOURCE_DIR}/llvm-project/llvm/utils/hakc)
-set(hakc_configs_path ${hakc_path}/configs)
+set(hakc_path "${CMAKE_CURRENT_LIST_DIR}/llvm-project/llvm/utils/hakc")
+set(hakc_configs_path "${hakc_path}/configs")
 
-set(HAKC_SERVER_PROCESS_PATH ${hakc_path}/hakc-server-process CACHE FILEPATH "Path to HAKC Server")
+set(HAKC_SERVER_PROCESS_PATH "${hakc_path}/hakc-server-process"
+        CACHE FILEPATH "Path to HAKC Server" FORCE)
+
+message(STATUS "Using HAKC_SERVER_PROCESS_PATH=${HAKC_SERVER_PROCESS_PATH}")
 
 # top level HAKC settings
 set(hakc_backing_type kuzu)
@@ -74,7 +99,15 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hardened_kernel_install_path ${hakc_build_dir}/hakc-kernel)
     set(kernel_config_path ${linux_build_dir}/.config)
 
-    set(LINUX_MAKE_OPTS O=${linux_build_dir} LOCALVERSION=${hakc_kernel_ext} LLVM=1 ARCH=${arch} CC=$HAKC_CC HOSTCC=clang ${make_opts})
+    set(LINUX_MAKE_OPTS
+            O=${linux_build_dir}
+            LOCALVERSION=${hakc_kernel_ext}
+            LLVM=1
+            ARCH=${arch}
+            "CC=${HAKC_CC}"
+            "HOSTCC=${HAKC_CC}"
+            ${make_opts}
+    )
     file(MAKE_DIRECTORY ${linux_build_dir})
 
     set(hakc_socket_dir ${HAKC_SOCKET_ROOT})
@@ -123,7 +156,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${compilation_db_path}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS hakc-linux-${arch}-config
+            DEPENDS hakc-linux-${arch}-config ${_hakc_clang_dep}
             COMMENT "Generating ${compilation_db_path}"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} clean
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
@@ -131,13 +164,13 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(linux-${arch}-compilation-db
-            DEPENDS ${compilation_db_path} hakc-linux-${arch}-config
+            DEPENDS ${compilation_db_path} hakc-linux-${arch}-config ${_hakc_clang_dep}
     )
 
     add_custom_command(
             OUTPUT ${hakc_backing_path}
             WORKING_DIRECTORY ${hakc_build_dir}
-            DEPENDS clang
+            DEPENDS ${_hakc_clang_dep}
             USES_TERMINAL
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
@@ -145,15 +178,16 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-analysis
-            DEPENDS ${hakc_main_config_path} clang hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
+            DEPENDS ${hakc_main_config_path} ${_hakc_clang_dep} hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
     )
 
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS hakc-linux-${arch}-analysis clang
+            DEPENDS hakc-linux-${arch}-analysis ${_hakc_clang_dep}
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
+            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
             ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode enforcement
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
@@ -162,7 +196,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} clang
+            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
     )
 
     add_custom_command(
