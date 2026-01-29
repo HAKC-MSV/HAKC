@@ -1,4 +1,4 @@
-name: Analyze and Build HAKC Kernel
+name: Analyze-and-Build-HAKC-Kernel
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -13,7 +13,7 @@ env:
 
 on:
   workflow_run:
-    workflows: [ "Build-And-Test-LLVM" ]
+    workflows: [ "publish-llvm-image.yml" ]
     types:
       - completed
 
