@@ -28,30 +28,48 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: 'true'
           ref: ${{ github.event.workflow_run.head_sha }}
 
-      - name: Download install artifact
-        uses: actions/download-artifact@v3
+      - name: Get LLVM submodule SHA (head)
+        id: llvm_sha
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Prefer the explicit HEAD_SHA when available, otherwise use git submodule status
+          sha="$(git ls-tree "${{ github.event.workflow_run.head_sha }}" llvm-project | awk '{print $3}' || true)"
+          if [[ -z "$sha" ]]; then
+            sha="$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')"
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Restore LLVM install cache
+        id: cache-llvm
+        uses: actions/cache@v4
         with:
-          name: llvm-install
           path: ${{ env.INSTALL_DIR }}
+          key: llvm-install-${{ runner.os }}-${{ github.event.workflow_run.head_branch }}-${{ steps.llvm_sha.outputs.sha }}
 
       - name: Prepare workspace
+        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           chown -R root:root .
 
       - name: Sanitize branch for Docker tag
+        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
+        shell: bash
         run: |
           echo "BRANCH_TAG=$(echo '${{ github.event.workflow_run.head_branch }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build & Push Image
+        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
-          COMMIT_TAG: "amd64-${{ github.sha }}"
+          COMMIT_TAG: "amd64-${{ github.event.workflow_run.head_sha }}"
           LATEST_TAG: "amd64-${{  env.BRANCH_TAG }}-latest"
         run: |
           set -euo pipefail

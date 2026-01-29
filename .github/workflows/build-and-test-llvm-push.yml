@@ -83,17 +83,31 @@ jobs:
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      - name: Restore LLVM install cache
+        id: cache-llvm
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.INSTALL_DIR }}
+          key: llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}
+
       - name: Decide whether to rebuild
         id: rebuild
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "${{ steps.llvm_changed.outputs.changed }}" == "true" ]]; then
-            echo "rebuild=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "rebuild=false" >> "$GITHUB_OUTPUT"
+          
+          # Default: rebuild if LLVM pointer changed
+          rebuild="${{ steps.llvm_changed.outputs.changed }}"
+          
+          # Also rebuild if cache was NOT restored (cache miss)
+          if [[ "${{ steps.cache-llvm.outputs.cache-hit }}" != "true" ]]; then
+          rebuild="true"
           fi
+          
+          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
           echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
+          echo "cache-hit:   ${{ steps.cache-llvm.outputs.cache-hit }}"
+          echo "rebuild:     $rebuild"
 
       - name: Install Dependencies
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -119,16 +133,17 @@ jobs:
           pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target check-llvm
 
+      - name: Clean install dir (rebuild)
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf "${{ env.INSTALL_DIR }}"
+          mkdir -p "${{ env.INSTALL_DIR }}"
+
       - name: Install LLVM
         if: steps.rebuild.outputs.rebuild == 'true'
         shell: bash
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
-
-      - name: Upload install dir artifact
-        if: steps.rebuild.outputs.rebuild == 'true'
-        uses: actions/upload-artifact@v3
-        with:
-          name: llvm-install
-          path: ${{ env.INSTALL_DIR }}
