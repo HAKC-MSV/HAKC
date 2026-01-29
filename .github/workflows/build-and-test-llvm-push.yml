@@ -128,7 +128,7 @@ jobs:
 
       - name: Upload install dir artifact
         if: steps.rebuild.outputs.rebuild == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
           name: llvm-install
           path: ${{ env.INSTALL_DIR }}
