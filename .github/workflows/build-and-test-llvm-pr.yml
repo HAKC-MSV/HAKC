@@ -20,7 +20,7 @@ on:
 
 jobs:
   build-and-test:
-    name: Build & Test (runs on PRs and on push)
+    name: Build & Test
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
@@ -33,7 +33,6 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Fetch base branch so base SHA is resolvable
-        if: github.event_name == 'pull_request'
         run: |
           set -euo pipefail
           # fetch the remote base branch so git ls-tree on the base SHA works
