@@ -7,7 +7,7 @@ env:
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "ninja-build cmake busybox-static lld python3-venv"
+  DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
   VENV_DIR: "python/venv"
   LINUX_ARCH: "x86_64"
 
@@ -92,7 +92,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-$LINXU_ARCH-userspace
+          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
       - name: Build & Push Image
         shell: bash
         env:
