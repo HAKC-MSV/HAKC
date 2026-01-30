@@ -1,4 +1,4 @@
-name: Build-and-Test-LLVM
+name: Build And Test LLVM Pull Request
 
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
