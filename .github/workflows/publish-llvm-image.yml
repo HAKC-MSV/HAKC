@@ -1,4 +1,4 @@
-name: Publish-LLVM-Image
+name: Publish LLVM Image
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -12,7 +12,7 @@ env:
   INSTALL_DIR: "hakc"
 on:
   workflow_run:
-    workflows: [ "build-and-test-llvm-push.yml" ]
+    workflows: [ "Build and Test LLVM" ]
     branches: [ main, next ]
     types: [ completed ]
 

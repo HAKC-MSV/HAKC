@@ -13,7 +13,7 @@ env:
 
 on:
   workflow_run:
-    workflows: [ "publish-llvm-image.yml" ]
+    workflows: [ "Publish LLVM Image" ]
     types:
       - completed
 
