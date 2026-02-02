@@ -199,7 +199,7 @@ jobs:
 
       - name: Upload LLVM install artifact
         if: steps.rebuild.outputs.rebuild == 'true' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v1
         with:
           name: ${{ steps.install_art.outputs.name }}
           path: ${{ env.FINAL_ARTIFACT_PATH }}
@@ -223,7 +223,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Download LLVM install artifact (from build job)
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v1
         with:
           name: ${{ needs.build-and-test.outputs.install_artifact_name }}
           path: /tmp/llvm-install-artifact
@@ -315,7 +315,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
 
       - name: Upload DAG artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v1
         with:
           name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
           path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
@@ -351,7 +351,7 @@ jobs:
           apt install -y $DEPS_TO_INSTALL
 
       - name: Download DAG artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v1
         with:
           name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
           path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
