@@ -1,12 +1,12 @@
 name: Build, Test, and Publish LLVM
 
 env:
-  http_proxy: "http://llproxy.llan.llmit.edu:8080"
-  https_proxy: "http://llproxy.llan.llmit.edu:8080"
-  no_proxy: ".llan.llmit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
   LLVM_IMAGEID: "g53-hakc-llvm"
   KERNEL_IMAGEID: "g53-hakc-linux"
-  REPOURL: "ett-jfrog.llan.llmit.edu"
+  REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
@@ -212,7 +212,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ett-jfrog.llan.llmit.edu/isd-docker-local/ubuntu:latest
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
     steps:
       - name: Checkout merged commit
@@ -275,7 +275,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ett-jfrog.llan.llmit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
@@ -326,7 +326,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ett-jfrog.llan.llmit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
