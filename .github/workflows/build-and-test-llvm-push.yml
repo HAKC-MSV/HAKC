@@ -11,7 +11,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "hakc"
+  INSTALL_DIR: "/tmp/install"
   FINAL_ARTIFACT_PATH: "/tmp/install.tar.gz"
 
 on:
@@ -195,7 +195,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          tar -czf ${{ env.FINAL_ARTIFACT_PATH }} "${{ env.INSTALL_DIR }}"
+          tar -czf "${{ env.FINAL_ARTIFACT_PATH }}" "${{ env.INSTALL_DIR }}"
+          ls -al "$(dirname $FINAL_ARTIFACT_PATH)"
 
       - name: Upload LLVM install artifact
         if: steps.rebuild.outputs.rebuild == 'true' && github.event_name == 'push'
