@@ -4,7 +4,8 @@ env:
   http_proxy: "http://llproxy.llan.llmit.edu:8080"
   https_proxy: "http://llproxy.llan.llmit.edu:8080"
   no_proxy: ".llan.llmit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
-  IMAGEID: "g53-hakc-llvm"
+  LLVM_IMAGEID: "g53-hakc-llvm"
+  KERNEL_IMAGEID: "g53-hakc-linux"
   REPOURL: "ett-jfrog.llan.llmit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
@@ -211,7 +212,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+      image: ett-jfrog.llan.llmit.edu/isd-docker-local/ubuntu:latest
 
     steps:
       - name: Checkout merged commit
@@ -228,13 +229,11 @@ jobs:
           path: /tmp/llvm-install-artifact
 
       - name: Unpack install artifact
-        id: unpack-install
         shell: bash
         run: |
           set -euo pipefail
           tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C .
           test -d "${{ env.INSTALL_DIR }}"
-          echo "artifact-hit=true" >> "$GITHUB_OUTPUT"
 
       - name: Prepare workspace
         shell: bash
@@ -254,6 +253,7 @@ jobs:
           jfrog_pass: ${{ secrets.JFROG_PASS }}
           COMMIT_TAG: "amd64-${{ github.sha }}"
           LATEST_TAG: "amd64-${{ env.BRANCH_TAG }}-latest"
+          LLVM_IMAGEID: ${{ env.LLVM_IMAGEID }}
         run: |
           set -euo pipefail
           envsubst < Dockerfile-llvm.template > Dockerfile
@@ -262,8 +262,137 @@ jobs:
 
           buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
 
-          buildah bud  --storage-driver vfs -t "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG" .
-          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG"
+          buildah bud  --storage-driver vfs -t "$REPOURL/$REPOID/$LLVM_IMAGEID:$COMMIT_TAG" .
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$LLVM_IMAGEID:$COMMIT_TAG"
 
-          buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG"
-          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$IMAGEID:$LATEST_TAG"
+          buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$LLVM_IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$LLVM_IMAGEID:$LATEST_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$LLVM_IMAGEID:$LATEST_TAG"
+
+
+  analyze-hakc-kernel:
+    name: Analyze HAKC Kernel
+    needs: [ build-and-test, publish-llvm-image ]
+    if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
+    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+    container:
+      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:amd64-${{ github.sha }}
+
+    env:
+      DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
+      VENV_DIR: "python/venv"
+      BUILD_DIR: "cmake-build-hakc-release"
+      LINUX_ARCH: "x86_64"
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+          ref: ${{ github.sha }}
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          chown -R root:root .
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+
+      - name: Configure Environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset ci-linux-build
+
+      - name: Generating DAG
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install -r llvm-project/llvm/utils/hakc/requirements.txt
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+
+      - name: Upload DAG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
+          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
+
+  build-hakc-kernel:
+    name: Build HAKC Kernel
+    needs: [ build-and-test, publish-llvm-image, analyze-hakc-kernel ]
+    if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
+    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+    container:
+      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:amd64-${{ github.sha }}
+
+    env:
+      DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
+      VENV_DIR: "python/venv"
+      BUILD_DIR: "cmake-build-hakc-release"
+      LINUX_ARCH: "x86_64"
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+          ref: ${{ github.sha }}
+
+      - name: Install Dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          chown -R root:root .
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+
+      - name: Download DAG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
+          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
+
+      - name: Configure Environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset ci-linux-build
+
+      - name: Build HAKC Kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+
+      - name: Build Userspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+
+      - name: Build & Push Kernel Image
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          COMMIT_TAG: "amd64-${{ github.sha }}"
+          LATEST_TAG: "amd64-latest"
+          INSTALL_DIR: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          KERNEL_IMAGEID: ${{ env.KERNEL_IMAGEID }}
+        run: |
+          set -euo pipefail
+          envsubst < Dockerfile-linux.template > Dockerfile
+          export _BUILDAH_STARTED_IN_USERNS=""
+          export BUILDAH_ISOLATION=chroot
+
+          buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
+
+          buildah bud  --storage-driver vfs -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" .
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG"
+
+          buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
