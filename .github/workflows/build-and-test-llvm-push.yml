@@ -275,7 +275,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:amd64-${{ github.sha }}
+      image: ett-jfrog.llan.llmit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
@@ -326,7 +326,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.build-and-test.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:amd64-${{ github.sha }}
+      image: ett-jfrog.llan.llmit.edu/g0553-docker-local/g53-hakc-llvm:amd64-${{ github.sha }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
