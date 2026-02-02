@@ -1,11 +1,11 @@
 name: Build and Test LLVM
 
 env:
-  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
-  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
-  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  http_proxy: "http://llproxy.llan.llmit.edu:8080"
+  https_proxy: "http://llproxy.llan.llmit.edu:8080"
+  no_proxy: ".llan.llmit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
   IMAGEID: "g53-hakc-llvm"
-  REPOURL: "ett-jfrog.llan.ll.mit.edu"
+  REPOURL: "ett-jfrog.llan.llmit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
@@ -19,19 +19,18 @@ on:
       - next
 
 jobs:
-
   build-and-test:
     name: Build & Test
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+      image: ett-jfrog.llan.llmit.edu/isd-docker-local/ubuntu:latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           submodules: 'true'
-          # If this is a PR, check out the PR head commit; otherwise use the push commit
           ref: ${{ github.sha }}
 
       - name: Prepare workspace
@@ -47,13 +46,11 @@ jobs:
           set -euo pipefail
           SUBMODULE_PATH="llvm-project"
 
-          # push event: compare previous (before) vs current (sha)
           BASE_SHA="${{ github.event.before }}"
           HEAD_SHA="${{ github.sha }}"
 
           echo "Comparing base: $BASE_SHA  head: $HEAD_SHA"
 
-          # If base is empty (first commit) treat as changed
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
@@ -76,38 +73,60 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Prefer the explicit HEAD_SHA when available, otherwise use git submodule status
           sha="$(git ls-tree "${{ github.sha }}" llvm-project | awk '{print $3}' || true)"
           if [[ -z "$sha" ]]; then
             sha="$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')"
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-      - name: Restore LLVM install cache
-        id: cache-llvm
-        uses: actions/cache@v4
+      - name: Try restore LLVM install from artifact
+        id: restore-install
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "name=llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Download LLVM install artifact (if present)
+        id: download-install
+        uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          path: ${{ env.INSTALL_DIR }}
-          key: llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}
+          name: ${{ steps.restore-install.outputs.name }}
+          path: /tmp/llvm-install-artifact
+
+      - name: Unpack install artifact
+        id: unpack-install
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.download-install.outcome }}" != "success" ]]; then
+            echo "artifact-hit=false" >> "$GITHUB_OUTPUT"
+            echo "No artifact found to restore."
+            exit 0
+          fi
+
+          mkdir -p "${{ env.INSTALL_DIR }}"
+          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C .
+          echo "artifact-hit=true" >> "$GITHUB_OUTPUT"
+          echo "Restored install directory from artifact."
 
       - name: Decide whether to rebuild
         id: rebuild
         shell: bash
         run: |
           set -euo pipefail
-          
-          # Default: rebuild if LLVM pointer changed
+
           rebuild="${{ steps.llvm_changed.outputs.changed }}"
-          
-          # Also rebuild if cache was NOT restored (cache miss)
-          if [[ "${{ steps.cache-llvm.outputs.cache-hit }}" != "true" ]]; then
-          rebuild="true"
+
+          # Also rebuild if artifact was NOT restored
+          if [[ "${{ steps.unpack-install.outputs.artifact-hit }}" != "true" ]]; then
+            rebuild="true"
           fi
-          
+
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
-          echo "cache-hit:   ${{ steps.cache-llvm.outputs.cache-hit }}"
-          echo "rebuild:     $rebuild"
+          echo "LLVM changed:  ${{ steps.llvm_changed.outputs.changed }}"
+          echo "artifact-hit:  ${{ steps.unpack-install.outputs.artifact-hit }}"
+          echo "rebuild:       $rebuild"
 
       - name: Install Dependencies
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -147,3 +166,19 @@ jobs:
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
+
+      - name: Package install directory
+        if: steps.rebuild.outputs.rebuild == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf /tmp/install.tar.gz "${{ env.INSTALL_DIR }}"
+
+      - name: Upload LLVM install artifact
+        if: steps.rebuild.outputs.rebuild == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.restore-install.outputs.name }}
+          path: /tmp/install.tar.gz
+          if-no-files-found: error
+          retention-days: 7

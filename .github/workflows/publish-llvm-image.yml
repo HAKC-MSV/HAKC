@@ -1,4 +1,5 @@
 name: Publish LLVM Image
+
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -10,6 +11,7 @@ env:
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "hakc"
+
 on:
   workflow_run:
     workflows: [ "Build and Test LLVM" ]
@@ -23,6 +25,7 @@ jobs:
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+
     steps:
       - name: Checkout merged commit
         uses: actions/checkout@v4
@@ -36,41 +39,66 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Prefer the explicit HEAD_SHA when available, otherwise use git submodule status
           sha="$(git ls-tree "${{ github.event.workflow_run.head_sha }}" llvm-project | awk '{print $3}' || true)"
           if [[ -z "$sha" ]]; then
             sha="$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')"
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
-      - name: Restore LLVM install cache
-        id: cache-llvm
-        uses: actions/cache@v4
+      - name: Compute install artifact name
+        id: install_art
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "name=llvm-install-${{ runner.os }}-${{ github.event.workflow_run.head_branch }}-${{ steps.llvm_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Download LLVM install artifact (from Build & Test run)
+        id: download-install
+        uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
-          path: ${{ env.INSTALL_DIR }}
-          key: llvm-install-${{ runner.os }}-${{ github.event.workflow_run.head_branch }}-${{ steps.llvm_sha.outputs.sha }}
+          run-id: ${{ github.event.workflow_run.id }}
+          name: ${{ steps.install_art.outputs.name }}
+          path: /tmp/llvm-install-artifact
+
+      - name: Unpack install artifact
+        id: unpack-install
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ steps.download-install.outcome }}" != "success" ]]; then
+            echo "artifact-hit=false" >> "$GITHUB_OUTPUT"
+            echo "No install artifact found; skipping image publish."
+            exit 0
+          fi
+
+          # tarball contains the INSTALL_DIR path (e.g., hakc/...)
+          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C .
+          test -d "${{ env.INSTALL_DIR }}"
+          echo "artifact-hit=true" >> "$GITHUB_OUTPUT"
+          echo "Restored ${{ env.INSTALL_DIR }} from artifact."
 
       - name: Prepare workspace
-        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
+        if: ${{ steps.unpack-install.outputs.artifact-hit == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           chown -R root:root .
 
       - name: Sanitize branch for Docker tag
-        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
+        if: ${{ steps.unpack-install.outputs.artifact-hit == 'true' }}
         shell: bash
         run: |
           echo "BRANCH_TAG=$(echo '${{ github.event.workflow_run.head_branch }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build & Push Image
-        if: ${{ steps.cache-llvm.outputs.cache-hit == 'true' }}
+        if: ${{ steps.unpack-install.outputs.artifact-hit == 'true' }}
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
           COMMIT_TAG: "amd64-${{ github.event.workflow_run.head_sha }}"
-          LATEST_TAG: "amd64-${{  env.BRANCH_TAG }}-latest"
+          LATEST_TAG: "amd64-${{ env.BRANCH_TAG }}-latest"
         run: |
           set -euo pipefail
           envsubst < Dockerfile-llvm.template > Dockerfile
