@@ -96,6 +96,7 @@ jobs:
           echo "name=llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Download LLVM install artifact (if present)
+        if: github.event_name == 'push'
         id: download-install
         uses: actions/download-artifact@v4
         continue-on-error: true
@@ -104,6 +105,7 @@ jobs:
           path: /tmp/llvm-install-artifact
 
       - name: Unpack install artifact
+        if: github.event_name == 'push'
         id: unpack-install
         shell: bash
         run: |
@@ -125,17 +127,28 @@ jobs:
         run: |
           set -euo pipefail
 
-          rebuild="${{ steps.llvm_changed.outputs.changed }}"
+          artifact_hit="${{ steps.unpack-install.outputs.artifact-hit }}"
+          if [[ -z "$artifact_hit" ]]; then
+            artifact_hit="false"
+          fi
 
-          # Also rebuild if artifact was NOT restored
-          if [[ "${{ steps.unpack-install.outputs.artifact-hit }}" != "true" ]]; then
+          # Always build+test on PRs into main/next
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             rebuild="true"
+          else
+            rebuild="${{ steps.llvm_changed.outputs.changed }}"
+
+            # Also rebuild if artifact was NOT restored
+            if [[ "$artifact_hit" != "true" ]]; then
+              rebuild="true"
+            fi
           fi
 
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "LLVM changed:  ${{ steps.llvm_changed.outputs.changed }}"
-          echo "artifact-hit:  ${{ steps.unpack-install.outputs.artifact-hit }}"
-          echo "rebuild:       $rebuild"
+          echo "event:        ${{ github.event_name }}"
+          echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
+          echo "artifact-hit: $artifact_hit"
+          echo "rebuild:      $rebuild"
 
       - name: Install Dependencies
         if: steps.rebuild.outputs.rebuild == 'true'
@@ -207,24 +220,6 @@ jobs:
           fetch-depth: 0
           submodules: "true"
           ref: ${{ github.sha }}
-
-      - name: Get LLVM submodule SHA (head)
-        id: llvm_sha
-        shell: bash
-        run: |
-          set -euo pipefail
-          sha="$(git ls-tree "${{ github.sha }}" llvm-project | awk '{print $3}' || true)"
-          if [[ -z "$sha" ]]; then
-            sha="$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')"
-          fi
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: Compute install artifact name
-        id: install_art
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "name=llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
 
       - name: Download LLVM install artifact (from build job)
         uses: actions/download-artifact@v4
