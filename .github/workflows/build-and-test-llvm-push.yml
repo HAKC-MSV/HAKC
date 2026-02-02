@@ -28,7 +28,7 @@ jobs:
       rebuild: ${{ steps.rebuild.outputs.rebuild }}
       install_artifact_name: ${{ steps.install_art.outputs.name }}
     container:
-      image: ett-jfrog.llan.llmit.edu/isd-docker-local/ubuntu:latest
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
     steps:
       - name: Checkout
