@@ -203,8 +203,6 @@ jobs:
         with:
           name: ${{ steps.install_art.outputs.name }}
           path: ${{ env.FINAL_ARTIFACT_PATH }}
-          if-no-files-found: error
-          retention-days: 7
 
   publish-llvm-image:
     name: Publish Built LLVM Image
