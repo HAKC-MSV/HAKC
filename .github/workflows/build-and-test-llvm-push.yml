@@ -231,6 +231,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          ls -al /tmp/llvm-install-artifact
           tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C "${{ env.INSTALL_DIR }}"
           test -d "${{ env.INSTALL_DIR }}"
 
