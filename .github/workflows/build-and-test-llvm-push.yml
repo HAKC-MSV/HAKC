@@ -12,7 +12,7 @@ env:
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "/tmp/install"
-  FINAL_ARTIFACT_PATH: "/tmp/install.tar.gz"
+  FINAL_ARTIFACT_PATH: "install.tar.gz"
 
 on:
   push:
@@ -118,7 +118,7 @@ jobs:
           fi
 
           mkdir -p "${{ env.INSTALL_DIR }}"
-          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C .
+          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C "${{ env.INSTALL_DIR }}"
           echo "artifact-hit=true" >> "$GITHUB_OUTPUT"
           echo "Restored install directory from artifact."
 
