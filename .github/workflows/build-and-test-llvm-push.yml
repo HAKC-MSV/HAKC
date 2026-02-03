@@ -99,7 +99,7 @@ jobs:
       - name: Download LLVM install artifact (if present)
         if: github.event_name == 'push'
         id: download-install
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v1
         continue-on-error: true
         with:
           name: ${{ steps.install_art.outputs.name }}
