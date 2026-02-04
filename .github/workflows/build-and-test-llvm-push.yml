@@ -240,12 +240,12 @@ jobs:
     name: Build & Test
     needs: [ determine-llvm-build-need ]
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
-    if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
     steps:
       - name: Checkout
+        if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -253,17 +253,20 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Prepare workspace
+        if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
         shell: bash
         run: |
           set -euo pipefail
           chown -R root:root .
 
       - name: Install Dependencies
+        if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
         run: |
           apt update
           apt install -y $DEPS_TO_INSTALL
 
       - name: Build Clang/LLVM
+        if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -271,6 +274,7 @@ jobs:
           cmake --build $BUILD_DIR -- -j $(nproc)
 
       - name: Run Unit Tests (check-llvm)
+        if: needs.determine-llvm-build-need.outputs.rebuild == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -280,7 +284,7 @@ jobs:
           cmake --build $BUILD_DIR --target check-llvm
 
       - name: Clean install dir (rebuild)
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -288,14 +292,14 @@ jobs:
           mkdir -p "${{ env.INSTALL_DIR }}"
 
       - name: Install LLVM
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
 
       - name: Build & Push LLVM Image
-        if: github.event_name == 'push'
+        if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
