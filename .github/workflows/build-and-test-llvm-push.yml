@@ -259,7 +259,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
@@ -310,7 +310,7 @@ jobs:
     if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
 
     env:
       DEPS_TO_INSTALL: "ninja-build cmake busybox-static python3-venv qemu-system"
