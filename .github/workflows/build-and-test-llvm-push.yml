@@ -102,7 +102,7 @@ jobs:
           LLVM_SHA="${{ steps.llvm_sha.outputs.sha }}"
           echo "tag=llvm-${{ runner.os }}-${BRANCH_TAG}-${LLVM_SHA}" >> "$GITHUB_OUTPUT"
 
-      - name: Check if LLVM image exists in JFrog (registry v2)
+      - name: Check if LLVM image exists in JFrog (Artifactory docker API)
         if: github.event_name == 'push'
         id: image_hit
         shell: bash
@@ -112,19 +112,33 @@ jobs:
         run: |
           set -euo pipefail
           
-          # Artifactory Docker Registry API (v2): check manifest existence for tag
-          url="https://${{ env.REPOURL }}/v2/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}/manifests/${{ steps.llvm_image.outputs.tag }}"
+          TAG="${{ steps.llvm_image.outputs.tag }}"
+          REG_HOST="lljfrog.llan.ll.mit.edu"
+          
+          url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.LLVM_IMAGEID }}/manifests/${TAG}"
           echo "Checking image: $url"
           
           code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
-            -H 'Accept: application/vnd.docker.distribution.manifest.v2+json' \
+            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
             -o /dev/null -w '%{http_code}' -I "$url" || true)"
           
-          if [[ "$code" == "200" ]]; then
-            echo "hit=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "hit=false" >> "$GITHUB_OUTPUT"
-          fi
+          case "$code" in
+            200)
+              echo "hit=true" >> "$GITHUB_OUTPUT"
+              ;;
+            404)
+              echo "hit=false" >> "$GITHUB_OUTPUT"
+              ;;
+            401|403)
+              echo "Auth failure checking registry (HTTP $code) — treating as miss so we rebuild." >&2
+              echo "hit=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "Unexpected HTTP $code — treating as miss so we rebuild." >&2
+              echo "hit=false" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+          
           echo "http_code=$code" >> "$GITHUB_OUTPUT"
 
       - name: Decide whether to rebuild
