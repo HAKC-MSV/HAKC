@@ -334,7 +334,7 @@ jobs:
 
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
-    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test ]
+    needs: [ determine-llvm-build-need, determine-kernel-build-need ]
     if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
@@ -385,7 +385,7 @@ jobs:
 
   build-hakc-kernel:
     name: Build HAKC Kernel
-    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test, analyze-hakc-kernel ]
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, analyze-hakc-kernel ]
     if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
