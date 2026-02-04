@@ -63,7 +63,7 @@
       "installDir": "hakc",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "HAKC_CC": "/opt/install/bin/clang",
+        "HAKC_CC": "/opt/bin/clang",
         "HAKC_SERVER_PROCESS_PATH": "/opt/hakc/utils/hakc/hakc-server-process"
       }
     }
