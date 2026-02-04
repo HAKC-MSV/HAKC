@@ -12,6 +12,7 @@ env:
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "/tmp/install"
+  ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
   FINAL_ARTIFACT_PATH: "install.tar.gz"
 
 on:
@@ -94,7 +95,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          echo "name=llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}" >> "$GITHUB_OUTPUT"
+          echo "name=llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}/${{ env.FINAL_ARTIFACT_PATH }}" >> "$GITHUB_OUTPUT"
 
       - name: Download LLVM install artifact (if present)
         if: github.event_name == 'push'
@@ -103,7 +104,7 @@ jobs:
         continue-on-error: true
         with:
           name: ${{ steps.install_art.outputs.name }}
-          path: /tmp/llvm-install-artifact
+          path: "${{ env.ARTIFACT_DOWNLOAD_DIR }}"
 
       - name: Unpack install artifact
         if: github.event_name == 'push'
@@ -118,7 +119,7 @@ jobs:
           fi
 
           mkdir -p "${{ env.INSTALL_DIR }}"
-          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C "${{ env.INSTALL_DIR }}"
+          tar -xzf "${{ env.ARTIFACT_DOWNLOAD_DIR }}/${{ env.FINAL_ARTIFACT_PATH }}" -C "${{ env.INSTALL_DIR }}"
           echo "artifact-hit=true" >> "$GITHUB_OUTPUT"
           echo "Restored install directory from artifact."
 
@@ -225,14 +226,14 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: ${{ needs.build-and-test.outputs.install_artifact_name }}
-          path: /tmp/llvm-install-artifact
+          path: "${{ env.ARTIFACT_DOWNLOAD_DIR }}"
 
       - name: Unpack install artifact
         shell: bash
         run: |
           set -euo pipefail
-          ls -al /tmp/llvm-install-artifact
-          tar -xzf /tmp/llvm-install-artifact/install.tar.gz -C "${{ env.INSTALL_DIR }}"
+          ls -al "${{ env.ARTIFACT_DOWNLOAD_DIR }}"
+          tar -xzf "${{ env.ARTIFACT_DOWNLOAD_DIR }}/${{ env.FINAL_ARTIFACT_PATH }}" -C "${{ env.INSTALL_DIR }}"
           test -d "${{ env.INSTALL_DIR }}"
 
       - name: Prepare workspace
