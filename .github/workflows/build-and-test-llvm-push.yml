@@ -11,7 +11,7 @@ env:
   BUILD_DIR: "cmake-build-hakc-release"
   DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "/tmp/install"
+  INSTALL_DIR: "install"
   ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
   FINAL_ARTIFACT_PATH: "install.tar.gz"
 
