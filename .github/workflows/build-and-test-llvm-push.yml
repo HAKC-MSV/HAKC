@@ -109,11 +109,12 @@ jobs:
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REPOURL: lljfrog.llan.ll.mit.edu/ui/native
         run: |
           set -euo pipefail
           
           # Artifactory Docker Registry API (v2): check manifest existence for tag
-          url="https://${{ env.REPOURL }}/v2/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}/manifests/${{ steps.llvm_image.outputs.tag }}"
+          url="https://${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}/${{ steps.llvm_image.outputs.tag }}/manifest.json"
           echo "Checking image: $url"
           
           code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
@@ -148,7 +149,7 @@ jobs:
             fi
           fi
           
-          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
+          echo "rebuild=false" >> "$GITHUB_OUTPUT"
           echo "event:        ${{ github.event_name }}"
           echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
           if [[ "${{ github.event_name }}" == "push" ]]; then
