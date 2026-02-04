@@ -162,7 +162,7 @@ jobs:
             fi
           fi
           
-          echo "rebuild=false" >> "$GITHUB_OUTPUT"
+          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
           echo "event:        ${{ github.event_name }}"
           echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
           if [[ "${{ github.event_name }}" == "push" ]]; then
@@ -170,6 +170,71 @@ jobs:
             echo "Image hit:    ${{ steps.image_hit.outputs.hit }} (HTTP ${{ steps.image_hit.outputs.http_code }})"
           fi
           echo "rebuild:      $rebuild"
+
+  determine-kernel-build-need:
+    name: Determine if Kernel needs to be built
+    needs: [ determine-llvm-build-need ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      rebuild_kernel: ${{ steps.decide.outputs.rebuild_kernel }}
+
+    steps:
+      - name: Check if kernel image exists in JFrog (Artifactory docker API)
+        if: github.event_name == 'push'
+        id: kernel_hit
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+        run: |
+          set -euo pipefail
+
+          # This is the tag you publish for kernel images today
+          TAG="amd64-${{ github.sha }}"
+          REG_HOST="lljfrog.llan.ll.mit.edu"
+
+          url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.KERNEL_IMAGEID }}/manifests/${TAG}"
+          echo "Checking kernel image: $url"
+
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
+            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+            -o /dev/null -w '%{http_code}' -I "$url" || true)"
+
+          case "$code" in
+            200) echo "hit=true"  >> "$GITHUB_OUTPUT" ;;
+            404) echo "hit=false" >> "$GITHUB_OUTPUT" ;;
+            *)   echo "hit=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether to rebuild kernel
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Only meaningful on pushes; PRs can be whatever you want.
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            echo "rebuild_kernel=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # LLVM "changed" => LLVM rebuild was required (because you only skip when unchanged+image exists)
+          llvm_rebuild="${{ needs.determine-llvm-build-need.outputs.rebuild }}"
+          kernel_hit="${{ steps.kernel_hit.outputs.hit }}"
+
+          if [[ "$llvm_rebuild" == "true" || "$kernel_hit" != "true" ]]; then
+            rebuild_kernel="true"
+          else
+            rebuild_kernel="false"
+          fi
+
+          echo "rebuild_kernel=$rebuild_kernel" >> "$GITHUB_OUTPUT"
+          echo "llvm_rebuild:   $llvm_rebuild"
+          echo "kernel_hit:     $kernel_hit (HTTP ${{ steps.kernel_hit.outputs.http_code }})"
+          echo "rebuild_kernel: $rebuild_kernel"
 
   build-and-test:
     name: Build & Test
@@ -269,8 +334,8 @@ jobs:
 
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
-    needs: [ determine-llvm-build-need, build-and-test ]
-    if: ${{ github.event_name == 'push' }} && needs.determine-llvm-build-need.outputs.rebuild == 'true'
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test ]
+    if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
@@ -320,8 +385,8 @@ jobs:
 
   build-hakc-kernel:
     name: Build HAKC Kernel
-    needs: [ determine-llvm-build-need, build-and-test, analyze-hakc-kernel ]
-    if: ${{ github.event_name == 'push' }}
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test, analyze-hakc-kernel ]
+    if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
