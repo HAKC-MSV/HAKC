@@ -361,6 +361,7 @@ jobs:
           chown -R root:root .
           apt update
           apt install -y $DEPS_TO_INSTALL
+          ls -al /opt
 
       - name: Configure Environment
         shell: bash
