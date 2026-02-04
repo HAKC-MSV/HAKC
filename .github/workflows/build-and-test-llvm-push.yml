@@ -114,7 +114,7 @@ jobs:
           set -euo pipefail
           
           # Artifactory Docker Registry API (v2): check manifest existence for tag
-          url="https://${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}/${{ steps.llvm_image.outputs.tag }}/manifest.json"
+          url="https://${{ env.REPOURL }}/v2/${{ env.REPOID }}/${{ env.LLVM_IMAGEID }}/manifests/${{ steps.llvm_image.outputs.tag }}"
           echo "Checking image: $url"
           
           code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
@@ -257,7 +257,7 @@ jobs:
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
     needs: [ determine-llvm-build-need, build-and-test ]
-    if: ${{ github.event_name == 'push' && needs.determine-llvm-build-need.outputs.rebuild == 'true' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
