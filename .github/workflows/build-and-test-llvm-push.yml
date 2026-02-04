@@ -109,7 +109,6 @@ jobs:
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
-          REPOURL: lljfrog.llan.ll.mit.edu/ui/native
         run: |
           set -euo pipefail
           
@@ -257,7 +256,7 @@ jobs:
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
     needs: [ determine-llvm-build-need, build-and-test ]
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' }} && needs.determine-llvm-build-need.outputs.rebuild == 'true'
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
