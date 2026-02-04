@@ -9,7 +9,7 @@ env:
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex"
   VENV_DIR: "python/venv"
   INSTALL_DIR: "install"
   ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
@@ -334,8 +334,16 @@ jobs:
 
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
-    needs: [ determine-llvm-build-need, determine-kernel-build-need ]
-    if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
+    # Keep determine jobs + build-and-test as needs so we can wait when required.
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test ]
+    # Run on push AND only when kernel rebuild is requested.
+    # Then allow the job to run immediately when LLVM rebuild == false,
+    # or to run after build-and-test completes successfully when LLVM rebuild == true.
+    if: ${{ github.event_name == 'push'
+      && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true'
+      && ( needs.determine-llvm-build-need.outputs.rebuild == 'false'
+      || needs.build-and-test.result == 'success'
+      || needs.build-and-test.result == 'skipped' ) }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
@@ -361,7 +369,6 @@ jobs:
           chown -R root:root .
           apt update
           apt install -y $DEPS_TO_INSTALL
-          ls -al /opt
 
       - name: Configure Environment
         shell: bash
@@ -386,7 +393,7 @@ jobs:
 
   build-hakc-kernel:
     name: Build HAKC Kernel
-    needs: [ determine-llvm-build-need, determine-kernel-build-need, analyze-hakc-kernel ]
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test, analyze-hakc-kernel ]
     if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
