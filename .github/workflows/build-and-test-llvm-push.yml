@@ -424,18 +424,18 @@ jobs:
           apt update
           apt install -y $DEPS_TO_INSTALL
 
-      - name: Download DAG artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
-          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
-
       - name: Configure Environment
         shell: bash
         run: |
           set -euo pipefail
           ls -al /opt
           cmake --preset ci-linux-build
+
+      - name: Download DAG artifact
+        uses: actions/download-artifact@v1
+        with:
+          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
+          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
 
       - name: Build HAKC Kernel
         shell: bash
