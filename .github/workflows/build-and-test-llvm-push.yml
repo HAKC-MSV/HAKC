@@ -223,7 +223,7 @@ jobs:
           set -euo pipefail
           sha="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
           if [[ -z "$sha" ]]; then
-            echo "ERROR: could not read gitlink for linux from ${{ github.sha }}" >&2
+            echo "ERROR: could not read gitlink for linux from ${{ github.sha }}: $sha" >&2
             exit 1
           fi
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
