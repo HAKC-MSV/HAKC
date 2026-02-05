@@ -423,11 +423,7 @@ jobs:
     name: Analyze HAKC Kernel
     # Keep determine jobs + build-and-test as needs so we can wait when required.
     needs: [ determine-llvm-build-need, determine-kernel-build-need, determine-dag-need, build-and-test ]
-    if: ${{ github.event_name == 'push'
-      && needs.determine-dag-need.outputs.dag_needed == 'true'
-      && ( needs.determine-llvm-build-need.outputs.rebuild == 'false'
-      || needs.build-and-test.result == 'success'
-      || needs.build-and-test.result == 'skipped' ) }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-llvm-build-need.outputs.llvm_image_tag }}
@@ -438,7 +434,20 @@ jobs:
       LINUX_ARCH: "x86_64"
 
     steps:
+      - name: Determine if DAG Analysis is Needed
+        id: dag_analysis_need
+        shell: bash
+        run: |
+          set -euo pipefail
+          skip_analysis=${{ needs.determine-dag-need.outputs.dag_needed == 'true' && ( needs.determine-llvm-build-need.outputs.rebuild == 'false' || needs.build-and-test.result == 'success' || needs.build-and-test.result == 'skipped' ) }}
+          echo "DAG Needed: ${{ needs.determine-dag-need.outputs.dag_needed }}"
+          echo "LLVM Rebuild: ${{ needs.determine-llvm-build-need.outputs.rebuild }}"
+          echo "Build Result: ${{ needs.build-and-test.result }}"
+          echo "skip_analysis: $skip_analysis"
+          echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
+
       - name: Checkout Sources
+        if: ${{ steps.dag_analysis_need.outputs.skip_analysis == 'false' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -446,6 +455,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Install Dependencies
+        if: ${{ steps.dag_analysis_need.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -454,12 +464,14 @@ jobs:
           apt install -y $DEPS_TO_INSTALL
 
       - name: Configure Environment
+        if: ${{ steps.dag_analysis_need.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --preset ci-linux-build
 
       - name: Generating DAG
+        if: ${{ steps.dag_analysis_need.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -469,6 +481,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
 
       - name: Upload DAG artifact to JFrog
+        if: ${{ steps.dag_analysis_need.outputs.skip_analysis == 'false' }}
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
