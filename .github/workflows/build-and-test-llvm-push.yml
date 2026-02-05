@@ -179,6 +179,7 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     outputs:
       rebuild_kernel: ${{ steps.decide.outputs.rebuild_kernel }}
+      kernel_gitlink_sha: ${{ steps.kernel_sha.outputs.sha }}
 
     steps:
       - name: Check if kernel image exists in JFrog (Artifactory docker API)
@@ -209,6 +210,24 @@ jobs:
           esac
           echo "http_code=$code" >> "$GITHUB_OUTPUT"
 
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: "false"
+          ref: ${{ github.sha }}
+
+      - name: Get LLVM submodule SHA (head gitlink)
+        id: kernel_sha
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
+          if [[ -z "$sha" ]]; then
+            echo "ERROR: could not read gitlink for linux from ${{ github.sha }}" >&2
+            exit 1
+          fi
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Decide whether to rebuild kernel
         id: decide
         shell: bash
@@ -235,6 +254,70 @@ jobs:
           echo "llvm_rebuild:   $llvm_rebuild"
           echo "kernel_hit:     $kernel_hit (HTTP ${{ steps.kernel_hit.outputs.http_code }})"
           echo "rebuild_kernel: $rebuild_kernel"
+
+  determine-dag-need:
+    name: Determine if DAG needs to be generated
+    needs: [ determine-llvm-build-need, determine-kernel-build-need ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      dag_needed: ${{ steps.decide.outputs.dag_needed }}
+      dag_name: ${{ steps.key.outputs.dag_name }}
+
+    steps:
+      - name: Compute DAG key
+        id: key
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="hakc-dag-${{ needs.determine-llvm-build-need.outputs.llvm_gitlink_sha }}-${{ needs.determine-kernel-build-need.outputs.kernel_gitlink_sha }}"
+          echo "dag_name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Check DAG exists in JFrog (generic file)
+        if: github.event_name == 'push'
+        id: hit
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+          # Pick a repo/path for DAGs (example: g0553-generic-local/hakc/dag/<name>.tar.gz)
+          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${{ steps.key.outputs.dag_name }}.tar.gz"
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" -o /dev/null -w '%{http_code}' -I "$url" || true)"
+          if [[ "$code" == "200" ]]; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+
+      - name: Decide whether DAG generation is needed
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            echo "dag_needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # If kernel rebuild is requested but DAG already exists, skip analyze.
+          if [[ "${{ needs.determine-kernel-build-need.outputs.rebuild_kernel }}" != "true" ]]; then
+            echo "dag_needed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [[ "${{ steps.hit.outputs.hit }}" == "true" ]]; then
+            echo "dag_needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "dag_needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "dag_hit:     ${{ steps.hit.outputs.hit }} (HTTP ${{ steps.hit.outputs.http_code }})"
+          echo "dag_needed:  ${{ steps.decide.outputs.dag_needed }}"
 
   build-and-test:
     name: Build & Test
@@ -339,12 +422,9 @@ jobs:
   analyze-hakc-kernel:
     name: Analyze HAKC Kernel
     # Keep determine jobs + build-and-test as needs so we can wait when required.
-    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test ]
-    # Run on push AND only when kernel rebuild is requested.
-    # Then allow the job to run immediately when LLVM rebuild == false,
-    # or to run after build-and-test completes successfully when LLVM rebuild == true.
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, determine-dag-need, build-and-test ]
     if: ${{ github.event_name == 'push'
-      && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true'
+      && needs.determine-dag-need.outputs.dag_needed == 'true'
       && ( needs.determine-llvm-build-need.outputs.rebuild == 'false'
       || needs.build-and-test.result == 'success'
       || needs.build-and-test.result == 'skipped' ) }}
@@ -388,15 +468,29 @@ jobs:
           pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
 
-      - name: Upload DAG artifact
-        uses: actions/upload-artifact@v1
-        with:
-          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
-          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
+      - name: Upload DAG artifact to JFrog
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+
+          DAG_NAME="${{ needs.determine-dag-need.outputs.dag_name }}"
+          OUT="${DAG_NAME}.tar.gz"
+          SRC_DIR="${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+
+          tar -czf "$OUT" -C "$SRC_DIR" hakc-db
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -T "$OUT" \
+            "https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${OUT}"
+
 
   build-hakc-kernel:
     name: Build HAKC Kernel
-    needs: [ determine-llvm-build-need, determine-kernel-build-need, build-and-test, analyze-hakc-kernel ]
+    needs: [ determine-llvm-build-need, determine-kernel-build-need, determine-dag-need, build-and-test, analyze-hakc-kernel ]
     if: ${{ github.event_name == 'push' && needs.determine-kernel-build-need.outputs.rebuild_kernel == 'true' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
@@ -431,11 +525,31 @@ jobs:
           ls -al /opt
           cmake --preset ci-linux-build
 
-      - name: Download DAG artifact
-        uses: actions/download-artifact@v1
-        with:
-          name: hakc-dag-${{ github.sha }}-${{ env.LINUX_ARCH }}
-          path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/hakc-db
+      - name: Download DAG artifact from JFrog
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+
+          DAG_NAME="${{ needs.determine-dag-need.outputs.dag_name }}"
+          DEST_DIR="${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          mkdir -p "$DEST_DIR"
+
+          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${DAG_NAME}.tar.gz"
+          echo "Downloading DAG: $url"
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -o "${DEST_DIR}/${DAG_NAME}.tar.gz" \
+            "$url"
+
+          tar -xzf "${DEST_DIR}/${DAG_NAME}.tar.gz" -C "$DEST_DIR"
+
+          # sanity check (optional)
+          test -d "${DEST_DIR}/hakc-db"
+          ls -al "${DEST_DIR}/hakc-db" | head
 
       - name: Build HAKC Kernel
         shell: bash
