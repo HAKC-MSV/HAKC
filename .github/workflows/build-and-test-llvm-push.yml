@@ -137,6 +137,8 @@ jobs:
           
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
           echo "event:        ${{ github.event_name }}"
+          echo "rebuild:      $rebuild"
+          echo "tag:          $TAG"
 
       - name: Compute DAG Information
         id: dag_info
@@ -177,8 +179,11 @@ jobs:
           fi
           echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
 
-          echo "dag_hit:  $HIT (HTTP ${code})"
+          echo "dag_hit:        $HIT (HTTP ${code})"
           echo "skip_analysis:  $skip_analysis"
+          echo "dag_name:       $name"
+          echo "linux_sha:      $SHA"
+          echo "linux_tag_name: $linux_tag_name"
   
 
   build-and-test:
