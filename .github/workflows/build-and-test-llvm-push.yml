@@ -97,7 +97,7 @@ jobs:
           echo "sha=$SHA" >> "$GITHUB_OUTPUT"
           
           BRANCH_TAG="$(echo '${{ github.ref_name }}' | tr '/' '-')"
-          TAG="llvm-${{ runner.os }}-${BRANCH_TAG}-$sha"
+          TAG="llvm-${{ runner.os }}-${BRANCH_TAG}-${SHA}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           
           url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.LLVM_IMAGEID }}/manifests/${TAG}"
@@ -157,7 +157,7 @@ jobs:
           
           name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$SHA"
           echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "linux_tag_name=linux-${{ steps.llvm_info.outputs.sha }}-$SHA"
+          echo "linux_tag_name=linux-${{ steps.llvm_info.outputs.sha }}-$SHA" >> "$GITHUB_OUTPUT"
           
           HIT="false"
           url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/$name.tar.gz"
@@ -179,6 +179,7 @@ jobs:
 
           echo "dag_hit:  $HIT (HTTP $http_code)"
           echo "skip_analysis:  $skip_analysis"
+  
 
   build-and-test:
     name: Build & Test
@@ -303,7 +304,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Install Dependencies
-        if: ${{ steps.determine-build-needs.outputs.skip_analysis == 'false' }}
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -312,14 +313,14 @@ jobs:
           apt install -y $DEPS_TO_INSTALL
 
       - name: Configure Environment
-        if: ${{ steps.determine-build-needs.outputs.skip_analysis == 'false' }}
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --preset ci-linux-build
 
       - name: Generating DAG
-        if: ${{ steps.determine-build-needs.outputs.skip_analysis == 'false' }}
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -329,7 +330,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
 
       - name: Upload DAG artifact to JFrog
-        if: ${{ steps.determine-build-needs.outputs.skip_analysis == 'false' }}
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -351,7 +352,7 @@ jobs:
   build-hakc-kernel:
     name: Build HAKC Kernel
     needs: [ determine-build-needs, build-and-test, analyze-hakc-kernel ]
-    if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+    if: ${{ github.event_name == 'push' }}
     runs-on: [ arc-runner-set-llcad-amdxl-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
@@ -434,8 +435,12 @@ jobs:
 
           buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
 
-          buildah bud  --storage-driver vfs -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" .
+          buildah bud  --storage-driver vfs \
+            -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" \
+            -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$DET_TAG" \
+            .
           buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$DET_TAG"
 
           buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
           buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
