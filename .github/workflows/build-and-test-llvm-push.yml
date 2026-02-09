@@ -177,7 +177,7 @@ jobs:
           fi
           echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
 
-          echo "dag_hit:  $HIT (HTTP $http_code)"
+          echo "dag_hit:  $HIT (HTTP ${code})"
           echo "skip_analysis:  $skip_analysis"
   
 
