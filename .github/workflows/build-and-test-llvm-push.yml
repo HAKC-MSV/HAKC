@@ -159,7 +159,8 @@ jobs:
           
           name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$SHA"
           echo "name=$name" >> "$GITHUB_OUTPUT"
-          echo "linux_tag_name=linux-${{ steps.llvm_info.outputs.sha }}-$SHA" >> "$GITHUB_OUTPUT"
+          linux_tag_name="linux-${{ steps.llvm_info.outputs.sha }}-$SHA"
+          echo "linux_tag_name=$linux_tag_name" >> "$GITHUB_OUTPUT"
           
           HIT="false"
           url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/$name.tar.gz"
