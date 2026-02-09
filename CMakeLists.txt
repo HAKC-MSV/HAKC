@@ -60,8 +60,9 @@ if (HAKC_CC_IS_DEFAULT)
     set(_hakc_clang_dep clang)
 endif ()
 
-if (LLVM_PARALLEL_COMPILE_JOBS)
-    set(FULL_CORE_COUNT ${LLVM_PARALLEL_COMPILE_JOBS})
+set(HAKC_ANALYSIS_CORES CACHE STRING "Number of cores to use for analysis")
+if (HAKC_ANALYSIS_CORES)
+    set(FULL_CORE_COUNT ${HAKC_ANALYSIS_CORES})
 else ()
     cmake_host_system_information(RESULT FULL_CORE_COUNT
             QUERY NUMBER_OF_LOGICAL_CORES)
