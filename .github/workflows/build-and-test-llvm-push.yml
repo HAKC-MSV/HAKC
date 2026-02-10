@@ -413,9 +413,10 @@ jobs:
 
       - name: Build HAKC Kernel
         shell: bash
+
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+          cmake --build $BUILD_DIR --target hakc-linux-x86_64-enforcement
 
       - name: Build Userspace
         shell: bash
