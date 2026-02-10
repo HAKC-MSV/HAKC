@@ -197,7 +197,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
+            DEPENDS ${hakc_main_config_path} ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
     )
 
     add_custom_command(
