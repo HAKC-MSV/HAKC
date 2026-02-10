@@ -417,6 +417,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install -r llvm-project/llvm/utils/hakc/requirements.txt
           cmake --build $BUILD_DIR --target hakc-linux-${{ env.LINUX_ARCH }}-enforcement
 
       - name: Build Userspace
