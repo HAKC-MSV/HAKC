@@ -14,6 +14,7 @@ env:
   INSTALL_DIR: "install"
   ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
   FINAL_ARTIFACT_PATH: "install.tar.gz"
+  LINUX_ARCH: "x86_64"
 
 on:
   push:
@@ -391,7 +392,6 @@ jobs:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
           REG_HOST: "lljfrog.llan.ll.mit.edu"
-          LINUX_ARCH: "x86_64"
         run: |
           set -euo pipefail
 
@@ -417,13 +417,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-linux-${LINUX_ARCH}-enforcement
+          cmake --build $BUILD_DIR --target hakc-linux-${{ env.LINUX_ARCH }}-enforcement
 
       - name: Build Userspace
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+          cmake --build $BUILD_DIR --target hakc-${{ env.LINUX_ARCH }}-userspace
 
       - name: Build & Push Kernel Image
         shell: bash
