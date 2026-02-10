@@ -123,7 +123,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(compilation_db_path ${hakc_build_dir}/compile_commands.json)
     set(hakc_log_dir ${hakc_build_dir}/hakc-logs)
     set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
-    set(hakc_backing_path ${hakc_build_dir}/hakc-db)
+    set(hakc_backing_path ${hakc_build_dir}/hakc-db/data.kz)
     set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
     set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
@@ -171,7 +171,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${hakc_backing_path}
             WORKING_DIRECTORY ${hakc_build_dir}
-            DEPENDS ${_hakc_clang_dep}
+            DEPENDS ${_hakc_clang_dep} linux-${arch}-compilation-db
             USES_TERMINAL
             COMMENT "Running ${arch} Linux Analysis"
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
@@ -185,7 +185,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep}
+            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep} ${hakc_backing_path}
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts

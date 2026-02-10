@@ -412,6 +412,9 @@ jobs:
           test -d "${DEST_DIR}/hakc-db"
           echo "The database is located at ${DEST_DIR}"
           ls -al "${DEST_DIR}/hakc-db" | head
+          
+          # Ensure CMake resolves dependencies correctly
+          touch ${DEST_DIR}/data.kz
 
       - name: Build HAKC Kernel
         shell: bash
