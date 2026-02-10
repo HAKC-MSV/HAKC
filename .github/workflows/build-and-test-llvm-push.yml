@@ -391,6 +391,7 @@ jobs:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
           REG_HOST: "lljfrog.llan.ll.mit.edu"
+          LINUX_ARCH: "x86_64"
         run: |
           set -euo pipefail
 
@@ -409,14 +410,14 @@ jobs:
 
           # sanity check (optional)
           test -d "${DEST_DIR}/hakc-db"
+          echo "The database is located at ${DEST_DIR}"
           ls -al "${DEST_DIR}/hakc-db" | head
 
       - name: Build HAKC Kernel
         shell: bash
-
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-linux-x86_64-enforcement
+          cmake --build $BUILD_DIR --target hakc-linux-${LINUX_ARCH}-enforcement
 
       - name: Build Userspace
         shell: bash

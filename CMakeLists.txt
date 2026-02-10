@@ -185,7 +185,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS hakc-linux-${arch}-analysis ${_hakc_clang_dep}
+            DEPENDS ${_hakc_clang_dep}
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
@@ -197,7 +197,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS hakc-linux-${arch}-analysis ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
+            DEPENDS ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
     )
 
     add_custom_command(
