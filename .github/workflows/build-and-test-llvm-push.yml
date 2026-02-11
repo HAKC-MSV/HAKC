@@ -191,7 +191,7 @@ jobs:
   build-and-test:
     name: Build & Test
     needs: [ determine-build-needs ]
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+    runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
@@ -292,7 +292,7 @@ jobs:
     name: Analyze HAKC Kernel
     needs: [ determine-build-needs, build-and-test ]
     if: ${{ github.event_name == 'push' }}
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+    runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
 
@@ -360,7 +360,7 @@ jobs:
     name: Build HAKC Kernel
     needs: [ determine-build-needs, build-and-test, analyze-hakc-kernel ]
     if: ${{ github.event_name == 'push' }}
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+    runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:

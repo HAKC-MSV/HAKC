@@ -64,8 +64,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "HAKC_CC": "/opt/hakc/bin/clang",
-        "HAKC_SERVER_PROCESS_PATH": "/opt/hakc/utils/hakc/hakc-server-process",
-        "HAKC_ANALYSIS_CORES": "4"
+        "HAKC_SERVER_PROCESS_PATH": "/opt/hakc/utils/hakc/hakc-server-process"
       }
     }
   ]

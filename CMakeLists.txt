@@ -185,7 +185,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep}
+            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep} ${hakc_backing_path}/data.kz
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
