@@ -123,7 +123,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(compilation_db_path ${hakc_build_dir}/compile_commands.json)
     set(hakc_log_dir ${hakc_build_dir}/hakc-logs)
     set(hakc_server_core_count ${HAKC_LINUX_CORE_COUNT})
-    set(hakc_backing_path ${hakc_build_dir}/hakc-db/data.kz)
+    set(hakc_backing_path ${hakc_build_dir}/hakc-db)
     set(hakc_adjustments_path ${hakc_build_dir}/hakc-adjustments.yaml)
     set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
@@ -169,7 +169,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_command(
-            OUTPUT ${hakc_backing_path}
+            OUTPUT ${hakc_backing_path}/data.kz
             WORKING_DIRECTORY ${hakc_build_dir}
             DEPENDS ${_hakc_clang_dep} linux-${arch}-compilation-db
             USES_TERMINAL
@@ -179,13 +179,13 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-analysis
-            DEPENDS ${hakc_main_config_path} ${_hakc_clang_dep} hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}
+            DEPENDS ${hakc_main_config_path} ${_hakc_clang_dep} hakc-linux-${arch}-config linux-${arch}-compilation-db ${hakc_backing_path}/data.kz
     )
 
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep} ${hakc_backing_path}
+            DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep} ${hakc_backing_path}/data.kz
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
@@ -197,7 +197,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS linux-${arch}-compilation-db ${hakc_backing_path} ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
+            DEPENDS linux-${arch}-compilation-db ${hakc_backing_path}/data.kz ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
     )
 
     add_custom_command(
@@ -225,9 +225,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
 
-
-            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}
-            sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
+            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR} sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
 
             DEPENDS ${BUSYBOX_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${hardened_kernel_install_path}/${hakc_kernel_name}
             WORKING_DIRECTORY ${hakc_build_dir}
@@ -240,7 +238,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(run-${arch}-hakc-kernel
-            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -initrd ${INITRAMFS_IMG} -m 16G -append \"console=ttyS0 rdinit=/init\" -nographic
+            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -initrd ${INITRAMFS_IMG} -m 16G -append \"console=ttyS0 rdinit=/init root=/dev/ram rw\" -nographic
             DEPENDS hakc-linux-${arch}-enforcement hakc-${arch}-userspace
             USES_TERMINAL
             WORKING_DIRECTORY ${hakc_build_dir}
