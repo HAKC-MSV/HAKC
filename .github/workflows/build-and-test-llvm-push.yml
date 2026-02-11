@@ -526,36 +526,36 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-              OUTPUT_FILE=$(mktemp)
-              trap "rm -f $OUTPUT_FILE" EXIT
+          OUTPUT_FILE=$(mktemp)
+          trap "rm -f $OUTPUT_FILE" EXIT
           
-              # Start QEMU in background, redirect output to file and stdout
-              timeout $TIMEOUT_SECONDS qemu-system-${{ env.LINUX_ARCH }} \
-                -kernel $KERNEL_PATH \
-                -initrd $INIT_RD_PATH \
-                -append "$KERNEL_CMD_ARGS" \
-                -nographic \
-                2>&1 | tee $OUTPUT_FILE &
+          # Start QEMU in background, redirect output to file and stdout
+          timeout $TIMEOUT_SECONDS qemu-system-${{ env.LINUX_ARCH }} \
+            -kernel $KERNEL_PATH \
+            -initrd $INIT_RD_PATH \
+            -append "$KERNEL_CMD_ARGS" \
+            -nographic \
+            2>&1 | tee $OUTPUT_FILE &
           
-              QEMU_PID=$!
+          QEMU_PID=$!
           
-              echo "QEMU started with PID $QEMU_PID, watching for '$SEARCH_STRING'..."
+          echo "QEMU started with PID $QEMU_PID, watching for '$SEARCH_STRING'..."
           
-              # Poll the output file for the search string
-              for i in $(seq 1 $TIMEOUT_SECONDS); do
-                if grep -q "$SEARCH_STRING" "$OUTPUT_FILE"; then
-                  echo "✓ Found '$SEARCH_STRING' in boot output!"
-                  kill $QEMU_PID 2>/dev/null || true
-                  wait $QEMU_PID 2>/dev/null || true
-                  exit 0
-                fi
-                sleep 1
-              done
-          
-              echo "✗ ERROR: Did not find '$SEARCH_STRING' within $TIMEOUT_SECONDS seconds"
+          # Poll the output file for the search string
+          for i in $(seq 1 $TIMEOUT_SECONDS); do
+            if grep -q "$SEARCH_STRING" "$OUTPUT_FILE"; then
+              echo "✓ Found '$SEARCH_STRING' in boot output!"
               kill $QEMU_PID 2>/dev/null || true
               wait $QEMU_PID 2>/dev/null || true
-              cat $OUTPUT_FILE
-              exit 1
+              exit 0
+            fi
+            sleep 1
+          done
+          
+          echo "✗ ERROR: Did not find '$SEARCH_STRING' within $TIMEOUT_SECONDS seconds"
+          kill $QEMU_PID 2>/dev/null || true
+          wait $QEMU_PID 2>/dev/null || true
+          cat $OUTPUT_FILE
+          exit 1
 
 #
