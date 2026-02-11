@@ -404,6 +404,8 @@ jobs:
 
           echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
           echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          echo "exists=$EXISTS"
+          echo http_code=$code"
 
       - name: Checkout Sources
         if: steps.kernel_check.outputs.exists == 'false'
@@ -414,6 +416,7 @@ jobs:
           ref: ${{ github.sha }}
 
       - name: Install Dependencies
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -473,6 +476,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-${{ env.LINUX_ARCH }}-enforcement
 
       - name: Build Userspace
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         run: |
           set -euo pipefail
