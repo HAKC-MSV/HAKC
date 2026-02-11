@@ -197,7 +197,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(hakc-linux-${arch}-enforcement
-            DEPENDS linux-${arch}-compilation-db ${hakc_backing_path}/data.kz ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
+            DEPENDS linux-${arch}-compilation-db ${hardened_kernel_install_path}/${hakc_kernel_name} ${_hakc_clang_dep}
     )
 
     add_custom_command(
