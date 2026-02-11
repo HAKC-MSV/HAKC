@@ -229,7 +229,7 @@ jobs:
           echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
           echo "http_code=$code" >> "$GITHUB_OUTPUT"
           echo "exists=$EXISTS"
-          echo http_code=$code"  
+          echo "http_code=$code"  
 
   build-and-test:
     name: Build & Test
