@@ -364,7 +364,49 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
+      - name: Check if Kernel Image exists in JFrog
+        id: kernel_check
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+          DET_TAG: ${{ needs.determine-build-needs.outputs.kernel_image_tag }}
+        run: |
+          set -euo pipefail
+
+          url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.KERNEL_IMAGEID }}/manifests/${DET_TAG}"
+          echo "Checking kernel image: $url"
+
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
+            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+            -o /dev/null -w '%{http_code}' -I "$url" || true)"
+
+          EXISTS="false"
+          case "$code" in
+            200)
+              EXISTS="true"
+              echo "Kernel image already exists in registry (HTTP $code)"
+              ;;
+            404)
+              EXISTS="false"
+              echo "Kernel image not found in registry (HTTP $code) - will build"
+              ;;
+            401|403)
+              echo "Auth failure checking registry (HTTP $code) — treating as not exists so we rebuild." >&2
+              EXISTS="false"
+              ;;
+            *)
+              echo "Unexpected HTTP $code — treating as not exists so we rebuild." >&2
+              EXISTS="false"
+              ;;
+          esac
+
+          echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+
       - name: Checkout Sources
+        if: steps.kernel_check.outputs.exists == 'false'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -380,6 +422,7 @@ jobs:
           apt install -y $DEPS_TO_INSTALL
 
       - name: Configure Environment
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -387,6 +430,7 @@ jobs:
           cmake --preset ci-linux-build
 
       - name: Download DAG artifact from JFrog
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -419,6 +463,7 @@ jobs:
           echo "Touched ${DEST_DIR}/hakc-db/data.kz to satisfy CMake dependency"
 
       - name: Build HAKC Kernel
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         run: |
           set -euo pipefail
@@ -434,6 +479,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-${{ env.LINUX_ARCH }}-userspace
 
       - name: Build & Push Kernel Image
+        if: steps.kernel_check.outputs.exists == 'false'
         shell: bash
         env:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -465,7 +511,6 @@ jobs:
   test-hakc-kernel-qemu:
     name: Test HAKC Kernel with QEMU
     needs: [ determine-build-needs, build-hakc-kernel ]
-    if: ${{ github.event_name == 'push' }}
     runs-on: [ arc-runner-set-llcad-prod ]
     env:
       KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
