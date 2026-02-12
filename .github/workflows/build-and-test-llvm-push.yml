@@ -1,37 +1,48 @@
-name: Build and Test LLVM
+name: Build, Test, and Publish LLVM
 
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
   no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
-  IMAGEID: "g53-hakc-llvm"
+  LLVM_IMAGEID: "g53-hakc-llvm"
+  KERNEL_IMAGEID: "g53-hakc-linux"
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev cpio"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "hakc"
+  INSTALL_DIR: "install"
+  ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
+  FINAL_ARTIFACT_PATH: "install.tar.gz"
+  LINUX_ARCH: "x86_64"
 
 on:
   push:
-    branches:
-      - main
-      - next
+    branches: [ main, next ]
+  pull_request:
+    branches: [ main, next ]
 
 jobs:
-
-  build-and-test:
-    name: Build & Test
-    runs-on: [ arc-runner-set-llcad-amdxl-prod ]
+  determine-build-needs:
+    name: Determine what needs to be built
+    runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      rebuild_llvm: ${{ steps.llvm_info.outputs.rebuild }}
+      llvm_image_tag: ${{ steps.llvm_info.outputs.tag }}
+      skip_analysis: ${{ steps.dag_info.outputs.skip_analysis }}
+      dag_name: ${{ steps.dag_info.outputs.name }}
+      linux_sha: ${{ steps.dag_info.outputs.linux_sha }}
+      kernel_image_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
+      rebuild_kernel: ${{ steps.kernel_check.outputs.exists == 'false' }}
+
     steps:
-      - name: Checkout
+      - name: Checkout (no submodules)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          submodules: 'true'
-          # If this is a PR, check out the PR head commit; otherwise use the push commit
+          submodules: "false"
           ref: ${{ github.sha }}
 
       - name: Prepare workspace
@@ -40,83 +51,217 @@ jobs:
           set -euo pipefail
           chown -R root:root .
 
-      - name: Detect LLVM submodule pointer change
-        id: llvm_changed
+      - name: Compute LLVM Information
+        id: llvm_info
         shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
         run: |
           set -euo pipefail
           SUBMODULE_PATH="llvm-project"
-
-          # push event: compare previous (before) vs current (sha)
-          BASE_SHA="${{ github.event.before }}"
-          HEAD_SHA="${{ github.sha }}"
-
+          
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            HEAD_SHA="${{ github.sha }}"
+          fi
+          
           echo "Comparing base: $BASE_SHA  head: $HEAD_SHA"
-
-          # If base is empty (first commit) treat as changed
+          
+          # New branch / force-push edge case
           if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             echo "changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-
-          base_gitlink="$(git ls-tree "$BASE_SHA" "$SUBMODULE_PATH" 2>/dev/null | awk '{print $3}' || true)"
-          head_gitlink="$(git ls-tree "$HEAD_SHA" "$SUBMODULE_PATH" 2>/dev/null | awk '{print $3}' || true)"
-
+          
+          base_gitlink="$(git rev-parse -q --verify "${BASE_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
+          head_gitlink="$(git rev-parse -q --verify "${HEAD_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
+          
           echo "Base llvm gitlink: $base_gitlink"
           echo "Head llvm gitlink: $head_gitlink"
-
+          
+          changed="true"
           if [[ -n "$base_gitlink" && -n "$head_gitlink" && "$base_gitlink" == "$head_gitlink" ]]; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+            changed="false"
+          fi
+          
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          
+          SHA="$(git rev-parse -q --verify "${{ github.sha }}:${SUBMODULE_PATH}" 2>/dev/null || true)"
+          if [[ -z "$SHA" ]]; then
+            echo "ERROR: could not read gitlink for ${SUBMODULE_PATH} from ${{ github.sha }}" >&2
+            exit 1
+          fi
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          
+          BRANCH_TAG="$(echo '${{ github.ref_name }}' | tr '/' '-')"
+          TAG="llvm-${{ runner.os }}-${BRANCH_TAG}-${SHA}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          
+          url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.LLVM_IMAGEID }}/manifests/${TAG}"
+          echo "Checking image: $url"
+          
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
+            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+            -o /dev/null -w '%{http_code}' -I "$url" || true)"
+          
+          HIT="false"
+          case "$code" in
+            200)
+              HIT="true"
+              ;;
+            404)
+              HIT="false"
+              ;;
+            401|403)
+              echo "Auth failure checking registry (HTTP $code) — treating as miss so we rebuild." >&2
+              HIT="false"
+              ;;
+            *)
+              echo "Unexpected HTTP $code — treating as miss so we rebuild." >&2
+              HIT="false"
+              ;;
+          esac
+          
+          echo "hit=$HIT" >> "$GITHUB_OUTPUT"
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          
+          # If llvm pointer didn't change AND the deterministic image tag exists, skip rebuild
+          if [[ "$changed" == "false" && "$HIT" == "true" ]]; then
+            rebuild="false"
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Get LLVM submodule SHA (head)
-        id: llvm_sha
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Prefer the explicit HEAD_SHA when available, otherwise use git submodule status
-          sha="$(git ls-tree "${{ github.sha }}" llvm-project | awk '{print $3}' || true)"
-          if [[ -z "$sha" ]]; then
-            sha="$(git submodule status llvm-project | awk '{print $1}' | sed 's/^-//')"
-          fi
-          echo "sha=$sha" >> "$GITHUB_OUTPUT"
-
-      - name: Restore LLVM install cache
-        id: cache-llvm
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.INSTALL_DIR }}
-          key: llvm-install-${{ runner.os }}-${{ github.ref_name }}-${{ steps.llvm_sha.outputs.sha }}
-
-      - name: Decide whether to rebuild
-        id: rebuild
-        shell: bash
-        run: |
-          set -euo pipefail
-          
-          # Default: rebuild if LLVM pointer changed
-          rebuild="${{ steps.llvm_changed.outputs.changed }}"
-          
-          # Also rebuild if cache was NOT restored (cache miss)
-          if [[ "${{ steps.cache-llvm.outputs.cache-hit }}" != "true" ]]; then
-          rebuild="true"
+            rebuild="true"
           fi
           
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "LLVM changed: ${{ steps.llvm_changed.outputs.changed }}"
-          echo "cache-hit:   ${{ steps.cache-llvm.outputs.cache-hit }}"
-          echo "rebuild:     $rebuild"
+          echo "event:        ${{ github.event_name }}"
+          echo "rebuild:      $rebuild"
+          echo "tag:          $TAG"
+
+      - name: Compute DAG Information
+        id: dag_info
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+          
+          SHA="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
+          if [[ -z "$SHA" ]]; then
+            echo "ERROR: could not read gitlink for linux from ${{ github.sha }}" >&2
+            exit 1
+          fi
+          echo "linux_sha=$SHA" >> "$GITHUB_OUTPUT"
+          
+          name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$SHA"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          linux_tag_name="linux-${{ steps.llvm_info.outputs.sha }}-$SHA"
+          echo "linux_tag_name=$linux_tag_name" >> "$GITHUB_OUTPUT"
+          
+          HIT="false"
+          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/$name.tar.gz"
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" -o /dev/null -w '%{http_code}' -I "$url" || true)"
+          if [[ "$code" == "200" ]]; then
+            HIT="true"
+          fi
+          
+          echo "hit=$HIT" >> "$GITHUB_OUTPUT"
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          
+          skip_analysis="false"
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            skip_analysis="true"
+          elif [[ "$HIT" == "true" ]]; then
+            skip_analysis="true"
+          fi
+          echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
+
+          echo "dag_hit:        $HIT (HTTP ${code})"
+          echo "skip_analysis:  $skip_analysis"
+          echo "dag_name:       $name"
+          echo "linux_sha:      $SHA"
+          echo "linux_tag_name: $linux_tag_name"
+
+      - name: Check if Kernel Image exists in JFrog
+        id: kernel_check
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+          DET_TAG: ${{ steps.dag_info.outputs.linux_tag_name }}
+        run: |
+          set -euo pipefail
+
+          url="https://${REG_HOST}/artifactory/api/docker/${{ env.REPOID }}/v2/${{ env.KERNEL_IMAGEID }}/manifests/${DET_TAG}"
+          echo "Checking kernel image: $url"
+
+          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
+            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
+            -o /dev/null -w '%{http_code}' -I "$url" || true)"
+
+          EXISTS="false"
+          case "$code" in
+            200)
+              EXISTS="true"
+              echo "Kernel image already exists in registry (HTTP $code)"
+              ;;
+            404)
+              EXISTS="false"
+              echo "Kernel image not found in registry (HTTP $code) - will build"
+              ;;
+            401|403)
+              echo "Auth failure checking registry (HTTP $code) — treating as not exists so we rebuild." >&2
+              EXISTS="false"
+              ;;
+            *)
+              echo "Unexpected HTTP $code — treating as not exists so we rebuild." >&2
+              EXISTS="false"
+              ;;
+          esac
+
+          echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
+          echo "http_code=$code" >> "$GITHUB_OUTPUT"
+          echo "exists=$EXISTS"
+          echo "http_code=$code"  
+
+  build-and-test:
+    name: Build & Test
+    needs: [ determine-build-needs ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+
+    steps:
+      - name: Checkout
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: "true"
+          ref: ${{ github.sha }}
+
+      - name: Prepare workspace
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          chown -R root:root .
 
       - name: Install Dependencies
-        if: steps.rebuild.outputs.rebuild == 'true'
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         run: |
           apt update
           apt install -y $DEPS_TO_INSTALL
 
       - name: Build Clang/LLVM
-        if: steps.rebuild.outputs.rebuild == 'true'
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -124,7 +269,7 @@ jobs:
           cmake --build $BUILD_DIR -- -j $(nproc)
 
       - name: Run Unit Tests (check-llvm)
-        if: steps.rebuild.outputs.rebuild == 'true'
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -134,7 +279,7 @@ jobs:
           cmake --build $BUILD_DIR --target check-llvm
 
       - name: Clean install dir (rebuild)
-        if: steps.rebuild.outputs.rebuild == 'true'
+        if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_llvm == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -142,8 +287,279 @@ jobs:
           mkdir -p "${{ env.INSTALL_DIR }}"
 
       - name: Install LLVM
-        if: steps.rebuild.outputs.rebuild == 'true'
+        if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_llvm == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
+
+      - name: Build & Push LLVM Image
+        if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_llvm == 'true' }}
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          DET_TAG: ${{ needs.determine-build-needs.outputs.llvm_image_tag }}
+          COMMIT_TAG: "amd64-${{ github.sha }}"
+          LLVM_IMAGEID: ${{ env.LLVM_IMAGEID }}
+        run: |
+          set -euo pipefail
+          
+          BRANCH_TAG="$(echo '${{ github.ref_name }}' | tr '/' '-')"
+          BRANCH_LATEST_TAG="amd64-${BRANCH_TAG}-latest"
+          
+          echo "Deterministic tag: $DET_TAG"
+          echo "Commit tag:        $COMMIT_TAG"
+          echo "Branch-latest tag: $BRANCH_LATEST_TAG"
+          
+          envsubst < Dockerfile-llvm.template > Dockerfile
+          
+          export _BUILDAH_STARTED_IN_USERNS=""
+          export BUILDAH_ISOLATION=chroot
+          
+          buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
+          
+          # Build once, tag multiple times
+          buildah bud --storage-driver vfs \
+            -t "$REPOURL/$REPOID/$LLVM_IMAGEID:$DET_TAG" \
+            -t "$REPOURL/$REPOID/$LLVM_IMAGEID:$COMMIT_TAG" \
+            -t "$REPOURL/$REPOID/$LLVM_IMAGEID:$BRANCH_LATEST_TAG" \
+            .
+          
+          # Push deterministic tag FIRST (cache key)
+          buildah push --storage-driver vfs "$REPOURL/$REPOID/$LLVM_IMAGEID:$DET_TAG"
+          buildah push --storage-driver vfs "$REPOURL/$REPOID/$LLVM_IMAGEID:$COMMIT_TAG"
+          buildah push --storage-driver vfs "$REPOURL/$REPOID/$LLVM_IMAGEID:$BRANCH_LATEST_TAG"
+
+  analyze-hakc-kernel:
+    name: Analyze HAKC Kernel
+    needs: [ determine-build-needs, build-and-test ]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
+
+    env:
+      VENV_DIR: "python/venv"
+      BUILD_DIR: "cmake-build-hakc-release"
+      LINUX_ARCH: "x86_64"
+
+    steps:
+      - name: Checkout Sources
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+          ref: ${{ github.sha }}
+
+      - name: Install Dependencies
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          chown -R root:root .
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+
+      - name: Configure Environment
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --preset ci-linux-build
+
+      - name: Generating DAG
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install -r llvm-project/llvm/utils/hakc/requirements.txt
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+
+      - name: Upload DAG artifact to JFrog
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+
+          DAG_NAME="${{ needs.determine-build-needs.outputs.dag_name }}"
+          OUT="${DAG_NAME}.tar.gz"
+          SRC_DIR="${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+
+          tar -czf "$OUT" -C "$SRC_DIR" hakc-db
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -T "$OUT" \
+            "https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${OUT}"
+
+  build-hakc-kernel:
+    name: Build HAKC Kernel
+    needs: [ determine-build-needs, build-and-test, analyze-hakc-kernel ]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
+    steps:
+      - name: Checkout Sources
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: 'true'
+          ref: ${{ github.sha }}
+
+      - name: Install Dependencies
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          chown -R root:root .
+          apt update
+          apt install -y $DEPS_TO_INSTALL
+
+      - name: Configure Environment
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -al /opt
+          cmake --preset ci-linux-build
+
+      - name: Download DAG artifact from JFrog
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          REG_HOST: "lljfrog.llan.ll.mit.edu"
+        run: |
+          set -euo pipefail
+
+          DAG_NAME="${{ needs.determine-build-needs.outputs.dag_name }}"
+          DEST_DIR="${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          mkdir -p "$DEST_DIR"
+
+          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${DAG_NAME}.tar.gz"
+          echo "Downloading DAG: $url"
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -o "${DEST_DIR}/${DAG_NAME}.tar.gz" \
+            "$url"
+
+          tar -xzf "${DEST_DIR}/${DAG_NAME}.tar.gz" -C "$DEST_DIR"
+
+          # sanity check (optional)
+          test -d "${DEST_DIR}/hakc-db"
+          echo "The database is located at ${DEST_DIR}/hakc-db"
+          ls -al "${DEST_DIR}/hakc-db"
+          
+          # Ensure CMake resolves dependencies correctly
+          touch "${DEST_DIR}/hakc-db/data.kz"
+          
+          echo "Touched ${DEST_DIR}/hakc-db/data.kz to satisfy CMake dependency"
+
+      - name: Build HAKC Kernel
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install -r llvm-project/llvm/utils/hakc/requirements.txt
+          cmake --build $BUILD_DIR --target hakc-linux-${{ env.LINUX_ARCH }}-enforcement
+
+      - name: Build Userspace
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target hakc-${{ env.LINUX_ARCH }}-userspace
+
+      - name: Build & Push Kernel Image
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        shell: bash
+        env:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          COMMIT_TAG: "amd64-${{ github.sha }}"
+          DET_TAG: ${{ needs.determine-build-needs.outputs.kernel_image_tag }}
+          LATEST_TAG: "amd64-latest"
+          INSTALL_DIR: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          KERNEL_IMAGEID: ${{ env.KERNEL_IMAGEID }}
+        run: |
+          set -euo pipefail
+          envsubst < Dockerfile-linux.template > Dockerfile
+          export _BUILDAH_STARTED_IN_USERNS=""
+          export BUILDAH_ISOLATION=chroot
+
+          buildah login -u "$jfrog_user" -p "$jfrog_pass" "$REPOURL"
+
+          buildah bud  --storage-driver vfs \
+            -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" \
+            -t "$REPOURL/$REPOID/$KERNEL_IMAGEID:$DET_TAG" \
+            .
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$DET_TAG"
+
+          buildah tag  --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$COMMIT_TAG" "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
+          buildah push --storage-driver vfs    "$REPOURL/$REPOID/$KERNEL_IMAGEID:$LATEST_TAG"
+  
+
+  test-hakc-kernel-qemu:
+    name: Test HAKC Kernel with QEMU
+    needs: [ determine-build-needs, build-hakc-kernel ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    env:
+      KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+      INIT_RD_PATH: "/opt/hakc-linux/rootfs.cpio.gz"
+      KERNEL_CMD_ARGS: "console=ttyS0 rdinit=/init root=/dev/ram rw"
+      SEARCH_STRING: "Initializing HAKC system"
+      TIMEOUT_SECONDS: 60
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:${{ needs.determine-build-needs.outputs.kernel_image_tag }}
+
+    steps:
+      - name: Run QEMU with HAKC Kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT_FILE=$(mktemp)
+          trap "rm -f $OUTPUT_FILE" EXIT
+          
+          # Start QEMU in background, redirect output to file and stdout
+          timeout $TIMEOUT_SECONDS qemu-system-${{ env.LINUX_ARCH }} \
+            -kernel $KERNEL_PATH \
+            -initrd $INIT_RD_PATH \
+            -append "$KERNEL_CMD_ARGS" \
+            -nographic \
+            2>&1 | tee $OUTPUT_FILE &
+          
+          QEMU_PID=$!
+          
+          echo "QEMU started with PID $QEMU_PID, watching for '$SEARCH_STRING'..."
+          
+          # Poll the output file for the search string
+          for i in $(seq 1 $TIMEOUT_SECONDS); do
+            if grep -q "$SEARCH_STRING" "$OUTPUT_FILE"; then
+              echo "✓ Found '$SEARCH_STRING' in boot output!"
+              kill $QEMU_PID 2>/dev/null || true
+              wait $QEMU_PID 2>/dev/null || true
+              exit 0
+            fi
+            sleep 1
+          done
+          
+          echo "✗ ERROR: Did not find '$SEARCH_STRING' within $TIMEOUT_SECONDS seconds"
+          kill $QEMU_PID 2>/dev/null || true
+          wait $QEMU_PID 2>/dev/null || true
+          cat $OUTPUT_FILE
+          exit 1
+
+#

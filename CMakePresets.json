@@ -38,10 +38,10 @@
       "inherits": "base",
       "description": "Release CI build configuration",
       "binaryDir": "${sourceDir}/cmake-build-hakc-release",
-      "installDir": "hakc",
+      "installDir": "install",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "LLVM_LIT_ARGS": "--filter-out=tools/llvm-objcopy/ELF/strip-preserve-atime.test$ --filter-out=ThinLTO/X86/cache\\.ll$;-sv"
+        "LLVM_LIT_ARGS": "--filter-out=strip-preserve-atime\\.test$ --filter-out=ThinLTO/X86/cache\\.ll$ -sv"
       }
     },
     {
