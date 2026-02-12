@@ -1,4 +1,4 @@
-name: Build, Test, and Publish LLVM
+name: Build and Test HAKC Ecosystem
 
 env:
   http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
@@ -232,7 +232,7 @@ jobs:
           echo "http_code=$code"  
 
   build-and-test:
-    name: Build & Test
+    name: Build & Test LLVM
     needs: [ determine-build-needs ]
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
