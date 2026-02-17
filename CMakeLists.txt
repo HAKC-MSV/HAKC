@@ -93,6 +93,7 @@ set(hakc_server_log_level ERROR)
 set(hakc_kernel_ext "-hakc")
 set(hakc_kernel_version "6.14.0")
 set(hakc_kernel_name "vmlinuz-${hakc_kernel_version}${hakc_kernel_ext}")
+option(HAKC_USE_PREBUILT_DB "Use a prebuilt/downloaded HAKC database instead of running analysis" OFF)
 
 foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_build_dir ${HAKC_LINUX_BUILD_PATH}/${arch})
@@ -171,19 +172,26 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             DEPENDS ${compilation_db_path} hakc-linux-${arch}-config ${_hakc_clang_dep}
     )
 
-    add_custom_command(
-            OUTPUT ${db_dependency_file}
-            WORKING_DIRECTORY ${hakc_build_dir}
-            DEPENDS ${_hakc_clang_dep} linux-${arch}-compilation-db
-            USES_TERMINAL
-            COMMENT "Running ${arch} Linux Analysis"
-            COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
-            ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode analysis
-    )
+    if (NOT HAKC_USE_PREBUILT_DB)
+        add_custom_command(
+                OUTPUT ${db_dependency_file}
+                WORKING_DIRECTORY ${hakc_build_dir}
+                DEPENDS ${_hakc_clang_dep} linux-${arch}-compilation-db
+                USES_TERMINAL
+                COMMENT "Running ${arch} Linux Analysis"
+                COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
+                ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode analysis
+        )
 
-    add_custom_target(hakc-linux-${arch}-analysis
-            DEPENDS ${hakc_main_config_path} ${_hakc_clang_dep} hakc-linux-${arch}-config linux-${arch}-compilation-db ${db_dependency_file}
-    )
+        add_custom_target(hakc-linux-${arch}-analysis
+                DEPENDS ${hakc_main_config_path} ${_hakc_clang_dep} hakc-linux-${arch}-config linux-${arch}-compilation-db ${db_dependency_file}
+        )
+    else ()
+        # In prebuilt mode: no build rule exists for the DB; it must be present at build time.
+        add_custom_target(hakc-linux-${arch}-analysis
+                COMMAND ${CMAKE_COMMAND} -E echo "HAKC_USE_PREBUILT_DB=ON: skipping analysis; expecting ${db_dependency_file} to exist."
+        )
+    endif ()
 
     add_custom_command(
             OUTPUT ${hardened_kernel_install_path}/${hakc_kernel_name}
@@ -191,6 +199,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             DEPENDS linux-${arch}-compilation-db ${_hakc_clang_dep} ${db_dependency_file}
             USES_TERMINAL
             COMMENT "Building the ${arch} HAKC Linux kernel"
+            COMMAND ${CMAKE_COMMAND} -E echo "Checking for prebuilt DB: ${db_dependency_file}"
+            COMMAND test -f ${db_dependency_file}
             COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
             ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode enforcement
