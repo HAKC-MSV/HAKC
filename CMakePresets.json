@@ -55,7 +55,7 @@
       }
     },
     {
-      "name": "ci-linux-build",
+      "name": "ci-linux-analysis-build",
       "inherits": "base",
       "description": "Configuration for CI Linux builds (Assumes installed clang at /opt/hakc)",
       "binaryDir": "${sourceDir}/cmake-build-hakc-release",
@@ -64,6 +64,16 @@
         "CMAKE_BUILD_TYPE": "Release",
         "HAKC_CC": "/opt/hakc/bin/clang",
         "HAKC_SERVER_PROCESS_PATH": "/opt/hakc/utils/hakc/hakc-server-process"
+      }
+    },
+    {
+      "name": "ci-linux-enforcement-build",
+      "inherits": "ci-linux-analysis-build",
+      "description": "Configuration for CI Linux builds that uses prebuilt database (Assumes installed clang at /opt/hakc)",
+      "binaryDir": "${sourceDir}/cmake-build-hakc-release",
+      "installDir": "hakc",
+      "cacheVariables": {
+        "HAKC_USE_PREBUILT_DB": "ON"
       }
     }
   ]

@@ -370,7 +370,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cmake --preset ci-linux-build
+          cmake --preset ci-linux-analysis-build
 
       - name: Generating DAG
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
@@ -433,7 +433,7 @@ jobs:
         run: |
           set -euo pipefail
           ls -al /opt
-          cmake --preset ci-linux-build
+          cmake --preset ci-linux-enforcement-build
 
       - name: Download DAG artifact from JFrog
         if: needs.determine-build-needs.outputs.rebuild_kernel
@@ -462,11 +462,6 @@ jobs:
           test -d "${DEST_DIR}/hakc-db"
           echo "The database is located at ${DEST_DIR}/hakc-db"
           ls -al "${DEST_DIR}/hakc-db"
-          
-          # Ensure CMake resolves dependencies correctly
-          touch "${DEST_DIR}/hakc-db/data.kz"
-          
-          echo "Touched ${DEST_DIR}/hakc-db/data.kz to satisfy CMake dependency"
 
       - name: Build HAKC Kernel
         if: needs.determine-build-needs.outputs.rebuild_kernel
