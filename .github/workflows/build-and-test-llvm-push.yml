@@ -273,7 +273,7 @@ jobs:
         shell: bash
         env:
           LIT_XFAIL: "ThinLTO/X86/cache.ll"
-          LIT_FILTER_OUT: "tools/llvm-objcopy/ELF/strip-preserve-atime\.test"
+          LIT_FILTER_OUT: "tools/llvm-objcopy/ELF/strip-preserve-atime\\.test"
         run: |
           set -euo pipefail
           python3 -m venv $VENV_DIR
