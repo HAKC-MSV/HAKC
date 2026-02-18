@@ -45,18 +45,10 @@ jobs:
       python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
 
     steps:
-      - name: Checkout (no submodules)
-        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: .github/actions/setup-environment
         with:
-          fetch-depth: 0
-          submodules: "false"
-          ref: ${{ github.sha }}
-
-      - name: Prepare workspace
-        shell: bash
-        run: |
-          set -euo pipefail
-          chown -R root:root .
+          checkout_submodules: "false"
 
       - name: Compute LLVM Information
         id: llvm_info
@@ -239,33 +231,18 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
     steps:
-      - name: Checkout
+      - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
-        uses: actions/checkout@v4
+        uses: .github/actions/setup-environment
         with:
-          fetch-depth: 0
-          submodules: "true"
-          ref: ${{ github.sha }}
-
-      - name: Prepare workspace
-        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
-        shell: bash
-        run: |
-          set -euo pipefail
-          chown -R root:root .
-
-      - name: Install Dependencies
-        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
-        run: |
-          apt update
-          apt install -y $DEPS_TO_INSTALL
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-release'
 
       - name: Build Clang/LLVM
         if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         shell: bash
         run: |
           set -euo pipefail
-          cmake --preset ci-release
           cmake --build $BUILD_DIR -- -j $(nproc)
 
       - name: Establish Python venv
@@ -320,29 +297,12 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
-      - name: Checkout Sources
+      - name: Setup environment
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
-        uses: actions/checkout@v4
+        uses: .github/actions/setup-environment
         with:
-          fetch-depth: 0
-          submodules: 'true'
-          ref: ${{ github.sha }}
-
-      - name: Install Dependencies
-        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          chown -R root:root .
-          apt update
-          apt install -y $DEPS_TO_INSTALL
-
-      - name: Configure Environment
-        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cmake --preset ci-linux-analysis-build
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-linux-analysis-build'
 
       - name: Establish Python venv
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
@@ -386,30 +346,12 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
-      - name: Checkout Sources
+      - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_kernel
-        uses: actions/checkout@v4
+        uses: .github/actions/setup-environment
         with:
-          fetch-depth: 0
-          submodules: 'true'
-          ref: ${{ github.sha }}
-
-      - name: Install Dependencies
-        if: needs.determine-build-needs.outputs.rebuild_kernel
-        shell: bash
-        run: |
-          set -euo pipefail
-          chown -R root:root .
-          apt update
-          apt install -y $DEPS_TO_INSTALL
-
-      - name: Configure Environment
-        if: needs.determine-build-needs.outputs.rebuild_kernel
-        shell: bash
-        run: |
-          set -euo pipefail
-          ls -al /opt
-          cmake --preset ci-linux-enforcement-build
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-linux-enforcement-build'
 
       - name: Download DAG artifact from JFrog
         if: needs.determine-build-needs.outputs.rebuild_kernel
@@ -466,7 +408,7 @@ jobs:
           DET_TAG: ${{ needs.determine-build-needs.outputs.kernel_image_tag }}
           IMAGE_ID: ${{ env.KERNEL_IMAGEID }}
           DOCKER_FILE_TEMPLATE: Dockerfile-linux.template
-          INSTALL_DIR: "$BUILD_DIR/linux/$LINUX_ARCH"
+          INSTALL_DIR: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH}}"
         run: |
           set -euo pipefail
           bash scripts/build-docker-image.sh

@@ -1,0 +1,49 @@
+name: Set up HAKC build environment
+description: Checks out sources and sets environment
+inputs:
+  checkout_submodules:
+    description: Checkout submodules
+    required: false
+    default: "true"
+  ref_sha:
+    description: Git commit to checkout
+    required: false
+    default: ""
+  dependencies_to_install:
+    description: Packages needed to install
+    required: false
+    default: ""
+  cmake_preset:
+    description: CMake Preset to configure
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Checkout sources
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        submodules: ${{ inputs.checkout_submodules }}
+        ref: ${{ inputs.ref_sha || github.sha }}
+    - name: Prepare workspace
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        chown -R root:root .
+    - name: Install Dependencies
+      if: ${{ inputs.dependencies_to_install != '' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        apt update
+        apt install -y ${{ inputs.dependencies_to_install }}
+    - name: Configure CMake
+      if: ${{ inputs.cmake_preset != '' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        cmake --preset ${{ inputs.cmake_preset }}
