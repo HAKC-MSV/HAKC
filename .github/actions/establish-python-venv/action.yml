@@ -1,0 +1,35 @@
+name: Restore Python venv cache
+description: Restore/create a venv and install requirements
+inputs:
+  venv_dir:
+    description: "Path to the Python virtual environment directory"
+    required: true
+  cache_key:
+    description: "Cache key to use"
+    required: true
+  requirements_path:
+    description: "Path to the Python requirements file"
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore Python venv cache
+      uses: actions/cache@v1
+      with:
+        path: ${{ inputs.venv_dir }}
+        key: ${{ inputs.cache_key }}
+
+    - name: Create venv and install requirements (if needed)
+      shell: bash
+      env:
+        VENV_DIR: ${{ inputs.venv_dir }}
+        HAKC_PYTHON_REQUIREMENTS_PATH: ${{ inputs.requirements_path }}
+      run: |
+        set -euo pipefail
+        
+        if [[ ! -x "$VENV_DIR/bin/python" ]]; then
+          python3 -m venv "$VENV_DIR"
+          source "$VENV_DIR/bin/activate"
+          pip install -r "$HAKC_PYTHON_REQUIREMENTS_PATH"
+        fi
