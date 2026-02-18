@@ -42,7 +42,7 @@ jobs:
       linux_sha: ${{ steps.dag_info.outputs.linux_sha }}
       kernel_image_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
       rebuild_kernel: ${{ steps.kernel_check.outputs.exists == 'false' }}
-      python_venv_cache_key: venv-${{ runner.os }}-${{ steps.llvm_info.outputs.python_reqs_hash }}
+      python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
 
     steps:
       - name: Checkout (no submodules)
@@ -140,14 +140,14 @@ jobs:
             rebuild="true"
           fi
           
-          python_reqs_hash="$(sha256sum "$HAKC_PYTHON_REQUIREMENTS_PATH" | awk '{print $1}')"
-          echo "python_reqs_hash=$python_reqs_hash" >> "$GITHUB_OUTPUT"
+          python_venv_cache_key="venv-${{ runner.os }}-$SHA"
+          echo "python_venv_cache_key=$python_venv_cache_key" >> "$GITHUB_OUTPUT"
           
           echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "event:            ${{ github.event_name }}"
-          echo "rebuild:          $rebuild"
-          echo "tag:              $TAG"
-          echo "python_reqs_hash: $python_reqs_hash"
+          echo "event:                  ${{ github.event_name }}"
+          echo "rebuild:                $rebuild"
+          echo "tag:                    $TAG"
+          echo "python_venv_cache_key:  $python_venv_cache_key"
 
       - name: Compute DAG Information
         id: dag_info
