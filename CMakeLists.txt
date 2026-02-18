@@ -236,11 +236,17 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}
             COMMAND chmod +x ${ROOTFS_DIR}/init
 
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
+            # Copy the rosdemo code
+            COMMAND${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/scripts/ros2-demo ${ROOTFS_DIR}/etc
 
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
             COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR} sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
 
-            DEPENDS ${BUSYBOX_EXECUTABLE} ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${hardened_kernel_install_path}/${hakc_kernel_name}
+            DEPENDS ${BUSYBOX_EXECUTABLE}
+            ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init
+            ${hardened_kernel_install_path}/${hakc_kernel_name}
+            ${CMAKE_SOURCE_DIR}/scripts/ros2-demo/hakc-demo-exploit.c
+            ${CMAKE_SOURCE_DIR}/scripts/ros2-demo/run-rosdemo.sh
             WORKING_DIRECTORY ${hakc_build_dir}
             VERBATIM
     )
