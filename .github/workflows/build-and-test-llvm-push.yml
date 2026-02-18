@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Setup environment
-        uses: .github/actions/setup-environment
+        uses: ./.github/actions/setup-environment
         with:
           checkout_submodules: "false"
 
@@ -233,7 +233,7 @@ jobs:
     steps:
       - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
-        uses: .github/actions/setup-environment
+        uses: ./.github/actions/setup-environment
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-release'
@@ -299,7 +299,7 @@ jobs:
     steps:
       - name: Setup environment
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
-        uses: .github/actions/setup-environment
+        uses: ./.github/actions/setup-environment
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-linux-analysis-build'
@@ -348,7 +348,7 @@ jobs:
     steps:
       - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_kernel
-        uses: .github/actions/setup-environment
+        uses: ./.github/actions/setup-environment
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-linux-enforcement-build'
