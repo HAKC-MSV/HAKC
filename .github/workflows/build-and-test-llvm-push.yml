@@ -45,10 +45,15 @@ jobs:
       python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
 
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+          ref: ${{ github.sha }}
+
       - name: Setup environment
         uses: ./.github/actions/setup-environment
-        with:
-          checkout_submodules: "false"
 
       - name: Compute LLVM Information
         id: llvm_info
@@ -231,6 +236,13 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+          ref: ${{ github.sha }}
+
       - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         uses: ./.github/actions/setup-environment
@@ -297,6 +309,13 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+          ref: ${{ github.sha }}
+
       - name: Setup environment
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         uses: ./.github/actions/setup-environment
@@ -346,6 +365,13 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+          ref: ${{ github.sha }}
+
       - name: Setup environment
         if: needs.determine-build-needs.outputs.rebuild_kernel
         uses: ./.github/actions/setup-environment
