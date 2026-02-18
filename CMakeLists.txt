@@ -237,7 +237,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMAND chmod +x ${ROOTFS_DIR}/init
 
             # Copy the rosdemo code
-            COMMAND${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/scripts/ros2-demo ${ROOTFS_DIR}/etc
+            COMMAND ${CMAKE_COMMAND} -E make_directory ${ROOTFS_DIR}/etc/ros2-demo
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/scripts/ros2-demo ${ROOTFS_DIR}/etc/ros2-demo
+            COMMAND chmod +x ${ROOTFS_DIR}/etc/ros2-demo/run-rosdemo.sh
 
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
             COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR} sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"

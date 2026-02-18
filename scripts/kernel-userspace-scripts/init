@@ -1,8 +1,21 @@
-#!/bin/sh
-
 mount -t proc  proc /proc
 mount -t sysfs sys  /sys
 mount -t devtmpfs dev /dev || mkdir -p /dev
+
 echo "Booted BusyBox userspace"
 
+CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
+
+# If kernel cmdline contains: hakc_test=rosdemo
+if echo "$CMDLINE" | grep -q 'hakc_test=rosdemo'; then
+  echo "HAKC_TEST: running /etc/ros2-demo/run-rosdemo.sh"
+  /bin/sh /etc/ros2-demo/run-rosdemo.sh
+  rc=$?
+  echo "HAKC_TEST_RESULT rc=$rc"
+
+  # Power off so CI can stop QEMU cleanly
+  poweroff -f 2>/dev/null || reboot -f
+fi
+
+# Default interactive behavior
 /bin/sh
