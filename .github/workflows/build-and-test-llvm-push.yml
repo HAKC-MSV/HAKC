@@ -237,6 +237,7 @@ jobs:
 
     steps:
       - name: Checkout sources
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -310,6 +311,7 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
       - name: Checkout sources
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -366,6 +368,7 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
       - name: Checkout sources
+        if: needs.determine-build-needs.outputs.rebuild_kernel
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
