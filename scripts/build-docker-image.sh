@@ -22,12 +22,13 @@ if [[ -n "${ADD_LATEST_TAG:-}" ]]; then
   TAGS+=("amd64-latest")
 fi
 
-# Build once, tag multiple times
-buildah bud --storage-driver vfs \
-  $(printf -- '-t %s:%s ' "$IMAGE_BASE" "${TAGS[@]}") \
-  .
-
-# Push all tags (deterministic first because you want it as the cache key)
+TAG_ARGS=()
 for tag in "${TAGS[@]}"; do
-  buildah push --storage-driver vfs "$IMAGE_BASE:$tag"
+  TAG_ARGS+=(-t "${IMAGE_BASE}:${tag}")
+done
+
+buildah bud --storage-driver vfs "${TAG_ARGS[@]}" .
+
+for tag in "${TAGS[@]}"; do
+  buildah push --storage-driver vfs "${IMAGE_BASE}:${tag}"
 done
