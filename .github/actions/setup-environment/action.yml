@@ -33,6 +33,9 @@ runs:
       run: |
         set -euo pipefail
         
+        # Convert SSH URLs to HTTPS for CI environment
+        git config --global url."https://llcad-github.llan.ll.mit.edu/".insteadOf "git@llcad-github.llan.ll.mit.edu:"
+        
         for submodule in ${{ inputs.submodules_to_init }}; do
           git submodule update --init --recursive -- "$submodule"
         done
