@@ -329,7 +329,7 @@ jobs:
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-linux-analysis-build'
-          submodules_to_init: 'linux'
+          submodules_to_init: 'linux llvm-project'
 
       - name: Establish Python venv
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
@@ -395,7 +395,7 @@ jobs:
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-linux-enforcement-build'
-          submodules_to_init: 'linux'
+          submodules_to_init: 'linux llvm-project'
 
       - name: Generate compilation database
         uses: ./.github/actions/get-kernel-compilation-database
