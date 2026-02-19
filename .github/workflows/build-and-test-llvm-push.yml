@@ -44,7 +44,7 @@ jobs:
       kernel_image_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
       rebuild_kernel: ${{ steps.kernel_check.outputs.exists == 'false' }}
       python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
-      compilation_database_cache_key: ${{ steps.kernel_check.outputs.compilation_database_cache_key }}
+      compilation_database_cache_key: ${{ steps.dag_info.outputs.compilation_database_cache_key }}
 
     steps:
       - name: Checkout sources
