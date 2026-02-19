@@ -3,5 +3,5 @@ RUN apt -y update && apt install -y $DEPS_TO_INSTALL \
     && apt clean all && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
 ADD $INSTALL_DIR/hakc-kernel /opt/hakc-linux
 ADD $INSTALL_DIR/rootfs.cpio.gz /opt/hakc-linux
-COPY /opt/hakc /opt/hakc
+COPY ./hakc /opt/hakc
 CMD ["/bin/bash"]

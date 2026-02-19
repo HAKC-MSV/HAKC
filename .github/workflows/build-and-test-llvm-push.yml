@@ -464,6 +464,7 @@ jobs:
           INSTALL_DIR: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH}}"
         run: |
           set -euo pipefail
+          cp -r /opt/hakc ./hakc
           bash scripts/build-docker-image.sh
   
   
