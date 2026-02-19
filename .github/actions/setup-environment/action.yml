@@ -20,6 +20,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Prepare workspace
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        chown -R root:root .
+
     - name: Initialize Submodules
       if: ${{ inputs.submodules_to_init != '' }}
       shell: bash
@@ -30,12 +37,6 @@ runs:
           git submodule update --init --recursive -- "$submodule"
         done
 
-    - name: Prepare workspace
-      shell: bash
-      run: |
-        set -euo pipefail
-        
-        chown -R root:root .
     - name: Install Dependencies
       if: ${{ inputs.dependencies_to_install != '' }}
       shell: bash
