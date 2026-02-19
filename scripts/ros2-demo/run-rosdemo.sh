@@ -2,7 +2,7 @@
 
 EXPLOIT=hakc-demo-exploit
 
-clang -o $EXPLOIT $EXPLOIT.c
+/opt/hakc/bin/clang -o $EXPLOIT $EXPLOIT.c
 
 modprobe rosdemo-leaker
 modprobe rosdemo-consumer

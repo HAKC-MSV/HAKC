@@ -4,6 +4,15 @@ mount -t devtmpfs dev /dev || mkdir -p /dev
 
 echo "Booted BusyBox userspace"
 
+# Mount the host's /opt/hakc directory
+mkdir -p /opt/hakc
+mount -t 9p -o trans=virtio,version=9p2000.L hakc /opt/hakc
+if [ $? -eq 0 ]; then
+  echo "Successfully mounted /opt/hakc from host"
+else
+  echo "Warning: Failed to mount /opt/hakc from host"
+fi
+
 CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
 
 # If kernel cmdline contains: hakc_test=rosdemo

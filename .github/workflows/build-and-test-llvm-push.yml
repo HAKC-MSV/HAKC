@@ -470,6 +470,7 @@ jobs:
             -initrd $INIT_RD_PATH \
             -append "$KERNEL_CMD_ARGS" \
             -nographic \
+            -virtfs local,path=/opt/hakc,mount_tag=hakc,security_model=none,id=hakc \
             2>&1 | tee $OUTPUT_FILE &
           
           QEMU_PID=$!
