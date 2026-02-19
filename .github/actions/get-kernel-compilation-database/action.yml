@@ -1,0 +1,42 @@
+name: Get or create the cached kernel compilation database
+description: Attempts to find a cached compilation database for the kernel, or creates one if not found
+inputs:
+  compilation_db_path:
+    description: Path to compilation database
+    required: true
+  compilation_db_cache_key:
+    description: Compilation database cache key
+    required: true
+  build_dir:
+    description: CMake build directory
+    required: true
+  compilation_db_target:
+    description: Target to call to generate the compilation database
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Restore compilation database cache
+      uses: actions/cache@v1
+      with:
+        path: ${{ inputs.compilation_db_path }}
+        key: ${{ inputs.compilation_db_cache_key }}
+    - name: Create compilation database (if needed)
+      shell: bash
+      env:
+        CMAKE_BUILD_DIR: ${{ inputs.build_dir }}
+        CMAKE_TARGET: ${{ inputs.compilation_db_target }}
+        COMPILATION_DB_PATH: ${{ inputs.compilation_db_path }}
+      run: |
+        set -euo pipefail
+        
+        if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
+          cmake --build "$CMAKE_BUILD_DIR" --target $CMAKE_TARGET
+          # Verify the file was actually created
+          if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
+            echo "ERROR: CMake target completed but $COMPILATION_DB_PATH was not created"
+            exit 1
+          fi
+        else
+          echo "Using cached compilation database at $COMPILATION_DB_PATH"
+        fi

@@ -43,6 +43,7 @@ jobs:
       kernel_image_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
       rebuild_kernel: ${{ steps.kernel_check.outputs.exists == 'false' }}
       python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
+      compilation_database_cache_key: ${{ steps.kernel_check.outputs.compilation_database_cache_key }}
 
     steps:
       - name: Checkout sources
@@ -181,12 +182,17 @@ jobs:
             skip_analysis="true"
           fi
           echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
+          
+          compilation_database_cache_key="linux-db-${LINUX_ARCH}-${SHA}"
+          echo "compilation_database_cache_key=$compilation_database_cache_key" >> "$GITHUB_OUTPUT"
 
           echo "dag_hit:        $HIT (HTTP ${code})"
           echo "skip_analysis:  $skip_analysis"
           echo "dag_name:       $name"
           echo "linux_sha:      $SHA"
           echo "linux_tag_name: $linux_tag_name"
+          echo "db cache key:   $compilation_database_cache_key"
+
 
       - name: Check if Kernel Image exists in JFrog
         id: kernel_check
@@ -333,6 +339,15 @@ jobs:
           cache_key: ${{ needs.determine-build-needs.outputs.python_venv_cache_key }}
           requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
 
+      - name: Generate compilation database
+        uses: ./.github/actions/get-kernel-compilation-database
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        with:
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
+          build_dir: ${{ env.BUILD_DIR }}
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+
       - name: Generating DAG
         if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
         shell: bash
@@ -381,6 +396,15 @@ jobs:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
           cmake_preset: 'ci-linux-enforcement-build'
           submodules_to_init: 'linux'
+
+      - name: Generate compilation database
+        uses: ./.github/actions/get-kernel-compilation-database
+        if: needs.determine-build-needs.outputs.rebuild_kernel
+        with:
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
+          build_dir: ${{ env.BUILD_DIR }}
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
 
       - name: Download DAG artifact from JFrog
         if: needs.determine-build-needs.outputs.rebuild_kernel
