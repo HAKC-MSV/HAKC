@@ -130,7 +130,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     set(hakc_analysis_core_count ${HAKC_LINUX_CORE_COUNT})
 
     set(ROOTFS_DIR ${hakc_build_dir}/rootfs)
-    set(INITRAMFS_IMG ${hakc_build_dir}/rootfs.cpio.gz)
+    set(USERSPACE_IMG ${hakc_build_dir}/rootfs.img)
 
     message(STATUS "db_dependency_file is ${db_dependency_file}")
 
@@ -214,17 +214,22 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_command(
-            OUTPUT ${INITRAMFS_IMG}
+            OUTPUT ${USERSPACE_IMG}
             COMMAND ${CMAKE_COMMAND} -E rm -rf ${ROOTFS_DIR}
             COMMAND ${CMAKE_COMMAND} -E make_directory
             ${ROOTFS_DIR}
-            ${ROOTFS_DIR}/bin
-            ${ROOTFS_DIR}/sbin
+            ${ROOTFS_DIR}/etc/ros2-demo
             ${ROOTFS_DIR}/proc
             ${ROOTFS_DIR}/sys
             ${ROOTFS_DIR}/dev
-            ${ROOTFS_DIR}/etc
+            ${ROOTFS_DIR}/tmp
+            ${ROOTFS_DIR}/var
+            ${ROOTFS_DIR}/root
+            ${ROOTFS_DIR}/home
+            ${ROOTFS_DIR}/opt
             ${ROOTFS_DIR}/lib
+            ${ROOTFS_DIR}/lib64
+
             COMMAND ${CMAKE_COMMAND} -E copy ${BUSYBOX_EXECUTABLE} ${ROOTFS_DIR}/bin/busybox
             COMMAND chmod 755 ${ROOTFS_DIR}/bin/busybox
 
@@ -232,34 +237,47 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin ./busybox --install -s .
             COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR}/bin sh -c "find . -type l | xargs -I{} ln -sf ./busybox {}"
 
-            # Create a minimal init script
-            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}
-            COMMAND chmod +x ${ROOTFS_DIR}/init
-
             # Copy the rosdemo code
-            COMMAND ${CMAKE_COMMAND} -E make_directory ${ROOTFS_DIR}/etc/ros2-demo
             COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/scripts/ros2-demo ${ROOTFS_DIR}/etc/ros2-demo
             COMMAND chmod +x ${ROOTFS_DIR}/etc/ros2-demo/run-rosdemo.sh
 
-            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
-            COMMAND ${CMAKE_COMMAND} -E chdir ${ROOTFS_DIR} sh -c "find . | cpio -H newc -o | gzip -9 > ${INITRAMFS_IMG}"
+            # Build the exploit binary
+            COMMAND ${HAKC_CC} -o ${ROOTFS_DIR}/etc/ros2-demo/hakc-demo-exploit ${CMAKE_SOURCE_DIR}/scripts/ros2-demo/hakc-demo-exploit.c
 
-            DEPENDS ${BUSYBOX_EXECUTABLE}
-            ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init
+            # Use ldd to find and copy library dependencies dynamically
+            # Extract library paths from ldd output and copy them (following symlinks)
+            COMMAND sh -c "ldd ${ROOTFS_DIR}/etc/ros2-demo/hakc-demo-exploit | grep '=> \/' | awk '{ print \$3 }' | xargs -I {} cp -L {} ${ROOTFS_DIR}/lib/"
+
+            # Copy the dynamic linker (ld-linux-*.so.*)
+            # It appears in ldd output but without '=>', so handle it separately
+            COMMAND sh -c "ldd ${ROOTFS_DIR}/etc/ros2-demo/hakc-demo-exploit | grep -E '^[[:space:]]*/lib' | awk '{print \$1}' | xargs -I {} sh -c 'mkdir -p ${ROOTFS_DIR}/\$(dirname \"{}\") && cp -L \"{}\" ${ROOTFS_DIR}/\"{}\"'"
+
+            # Copy the kernel modules
+            COMMAND ${CMAKE_COMMAND} -E copy_directory ${hardened_kernel_install_path}/lib/modules ${ROOTFS_DIR}/lib/modules
+
+            # Copy the init script
+            COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}/sbin/init
+            COMMAND chmod +x ${ROOTFS_DIR}/sbin/init
+
+            COMMAND sh -c "SIZE=\$(du -sm ${ROOTFS_DIR} | awk '{print int(\$1 * 1.2)}')M && truncate -s \$SIZE ${USERSPACE_IMG} && mkfs.ext4 -F -d ${ROOTFS_DIR} ${USERSPACE_IMG}"
+
+            DEPENDS
             ${hardened_kernel_install_path}/${hakc_kernel_name}
             ${CMAKE_SOURCE_DIR}/scripts/ros2-demo/hakc-demo-exploit.c
             ${CMAKE_SOURCE_DIR}/scripts/ros2-demo/run-rosdemo.sh
+            ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init
+            ${_hakc_clang_dep}
             WORKING_DIRECTORY ${hakc_build_dir}
             VERBATIM
     )
 
     # High-level target that always builds the initramfs
     add_custom_target(hakc-${arch}-userspace
-            DEPENDS ${INITRAMFS_IMG} hakc-linux-${arch}-enforcement
+            DEPENDS ${USERSPACE_IMG} hakc-linux-${arch}-enforcement
     )
 
     add_custom_target(run-${arch}-hakc-kernel
-            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -initrd ${INITRAMFS_IMG} -m 16G -append \"console=ttyS0 rdinit=/init root=/dev/ram rw\" -nographic
+            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -drive file=${USERSPACE_IMG},format=raw,if=virtio -m 16G -append \"console=ttyS0 rdinit=/bin/bash root=/dev/vda rw\" -nographic
             DEPENDS hakc-linux-${arch}-enforcement hakc-${arch}-userspace
             USES_TERMINAL
             WORKING_DIRECTORY ${hakc_build_dir}

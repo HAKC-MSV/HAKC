@@ -1,17 +1,8 @@
-mount -t proc  proc /proc
-mount -t sysfs sys  /sys
-mount -t devtmpfs dev /dev || mkdir -p /dev
+#!/bin/sh
 
-echo "Booted BusyBox userspace"
-
-# Mount the host's /opt/hakc directory
-mkdir -p /opt/hakc
-mount -t 9p -o trans=virtio,version=9p2000.L hakc /opt/hakc
-if [ $? -eq 0 ]; then
-  echo "Successfully mounted /opt/hakc from host"
-else
-  echo "Warning: Failed to mount /opt/hakc from host"
-fi
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
 
 CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
 
