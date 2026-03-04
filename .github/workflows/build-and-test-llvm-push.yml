@@ -475,8 +475,8 @@ jobs:
     runs-on: [ arc-runner-set-llcad-prod ]
     env:
       KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
-      INIT_RD_PATH: "/opt/hakc-linux/rootfs.cpio.gz"
-      KERNEL_CMD_ARGS: "console=ttyS0 rdinit=/init root=/dev/ram rw hakc_test=rosdemo"
+      ROOT_FS_PATH: "/opt/hakc-linux/rootfs.img"
+      KERNEL_CMD_ARGS: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo"
       SEARCH_STRING: "HAKC_TEST_RESULT rc=0"
       TIMEOUT_SECONDS: 60
     container:
@@ -493,10 +493,10 @@ jobs:
           # Start QEMU in background, redirect output to file and stdout
           timeout $TIMEOUT_SECONDS qemu-system-$LINUX_ARCH \
             -kernel $KERNEL_PATH \
-            -initrd $INIT_RD_PATH \
+            -drive file=$ROOT_FS_PATH,format=raw,if=virtio \
+            -m 16G \
             -append "$KERNEL_CMD_ARGS" \
             -nographic \
-            -virtfs local,path=/opt/hakc,mount_tag=hakc,security_model=none,id=hakc \
             2>&1 | tee $OUTPUT_FILE &
           
           QEMU_PID=$!
