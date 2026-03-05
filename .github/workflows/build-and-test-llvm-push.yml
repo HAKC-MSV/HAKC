@@ -154,11 +154,25 @@ jobs:
         run: |
           set -euo pipefail
           
-          SHA="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
-          if [[ -z "$SHA" ]]; then
-            echo "ERROR: could not read gitlink for linux from ${{ github.sha }}" >&2
-            exit 1
-          fi
+          FILES_TO_HASH=(
+            "linux"
+            "scripts/kernel-userspace-scripts/init"
+            "scripts/ros2-demo/run-rosdemo.sh"
+            "scripts/ros2-demo/hakc-demo-exploit.c"
+          )
+          
+          COMBINED_HASH=""
+          for FILE in "${FILES_TO_HASH[@]}"; do
+            FILE_HASH="$(git rev-parse -q --verify "${{ github.sha }}:$FILE" 2>/dev/null || true)"
+            if [[ -z "$FILE_HASH" ]]; then
+              echo "ERROR: could not read gitlink for $FILE from ${{ github.sha }}" >&2
+              exit 1
+            fi
+            COMBINED_HASH="${COMBINED_HASH}${FILE_HASH}"
+          done
+          
+          SHA="$(echo -n "$COMBINED_HASH" | sha256sum | awk '{print $1}')"
+          
           echo "linux_sha=$SHA" >> "$GITHUB_OUTPUT"
           
           name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$SHA"
@@ -233,7 +247,7 @@ jobs:
           echo "exists=$EXISTS" >> "$GITHUB_OUTPUT"
           echo "http_code=$code" >> "$GITHUB_OUTPUT"
           echo "exists=$EXISTS"
-          echo "http_code=$code"  
+          echo "http_code=$code"          
 
   build-and-test:
     name: Build & Test LLVM
