@@ -298,6 +298,7 @@ jobs:
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
 
       - name: Build & Push LLVM Image
+        if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_llvm == 'true' }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
