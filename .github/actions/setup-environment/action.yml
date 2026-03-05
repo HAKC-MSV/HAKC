@@ -13,6 +13,10 @@ inputs:
     description: CMake Preset to configure
     required: false
     default: ""
+  submodules_to_init:
+    description: Submodules to initialize
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -20,8 +24,22 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        
+
         chown -R root:root .
+
+    - name: Initialize Submodules
+      if: ${{ inputs.submodules_to_init != '' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        
+        # Convert SSH URLs to HTTPS for CI environment
+        git config --global url."https://llcad-github.llan.ll.mit.edu/".insteadOf "git@llcad-github.llan.ll.mit.edu:"
+        
+        for submodule in ${{ inputs.submodules_to_init }}; do
+          git submodule update --init --recursive -- "$submodule"
+        done
+
     - name: Install Dependencies
       if: ${{ inputs.dependencies_to_install != '' }}
       shell: bash

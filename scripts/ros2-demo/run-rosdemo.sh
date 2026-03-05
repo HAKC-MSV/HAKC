@@ -2,10 +2,10 @@
 
 EXPLOIT=hakc-demo-exploit
 
-/opt/hakc/bin/clang -o $EXPLOIT $EXPLOIT.c
+cd /etc/ros2-demo
 
-modprobe rosdemo-leaker
-modprobe rosdemo-consumer
+busybox modprobe rosdemo-leaker
+busybox modprobe rosdemo-consumer
 
 mknod /dev/r1 c 509 0
 mknod /dev/r2 c 508 0

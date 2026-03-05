@@ -1,10 +1,11 @@
-mount -t proc  proc /proc
-mount -t sysfs sys  /sys
-mount -t devtmpfs dev /dev || mkdir -p /dev
+#!/bin/sh
 
-echo "Booted BusyBox userspace"
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
 
 CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
+depmod -a 2>/dev/null || true
 
 # If kernel cmdline contains: hakc_test=rosdemo
 if echo "$CMDLINE" | grep -q 'hakc_test=rosdemo'; then
