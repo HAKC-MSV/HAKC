@@ -41,7 +41,7 @@ jobs:
       skip_analysis: ${{ steps.results.outputs.skip_analysis }}
       dag_name: ${{ steps.results.outputs.dag_name }}
       hardened_kernel_environment: ${{ steps.results.outputs.hardened_kernel_environment }}
-      kernel_image_tag: ${{ steps.results.outputs.linux_tag_name }}
+      kernel_image_tag: ${{ steps.results.outputs.kernel_image_tag }}
       rebuild_kernel: ${{ steps.results.outputs.rebuild_kernel }}
       python_venv_cache_key: ${{ steps.results.outputs.python_venv_cache_key }}
       compilation_database_cache_key: ${{ steps.results.outputs.compilation_database_cache_key }}
