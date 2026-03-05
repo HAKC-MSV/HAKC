@@ -24,7 +24,7 @@ env:
 
 on:
   push:
-    branches: [ main, next ]
+    branches: [ main, next, al32163/next/access-token-fix ]
   pull_request:
     branches: [ main, next ]
     types: [ opened, synchronize, reopened, ready_for_review ]
