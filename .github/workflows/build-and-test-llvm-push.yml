@@ -36,15 +36,15 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     outputs:
-      rebuild_llvm: ${{ steps.llvm_info.outputs.rebuild }}
-      llvm_image_tag: ${{ steps.llvm_info.outputs.tag }}
-      skip_analysis: ${{ steps.dag_info.outputs.skip_analysis }}
-      dag_name: ${{ steps.dag_info.outputs.name }}
-      linux_sha: ${{ steps.dag_info.outputs.linux_sha }}
-      kernel_image_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
-      rebuild_kernel: ${{ steps.kernel_check.outputs.exists == 'false' }}
-      python_venv_cache_key: ${{ steps.llvm_info.outputs.python_venv_cache_key }}
-      compilation_database_cache_key: ${{ steps.dag_info.outputs.compilation_database_cache_key }}
+      rebuild_llvm: ${{ steps.results.outputs.rebuild }}
+      llvm_image_tag: ${{ steps.results.outputs.tag }}
+      skip_analysis: ${{ steps.results.outputs.skip_analysis }}
+      dag_name: ${{ steps.results.outputs.name }}
+      linux_sha: ${{ steps.results.outputs.linux_sha }}
+      kernel_image_tag: ${{ steps.results.outputs.linux_tag_name }}
+      rebuild_kernel: ${{ steps.results.outputs.rebuild_kernel }}
+      python_venv_cache_key: ${{ steps.results.outputs.python_venv_cache_key }}
+      compilation_database_cache_key: ${{ steps.results.outputs.compilation_database_cache_key }}
 
     steps:
       - name: Checkout sources
@@ -249,6 +249,20 @@ jobs:
           echo "exists=$EXISTS"
           echo "http_code=$code"          
 
+      - name: Output results
+        id: results
+        shell: bash
+        run: |
+          echo "rebuild_llvm=${{ steps.llvm_info.outputs.rebuild }}" | tee -a "$GITHUB_OUTPUT"
+          echo "llvm_image_tag=${{ steps.llvm_info.outputs.tag }}" | tee -a "$GITHUB_OUTPUT"
+          echo "skip_analysis=${{ steps.dag_info.outputs.skip_analysis }}" | tee -a "$GITHUB_OUTPUT"
+          echo "dag_name=${{ steps.dag_info.outputs.name }}" | tee -a "$GITHUB_OUTPUT"
+          echo "linux_sha=${{ steps.dag_info.outputs.linux_sha }}" | tee -a "$GITHUB_OUTPUT"
+          echo "kernel_image_tag=${{ steps.dag_info.outputs.linux_tag_name }}" | tee -a "$GITHUB_OUTPUT"
+          echo "rebuild_kernel=${{ steps.kernel_check.outputs.exists == 'false' }}" | tee -a "$GITHUB_OUTPUT"
+          echo "python_venv_cache_key=${{ steps.llvm_info.outputs.python_venv_cache_key }}" | tee -a "$GITHUB_OUTPUT"
+          echo "compilation_database_cache_key=${{ steps.dag_info.outputs.compilation_database_cache_key }}" | tee -a "$GITHUB_OUTPUT"
+
   build-and-test:
     name: Build & Test LLVM
     needs: [ determine-build-needs ]
@@ -402,14 +416,14 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
       - name: Checkout sources
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
       - name: Setup environment
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         uses: ./.github/actions/setup-environment
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
@@ -418,7 +432,7 @@ jobs:
 
       - name: Generate compilation database
         uses: ./.github/actions/get-kernel-compilation-database
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         with:
           compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
           compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
@@ -426,7 +440,7 @@ jobs:
           compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
 
       - name: Download DAG artifact from JFrog
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         shell: bash
         run: |
           set -euo pipefail
@@ -450,7 +464,7 @@ jobs:
           ls -al "${DEST_DIR}/hakc-db"
 
       - name: Establish Python venv
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         uses: ./.github/actions/establish-python-venv
         with:
           venv_dir: ${{ env.VENV_DIR }}
@@ -458,7 +472,7 @@ jobs:
           requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
 
       - name: Build HAKC Kernel
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         shell: bash
         run: |
           set -euo pipefail
@@ -467,21 +481,21 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
 
       - name: Build Userspace
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
 
       - name: Copy HAKC Clang
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         shell: bash
         run: |
           set -euo pipefail
           cp -r /opt/hakc ./hakc
 
       - name: Build & Push Kernel Image
-        if: needs.determine-build-needs.outputs.rebuild_kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
