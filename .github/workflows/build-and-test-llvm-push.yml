@@ -9,9 +9,9 @@ env:
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev kmod"
   VENV_DIR: "python/venv"
-  INSTALL_DIR: "install"
+  LLVM_INSTALL_DIR: "install"
   ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
   FINAL_ARTIFACT_PATH: "install.tar.gz"
   LINUX_ARCH: "x86_64"
@@ -39,8 +39,8 @@ jobs:
       rebuild_llvm: ${{ steps.results.outputs.rebuild }}
       llvm_image_tag: ${{ steps.results.outputs.tag }}
       skip_analysis: ${{ steps.results.outputs.skip_analysis }}
-      dag_name: ${{ steps.results.outputs.name }}
-      linux_sha: ${{ steps.results.outputs.linux_sha }}
+      dag_name: ${{ steps.results.outputs.dag_name }}
+      hardened_kernel_environment: ${{ steps.results.outputs.hardened_kernel_environment }}
       kernel_image_tag: ${{ steps.results.outputs.linux_tag_name }}
       rebuild_kernel: ${{ steps.results.outputs.rebuild_kernel }}
       python_venv_cache_key: ${{ steps.results.outputs.python_venv_cache_key }}
@@ -155,13 +155,13 @@ jobs:
           set -euo pipefail
           
           FILES_TO_HASH=(
-            "linux"
             "scripts/kernel-userspace-scripts/init"
             "scripts/ros2-demo/run-rosdemo.sh"
             "scripts/ros2-demo/hakc-demo-exploit.c"
           )
           
-          COMBINED_HASH=""
+          LINUX_SHA="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
+          COMBINED_HASH="$LINUX_SHA"
           for FILE in "${FILES_TO_HASH[@]}"; do
             FILE_HASH="$(git rev-parse -q --verify "${{ github.sha }}:$FILE" 2>/dev/null || true)"
             if [[ -z "$FILE_HASH" ]]; then
@@ -173,9 +173,9 @@ jobs:
           
           SHA="$(echo -n "$COMBINED_HASH" | sha256sum | awk '{print $1}')"
           
-          echo "linux_sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "hardened_kernel_environment=$SHA" >> "$GITHUB_OUTPUT"
           
-          name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$SHA"
+          name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$LINUX_SHA"
           echo "name=$name" >> "$GITHUB_OUTPUT"
           linux_tag_name="linux-${{ steps.llvm_info.outputs.sha }}-$SHA"
           echo "linux_tag_name=$linux_tag_name" >> "$GITHUB_OUTPUT"
@@ -201,12 +201,12 @@ jobs:
           compilation_database_cache_key="linux-db-${LINUX_ARCH}-${SHA}"
           echo "compilation_database_cache_key=$compilation_database_cache_key" >> "$GITHUB_OUTPUT"
 
-          echo "dag_hit:        $HIT (HTTP ${code})"
-          echo "skip_analysis:  $skip_analysis"
-          echo "dag_name:       $name"
-          echo "linux_sha:      $SHA"
-          echo "linux_tag_name: $linux_tag_name"
-          echo "db cache key:   $compilation_database_cache_key"
+          echo "dag_hit:                          $HIT (HTTP ${code})"
+          echo "skip_analysis:                    $skip_analysis"
+          echo "dag_name:                         $name"
+          echo "hardened_kernel_environment:      $SHA"
+          echo "linux_tag_name:                   $linux_tag_name"
+          echo "db cache key:                     $compilation_database_cache_key"
 
 
       - name: Check if Kernel Image exists in JFrog
@@ -257,7 +257,7 @@ jobs:
           echo "llvm_image_tag=${{ steps.llvm_info.outputs.tag }}" | tee -a "$GITHUB_OUTPUT"
           echo "skip_analysis=${{ steps.dag_info.outputs.skip_analysis }}" | tee -a "$GITHUB_OUTPUT"
           echo "dag_name=${{ steps.dag_info.outputs.name }}" | tee -a "$GITHUB_OUTPUT"
-          echo "linux_sha=${{ steps.dag_info.outputs.linux_sha }}" | tee -a "$GITHUB_OUTPUT"
+          echo "hardened_kernel_environment=${{ steps.dag_info.outputs.hardened_kernel_environment }}" | tee -a "$GITHUB_OUTPUT"
           echo "kernel_image_tag=${{ steps.dag_info.outputs.linux_tag_name }}" | tee -a "$GITHUB_OUTPUT"
           echo "rebuild_kernel=${{ steps.kernel_check.outputs.exists == 'false' }}" | tee -a "$GITHUB_OUTPUT"
           echo "python_venv_cache_key=${{ steps.llvm_info.outputs.python_venv_cache_key }}" | tee -a "$GITHUB_OUTPUT"
@@ -315,8 +315,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf "$INSTALL_DIR"
-          mkdir -p "$INSTALL_DIR"
+          rm -rf "$LLVM_INSTALL_DIR"
+          mkdir -p "$LLVM_INSTALL_DIR"
 
       - name: Install LLVM
         if: ${{ github.event_name == 'push' && needs.determine-build-needs.outputs.rebuild_llvm == 'true' }}
@@ -334,11 +334,12 @@ jobs:
           repo_url: 'ett-jfrog.llan.ll.mit.edu'
           repo_id: 'g0553-docker-local'
           image_id: 'g53-hakc-llvm'
-          deterministic_tag: ${{ needs.some-job.outputs.llvm_image_tag }}
+          deterministic_tag: ${{ needs.determine-build-needs.outputs.llvm_image_tag }}
           commit_tag: 'amd64-${{ github.sha }}'
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-llvm.template'
           add_latest_tag: 'true'
+          install_dir: "${{ env.LLVM_INSTALL_DIR }}"
   
   
   analyze-hakc-kernel:
@@ -416,14 +417,14 @@ jobs:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
     steps:
       - name: Checkout sources
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
 
       - name: Setup environment
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         uses: ./.github/actions/setup-environment
         with:
           dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
@@ -432,7 +433,7 @@ jobs:
 
       - name: Generate compilation database
         uses: ./.github/actions/get-kernel-compilation-database
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         with:
           compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
           compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
@@ -440,7 +441,7 @@ jobs:
           compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
 
       - name: Download DAG artifact from JFrog
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -464,7 +465,7 @@ jobs:
           ls -al "${DEST_DIR}/hakc-db"
 
       - name: Establish Python venv
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         uses: ./.github/actions/establish-python-venv
         with:
           venv_dir: ${{ env.VENV_DIR }}
@@ -472,7 +473,7 @@ jobs:
           requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
 
       - name: Build HAKC Kernel
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
@@ -481,21 +482,21 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
 
       - name: Build Userspace
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
 
       - name: Copy HAKC Clang
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         shell: bash
         run: |
           set -euo pipefail
           cp -r /opt/hakc ./hakc
 
       - name: Build & Push Kernel Image
-        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel }}
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -508,6 +509,7 @@ jobs:
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-linux.template'
           add_latest_tag: 'true'
+          install_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
   
   
   test-hakc-kernel-qemu:

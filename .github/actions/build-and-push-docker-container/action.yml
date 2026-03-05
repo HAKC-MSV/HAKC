@@ -32,6 +32,9 @@ inputs:
     description: Whether to add amd64-latest tag
     required: false
     default: 'false'
+  install_dir:
+    description: Location of installation directory for built artifacts
+    required: true
 runs:
   using: composite
   steps:
@@ -48,6 +51,7 @@ runs:
         GIT_REF_NAME: ${{ inputs.git_ref_name }}
         DOCKER_FILE_TEMPLATE: ${{ inputs.docker_file_template }}
         ADD_LATEST_TAG: ${{ inputs.add_latest_tag }}
+        INSTALL_DIR: ${{ inputs.install_dir }}
       run: |
         set -euo pipefail
         
