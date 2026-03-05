@@ -1,0 +1,83 @@
+name: Build and Push Docker Image
+description: Build a Docker image with Buildah and push it to JFrog Artifactory with multiple tags
+inputs:
+  jfrog_user:
+    description: JFrog username
+    required: true
+  jfrog_pass:
+    description: JFrog password
+    required: true
+  repo_url:
+    description: Repository URL (e.g., ett-jfrog.llan.ll.mit.edu)
+    required: true
+  repo_id:
+    description: Repository ID (e.g., g0553-docker-local)
+    required: true
+  image_id:
+    description: Image ID/name
+    required: true
+  deterministic_tag:
+    description: Deterministic tag for the image
+    required: true
+  commit_tag:
+    description: Commit-based tag for the image
+    required: true
+  git_ref_name:
+    description: Git reference name (branch/tag)
+    required: true
+  docker_file_template:
+    description: Path to Dockerfile template
+    required: true
+  add_latest_tag:
+    description: Whether to add amd64-latest tag
+    required: false
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Build and push Docker image
+      shell: bash
+      env:
+        JFROG_USER: ${{ inputs.jfrog_user }}
+        JFROG_PASS: ${{ inputs.jfrog_pass }}
+        REPOURL: ${{ inputs.repo_url }}
+        REPOID: ${{ inputs.repo_id }}
+        IMAGE_ID: ${{ inputs.image_id }}
+        DET_TAG: ${{ inputs.deterministic_tag }}
+        COMMIT_TAG: ${{ inputs.commit_tag }}
+        GIT_REF_NAME: ${{ inputs.git_ref_name }}
+        DOCKER_FILE_TEMPLATE: ${{ inputs.docker_file_template }}
+        ADD_LATEST_TAG: ${{ inputs.add_latest_tag }}
+      run: |
+        set -euo pipefail
+        
+        BRANCH_TAG="${GIT_REF_NAME//\//-}"
+        BRANCH_LATEST_TAG="amd64-${BRANCH_TAG}-latest"
+        
+        echo "Deterministic tag: $DET_TAG"
+        echo "Commit tag:        $COMMIT_TAG"
+        echo "Branch-latest tag: $BRANCH_LATEST_TAG"
+        
+        envsubst < "$DOCKER_FILE_TEMPLATE" > Dockerfile
+        
+        export _BUILDAH_STARTED_IN_USERNS=""
+        export BUILDAH_ISOLATION=chroot
+        
+        buildah login -u "$JFROG_USER" -p "$JFROG_PASS" "$REPOURL"
+        
+        IMAGE_BASE="$REPOURL/$REPOID/$IMAGE_ID"
+        TAGS=("$DET_TAG" "$COMMIT_TAG" "$BRANCH_LATEST_TAG")
+        if [[ -n "${ADD_LATEST_TAG:-}" && "$ADD_LATEST_TAG" == "true" ]]; then
+          TAGS+=("amd64-latest")
+        fi
+        
+        TAG_ARGS=()
+        for tag in "${TAGS[@]}"; do
+          TAG_ARGS+=(-t "${IMAGE_BASE}:${tag}")
+        done
+        
+        buildah bud --storage-driver vfs "${TAG_ARGS[@]}" .
+        
+        for tag in "${TAGS[@]}"; do
+          buildah push --storage-driver vfs "${IMAGE_BASE}:${tag}"
+        done
