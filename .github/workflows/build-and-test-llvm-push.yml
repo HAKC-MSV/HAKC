@@ -36,8 +36,8 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     outputs:
-      rebuild_llvm: ${{ steps.results.outputs.rebuild }}
-      llvm_image_tag: ${{ steps.results.outputs.tag }}
+      rebuild_llvm: ${{ steps.results.outputs.rebuild_llvm }}
+      llvm_image_tag: ${{ steps.results.outputs.llvm_image_tag }}
       skip_analysis: ${{ steps.results.outputs.skip_analysis }}
       dag_name: ${{ steps.results.outputs.dag_name }}
       hardened_kernel_environment: ${{ steps.results.outputs.hardened_kernel_environment }}
