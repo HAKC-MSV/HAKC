@@ -298,7 +298,7 @@ jobs:
           cmake --build $BUILD_DIR --target install -- -j $(nproc)
 
       - name: Build & Push LLVM Image
-        uses: .github/actions/build-and-push-docker-container
+        uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
@@ -467,7 +467,7 @@ jobs:
 
       - name: Build & Push Kernel Image
         if: needs.determine-build-needs.outputs.rebuild_kernel
-        uses: .github/actions/build-and-push-docker-container
+        uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
           jfrog_pass: ${{ secrets.JFROG_PASS }}
