@@ -519,7 +519,7 @@ jobs:
     env:
       KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
       ROOT_FS_PATH: "/opt/hakc-linux/rootfs.img"
-      KERNEL_CMD_ARGS: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo"
+      KERNEL_CMD_ARGS: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
       SEARCH_STRING: "HAKC_TEST_RESULT rc=0"
       TIMEOUT_SECONDS: 60
     container:
