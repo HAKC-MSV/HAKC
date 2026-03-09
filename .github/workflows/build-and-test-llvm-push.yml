@@ -520,7 +520,9 @@ jobs:
       KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
       ROOT_FS_PATH: "/opt/hakc-linux/rootfs.img"
       KERNEL_CMD_ARGS: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
-      SEARCH_STRING: "HAKC_TEST_RESULT rc=0"
+      SEARCH_STRING_1: "Oops: general protection fault, probably for non-canonical address"
+      SEARCH_STRING_2: "HAKC_ORIG_my_open"
+      SEARCH_STRING_3: "HAKC_TEST_RESULT rc=139"
       TIMEOUT_SECONDS: 60
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:${{ needs.determine-build-needs.outputs.kernel_image_tag }}
@@ -533,34 +535,58 @@ jobs:
           OUTPUT_FILE=$(mktemp)
           trap "rm -f $OUTPUT_FILE" EXIT
           
-          # Start QEMU in background, redirect output to file and stdout
           timeout $TIMEOUT_SECONDS qemu-system-$LINUX_ARCH \
             -kernel $KERNEL_PATH \
             -drive file=$ROOT_FS_PATH,format=raw,if=virtio \
             -m 16G \
             -append "$KERNEL_CMD_ARGS" \
             -nographic \
-            2>&1 | tee $OUTPUT_FILE &
+            2>&1 | tee "$OUTPUT_FILE" &
           
           QEMU_PID=$!
           
-          echo "QEMU started with PID $QEMU_PID, watching for '$SEARCH_STRING'..."
+          echo "QEMU started with PID $QEMU_PID"
+          echo "Watching for:"
+          echo "  1) $SEARCH_STRING_1"
+          echo "  2) $SEARCH_STRING_2"
+          echo "  3) $SEARCH_STRING_3"
           
-          # Poll the output file for the search string
           for i in $(seq 1 $TIMEOUT_SECONDS); do
-            if grep -q "$SEARCH_STRING" "$OUTPUT_FILE"; then
-              echo "✓ Found '$SEARCH_STRING' in boot output!"
+            found_1=false
+            found_2=false
+            found_3=false
+
+            if grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE"; then
+              found_1=true
+            fi
+
+            if grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE"; then
+              found_2=true
+            fi
+
+            if grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE"; then
+              found_3=true
+            fi
+
+            if [[ "$found_1" == "true" && "$found_2" == "true" && "$found_3" == "true" ]]; then
+              echo "✓ Found all expected strings in boot output"
               kill $QEMU_PID 2>/dev/null || true
               wait $QEMU_PID 2>/dev/null || true
               exit 0
             fi
+
             sleep 1
           done
           
-          echo "✗ ERROR: Did not find '$SEARCH_STRING' within $TIMEOUT_SECONDS seconds"
+          echo "✗ ERROR: Did not find all expected strings within $TIMEOUT_SECONDS seconds"
+          echo "Found statuses:"
+          grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_1" || echo "  ✗ $SEARCH_STRING_1"
+          grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_2" || echo "  ✗ $SEARCH_STRING_2"
+          grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_3" || echo "  ✗ $SEARCH_STRING_3"
+          
           kill $QEMU_PID 2>/dev/null || true
           wait $QEMU_PID 2>/dev/null || true
-          cat $OUTPUT_FILE
+          cat "$OUTPUT_FILE"
           exit 1
 
 #
