@@ -277,7 +277,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(run-${arch}-hakc-kernel
-            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -drive file=${USERSPACE_IMG},format=raw,if=virtio -m 16G -append \"console=ttyS0 rdinit=/bin/bash root=/dev/vda rw\" -nographic
+            COMMAND qemu-system-${arch} -kernel ${hardened_kernel_install_path}/${hakc_kernel_name} -drive file=${USERSPACE_IMG},format=raw,if=virtio -m 16G -append \"console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr\" -nographic
             DEPENDS hakc-linux-${arch}-enforcement hakc-${arch}-userspace
             USES_TERMINAL
             WORKING_DIRECTORY ${hakc_build_dir}
