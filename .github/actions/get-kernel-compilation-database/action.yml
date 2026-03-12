@@ -19,7 +19,7 @@ runs:
     - name: Restore compilation database cache
       uses: actions/cache@v1
       with:
-        path: ${{ inputs.compilation_db_path }}
+        path: .cache/compile_commands.json
         key: ${{ inputs.compilation_db_cache_key }}
     - name: Create compilation database (if needed)
       shell: bash
@@ -30,7 +30,7 @@ runs:
       run: |
         set -euo pipefail
         
-        if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
+        if [[ ! -f .cache/compile_commands.json ]]; then
           cmake --build "$CMAKE_BUILD_DIR" --target $CMAKE_TARGET
           # Verify the file was actually created
           if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
@@ -38,5 +38,6 @@ runs:
             exit 1
           fi
         else
+          cp .cache/compile_commands.json $COMPILATION_DB_PATH
           echo "Using cached compilation database at $COMPILATION_DB_PATH"
         fi
