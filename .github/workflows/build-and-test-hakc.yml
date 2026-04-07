@@ -29,7 +29,7 @@ jobs:
     name: Build HAKC Compiler and Linux Kernel
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ${{ env.REPOURL }}/isd-docker-local/ubuntu:latest
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
       options: --cpus 8
 
     steps:
@@ -109,7 +109,7 @@ jobs:
     needs: [ build-hakc-kernel ]
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.KERNEL_IMAGEID }}:${{ env.TAG_NAME }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.sha }}
     steps:
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu

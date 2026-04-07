@@ -25,7 +25,7 @@ jobs:
     name: Test HAKC Kernel with QEMU
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.KERNEL_IMAGEID }}:${{ env.TAG_NAME }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.sha }}
     steps:
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu
@@ -44,7 +44,7 @@ jobs:
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: [ test-hakc-kernel-qemu ]
     container:
-      image: ${{ env.REPOURL }}/${{ env.REPOID }}/ubuntu:latest
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
       - name: Promote image to latest
         uses: ./.github/actions/pull-docker-image-and-tag
