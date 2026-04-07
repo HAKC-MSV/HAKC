@@ -90,6 +90,7 @@ jobs:
           cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
 
       - name: Build & Push Kernel Image
+        if: ${{ github.event_name == 'push' }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}

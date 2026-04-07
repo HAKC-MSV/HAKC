@@ -23,7 +23,6 @@ on:
 jobs:
   test-hakc-kernel-qemu:
     name: Test HAKC Kernel with QEMU
-    needs: [ build-hakc-kernel ]
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.KERNEL_IMAGEID }}:${{ env.TAG_NAME }}
@@ -55,7 +54,7 @@ jobs:
           repo_url: ${{ env.REPOURL }}
           repo_id: ${{ env.REPOID }}
           image_id: g53-hakc-linux
-          source_tag: g53-hakc-linux:${{ env.TAG_NAME }}
+          source_tag: ${{ env.TAG_NAME }}
           target_tag: latest
 
 
