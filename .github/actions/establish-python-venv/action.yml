@@ -4,9 +4,6 @@ inputs:
   venv_dir:
     description: "Path to the Python virtual environment directory"
     required: true
-  cache_key:
-    description: "Cache key to use"
-    required: true
   requirements_path:
     description: "Path to the Python requirements file"
     required: true
@@ -14,13 +11,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore Python venv cache
-      uses: actions/cache@v1
-      with:
-        path: ${{ inputs.venv_dir }}
-        key: ${{ inputs.cache_key }}
-
-    - name: Create venv and install requirements (if needed)
+    - name: Create venv and install requirements
       shell: bash
       env:
         VENV_DIR: ${{ inputs.venv_dir }}

@@ -2,33 +2,15 @@ name: "Compute LLVM Information"
 description: "Detect LLVM submodule changes, compute deterministic tag, and check registry image existence."
 
 inputs:
-  reg_host:
-    required: true
-    description: "Artifactory URL"
-  repo_id:
-    required: true
-    description: "Artifactory repository ID"
-  llvm_image_id:
-    required: true
-    description: "Artifactory LLVM Image to use"
-  jfrog_user:
-    required: true
-    description: "Artifactory username for authentication"
-  jfrog_pass:
-    required: true
-    description: "Artifactory password for authentication"
   submodule_path:
     required: false
     default: "llvm-project"
     description: "Path of submodule within repository"
 
 outputs:
-  changed:
-    value: ${{ steps.compute.outputs.changed }}
-    description: "True if LLVM changed from target branch"
   sha:
     value: ${{ steps.compute.outputs.sha }}
-    description: "LLVH SHA"
+    description: "LLVM SHA"
   tag:
     value: ${{ steps.compute.outputs.tag }}
     description: "LLVM Artifactory tage"
@@ -76,27 +58,6 @@ runs:
           HEAD_SHA="$GITHUB_SHA"
         fi
 
-        echo "Comparing base: $BASE_SHA  head: $HEAD_SHA"
-
-        # New branch / force-push edge case
-        if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-          echo "changed=true" >> "$GITHUB_OUTPUT"
-          changed="true"
-        else
-          base_gitlink="$(git rev-parse -q --verify "${BASE_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
-          head_gitlink="$(git rev-parse -q --verify "${HEAD_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
-
-          echo "Base llvm gitlink: $base_gitlink"
-          echo "Head llvm gitlink: $head_gitlink"
-
-          changed="true"
-          if [[ -n "$base_gitlink" && -n "$head_gitlink" && "$base_gitlink" == "$head_gitlink" ]]; then
-            changed="false"
-          fi
-
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
-        fi
-
         SHA="$(git rev-parse -q --verify "${GITHUB_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
         if [[ -z "$SHA" ]]; then
           echo "ERROR: could not read gitlink for ${SUBMODULE_PATH} from ${GITHUB_SHA}" >&2
@@ -108,45 +69,5 @@ runs:
         TAG="llvm-${RUNNER_OS}-${BRANCH_TAG}-${SHA}"
         echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
-        url="https://${REG_HOST}/artifactory/api/docker/${REPOID}/v2/${LLVM_IMAGEID}/manifests/${TAG}"
-        echo "Checking image: $url"
-
-        code="$(curl -sS -u "${jfrog_user}:${jfrog_pass}" \
-          -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
-          -o /dev/null -w '%{http_code}' -I "$url" || true)"
-
-        HIT="false"
-        case "$code" in
-          200)
-            HIT="true"
-            ;;
-          404)
-            HIT="false"
-            ;;
-          401|403)
-            echo "Auth failure checking registry (HTTP $code) — treating as miss so we rebuild." >&2
-            HIT="false"
-            ;;
-          *)
-            echo "Unexpected HTTP $code — treating as miss so we rebuild." >&2
-            HIT="false"
-            ;;
-        esac
-
-        echo "hit=$HIT" >> "$GITHUB_OUTPUT"
-        echo "http_code=$code" >> "$GITHUB_OUTPUT"
-
-        if [[ "$changed" == "false" && "$HIT" == "true" ]]; then
-          rebuild="false"
-        else
-          rebuild="true"
-        fi
-
-        python_venv_cache_key="venv-${RUNNER_OS}-${SHA}"
-        echo "python_venv_cache_key=$python_venv_cache_key" >> "$GITHUB_OUTPUT"
-        echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-
         echo "event:                  $GITHUB_EVENT_NAME"
-        echo "rebuild:                $rebuild"
         echo "tag:                    $TAG"
-        echo "python_venv_cache_key:  $python_venv_cache_key"

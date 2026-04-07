@@ -1,0 +1,102 @@
+name: "Run QEMU with HAKC Kernel"
+description: "Boot a HAKC kernel in QEMU and wait for expected output strings."
+
+inputs:
+  linux_arch:
+    required: true
+    description: "Target architecture for qemu-system-<arch>"
+  kernel_path:
+    required: true
+    description: "Path to the kernel image"
+  root_fs_path:
+    required: true
+    description: "Path to the root filesystem image"
+  kernel_cmd_args:
+    required: true
+    description: "Kernel command line arguments"
+  search_string_1:
+    required: true
+    description: "First expected output string"
+  search_string_2:
+    required: true
+    description: "Second expected output string"
+  search_string_3:
+    required: true
+    description: "Third expected output string"
+  timeout_seconds:
+    required: false
+    default: "60"
+    description: "How long to wait for all strings"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Run QEMU with HAKC Kernel
+      shell: bash
+      env:
+        LINUX_ARCH: ${{ inputs.linux_arch }}
+        KERNEL_PATH: ${{ inputs.kernel_path }}
+        ROOT_FS_PATH: ${{ inputs.root_fs_path }}
+        KERNEL_CMD_ARGS: ${{ inputs.kernel_cmd_args }}
+        SEARCH_STRING_1: ${{ inputs.search_string_1 }}
+        SEARCH_STRING_2: ${{ inputs.search_string_2 }}
+        SEARCH_STRING_3: ${{ inputs.search_string_3 }}
+        TIMEOUT_SECONDS: ${{ inputs.timeout_seconds }}
+      run: |
+        set -euo pipefail
+        OUTPUT_FILE=$(mktemp)
+        trap "rm -f $OUTPUT_FILE" EXIT
+
+        timeout "$TIMEOUT_SECONDS" "qemu-system-$LINUX_ARCH" \
+          -kernel "$KERNEL_PATH" \
+          -drive "file=$ROOT_FS_PATH,format=raw,if=virtio" \
+          -m 16G \
+          -append "$KERNEL_CMD_ARGS" \
+          -nographic \
+          2>&1 | tee "$OUTPUT_FILE" &
+
+        QEMU_PID=$!
+
+        echo "QEMU started with PID $QEMU_PID"
+        echo "Watching for:"
+        echo "  1) $SEARCH_STRING_1"
+        echo "  2) $SEARCH_STRING_2"
+        echo "  3) $SEARCH_STRING_3"
+
+        for i in $(seq 1 "$TIMEOUT_SECONDS"); do
+          found_1=false
+          found_2=false
+          found_3=false
+
+          if grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE"; then
+            found_1=true
+          fi
+
+          if grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE"; then
+            found_2=true
+          fi
+
+          if grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE"; then
+            found_3=true
+          fi
+
+          if [[ "$found_1" == "true" && "$found_2" == "true" && "$found_3" == "true" ]]; then
+            echo "✓ Found all expected strings in boot output"
+            kill "$QEMU_PID" 2>/dev/null || true
+            wait "$QEMU_PID" 2>/dev/null || true
+            exit 0
+          fi
+
+          sleep 1
+        done
+
+        echo "✗ ERROR: Did not find all expected strings within $TIMEOUT_SECONDS seconds"
+        echo "Found statuses:"
+        grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_1" || echo "  ✗ $SEARCH_STRING_1"
+        grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_2" || echo "  ✗ $SEARCH_STRING_2"
+        grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_3" || echo "  ✗ $SEARCH_STRING_3"
+
+        kill "$QEMU_PID" 2>/dev/null || true
+        wait "$QEMU_PID" 2>/dev/null || true
+        cat "$OUTPUT_FILE"
+        exit 1

@@ -1,7 +1,7 @@
 FROM ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
 RUN apt -y update && apt install -y $DEPS_TO_INSTALL \
     && apt clean all && rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
-ADD $INSTALL_DIR/hakc-kernel /opt/hakc-linux
-ADD $INSTALL_DIR/rootfs.img /opt/hakc-linux
-COPY ./hakc /opt/hakc
+ADD $KERNEL_INSTALL_DIR/hakc-kernel /opt/hakc-linux
+ADD $KERNEL_INSTALL_DIR/rootfs.img /opt/hakc-linux
+COPY $LLVM_INSTALL_DIR /opt/hakc-llvm
 CMD ["/bin/bash"]

@@ -4,9 +4,6 @@ inputs:
   compilation_db_path:
     description: Path to compilation database
     required: true
-  compilation_db_cache_key:
-    description: Compilation database cache key
-    required: true
   build_dir:
     description: CMake build directory
     required: true
@@ -16,12 +13,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Restore compilation database cache
-      uses: actions/cache@v1
-      with:
-        path: .cache/compile_commands.json
-        key: ${{ inputs.compilation_db_cache_key }}
-    - name: Create compilation database (if needed)
+    - name: Create compilation database
       shell: bash
       env:
         CMAKE_BUILD_DIR: ${{ inputs.build_dir }}
@@ -30,14 +22,9 @@ runs:
       run: |
         set -euo pipefail
         
-        if [[ ! -f .cache/compile_commands.json ]]; then
-          cmake --build "$CMAKE_BUILD_DIR" --target $CMAKE_TARGET
-          # Verify the file was actually created
-          if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
-            echo "ERROR: CMake target completed but $COMPILATION_DB_PATH was not created"
-            exit 1
-          fi
-        else
-          cp .cache/compile_commands.json $COMPILATION_DB_PATH
-          echo "Using cached compilation database at $COMPILATION_DB_PATH"
+        cmake --build "$CMAKE_BUILD_DIR" --target $CMAKE_TARGET
+        # Verify the file was actually created
+        if [[ ! -f "$COMPILATION_DB_PATH" ]]; then
+          echo "ERROR: CMake target completed but $COMPILATION_DB_PATH was not created"
+          exit 1
         fi

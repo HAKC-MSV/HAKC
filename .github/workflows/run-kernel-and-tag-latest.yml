@@ -1,0 +1,62 @@
+name: Test latest build and tag latest
+
+env:
+  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  LLVM_IMAGEID: "g53-hakc-llvm"
+  KERNEL_IMAGEID: "g53-hakc-linux"
+  REPOURL: "ett-jfrog.llan.ll.mit.edu"
+  REPOID: "g0553-docker-local"
+  LINUX_ARCH: "x86_64"
+  jfrog_user: ${{ secrets.JFROG_USER }}
+  jfrog_pass: ${{ secrets.JFROG_PASS }}
+  TAG_NAME: "amd64-${{ github.sha }}"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  test-hakc-kernel-qemu:
+    name: Test HAKC Kernel with QEMU
+    needs: [ build-hakc-kernel ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.KERNEL_IMAGEID }}:${{ env.TAG_NAME }}
+    steps:
+      - name: Test HAKC Kernel with QEMU
+        uses: ./.github/actions/run-hakc-kernel-in-qemu
+        with:
+          linux_arch: ${{ env.LINUX_ARCH }}
+          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+          root_fs_path: "/opt/hakc-linux/rootfs.img"
+          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
+          search_string_1: "Oops: general protection fault, probably for non-canonical address"
+          search_string_2: "HAKC_ORIG_my_open"
+          search_string_3: "HAKC_TEST_RESULT rc=139"
+          timeout_seconds: 60
+
+  tag-latest-image:
+    name: Tag build with latest
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: [ test-hakc-kernel-qemu ]
+    container:
+      image: ${{ env.REPOURL }}/${{ env.REPOID }}/ubuntu:latest
+    steps:
+      - name: Promote image to latest
+        uses: ./.github/actions/pull-docker-image-and-tag
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          image_id: g53-hakc-linux
+          source_tag: g53-hakc-linux:${{ env.TAG_NAME }}
+          target_tag: latest
+
+
+#

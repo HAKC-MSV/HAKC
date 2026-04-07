@@ -1,0 +1,125 @@
+name: Build and Test HAKC Ecosystem
+
+env:
+  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  KERNEL_IMAGEID: "g53-hakc-linux"
+  REPOURL: "ett-jfrog.llan.ll.mit.edu"
+  REPOID: "g0553-docker-local"
+  BUILD_DIR: "cmake-build-hakc-release"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev kmod"
+  VENV_DIR: "python/venv"
+  LINUX_ARCH: "x86_64"
+  jfrog_user: ${{ secrets.JFROG_USER }}
+  jfrog_pass: ${{ secrets.JFROG_PASS }}
+  HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
+  TAG_NAME: "amd64-${{ github.sha }}"
+  LLVM_INSTALL_DIR: "install"
+
+on:
+  push:
+    branches: [ next, de29664/github-actions-refactor ]
+  pull_request:
+    branches: [ next, de29664/github-actions-refactor ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  build-hakc-kernel:
+    name: Build HAKC Compiler and Linux Kernel
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ${{ env.REPOURL }}/isd-docker-local/ubuntu:latest
+      options: --cpus 8
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-release'
+          submodules_to_init: 'llvm-project'
+
+      - name: Establish Python venv
+        uses: ./.github/actions/establish-python-venv
+        with:
+          venv_dir: ${{ env.VENV_DIR }}
+          requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
+
+      - name: Run Unit Tests (check-llvm)
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target check-llvm
+
+      - name: Generate compilation database
+        uses: ./.github/actions/get-kernel-compilation-database
+        with:
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          build_dir: ${{ env.BUILD_DIR }}
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+
+      - name: Generate PDG
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+
+      - name: Build HAKC Kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+
+      - name: Build Userspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+
+      - name: Build & Push Kernel Image
+        uses: ./.github/actions/build-and-push-docker-container
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          image_id: ${{ env.KERNEL_IMAGEID }}
+          deterministic_tag: ${{ env.TAG_NAME }}
+          git_ref_name: ${{ github.ref_name }}
+          docker_file_template: 'Dockerfile-linux.template'
+          kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          llvm_install_dir: "${{ env.LLVM_INSTALL_DIR }}"
+
+  test-hakc-kernel-qemu:
+    name: Test HAKC Kernel with QEMU
+    needs: [ build-hakc-kernel ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ${{ env.REPOURL }}/${{ env.REPOID }}/${{ env.KERNEL_IMAGEID }}:${{ env.TAG_NAME }}
+    steps:
+      - name: Test HAKC Kernel with QEMU
+        uses: ./.github/actions/run-hakc-kernel-in-qemu
+        with:
+          linux_arch: ${{ env.LINUX_ARCH }}
+          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+          root_fs_path: "/opt/hakc-linux/rootfs.img"
+          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
+          search_string_1: "Oops: general protection fault, probably for non-canonical address"
+          search_string_2: "HAKC_ORIG_my_open"
+          search_string_3: "HAKC_TEST_RESULT rc=139"
+          timeout_seconds: 60
+
+#

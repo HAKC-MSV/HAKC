@@ -1,0 +1,57 @@
+name: "Pull, Tag, and Push Docker Image"
+description: "Log in to Artifactory, pull an existing image, retag it, and push the new tag."
+
+inputs:
+  jfrog_user:
+    required: true
+    description: "JFrog username"
+  jfrog_pass:
+    required: true
+    description: "JFrog password"
+  repo_url:
+    required: true
+    description: "Registry host, e.g. ett-jfrog.llan.ll.mit.edu"
+  repo_id:
+    required: true
+    description: "Repository ID, e.g. g0553-docker-local"
+  image_id:
+    required: true
+    description: "Image name, e.g. g53-hakc-llvm"
+  source_tag:
+    required: true
+    description: "Existing tag to pull"
+  target_tag:
+    required: true
+    description: "New tag to apply and push"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Pull, retag, and push image
+      shell: bash
+      env:
+        JFROG_USER: ${{ inputs.jfrog_user }}
+        JFROG_PASS: ${{ inputs.jfrog_pass }}
+        REPOURL: ${{ inputs.repo_url }}
+        REPOID: ${{ inputs.repo_id }}
+        IMAGE_ID: ${{ inputs.image_id }}
+        SOURCE_TAG: ${{ inputs.source_tag }}
+        TARGET_TAG: ${{ inputs.target_tag }}
+      run: |
+        set -euo pipefail
+
+        IMAGE_BASE="${REPOURL}/${REPOID}/${IMAGE_ID}"
+        SOURCE_REF="${IMAGE_BASE}:${SOURCE_TAG}"
+        TARGET_REF="${IMAGE_BASE}:${TARGET_TAG}"
+
+        echo "Logging in to Artifactory: ${REPOURL}"
+        buildah login -u "$JFROG_USER" -p "$JFROG_PASS" "$REPOURL"
+
+        echo "Pulling image: ${SOURCE_REF}"
+        buildah pull "$SOURCE_REF"
+
+        echo "Tagging image: ${TARGET_REF}"
+        buildah tag "$SOURCE_REF" "$TARGET_REF"
+
+        echo "Pushing image: ${TARGET_REF}"
+        buildah push "$TARGET_REF"
