@@ -1,0 +1,403 @@
+name: Build and Test HAKC Ecosystem
+
+env:
+  http_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  https_proxy: "http://llproxy.llan.ll.mit.edu:8080"
+  no_proxy: ".llan.ll.mit.edu,localhost,127.0.0.1,172.25.4.225,172.16.0.0/12,10.42.0.0/16,10.43.0.0/16"
+  LLVM_IMAGEID: "g53-hakc-llvm"
+  KERNEL_IMAGEID: "g53-hakc-linux"
+  REPOURL: "ett-jfrog.llan.ll.mit.edu"
+  REPOID: "g0553-docker-local"
+  BUILD_DIR: "cmake-build-hakc-release"
+  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev kmod"
+  VENV_DIR: "python/venv"
+  LLVM_INSTALL_DIR: "install"
+  ARTIFACT_DOWNLOAD_DIR: "/tmp/llvm-artifact"
+  FINAL_ARTIFACT_PATH: "install.tar.gz"
+  LINUX_ARCH: "x86_64"
+  jfrog_user: ${{ secrets.JFROG_USER }}
+  jfrog_pass: ${{ secrets.JFROG_PASS }}
+  REG_HOST: "lljfrog.llan.ll.mit.edu"
+  COMMIT_TAG: "amd64-${{ github.sha }}"
+  GIT_REF_NAME: "${{ github.ref_name }}"
+  HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
+
+on:
+  push:
+    branches: [ next ]
+  pull_request:
+    branches: [ next ]
+    types: [ opened, synchronize, reopened, ready_for_review ]
+
+jobs:
+  determine-build-needs:
+    name: Determine what needs to be built
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    outputs:
+      rebuild_llvm: ${{ steps.results.outputs.rebuild_llvm }}
+      llvm_image_tag: ${{ steps.results.outputs.llvm_image_tag }}
+      skip_analysis: ${{ steps.results.outputs.skip_analysis }}
+      dag_name: ${{ steps.results.outputs.dag_name }}
+      hardened_kernel_environment: ${{ steps.results.outputs.hardened_kernel_environment }}
+      kernel_image_tag: ${{ steps.results.outputs.kernel_image_tag }}
+      rebuild_kernel: ${{ steps.results.outputs.rebuild_kernel }}
+      python_venv_cache_key: ${{ steps.results.outputs.python_venv_cache_key }}
+      compilation_database_cache_key: ${{ steps.results.outputs.compilation_database_cache_key }}
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+          ref: ${{ github.sha }}
+
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+
+      - name: Compute LLVM Information
+        id: llvm_info
+        uses: ./.github/actions/compute-llvm-information
+        with:
+          reg_host: ${{ env.REG_HOST }}
+          repo_id: ${{ env.REPOID }}
+          llvm_image_id: ${{ env.LLVM_IMAGEID }}
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+
+      - name: Compute DAG Information
+        id: dag_info
+        uses: ./.github/actions/compute-dag-information
+        with:
+          reg_host: ${{ env.REG_HOST }}
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          linux_arch: ${{ env.LINUX_ARCH }}
+          llvm_sha: ${{ steps.llvm_info.outputs.sha }}
+          linux_gitlink: ${{ github.sha }}
+
+
+      - name: Check if Kernel Image exists in JFrog
+        id: kernel_check
+        uses: ./.github/actions/check-if-image-exists-in-jfrog
+        with:
+          reg_host: ${{ env.REG_HOST }}
+          repo_id: ${{ env.REPOID }}
+          kernel_image_id: ${{ env.KERNEL_IMAGEID }}
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          det_tag: ${{ steps.dag_info.outputs.linux_tag_name }}
+
+      - name: Output results
+        id: results
+        shell: bash
+        run: |
+          echo "rebuild_llvm=${{ steps.llvm_info.outputs.rebuild }}" | tee -a "$GITHUB_OUTPUT"
+          echo "llvm_image_tag=${{ steps.llvm_info.outputs.tag }}" | tee -a "$GITHUB_OUTPUT"
+          echo "skip_analysis=${{ steps.dag_info.outputs.skip_analysis }}" | tee -a "$GITHUB_OUTPUT"
+          echo "dag_name=${{ steps.dag_info.outputs.name }}" | tee -a "$GITHUB_OUTPUT"
+          echo "hardened_kernel_environment=${{ steps.dag_info.outputs.hardened_kernel_environment }}" | tee -a "$GITHUB_OUTPUT"
+          echo "kernel_image_tag=${{ steps.dag_info.outputs.linux_tag_name }}" | tee -a "$GITHUB_OUTPUT"
+          echo "rebuild_kernel=${{ steps.kernel_check.outputs.exists == 'false' }}" | tee -a "$GITHUB_OUTPUT"
+          echo "python_venv_cache_key=${{ steps.llvm_info.outputs.python_venv_cache_key }}" | tee -a "$GITHUB_OUTPUT"
+          echo "compilation_database_cache_key=${{ steps.dag_info.outputs.compilation_database_cache_key }}" | tee -a "$GITHUB_OUTPUT"
+
+  build-and-test:
+    name: Build & Test LLVM
+    needs: [ determine-build-needs ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+      options: --cpus 8
+
+    steps:
+      - name: Checkout sources
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Setup environment
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        uses: ./.github/actions/setup-environment
+        with:
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-release'
+          submodules_to_init: 'llvm-project'
+
+      - name: Build Clang/LLVM
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR -- -j $(nproc)
+
+      - name: Establish Python venv
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        uses: ./.github/actions/establish-python-venv
+        with:
+          venv_dir: ${{ env.VENV_DIR }}
+          cache_key: ${{ needs.determine-build-needs.outputs.python_venv_cache_key }}
+          requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
+
+      - name: Run Unit Tests (check-llvm)
+        if: needs.determine-build-needs.outputs.rebuild_llvm == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target check-llvm
+  
+  
+  analyze-hakc-kernel:
+    name: Analyze HAKC Kernel
+    needs: [ determine-build-needs, build-and-test ]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
+    steps:
+      - name: Checkout sources
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Setup environment
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        uses: ./.github/actions/setup-environment
+        with:
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-linux-analysis-build'
+          submodules_to_init: 'linux llvm-project'
+
+      - name: Establish Python venv
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        uses: ./.github/actions/establish-python-venv
+        with:
+          venv_dir: ${{ env.VENV_DIR }}
+          cache_key: ${{ needs.determine-build-needs.outputs.python_venv_cache_key }}
+          requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
+
+      - name: Generate compilation database
+        uses: ./.github/actions/get-kernel-compilation-database
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        with:
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
+          build_dir: ${{ env.BUILD_DIR }}
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+
+      - name: Generating DAG
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+
+      - name: Upload DAG artifact to JFrog
+        if: ${{ needs.determine-build-needs.outputs.skip_analysis == 'false' }}
+        shell: bash
+        env:
+          DAG_NAME: "${{ needs.determine-build-needs.outputs.dag_name }}"
+        run: |
+          set -euo pipefail
+
+          OUT="${DAG_NAME}.tar.gz"
+          SRC_DIR="$BUILD_DIR/linux/$LINUX_ARCH"
+
+          tar -czf "$OUT" -C "$SRC_DIR" hakc-db
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -T "$OUT" \
+            "https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${OUT}"
+
+  build-hakc-kernel:
+    name: Build HAKC Kernel
+    needs: [ determine-build-needs, build-and-test, analyze-hakc-kernel ]
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-llvm:${{ needs.determine-build-needs.outputs.llvm_image_tag }}
+    steps:
+      - name: Checkout sources
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+
+      - name: Setup environment
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        uses: ./.github/actions/setup-environment
+        with:
+          dependencies_to_install: '${{ env.DEPS_TO_INSTALL }}'
+          cmake_preset: 'ci-linux-enforcement-build'
+          submodules_to_init: 'linux llvm-project'
+
+      - name: Generate compilation database
+        uses: ./.github/actions/get-kernel-compilation-database
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        with:
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_cache_key: ${{ needs.determine-build-needs.outputs.compilation_database_cache_key }}
+          build_dir: ${{ env.BUILD_DIR }}
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+
+      - name: Download DAG artifact from JFrog
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DAG_NAME="${{ needs.determine-build-needs.outputs.dag_name }}"
+          DEST_DIR="${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          mkdir -p "$DEST_DIR"
+
+          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${DAG_NAME}.tar.gz"
+          echo "Downloading DAG: $url"
+
+          curl -fsS -u "$jfrog_user:$jfrog_pass" \
+            -o "${DEST_DIR}/${DAG_NAME}.tar.gz" \
+            "$url"
+
+          tar -xzf "${DEST_DIR}/${DAG_NAME}.tar.gz" -C "$DEST_DIR"
+
+          # sanity check (optional)
+          test -d "${DEST_DIR}/hakc-db"
+          echo "The database is located at ${DEST_DIR}/hakc-db"
+          ls -al "${DEST_DIR}/hakc-db"
+
+      - name: Establish Python venv
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        uses: ./.github/actions/establish-python-venv
+        with:
+          venv_dir: ${{ env.VENV_DIR }}
+          cache_key: ${{ needs.determine-build-needs.outputs.python_venv_cache_key }}
+          requirements_path: ${{ env.HAKC_PYTHON_REQUIREMENTS_PATH }}
+
+      - name: Build HAKC Kernel
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source "$VENV_DIR/bin/activate"
+          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+
+      - name: Build Userspace
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+
+      - name: Copy HAKC Clang
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -r /opt/hakc ./hakc
+
+      - name: Build & Push Kernel Image
+        if: ${{ needs.determine-build-needs.outputs.rebuild_kernel == 'true' }}
+        uses: ./.github/actions/build-and-push-docker-container
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: 'ett-jfrog.llan.ll.mit.edu'
+          repo_id: 'g0553-docker-local'
+          image_id: ${{ env.KERNEL_IMAGEID }}
+          deterministic_tag: ${{ needs.determine-build-needs.outputs.kernel_image_tag }}
+          commit_tag: 'amd64-${{ github.sha }}'
+          git_ref_name: ${{ github.ref_name }}
+          docker_file_template: 'Dockerfile-linux.template'
+          add_latest_tag: 'true'
+          install_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+  
+  
+  test-hakc-kernel-qemu:
+    name: Test HAKC Kernel with QEMU
+    needs: [ determine-build-needs, build-hakc-kernel ]
+    runs-on: [ arc-runner-set-llcad-prod ]
+    env:
+      KERNEL_PATH: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+      ROOT_FS_PATH: "/opt/hakc-linux/rootfs.img"
+      KERNEL_CMD_ARGS: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
+      SEARCH_STRING_1: "Oops: general protection fault, probably for non-canonical address"
+      SEARCH_STRING_2: "HAKC_ORIG_my_open"
+      SEARCH_STRING_3: "HAKC_TEST_RESULT rc=139"
+      TIMEOUT_SECONDS: 60
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:${{ needs.determine-build-needs.outputs.kernel_image_tag }}
+
+    steps:
+      - name: Run QEMU with HAKC Kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          OUTPUT_FILE=$(mktemp)
+          trap "rm -f $OUTPUT_FILE" EXIT
+          
+          timeout $TIMEOUT_SECONDS qemu-system-$LINUX_ARCH \
+            -kernel $KERNEL_PATH \
+            -drive file=$ROOT_FS_PATH,format=raw,if=virtio \
+            -m 16G \
+            -append "$KERNEL_CMD_ARGS" \
+            -nographic \
+            2>&1 | tee "$OUTPUT_FILE" &
+          
+          QEMU_PID=$!
+          
+          echo "QEMU started with PID $QEMU_PID"
+          echo "Watching for:"
+          echo "  1) $SEARCH_STRING_1"
+          echo "  2) $SEARCH_STRING_2"
+          echo "  3) $SEARCH_STRING_3"
+          
+          for i in $(seq 1 $TIMEOUT_SECONDS); do
+            found_1=false
+            found_2=false
+            found_3=false
+
+            if grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE"; then
+              found_1=true
+            fi
+
+            if grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE"; then
+              found_2=true
+            fi
+
+            if grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE"; then
+              found_3=true
+            fi
+
+            if [[ "$found_1" == "true" && "$found_2" == "true" && "$found_3" == "true" ]]; then
+              echo "✓ Found all expected strings in boot output"
+              kill $QEMU_PID 2>/dev/null || true
+              wait $QEMU_PID 2>/dev/null || true
+              exit 0
+            fi
+
+            sleep 1
+          done
+          
+          echo "✗ ERROR: Did not find all expected strings within $TIMEOUT_SECONDS seconds"
+          echo "Found statuses:"
+          grep -Fq "$SEARCH_STRING_1" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_1" || echo "  ✗ $SEARCH_STRING_1"
+          grep -Fq "$SEARCH_STRING_2" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_2" || echo "  ✗ $SEARCH_STRING_2"
+          grep -Fq "$SEARCH_STRING_3" "$OUTPUT_FILE" && echo "  ✓ $SEARCH_STRING_3" || echo "  ✗ $SEARCH_STRING_3"
+          
+          kill $QEMU_PID 2>/dev/null || true
+          wait $QEMU_PID 2>/dev/null || true
+          cat "$OUTPUT_FILE"
+          exit 1
+
+#

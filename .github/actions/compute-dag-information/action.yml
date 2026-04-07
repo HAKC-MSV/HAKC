@@ -1,0 +1,131 @@
+name: "Compute DAG Information"
+description: "Compute DAG hash, derive tags, check DAG artifact existence, and decide whether analysis can be skipped."
+
+inputs:
+  reg_host:
+    required: true
+    description:
+  jfrog_user:
+    required: true
+    description:
+  jfrog_pass:
+    required: true
+    description:
+  linux_arch:
+    required: true
+    description:
+  llvm_sha:
+    required: true
+    description:
+  linux_gitlink:
+    required: true
+    description:
+  submodule_path_1:
+    required: false
+    default: "scripts/kernel-userspace-scripts/init"
+    description:
+  submodule_path_2:
+    required: false
+    default: "scripts/ros2-demo/run-rosdemo.sh"
+    description:
+  submodule_path_3:
+    required: false
+    default: "scripts/ros2-demo/hakc-demo-exploit.c"
+    description:
+
+outputs:
+  hardened_kernel_environment:
+    value: ${{ steps.compute.outputs.hardened_kernel_environment }}
+    description:
+  name:
+    value: ${{ steps.compute.outputs.name }}
+    description:
+  linux_tag_name:
+    value: ${{ steps.compute.outputs.linux_tag_name }}
+    description:
+  hit:
+    value: ${{ steps.compute.outputs.hit }}
+    description:
+  http_code:
+    value: ${{ steps.compute.outputs.http_code }}
+    description:
+  skip_analysis:
+    value: ${{ steps.compute.outputs.skip_analysis }}
+    description:
+  compilation_database_cache_key:
+    value: ${{ steps.compute.outputs.compilation_database_cache_key }}
+    description:
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute DAG Information
+      id: compute
+      shell: bash
+      env:
+        REG_HOST: ${{ inputs.reg_host }}
+        jfrog_user: ${{ inputs.jfrog_user }}
+        jfrog_pass: ${{ inputs.jfrog_pass }}
+        LINUX_ARCH: ${{ inputs.linux_arch }}
+        LLVM_SHA: ${{ inputs.llvm_sha }}
+        LINUX_GITLINK: ${{ inputs.linux_gitlink }}
+        FILE_1: ${{ inputs.submodule_path_1 }}
+        FILE_2: ${{ inputs.submodule_path_2 }}
+        FILE_3: ${{ inputs.submodule_path_3 }}
+        GITHUB_EVENT_NAME: ${{ github.event_name }}
+        GITHUB_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+
+        FILES_TO_HASH=(
+          "$FILE_1"
+          "$FILE_2"
+          "$FILE_3"
+        )
+
+        COMBINED_HASH="$LINUX_GITLINK"
+        for FILE in "${FILES_TO_HASH[@]}"; do
+          FILE_HASH="$(git rev-parse -q --verify "${GITHUB_SHA}:${FILE}" 2>/dev/null || true)"
+          if [[ -z "$FILE_HASH" ]]; then
+            echo "ERROR: could not read gitlink for $FILE from $GITHUB_SHA" >&2
+            exit 1
+          fi
+          COMBINED_HASH="${COMBINED_HASH}${FILE_HASH}"
+        done
+
+        SHA="$(echo -n "$COMBINED_HASH" | sha256sum | awk '{print $1}')"
+        echo "hardened_kernel_environment=$SHA" >> "$GITHUB_OUTPUT"
+
+        name="hakc-dag-${LLVM_SHA}-${LINUX_GITLINK}"
+        echo "name=$name" >> "$GITHUB_OUTPUT"
+
+        linux_tag_name="linux-${LLVM_SHA}-${SHA}"
+        echo "linux_tag_name=$linux_tag_name" >> "$GITHUB_OUTPUT"
+
+        HIT="false"
+        url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/${name}.tar.gz"
+        code="$(curl -sS -u "$jfrog_user:$jfrog_pass" -o /dev/null -w '%{http_code}' -I "$url" || true)"
+        if [[ "$code" == "200" ]]; then
+          HIT="true"
+        fi
+
+        echo "hit=$HIT" >> "$GITHUB_OUTPUT"
+        echo "http_code=$code" >> "$GITHUB_OUTPUT"
+
+        skip_analysis="false"
+        if [[ "$GITHUB_EVENT_NAME" != "push" ]]; then
+          skip_analysis="true"
+        elif [[ "$HIT" == "true" ]]; then
+          skip_analysis="true"
+        fi
+        echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
+
+        compilation_database_cache_key="linux-db-${LINUX_ARCH}-${SHA}"
+        echo "compilation_database_cache_key=$compilation_database_cache_key" >> "$GITHUB_OUTPUT"
+
+        echo "dag_hit:                          $HIT (HTTP ${code})"
+        echo "skip_analysis:                    $skip_analysis"
+        echo "dag_name:                         $name"
+        echo "hardened_kernel_environment:      $SHA"
+        echo "linux_tag_name:                   $linux_tag_name"
+        echo "db cache key:                     $compilation_database_cache_key"

@@ -24,9 +24,9 @@ env:
 
 on:
   push:
-    branches: [ main, next ]
+    branches: [ main ]
   pull_request:
-    branches: [ main, next ]
+    branches: [ main ]
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
@@ -59,155 +59,24 @@ jobs:
 
       - name: Compute LLVM Information
         id: llvm_info
-        shell: bash
-        run: |
-          set -euo pipefail
-          SUBMODULE_PATH="llvm-project"
-          
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
-            HEAD_SHA="${{ github.event.pull_request.head.sha }}"
-          else
-            BASE_SHA="${{ github.event.before }}"
-            HEAD_SHA="${{ github.sha }}"
-          fi
-          
-          echo "Comparing base: $BASE_SHA  head: $HEAD_SHA"
-          
-          # New branch / force-push edge case
-          if [[ -z "$BASE_SHA" || "$BASE_SHA" == "0000000000000000000000000000000000000000" ]]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          
-          base_gitlink="$(git rev-parse -q --verify "${BASE_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
-          head_gitlink="$(git rev-parse -q --verify "${HEAD_SHA}:${SUBMODULE_PATH}" 2>/dev/null || true)"
-          
-          echo "Base llvm gitlink: $base_gitlink"
-          echo "Head llvm gitlink: $head_gitlink"
-          
-          changed="true"
-          if [[ -n "$base_gitlink" && -n "$head_gitlink" && "$base_gitlink" == "$head_gitlink" ]]; then
-            changed="false"
-          fi
-          
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
-          
-          SHA="$(git rev-parse -q --verify "${{ github.sha }}:${SUBMODULE_PATH}" 2>/dev/null || true)"
-          if [[ -z "$SHA" ]]; then
-            echo "ERROR: could not read gitlink for ${SUBMODULE_PATH} from ${{ github.sha }}" >&2
-            exit 1
-          fi
-          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
-          
-          BRANCH_TAG="$(echo '${{ github.ref_name }}' | tr '/' '-')"
-          TAG="llvm-${{ runner.os }}-${BRANCH_TAG}-${SHA}"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          
-          url="https://${REG_HOST}/artifactory/api/docker/$REPOID/v2/$LLVM_IMAGEID/manifests/${TAG}"
-          echo "Checking image: $url"
-          
-          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" \
-            -H 'Accept: application/vnd.oci.image.manifest.v1+json, application/vnd.docker.distribution.manifest.v2+json' \
-            -o /dev/null -w '%{http_code}' -I "$url" || true)"
-          
-          HIT="false"
-          case "$code" in
-            200)
-              HIT="true"
-              ;;
-            404)
-              HIT="false"
-              ;;
-            401|403)
-              echo "Auth failure checking registry (HTTP $code) — treating as miss so we rebuild." >&2
-              HIT="false"
-              ;;
-            *)
-              echo "Unexpected HTTP $code — treating as miss so we rebuild." >&2
-              HIT="false"
-              ;;
-          esac
-          
-          echo "hit=$HIT" >> "$GITHUB_OUTPUT"
-          echo "http_code=$code" >> "$GITHUB_OUTPUT"
-          
-          # If llvm pointer didn't change AND the deterministic image tag exists, skip rebuild
-          if [[ "$changed" == "false" && "$HIT" == "true" ]]; then
-            rebuild="false"
-          else
-            rebuild="true"
-          fi
-          
-          python_venv_cache_key="venv-${{ runner.os }}-$SHA"
-          echo "python_venv_cache_key=$python_venv_cache_key" >> "$GITHUB_OUTPUT"
-          
-          echo "rebuild=$rebuild" >> "$GITHUB_OUTPUT"
-          echo "event:                  ${{ github.event_name }}"
-          echo "rebuild:                $rebuild"
-          echo "tag:                    $TAG"
-          echo "python_venv_cache_key:  $python_venv_cache_key"
+        uses: ./.github/actions/compute-llvm-information
+        with:
+          reg_host: ${{ env.REG_HOST }}
+          repo_id: ${{ env.REPOID }}
+          llvm_image_id: ${{ env.LLVM_IMAGEID }}
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
 
       - name: Compute DAG Information
         id: dag_info
-        shell: bash
-        run: |
-          set -euo pipefail
-          
-          FILES_TO_HASH=(
-            "scripts/kernel-userspace-scripts/init"
-            "scripts/ros2-demo/run-rosdemo.sh"
-            "scripts/ros2-demo/hakc-demo-exploit.c"
-          )
-          
-          LINUX_SHA="$(git rev-parse -q --verify "${{ github.sha }}:linux" 2>/dev/null || true)"
-          COMBINED_HASH="$LINUX_SHA"
-          for FILE in "${FILES_TO_HASH[@]}"; do
-            FILE_HASH="$(git rev-parse -q --verify "${{ github.sha }}:$FILE" 2>/dev/null || true)"
-            if [[ -z "$FILE_HASH" ]]; then
-              echo "ERROR: could not read gitlink for $FILE from ${{ github.sha }}" >&2
-              exit 1
-            fi
-            COMBINED_HASH="${COMBINED_HASH}${FILE_HASH}"
-          done
-          
-          SHA="$(echo -n "$COMBINED_HASH" | sha256sum | awk '{print $1}')"
-          
-          echo "hardened_kernel_environment=$SHA" >> "$GITHUB_OUTPUT"
-          
-          name="hakc-dag-${{ steps.llvm_info.outputs.sha }}-$LINUX_SHA"
-          echo "name=$name" >> "$GITHUB_OUTPUT"
-          linux_tag_name="linux-${{ steps.llvm_info.outputs.sha }}-$SHA"
-          echo "linux_tag_name=$linux_tag_name" >> "$GITHUB_OUTPUT"
-          
-          HIT="false"
-          url="https://${REG_HOST}/artifactory/g0553-generic-local/hakc/dag/$name.tar.gz"
-          code="$(curl -sS -u "$jfrog_user:$jfrog_pass" -o /dev/null -w '%{http_code}' -I "$url" || true)"
-          if [[ "$code" == "200" ]]; then
-            HIT="true"
-          fi
-          
-          echo "hit=$HIT" >> "$GITHUB_OUTPUT"
-          echo "http_code=$code" >> "$GITHUB_OUTPUT"
-          
-          skip_analysis="false"
-          if [[ "${{ github.event_name }}" != "push" ]]; then
-            skip_analysis="true"
-          elif [[ "$HIT" == "true" ]]; then
-            skip_analysis="true"
-          fi
-          echo "skip_analysis=$skip_analysis" >> "$GITHUB_OUTPUT"
-          
-          compilation_database_cache_key="linux-db-${LINUX_ARCH}-${SHA}"
-          echo "compilation_database_cache_key=$compilation_database_cache_key" >> "$GITHUB_OUTPUT"
-
-          echo "dag_hit:                          $HIT (HTTP ${code})"
-          echo "skip_analysis:                    $skip_analysis"
-          echo "dag_name:                         $name"
-          echo "hardened_kernel_environment:      $SHA"
-          echo "linux_tag_name:                   $linux_tag_name"
-          echo "db cache key:                     $compilation_database_cache_key"
-
+        uses: ./.github/actions/compute-dag-information
+        with:
+          reg_host: ${{ env.REG_HOST }}
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          linux_arch: ${{ env.LINUX_ARCH }}
+          llvm_sha: ${{ steps.llvm_info.outputs.sha }}
+          linux_gitlink: ${{ github.sha }}
 
       - name: Check if Kernel Image exists in JFrog
         id: kernel_check
