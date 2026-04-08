@@ -118,6 +118,12 @@ jobs:
     container:
       image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.sha }}
     steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.sha }}
+          submodules: 'false'
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu
         with:
