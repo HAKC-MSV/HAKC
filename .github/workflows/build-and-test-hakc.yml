@@ -38,6 +38,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.sha }}
+          submodules: 'true'
 
       - name: Setup environment
         uses: ./.github/actions/setup-environment

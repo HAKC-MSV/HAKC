@@ -15,9 +15,9 @@ env:
 
 on:
   push:
-    branches: [ de29664/github-actions-refactor ]
+    branches: [ main ]
   pull_request:
-    branches: [ de29664/github-actions-refactor ]
+    branches: [ main ]
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
