@@ -90,6 +90,12 @@ jobs:
           set -euo pipefail
           cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
 
+      - name: Install LLVM
+        shell: bash
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target install
+
       - name: Build & Push Kernel Image
         if: ${{ github.event_name == 'push' }}
         uses: ./.github/actions/build-and-push-docker-container
