@@ -259,7 +259,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}/sbin/init
             COMMAND chmod +x ${ROOTFS_DIR}/sbin/init
 
-            COMMAND sh -c "SIZE=\$(du -sm ${ROOTFS_DIR} | awk '{print int(\$1 * 1.2)}')M && truncate -s \$SIZE ${USERSPACE_IMG} && mkfs.ext4 -F -d ${ROOTFS_DIR} ${USERSPACE_IMG}"
+            COMMAND sh -c "SIZE=\$(du -sm ${ROOTFS_DIR} | awk '{print int(\$1 * 1.5 + 10)}')M && truncate -s \$SIZE ${USERSPACE_IMG} && mkfs.ext4 -F -d ${ROOTFS_DIR} ${USERSPACE_IMG}"
 
             DEPENDS
             ${hardened_kernel_install_path}/${hakc_kernel_name}

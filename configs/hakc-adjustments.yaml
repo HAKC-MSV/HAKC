@@ -7,5 +7,5 @@ adjustments:
     compartment-id: 2048
   - !HAKCCompartmentAdjustment
     path: 'linux/drivers/rosdemo/rosdemo\-consumer.c'
-    division-id: 16
+    division-id: 15
     compartment-id: 1024
