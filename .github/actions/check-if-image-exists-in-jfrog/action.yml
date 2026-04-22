@@ -4,30 +4,30 @@ description: "Check whether a kernel image tag exists in JFrog."
 inputs:
   reg_host:
     required: true
-    description:
+    description: Host serving the desired container
   repo_id:
     required: true
-    description:
+    description: The repository name to find the container
   kernel_image_id:
     required: true
-    description:
+    description: The name of the image to look for
   jfrog_user:
     required: true
-    description:
+    description: Username to log in with
   jfrog_pass:
     required: true
-    description:
+    description: Password to log in with
   det_tag:
     required: true
-    description:
+    description: Tag to search for
 
 outputs:
   exists:
     value: ${{ steps.check.outputs.exists }}
-    description:
+    description: Returns true if the image exists
   http_code:
     value: ${{ steps.check.outputs.http_code }}
-    description:
+    description: Returns the HTTP code for the request
 
 runs:
   using: "composite"

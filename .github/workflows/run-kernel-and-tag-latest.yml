@@ -11,7 +11,8 @@ env:
   LINUX_ARCH: "x86_64"
   jfrog_user: ${{ secrets.JFROG_USER }}
   jfrog_pass: ${{ secrets.JFROG_PASS }}
-  TAG_NAME: "amd64-${{ github.sha }}"
+  TAG_NAME: "amd64-${{ github.event.pull_request.head.sha || github.sha }}"
+  COMMIT_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
 
 on:
   push:
@@ -21,17 +22,47 @@ on:
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
-  test-hakc-kernel-qemu:
-    name: Test HAKC Kernel with QEMU
+  check-for-built-image:
+    name: Check for built kernel
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.sha }}
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
+          submodules: 'false'
+      - name: Search for built image
+        id: image_check
+        uses: ./.github/actions/check-if-image-exists-in-jfrog
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          reg_host: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          kernel_image_id: ${{ env.KERNEL_IMAGEID }}
+          det_tag: ${{ env.TAG_NAME }}
+
+      - name: Fail if built image does not exist
+        if: steps.image_check.outputs.exists == 'false'
+        run: |
+          echo "Built image does not exist. Failing job."
+          exit 1
+  
+  test-hakc-kernel-qemu:
+    name: Test HAKC Kernel with QEMU
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: [ check-for-built-image ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.COMMIT_SHA }}
           submodules: 'false'
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu
@@ -56,7 +87,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           submodules: 'false'
       - name: Promote image to latest
         uses: ./.github/actions/pull-docker-image-and-tag
