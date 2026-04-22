@@ -14,14 +14,14 @@ env:
   jfrog_user: ${{ secrets.JFROG_USER }}
   jfrog_pass: ${{ secrets.JFROG_PASS }}
   HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
-  TAG_NAME: "amd64-${{ github.event.pull_request.head.sha || github.sha }}"
   LLVM_INSTALL_DIR: "install"
+  COMMIT_SHA: "${{ github.event.pull_request.head.sha || github.sha }}"
 
 on:
   push:
-    branches: [ next, de29664/github-actions-refactor ]
+    branches: [ main, next ]
   pull_request:
-    branches: [ next, de29664/github-actions-refactor ]
+    branches: [ main, next ]
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
@@ -105,7 +105,7 @@ jobs:
           repo_url: ${{ env.REPOURL }}
           repo_id: ${{ env.REPOID }}
           image_id: ${{ env.KERNEL_IMAGEID }}
-          deterministic_tag: ${{ env.TAG_NAME }}
+          deterministic_tag: amd64-${{ env.COMMIT_TAG }}
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-linux.template'
           kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
@@ -122,7 +122,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           submodules: 'false'
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu
@@ -135,5 +135,48 @@ jobs:
           search_string_2: "HAKC_ORIG_my_open"
           search_string_3: "HAKC_TEST_RESULT rc=139"
           timeout_seconds: 60
+
+  tag-latest-image:
+    name: Tag build with latest
+    if: ${{ github.event_name == 'push' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: [ test-hakc-kernel-qemu ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ env.COMMIT_SHA }}
+          submodules: 'false'
+      - name: Generate normalized branch name
+        id: normalize_branch_name
+        shell: bash
+        run: |
+          NORMALIZED_NAME=$(echo "${GITHUB_REF_NAME:-unknown}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
+          echo "normalized_name=$NORMALIZED_NAME" >> $GITHUB_ENV
+          echo "normalized_name=$NORMALIZED_NAME"
+      - name: Promote image to branch latest
+        uses: ./.github/actions/pull-docker-image-and-tag
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          image_id: ${{ env.KERNEL_IMAGEID }}
+          source_tag: amd64-${{ env.COMMIT_SHA }}
+          target_tag: ${{ env.normalized_name }}-latest
+      - name: Promote image to latest if pushed to main
+        if: ${{ github.ref_name == 'main' }}
+        uses: ./.github/actions/pull-docker-image-and-tag
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          image_id: ${{ env.KERNEL_IMAGEID }}
+          source_tag: amd64-${{ env.COMMIT_TAG }}
+          target_tag: latest
 
 #
