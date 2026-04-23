@@ -104,7 +104,7 @@ jobs:
           repo_url: ${{ env.REPOURL }}
           repo_id: ${{ env.REPOID }}
           image_id: ${{ env.KERNEL_IMAGEID }}
-          deterministic_tag: amd64-${{ env.COMMIT_TAG }}
+          deterministic_tag: amd64-${{ env.COMMIT_SHA }}
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-linux.template'
           kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
