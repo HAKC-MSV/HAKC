@@ -97,7 +97,6 @@ jobs:
           cmake --build $BUILD_DIR --target install
 
       - name: Build & Push Kernel Image
-        if: ${{ github.event_name == 'push' }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -137,38 +136,14 @@ jobs:
           timeout_seconds: 60
 
   tag-latest-image:
-    name: Tag build with latest
-    if: ${{ github.event_name == 'push' }}
+    name: Tag build with latest if push to main
+    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: [ test-hakc-kernel-qemu ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
     steps:
-      - name: Checkout sources
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ env.COMMIT_SHA }}
-          submodules: 'false'
-      - name: Generate normalized branch name
-        id: normalize_branch_name
-        shell: bash
-        run: |
-          NORMALIZED_NAME=$(echo "${GITHUB_REF_NAME:-unknown}" | tr '/' '-' | tr '[:upper:]' '[:lower:]')
-          echo "normalized_name=$NORMALIZED_NAME" >> $GITHUB_ENV
-          echo "normalized_name=$NORMALIZED_NAME"
-      - name: Promote image to branch latest
-        uses: ./.github/actions/pull-docker-image-and-tag
-        with:
-          jfrog_user: ${{ secrets.JFROG_USER }}
-          jfrog_pass: ${{ secrets.JFROG_PASS }}
-          repo_url: ${{ env.REPOURL }}
-          repo_id: ${{ env.REPOID }}
-          image_id: ${{ env.KERNEL_IMAGEID }}
-          source_tag: amd64-${{ env.COMMIT_SHA }}
-          target_tag: ${{ env.normalized_name }}-latest
       - name: Promote image to latest if pushed to main
-        if: ${{ github.ref_name == 'main' }}
         uses: ./.github/actions/pull-docker-image-and-tag
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -177,6 +152,6 @@ jobs:
           repo_id: ${{ env.REPOID }}
           image_id: ${{ env.KERNEL_IMAGEID }}
           source_tag: amd64-${{ env.COMMIT_TAG }}
-          target_tag: latest
+          target_tag: amd64-latest
 
 #
