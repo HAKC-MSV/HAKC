@@ -19,7 +19,6 @@
         "LLVM_ENABLE_HAKC": "ON",
         "LLVM_BUILD_TESTS": "ON",
         "LLVM_ENABLE_ASSERTIONS": "ON",
-        "LLVM_ENABLE_Z3_SOLVER": "ON",
         "HAKC_PYTHON_VENV": "${sourceDir}/python/venv"
       }
     },
