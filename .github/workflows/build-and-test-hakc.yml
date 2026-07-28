@@ -27,6 +27,7 @@ on:
 jobs:
   build-hakc-kernel:
     name: Build HAKC Compiler and Linux Kernel
+    if: github.server_url == 'https://llcad-github.llan.ll.mit.edu'
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
@@ -113,6 +114,7 @@ jobs:
 
   test-hakc-kernel-qemu:
     name: Test HAKC Kernel with QEMU
+    if: github.server_url == 'https://llcad-github.llan.ll.mit.edu'
     needs: [ build-hakc-kernel ]
     runs-on: [ arc-runner-set-llcad-prod ]
     container:

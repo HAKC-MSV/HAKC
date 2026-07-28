@@ -24,6 +24,7 @@ on:
 jobs:
   check-for-built-image:
     name: Check for built kernel
+    if: github.server_url == 'https://llcad-github.llan.ll.mit.edu'
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
       image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
@@ -53,6 +54,7 @@ jobs:
   
   test-hakc-kernel-qemu:
     name: Test HAKC Kernel with QEMU
+    if: github.server_url == 'https://llcad-github.llan.ll.mit.edu'
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: [ check-for-built-image ]
     container:
@@ -78,6 +80,7 @@ jobs:
 
   tag-latest-image:
     name: Tag build with latest
+    if: github.server_url == 'https://llcad-github.llan.ll.mit.edu'
     runs-on: [ arc-runner-set-llcad-prod ]
     needs: [ test-hakc-kernel-qemu ]
     container:

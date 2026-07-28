@@ -1,0 +1,56 @@
+name: Public CI - Build and Test LLVM
+
+env:
+  BUILD_DIR: "cmake-build-hakc-release"
+  VENV_DIR: "python/venv"
+  HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test-llvm:
+    name: Build LLVM and Run Tests
+    if: github.server_url == 'https://github.com'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y clang ninja-build cmake lld python3-venv flex bison llvm
+
+      - name: Set up Python virtual environment
+        run: |
+          set -euo pipefail
+          python3 -m venv $VENV_DIR
+          source $VENV_DIR/bin/activate
+          pip install --upgrade pip
+          pip install -r $HAKC_PYTHON_REQUIREMENTS_PATH
+
+      - name: Configure CMake
+        run: |
+          set -euo pipefail
+          cmake --preset ci-release
+
+      - name: Build LLVM
+        run: |
+          set -euo pipefail
+          cmake --build $BUILD_DIR --target clang
+
+      - name: Run LLVM tests
+        run: |
+          set -euo pipefail
+          source $VENV_DIR/bin/activate
+          cmake --build $BUILD_DIR --target check-llvm
