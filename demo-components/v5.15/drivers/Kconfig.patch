@@ -1,4 +1,0 @@
-12a13,15
-> source "drivers/rosdemo/Kconfig"
-> source "drivers/tb-exploiter/Kconfig"
-> 
