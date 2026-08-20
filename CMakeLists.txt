@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.5)
 
 project(HAKC)
 
@@ -60,13 +60,16 @@ if (HAKC_CC_IS_DEFAULT)
     set(_hakc_clang_dep clang)
 endif ()
 
-set(HAKC_ANALYSIS_CORES CACHE STRING "Number of cores to use for analysis")
-if (HAKC_ANALYSIS_CORES)
-    set(FULL_CORE_COUNT ${HAKC_ANALYSIS_CORES})
-else ()
-    cmake_host_system_information(RESULT FULL_CORE_COUNT
-            QUERY NUMBER_OF_LOGICAL_CORES)
-endif ()
+#set(HAKC_ANALYSIS_CORES CACHE STRING "Number of cores to use for analysis")
+#if (HAKC_ANALYSIS_CORES)
+#    set(FULL_CORE_COUNT ${HAKC_ANALYSIS_CORES})
+#else ()
+#    cmake_host_system_information(RESULT FULL_CORE_COUNT
+#            QUERY NUMBER_OF_LOGICAL_CORES)
+#endif ()
+
+set(HAKC_ANALYSIS_CORES "92")
+set(FULL_CORE_COUNT "92")
 
 math(EXPR HAKC_LINUX_CORE_COUNT "${FULL_CORE_COUNT}")
 
@@ -108,6 +111,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             ARCH=${arch}
             "CC=${HAKC_CC}"
             "HOSTCC=${HAKC_CC}"
+            INSTALL_PATH=${hardened_kernel_install_path}
+            INSTALL_MOD_PATH=${hardened_kernel_install_path}
+            -j${HAKC_LINUX_CORE_COUNT}
             ${make_opts}
     )
     file(MAKE_DIRECTORY ${linux_build_dir})
@@ -134,23 +140,23 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
     message(STATUS "db_dependency_file is ${db_dependency_file}")
 
-    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
-            ${hakc_build_dir}/hakc-client-config.yaml)
-    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-            ${hakc_build_dir}/hakc-modify-linux-config.sh)
-    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-            ${hakc_build_dir}/hakc-adjustments.yaml)
-    configure_file(${hakc_configs_path}/hakc-config.yaml.in
-            ${hakc_main_config_path})
-    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
-            ${hakc_build_dir}/hakc-server-config.yaml)
+    #    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
+    #            ${hakc_build_dir}/hakc-client-config.yaml)
+    #    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+    #            ${hakc_build_dir}/hakc-modify-linux-config.sh)
+    #    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+    #            ${hakc_build_dir}/hakc-adjustments.yaml)
+    #    configure_file(${hakc_configs_path}/hakc-config.yaml.in
+    #            ${hakc_main_config_path})
+    #    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
+    #            ${hakc_build_dir}/hakc-server-config.yaml)
 
     add_custom_command(
             OUTPUT ${kernel_config_path}
             DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Generating ${arch} Linux config"
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+            COMMAND cp ${CMAKE_SOURCE_DIR}/configs/config-6.17.0-22-generic ${kernel_config_path}
             COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
     )
 
@@ -161,15 +167,15 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${compilation_db_path}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS hakc-linux-${arch}-config ${_hakc_clang_dep}
+            DEPENDS ${db_dependency_file}
             COMMENT "Generating ${compilation_db_path}"
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} clean
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make ${LINUX_MAKE_OPTS} clean
+            COMMAND make ${LINUX_MAKE_OPTS}
             COMMAND ${CMAKE_SOURCE_DIR}/linux/scripts/clang-tools/gen_compile_commands.py -d ${linux_build_dir} -o ${compilation_db_path}
     )
 
     add_custom_target(linux-${arch}-compilation-db
-            DEPENDS ${compilation_db_path} hakc-linux-${arch}-config ${_hakc_clang_dep}
+            DEPENDS ${compilation_db_path} ${db_dependency_file}
     )
 
     if (NOT HAKC_USE_PREBUILT_DB)
@@ -201,11 +207,14 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND ${CMAKE_COMMAND} -E echo "Checking for prebuilt DB: ${db_dependency_file}"
             COMMAND test -f ${db_dependency_file}
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
+            COMMAND make ${LINUX_MAKE_OPTS} clean
+            COMMAND make ${LINUX_MAKE_OPTS}
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
             ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode enforcement
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
-            COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
+            COMMAND rm -rf ${linux_build_dir}-backup
+            COMMAND cp -r ${linux_build_dir} ${linux_build_dir}-backup
+            COMMAND make ${LINUX_MAKE_OPTS}
+            COMMAND make ${LINUX_MAKE_OPTS} install modules_install
             COMMAND rm -rf ${hardened_kernel_install_path}/lib/modules/${hakc_kernel_version}${hakc_kernel_ext}/build
     )
 
@@ -259,7 +268,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/scripts/kernel-userspace-scripts/init ${ROOTFS_DIR}/sbin/init
             COMMAND chmod +x ${ROOTFS_DIR}/sbin/init
 
-            COMMAND sh -c "SIZE=\$(du -sm ${ROOTFS_DIR} | awk '{print int(\$1 * 2.0)}')M && truncate -s \$SIZE ${USERSPACE_IMG} && mkfs.ext4 -F -d ${ROOTFS_DIR} ${USERSPACE_IMG}"
+            COMMAND sh -c "SIZE=\$(du -sm ${ROOTFS_DIR} | awk '{print int(\$1 * 1.2)}')M && truncate -s \$SIZE ${USERSPACE_IMG} && mkfs.ext4 -F -d ${ROOTFS_DIR} ${USERSPACE_IMG}"
 
             DEPENDS
             ${hardened_kernel_install_path}/${hakc_kernel_name}
