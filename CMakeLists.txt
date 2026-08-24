@@ -60,16 +60,13 @@ if (HAKC_CC_IS_DEFAULT)
     set(_hakc_clang_dep clang)
 endif ()
 
-#set(HAKC_ANALYSIS_CORES CACHE STRING "Number of cores to use for analysis")
-#if (HAKC_ANALYSIS_CORES)
-#    set(FULL_CORE_COUNT ${HAKC_ANALYSIS_CORES})
-#else ()
-#    cmake_host_system_information(RESULT FULL_CORE_COUNT
-#            QUERY NUMBER_OF_LOGICAL_CORES)
-#endif ()
-
-set(HAKC_ANALYSIS_CORES "92")
-set(FULL_CORE_COUNT "92")
+set(HAKC_ANALYSIS_CORES CACHE STRING "Number of cores to use for analysis")
+if (HAKC_ANALYSIS_CORES)
+    set(FULL_CORE_COUNT ${HAKC_ANALYSIS_CORES})
+else ()
+    cmake_host_system_information(RESULT FULL_CORE_COUNT
+            QUERY NUMBER_OF_LOGICAL_CORES)
+endif ()
 
 math(EXPR HAKC_LINUX_CORE_COUNT "${FULL_CORE_COUNT}")
 
@@ -140,16 +137,16 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
 
     message(STATUS "db_dependency_file is ${db_dependency_file}")
 
-    #    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
-    #            ${hakc_build_dir}/hakc-client-config.yaml)
-    #    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
-    #            ${hakc_build_dir}/hakc-modify-linux-config.sh)
-    #    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
-    #            ${hakc_build_dir}/hakc-adjustments.yaml)
-    #    configure_file(${hakc_configs_path}/hakc-config.yaml.in
-    #            ${hakc_main_config_path})
-    #    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
-    #            ${hakc_build_dir}/hakc-server-config.yaml)
+    configure_file(${hakc_configs_path}/hakc-client-config.yaml.in
+            ${hakc_build_dir}/hakc-client-config.yaml)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
+            ${hakc_build_dir}/hakc-modify-linux-config.sh)
+    configure_file(${CMAKE_SOURCE_DIR}/configs/hakc-adjustments.yaml
+            ${hakc_build_dir}/hakc-adjustments.yaml)
+    configure_file(${hakc_configs_path}/hakc-config.yaml.in
+            ${hakc_main_config_path})
+    configure_file(${hakc_configs_path}/hakc-server-config.yaml.in
+            ${hakc_build_dir}/hakc-server-config.yaml)
 
     add_custom_command(
             OUTPUT ${kernel_config_path}
@@ -167,7 +164,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     add_custom_command(
             OUTPUT ${compilation_db_path}
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
-            DEPENDS ${db_dependency_file}
+            DEPENDS hakc-linux-${arch}-config ${_hakc_clang_dep}
             COMMENT "Generating ${compilation_db_path}"
             COMMAND make ${LINUX_MAKE_OPTS} clean
             COMMAND make ${LINUX_MAKE_OPTS}
@@ -175,7 +172,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
     )
 
     add_custom_target(linux-${arch}-compilation-db
-            DEPENDS ${compilation_db_path} ${db_dependency_file}
+            DEPENDS ${compilation_db_path} hakc-linux-${arch}-config ${_hakc_clang_dep}
     )
 
     if (NOT HAKC_USE_PREBUILT_DB)
