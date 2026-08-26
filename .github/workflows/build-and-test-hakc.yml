@@ -16,6 +16,7 @@ env:
   HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
   LLVM_INSTALL_DIR: "install"
   COMMIT_SHA: "${{ github.sha }}"
+  KERNEL_TYPE_TO_BUILD: "rosdemo"
 
 on:
   push:
@@ -64,9 +65,9 @@ jobs:
       - name: Generate compilation database
         uses: ./.github/actions/get-kernel-compilation-database
         with:
-          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/${{env.KERNEL_TYPE_TO_BUILD}}/compile_commands.json
           build_dir: ${{ env.BUILD_DIR }}
-          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-${{ env.KERNEL_TYPE_TO_BUILD }}-compilation-db'
 
       - name: Generate PDG
         shell: bash
@@ -74,27 +75,27 @@ jobs:
           set -euo pipefail
 
           source "$VENV_DIR/bin/activate"
-          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-linux-${{env.LINUX_ARCH}}-${{ env.KERNEL_TYPE_TO_BUILD }}-analysis
 
       - name: Build HAKC Kernel
         shell: bash
         run: |
           set -euo pipefail
 
-          source "$VENV_DIR/bin/activate"
-          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+          source "${{ env.VENV_DIR }}/bin/activate"
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-linux-${{env.LINUX_ARCH}}-${{ env.KERNEL_TYPE_TO_BUILD }}-enforcement
 
       - name: Build Userspace
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-${{ env.LINUX_ARCH }}-${{ env.KERNEL_TYPE_TO_BUILD }}-userspace
 
       - name: Install LLVM
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target install
+          cmake --build ${{ env.BUILD_DIR }} --target install
 
       - name: Build & Push Kernel Image
         uses: ./.github/actions/build-and-push-docker-container
@@ -107,7 +108,7 @@ jobs:
           deterministic_tag: amd64-${{ env.COMMIT_SHA }}
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-linux.template'
-          kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/${{ env.KERNEL_TYPE_TO_BUILD }}"
           llvm_install_dir: "${{ env.LLVM_INSTALL_DIR }}"
 
   test-hakc-kernel-qemu:
@@ -127,9 +128,9 @@ jobs:
         uses: ./.github/actions/run-hakc-kernel-in-qemu
         with:
           linux_arch: ${{ env.LINUX_ARCH }}
-          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc-${{ env.KERNEL_TYPE_TO_BUILD }}"
           root_fs_path: "/opt/hakc-linux/rootfs.img"
-          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
+          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=${{ env.KERNEL_TYPE_TO_BUILD }} nokaslr"
           search_string_1: "Oops: general protection fault, probably for non-canonical address"
           search_string_2: "HAKC_ORIG_my_open"
           search_string_3: "HAKC_TEST_RESULT rc=139"

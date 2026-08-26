@@ -3,14 +3,14 @@ add-kernel-division: true
 compartmentalize:
   - !HAKCAdjustmentOnPath
     path: 'linux/drivers/rosdemo/rosdemo\-leaker.c'
-    division_id: 8
+    division_id: 1
     compartment_id: 2048
   - !HAKCAdjustmentOnPath
     path: 'linux/drivers/rosdemo/rosdemo\-consumer.c'
-    division_id: 16
+    division_id: 2
     compartment_id: 1024
   - !HAKCAdjustmentOnSymbol
     path: 'linux/drivers/rosdemo/rosdemo\-consumer.c'
     symbol: 'rosdemo_consumer_exit'
-    division_id: 32
+    division_id: 3
     compartment_id: 1024
