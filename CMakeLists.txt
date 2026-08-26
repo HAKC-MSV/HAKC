@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.5)
 
 project(HAKC)
 
@@ -108,6 +108,9 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             ARCH=${arch}
             "CC=${HAKC_CC}"
             "HOSTCC=${HAKC_CC}"
+            INSTALL_PATH=${hardened_kernel_install_path}
+            INSTALL_MOD_PATH=${hardened_kernel_install_path}
+            -j${HAKC_LINUX_CORE_COUNT}
             ${make_opts}
     )
     file(MAKE_DIRECTORY ${linux_build_dir})
@@ -150,7 +153,7 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             DEPENDS ${CMAKE_SOURCE_DIR}/configs/hakc-modify-linux-config.sh.in
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             COMMENT "Generating ${arch} Linux config"
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} defconfig
+            COMMAND cp ${CMAKE_SOURCE_DIR}/configs/config-6.17.0-22-generic ${kernel_config_path}
             COMMAND bash ${hakc_build_dir}/hakc-modify-linux-config.sh
     )
 
@@ -163,8 +166,8 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/linux
             DEPENDS hakc-linux-${arch}-config ${_hakc_clang_dep}
             COMMENT "Generating ${compilation_db_path}"
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} clean
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
+            COMMAND make ${LINUX_MAKE_OPTS} clean
+            COMMAND make ${LINUX_MAKE_OPTS}
             COMMAND ${CMAKE_SOURCE_DIR}/linux/scripts/clang-tools/gen_compile_commands.py -d ${linux_build_dir} -o ${compilation_db_path}
     )
 
@@ -201,11 +204,14 @@ foreach (arch make_opts IN ZIP_LISTS LINUX_ARCHES_TO_BUILD LINUX_ARCH_MAKE_OPTS)
             COMMENT "Building the ${arch} HAKC Linux kernel"
             COMMAND ${CMAKE_COMMAND} -E echo "Checking for prebuilt DB: ${db_dependency_file}"
             COMMAND test -f ${db_dependency_file}
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} modules_prepare scripts
+            COMMAND make ${LINUX_MAKE_OPTS} clean
+            COMMAND make ${LINUX_MAKE_OPTS}
             COMMAND ${CMAKE_COMMAND} -E env PYTHONPATH=${hakc_path} ${HAKC_PYTHON_Executable}
             ${HAKC_SERVER_PROCESS_PATH} --config ${hakc_main_config_path} --mode enforcement
-            COMMAND make ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT}
-            COMMAND make INSTALL_PATH=${hardened_kernel_install_path} INSTALL_MOD_PATH=${hardened_kernel_install_path} ${LINUX_MAKE_OPTS} -j${HAKC_LINUX_CORE_COUNT} install modules_install
+            COMMAND rm -rf ${linux_build_dir}-backup
+            COMMAND cp -r ${linux_build_dir} ${linux_build_dir}-backup
+            COMMAND make ${LINUX_MAKE_OPTS}
+            COMMAND make ${LINUX_MAKE_OPTS} install modules_install
             COMMAND rm -rf ${hardened_kernel_install_path}/lib/modules/${hakc_kernel_version}${hakc_kernel_ext}/build
     )
 

@@ -52,6 +52,31 @@
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
       }
+    },
+    {
+      "name": "hyrez",
+      "inherits": "base",
+      "description": "HYRez configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hyrez",
+      "installDir": "hyrez-install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "hakc+msv",
+      "inherits": "base",
+      "description": "HAKC+MSV configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hakc+msv",
+      "installDir": "hakc+msv-install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "CMAKE_C_COMPILER": "clang-14",
+        "CMAKE_CXX_COMPILER": "clang++-14"
+      }
     }
   ]
 }

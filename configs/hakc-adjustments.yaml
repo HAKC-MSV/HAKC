@@ -2,10 +2,30 @@
 no-enforcement-compartment: true
 adjustments:
   - !HAKCCompartmentAdjustment
-    path: 'linux/drivers/rosdemo/rosdemo\-leaker.c'
+    path: 'linux/arch/x86/kvm/vmx/vmx.c'
     division-id: 8
-    compartment-id: 2048
+    compartment-id: 14
   - !HAKCCompartmentAdjustment
-    path: 'linux/drivers/rosdemo/rosdemo\-consumer.c'
+    path: 'linux/arch/x86/kvm/x86.c'
     division-id: 15
-    compartment-id: 1024
+    compartment-id: 12
+  - !HAKCCompartmentAdjustment
+    path: 'linux/arch/x86/kvm/cpuid.c'
+    division-id: 15
+    compartment-id: 12
+  - !HAKCCompartmentAdjustment
+    path: 'linux/arch/x86/kvm/emulate.c'
+    division-id: 15
+    compartment-id: 12
+  - !HAKCCompartmentAdjustment
+    path: 'linux/arch/x86/kvm/lapic.c'
+    division-id: 15
+    compartment-id: 12
+  - !HAKCCompartmentAdjustment
+    path: 'linux/arch/x86/kvm/irq.c'
+    division-id: 15
+    compartment-id: 12
+  - !HAKCCompartmentAdjustment
+    path: 'linux/arch/x86/kvm/ioapic.c'
+    division-id: 15
+    compartment-id: 12
