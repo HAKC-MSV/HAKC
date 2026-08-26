@@ -30,7 +30,7 @@ jobs:
     name: Build HAKC Compiler and Linux Kernel
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/python:3.12
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
       options: --cpus 8
 
     steps:
