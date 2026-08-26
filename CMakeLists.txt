@@ -290,7 +290,5 @@ foreach (KERNEL_TYPE ${KERNEL_TYPES})
                 USES_TERMINAL
                 WORKING_DIRECTORY ${hakc_build_dir}
         )
-
-
     endforeach ()
 endforeach ()
