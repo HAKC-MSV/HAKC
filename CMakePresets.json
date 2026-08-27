@@ -40,7 +40,7 @@
       "installDir": "install",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "LLVM_DISABLE_LOGF128": "ON"
+        "LLVM_HAS_LOGF128": "OFF"
       }
     },
     {
