@@ -5,7 +5,8 @@ mount -t sysfs sysfs /sys
 mount -t devtmpfs devtmpfs /dev 2>/dev/null || true
 
 CMDLINE="$(cat /proc/cmdline 2>/dev/null || true)"
-depmod -a 2>/dev/null || true
+# Disabled depmod until KVM kernel boots with it
+#depmod -a 2>/dev/null || true
 
 # If kernel cmdline contains: hakc_test=rosdemo
 if echo "$CMDLINE" | grep -q 'hakc_test=rosdemo'; then
