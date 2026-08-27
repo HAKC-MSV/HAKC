@@ -39,7 +39,9 @@
       "binaryDir": "${sourceDir}/cmake-build-hakc-release",
       "installDir": "install",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang-18",
+        "CMAKE_CXX_COMPILER": "clang++-18"
       }
     },
     {

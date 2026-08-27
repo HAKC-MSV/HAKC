@@ -8,7 +8,7 @@ env:
   REPOURL: "ett-jfrog.llan.ll.mit.edu"
   REPOID: "g0553-docker-local"
   BUILD_DIR: "cmake-build-hakc-release"
-  DEPS_TO_INSTALL: "clang ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm bc libelf-dev libssl-dev kmod"
+  DEPS_TO_INSTALL: "clang-18 ninja-build cmake busybox-static lld python3-venv flex bison qemu-system llvm-18 bc libelf-dev libssl-dev kmod"
   VENV_DIR: "python/venv"
   LINUX_ARCH: "x86_64"
   jfrog_user: ${{ secrets.JFROG_USER }}
