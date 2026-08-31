@@ -881,11 +881,8 @@ To propose a roadmap change:
 
 ## Questions or Feedback?
 
-- **Mailing list**: hakc-dev@[domain]
-- **GitHub Discussions**: [Link]
-- **Issue tracker**: [Link]
-- **Twitter/X**: @HAKC_project (example)
-- **Website**: https://hakc-project.org (example)
+- **Mailing list**: hakc@ll.mit.edu
+- **Issue tracker**: https://github.com/HAKC-MSV/HAKC/issues
 
 ---
 
