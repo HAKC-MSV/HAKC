@@ -824,14 +824,14 @@ We welcome contributions from the community! Here's how to get involved:
 
 ### For Users
 
-- **Try HAKC**: Follow the [Quick Start Guide](docs/quickstart.md) to build a HAKC-protected kernel
+- **Try HAKC**: Follow the [ROS2 Demo directions in the README](README.md) to build a HAKC-protected kernel
 - **Report bugs**: File issues on [GitHub Issues](https://github.com/[org]/HAKC/issues)
 - **Provide feedback**: Share your experience on the mailing list or discussions
 - **Spread the word**: Star the repo, share on social media, write blog posts
 
 ### For Developers
 
-- **Read the docs**: Start with [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/DEVELOPER_ONBOARDING.md](docs/DEVELOPER_ONBOARDING.md)
+- **Read the docs**: Start with [CONTRIBUTING.md](CONTRIBUTING.md)
 - **Find an issue**: Check [open issues](https://github.com/[org]/HAKC/issues) for tasks labeled `good-first-issue` or `help-wanted`
 - **Submit patches**: Follow the kernel patch submission workflow (or GitHub PR workflow, depending on project policy)
 - **Review code**: Help review pull requests and provide constructive feedback
@@ -840,7 +840,7 @@ We welcome contributions from the community! Here's how to get involved:
 ### For Researchers
 
 - **Collaborate**: Reach out to discuss research ideas leveraging HAKC
-- **Cite HAKC**: If you use HAKC in your research, please cite [paper/website]
+- **Cite HAKC**: If you use HAKC in your research, please cite using the reference in README.md
 - **Contribute algorithms**: New compartmentalization policies, analysis techniques, optimization strategies
 
 ### For Distributors
@@ -881,7 +881,7 @@ To propose a roadmap change:
 
 ## Questions or Feedback?
 
-- **Mailing list**: hakc@ll.mit.edu
+- **Email**: hakc@ll.mit.edu
 - **Issue tracker**: https://github.com/HAKC-MSV/HAKC/issues
 
 ---
