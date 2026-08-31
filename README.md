@@ -84,3 +84,17 @@ cd cmake-build-hakc
 cmake --build . -j$(nproc) --target UnitTests
 llvm-project/llvm/unittests/Transforms/Compartmentalization/hakc/HAKC_UNIT_TESTS 
 ```
+
+## Citing HAKC
+
+```
+@inproceedings{mckee2022preventing,
+  author = {McKee, Derrick Paul and Giannaris, Yianni and Ortega, Carolina and Shrobe, Howard E. and Payer, Mathias and Okhravi, Hamed and Burow, Nathan},
+  title = {Preventing Kernel Hacks with HAKCs},
+  booktitle = {29th Annual Network and Distributed System Security Symposium, {NDSS} 2022},
+  publisher = {Internet Society},
+  year = {2022},
+  doi = {10.14722/ndss.2022.24026},
+  url = {https://www.ndss-symposium.org/ndss-paper/auto-draft-257/}
+}
+```
