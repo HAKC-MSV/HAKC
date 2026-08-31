@@ -14,14 +14,15 @@ env:
   jfrog_user: ${{ secrets.JFROG_USER }}
   jfrog_pass: ${{ secrets.JFROG_PASS }}
   HAKC_PYTHON_REQUIREMENTS_PATH: "llvm-project/llvm/utils/hakc/requirements.txt"
-  TAG_NAME: "amd64-${{ github.event.pull_request.head.sha || github.sha }}"
   LLVM_INSTALL_DIR: "install"
+  COMMIT_SHA: "${{ github.sha }}"
+  KERNEL_TYPE_TO_BUILD: "rosdemo"
 
 on:
   push:
-    branches: [ next, main ]
+    branches: [ main, next ]
   pull_request:
-    branches: [ next, main ]
+    branches: [ main, next ]
     types: [ opened, synchronize, reopened, ready_for_review ]
 
 jobs:
@@ -38,7 +39,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           submodules: 'true'
 
       - name: Setup environment
@@ -65,9 +66,9 @@ jobs:
       - name: Generate compilation database
         uses: ./.github/actions/get-kernel-compilation-database
         with:
-          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/compile_commands.json
+          compilation_db_path: ${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/${{env.KERNEL_TYPE_TO_BUILD}}/compile_commands.json
           build_dir: ${{ env.BUILD_DIR }}
-          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-compilation-db'
+          compilation_db_target: 'linux-${{ env.LINUX_ARCH }}-${{ env.KERNEL_TYPE_TO_BUILD }}-compilation-db'
 
       - name: Generate PDG
         shell: bash
@@ -75,30 +76,29 @@ jobs:
           set -euo pipefail
 
           source "$VENV_DIR/bin/activate"
-          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-analysis
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-linux-${{env.LINUX_ARCH}}-${{ env.KERNEL_TYPE_TO_BUILD }}-analysis
 
       - name: Build HAKC Kernel
         shell: bash
         run: |
           set -euo pipefail
 
-          source "$VENV_DIR/bin/activate"
-          cmake --build $BUILD_DIR --target hakc-linux-$LINUX_ARCH-enforcement
+          source "${{ env.VENV_DIR }}/bin/activate"
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-linux-${{env.LINUX_ARCH}}-${{ env.KERNEL_TYPE_TO_BUILD }}-enforcement
 
       - name: Build Userspace
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target hakc-$LINUX_ARCH-userspace
+          cmake --build ${{ env.BUILD_DIR }} --target hakc-${{ env.LINUX_ARCH }}-${{ env.KERNEL_TYPE_TO_BUILD }}-userspace
 
       - name: Install LLVM
         shell: bash
         run: |
           set -euo pipefail
-          cmake --build $BUILD_DIR --target install
+          cmake --build ${{ env.BUILD_DIR }} --target install
 
       - name: Build & Push Kernel Image
-        if: ${{ github.event_name == 'push' }}
         uses: ./.github/actions/build-and-push-docker-container
         with:
           jfrog_user: ${{ secrets.JFROG_USER }}
@@ -106,10 +106,10 @@ jobs:
           repo_url: ${{ env.REPOURL }}
           repo_id: ${{ env.REPOID }}
           image_id: ${{ env.KERNEL_IMAGEID }}
-          deterministic_tag: ${{ env.TAG_NAME }}
+          deterministic_tag: amd64-${{ env.COMMIT_SHA }}
           git_ref_name: ${{ github.ref_name }}
           docker_file_template: 'Dockerfile-linux.template'
-          kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}"
+          kernel_artifact_dir: "${{ env.BUILD_DIR }}/linux/${{ env.LINUX_ARCH }}/${{ env.KERNEL_TYPE_TO_BUILD }}"
           llvm_install_dir: "${{ env.LLVM_INSTALL_DIR }}"
 
   test-hakc-kernel-qemu:
@@ -118,24 +118,43 @@ jobs:
     needs: [ build-hakc-kernel ]
     runs-on: [ arc-runner-set-llcad-prod ]
     container:
-      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.event.pull_request.head.sha || github.sha }}
+      image: ett-jfrog.llan.ll.mit.edu/g0553-docker-local/g53-hakc-linux:amd64-${{ github.sha }}
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ env.COMMIT_SHA }}
           submodules: 'false'
       - name: Test HAKC Kernel with QEMU
         uses: ./.github/actions/run-hakc-kernel-in-qemu
         with:
           linux_arch: ${{ env.LINUX_ARCH }}
-          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc"
+          kernel_path: "/opt/hakc-linux/vmlinuz-6.14.0-hakc-${{ env.KERNEL_TYPE_TO_BUILD }}"
           root_fs_path: "/opt/hakc-linux/rootfs.img"
-          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=rosdemo nokaslr"
+          kernel_cmd_args: "console=ttyS0 init=/sbin/init root=/dev/vda rw hakc_test=${{ env.KERNEL_TYPE_TO_BUILD }} nokaslr"
           search_string_1: "Oops: general protection fault, probably for non-canonical address"
           search_string_2: "HAKC_ORIG_my_open"
           search_string_3: "HAKC_TEST_RESULT rc=139"
           timeout_seconds: 60
+
+  tag-latest-image:
+    name: Tag build with latest if push to main
+    if: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+    runs-on: [ arc-runner-set-llcad-prod ]
+    needs: [ test-hakc-kernel-qemu ]
+    container:
+      image: ett-jfrog.llan.ll.mit.edu/isd-docker-local/ubuntu:latest
+    steps:
+      - name: Promote image to latest if pushed to main
+        uses: ./.github/actions/pull-docker-image-and-tag
+        with:
+          jfrog_user: ${{ secrets.JFROG_USER }}
+          jfrog_pass: ${{ secrets.JFROG_PASS }}
+          repo_url: ${{ env.REPOURL }}
+          repo_id: ${{ env.REPOID }}
+          image_id: ${{ env.KERNEL_IMAGEID }}
+          source_tag: amd64-${{ env.COMMIT_TAG }}
+          target_tag: amd64-latest
 
 #

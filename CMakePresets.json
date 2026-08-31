@@ -19,7 +19,6 @@
         "LLVM_ENABLE_HAKC": "ON",
         "LLVM_BUILD_TESTS": "ON",
         "LLVM_ENABLE_ASSERTIONS": "ON",
-        "LLVM_ENABLE_Z3_SOLVER": "ON",
         "HAKC_PYTHON_VENV": "${sourceDir}/python/venv"
       }
     },
@@ -40,7 +39,8 @@
       "binaryDir": "${sourceDir}/cmake-build-hakc-release",
       "installDir": "install",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release"
+        "CMAKE_BUILD_TYPE": "Release",
+        "HAS_LOGF128": "OFF"
       }
     },
     {
@@ -52,6 +52,20 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
         "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "hakc+msv",
+      "inherits": "base",
+      "description": "HAKC+MSV configuration",
+      "binaryDir": "${sourceDir}/cmake-build-hakc+msv",
+      "installDir": "hakc+msv-install",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "CMAKE_POLICY_VERSION_MINIMUM": "3.5",
+        "CMAKE_C_COMPILER": "clang-14",
+        "CMAKE_CXX_COMPILER": "clang++-14"
       }
     }
   ]
